@@ -117,6 +117,62 @@ describe('computeSfxGainCeilings', () => {
     }
   });
 
+  it('preserves the stored ceiling when audio files are missing but a checked-in ceiling file exists', () => {
+    // Simulates a CI checkout without LFS-smudged audio: the SFX directory
+    // exists but the .mp3 files are absent, while the checked-in
+    // sfx_gain_ceiling.generated.json still holds the last real measured
+    // ceilings. Without preservation, every key drops to a 0dB ceiling and
+    // the gain map validator rejects trims that were tuned against real
+    // headroom (the CI failure this test pins).
+    const root = mkdtempSync(join(tmpdir(), 'wocc-gain-ceiling-'));
+    try {
+      mkdirSync(join(root, 'public/audio/sfx'), { recursive: true });
+      mkdirSync(join(root, 'scripts/sfx'), { recursive: true });
+      // Write a stored ceiling file in the new format (object with ceilingDb
+      // and tracks), matching what a real prior writeSfxGainCeilings produced.
+      writeFileSync(
+        join(root, 'scripts/sfx/sfx_gain_ceiling.generated.json'),
+        `${JSON.stringify({
+          buff_apply: {
+            ceilingDb: 5,
+            tracks: [
+              {
+                filename: 'buff_apply.mp3',
+                sha256: 'abc123',
+                size: 1000,
+                peakDb: -6,
+              },
+            ],
+          },
+        })}\n`,
+      );
+
+      const ceilings = computeSfxGainCeilings(root, ffmpegPath as string);
+      expect(ceilings.buff_apply).toBe(5);
+    } finally {
+      rmSync(root, { force: true, recursive: true });
+    }
+  });
+
+  it('does not preserve old flat-format stored ceilings when audio files are missing', () => {
+    // Old pre-fingerprint format ({key: number}) has no track fingerprints,
+    // so its values are stale and must not be preserved when audio is missing.
+    const root = mkdtempSync(join(tmpdir(), 'wocc-gain-ceiling-'));
+    try {
+      mkdirSync(join(root, 'public/audio/sfx'), { recursive: true });
+      mkdirSync(join(root, 'scripts/sfx'), { recursive: true });
+      writeFileSync(
+        join(root, 'scripts/sfx/sfx_gain_ceiling.generated.json'),
+        `${JSON.stringify({ buff_apply: 99 })}\n`,
+      );
+
+      const ceilings = computeSfxGainCeilings(root, ffmpegPath as string);
+      expect(ceilings.buff_apply).toBeUndefined();
+    } finally {
+      rmSync(root, { force: true, recursive: true });
+    }
+  });
+
   it('mints a ceiling for a discovered mob subfamily key via its family custom flag', () => {
     const root = mkdtempSync(join(tmpdir(), 'wocc-gain-ceiling-'));
     try {

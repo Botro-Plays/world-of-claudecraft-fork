@@ -22,10 +22,24 @@ const repoRoot = process.cwd();
 // Safe as well as correct: ceilings are measured from the catalog and the audio
 // files on disk and never read the manifest, so nothing here depends on the
 // order that was swapped away.
-const { path: ceilingPath, ceilings } = writeSfxGainCeilings(repoRoot, ffmpegPath);
-console.log(
-  `SFX gain ceilings: ${Object.keys(ceilings).length} custom keys -> ${relative(repoRoot, ceilingPath)}`,
-);
+//
+// If the audio files are unavailable (LFS pointers not smudged, missing files,
+// or a broken ffmpeg), regeneration throws. The checked-in ceiling file is
+// untouched (writeSfxGainCeilings uses an atomic temp-file rename, so a throw
+// in computeSfxGainCeilingRecords leaves the existing file intact). Fall back
+// to it so the manifest build can proceed with the last real measured ceilings
+// instead of crashing the build. This is not a silent pass: the manifest
+// validator still rejects any gain trim that exceeds the checked-in ceiling.
+try {
+  const { path: ceilingPath, ceilings } = writeSfxGainCeilings(repoRoot, ffmpegPath);
+  console.log(
+    `SFX gain ceilings: ${Object.keys(ceilings).length} custom keys -> ${relative(repoRoot, ceilingPath)}`,
+  );
+} catch (error) {
+  console.warn(
+    `SFX gain ceiling regeneration failed, using checked-in file: ${error.message ?? error}`,
+  );
+}
 
 // Regenerated in the SAME step as the ceilings above so the two can never
 // silently drift: any change to a custom key's audio, or to which keys are

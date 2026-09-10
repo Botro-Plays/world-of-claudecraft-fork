@@ -110,7 +110,24 @@ export function computeSfxGainCeilingRecords(repoRoot, ffmpegPath) {
   const records = {};
   for (const key of [...customKeys].sort()) {
     const source = discovered.entries[key];
-    if (!source) continue;
+    if (!source) {
+      // No audio files discovered for this key (e.g. a fresh checkout without
+      // LFS-smudged audio, or a CI checkout where actions/checkout lacked
+      // lfs: true): preserve the stored ceiling from the checked-in file
+      // instead of dropping the key, so the gain map validator does not see a
+      // false 0dB ceiling and reject trims that were tuned against the real
+      // measured headroom. Only preserve new-format records (object with
+      // ceilingDb and tracks), not old flat numbers (stale, no fingerprints).
+      const storedRecord = stored[key];
+      if (
+        storedRecord &&
+        typeof storedRecord === 'object' &&
+        typeof storedRecord.ceilingDb === 'number'
+      ) {
+        records[key] = storedRecord;
+      }
+      continue;
+    }
     let loudestPeakDb = -Infinity;
     const tracks = [];
     for (const track of source.tracks) {
@@ -122,7 +139,19 @@ export function computeSfxGainCeilingRecords(repoRoot, ffmpegPath) {
       tracks.push({ filename: track.filename, ...fingerprint, peakDb });
       if (peakDb > loudestPeakDb) loudestPeakDb = peakDb;
     }
-    if (loudestPeakDb === -Infinity) continue;
+    if (loudestPeakDb === -Infinity) {
+      // All discovered tracks were missing on disk (same root cause as above):
+      // preserve the stored ceiling the same way.
+      const storedRecord = stored[key];
+      if (
+        storedRecord &&
+        typeof storedRecord === 'object' &&
+        typeof storedRecord.ceilingDb === 'number'
+      ) {
+        records[key] = storedRecord;
+      }
+      continue;
+    }
     const ceilingDb = Math.max(0, SAFETY_FLOOR_DBFS - loudestPeakDb);
     records[key] = { ceilingDb: Number(ceilingDb.toFixed(2)), tracks };
   }
