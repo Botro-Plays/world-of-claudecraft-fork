@@ -1,0 +1,1938 @@
+import { describe, expect, it } from 'vitest';
+import { isBlocked, resolvePosition } from '../src/sim/colliders';
+import { EASTBROOK_LAYOUT } from '../src/sim/eastbrook_layout';
+
+const captureContract =
+  // @ts-expect-error The executable capture contract intentionally ships as plain Node ESM.
+  await import('../scripts/assets/eastbrook_grand_armoury/capture_contract.mjs');
+const {
+  assertTownCaptureMetadata,
+  assertTownAttributionTargetState,
+  assertTownMotionEvidence,
+  assertTownNpcFacingOverlay,
+  assertTownPerformanceBlockState,
+  EASTBROOK_TOWN_CAPTURE_CONTRACTS,
+  EASTBROOK_TOWN_CAPTURE_VIEWS,
+  EASTBROOK_TOWN_MOTION_CAPTURE,
+  EASTBROOK_TOWN_POLISH_CAPTURE_VIEWS,
+  EASTBROOK_TOWN_POLISH_MATCHED_CAPTURE_VIEWS,
+  EASTBROOK_TOWN_POLISH_MATCHED_VIEW_OVERRIDES,
+  EASTBROOK_TOWN_POLISH_V2_PLACEMENT_INVENTORY,
+  EASTBROOK_TOWN_REBUILD_PLACEMENT_INVENTORY,
+  EASTBROOK_POLISH_BASELINE_REVISION,
+  EASTBROOK_POLISH_PROVENANCE_INPUTS,
+  EASTBROOK_TOWN_ROOT_NAME,
+  EASTBROOK_TOWN_SURFACE_ATLAS_URL,
+  EASTBROOK_ARMOURY_CAPTURE_SEED,
+  deriveEastbrookPolishCompositeProvenance,
+  expectedTownPlacementInventory,
+  selectCaptureConfiguration,
+} = captureContract;
+
+interface AttributionTargetFixture {
+  key: string;
+  kind: string;
+  rootName: string;
+  layoutId: string;
+  layoutServiceId?: string;
+  templateId: string | null;
+  surfaceAtlas: { url: string; textureUuid: string; materialBindings: number };
+  present: boolean;
+  visible: boolean;
+  childMeshCount: number;
+}
+
+// The live composite pin. Mint history (kept from the previous in-place
+// comments): re-pinned across the pnpm-lock migration (which moved the
+// three GLB *SourceFingerprint leaves, since the lockfile is a hashed input
+// of every GLB source fingerprint), and then across PR #2720's
+// fence-removal layout evidence, the v0.34.0 Bear Form rig (#2842), the live
+// graphics rebuild (#2799), far-field impostors and fog-free vista (#2793),
+// brood shout/flourish wiring, the worldObjectBurning fire-burst cue, the
+// Thornhollow renderer sync, and the release/v0.35.0 into AAA-enhancements
+// merge, each of which moved a runtimeRender leaf (usually
+// src/render/renderer.ts); every mint used
+// scripts/assets/eastbrook_grand_armoury/remint_polish_provenance.mjs.
+// Across all of those mints no GLB pipeline input or geometry value changed
+// and no capture was retaken here: Eastbrook itself is untouched, and the
+// one capture retake (by the release) was adopted verbatim with its swept
+// metadata and performance JSONs. Re-derive whenever renderer.ts changes.
+// On a mismatch the test prints the full diagnostics (moved leaves,
+// dirty-input verdict, the one-step remint command) instead of a raw object
+// diff; see provenance_diagnostics.mjs for the 2026-08-05 stale-mint root
+// cause this legibility exists to prevent.
+// Re-pinned for the PR #2982 merge: the release-side weapon-skin apply
+// queue moves src/render/renderer.ts, and the PR-side ability VFX warm-up
+// moves src/render/renderer.ts plus src/render/prewarm_policy.ts. Those
+// runtimeRender leaves re-mint the composite. No Eastbrook input, geometry
+// value, or capture moved.
+// Re-pinned for the PR #2983 revert: the rendererIntegration leaf moved
+// back while PR #2982's prewarm policy remains in the release.
+// Re-pinned for the PR #2983 re-land: the weapon-skin apply queue and the
+// vfx.weapon-skins prewarm entry move src/render/renderer.ts forward again,
+// on top of the bow-aim renderer edit the release landed after the revert.
+// No Eastbrook input, geometry value, or capture moved.
+// Re-minted again for the second release/v0.35.0 merge (the swimming strokes PR
+// and the v0.35.0 batch both move the renderer leaf on the release side).
+// Re-minted for the merge of release/v0.35.0 into this branch: both sides moved
+// the rendererIntegration leaf (the release's PR #2983 re-land, this branch's
+// creator review pass), so the merged tree mints a value matching neither
+// parent. Captures adopted verbatim; no measured value moved on either side.
+// Re-minted for the VFX per-frame cost work: the rendererIntegration leaf
+// follows the anchor seam, the weapon-skin fade and the census tag. No capture
+// was retaken; every measured value is adopted verbatim.
+// Re-minted for the iOS WebKit memory-profile fix (renderer.ts's
+// nativeIosMemoryProfile -> iosMemoryProfile rename) landing on top of the VFX
+// per-frame cost work already on this release branch. No capture was retaken.
+// Re-minted for the merge of release/v0.36.0 (PR 3161) into the three
+// compileAsync patch branch: the release side moved the rendererIntegration
+// and townRuntime leaves while this branch's lockfile patch moved the GLB and
+// source-fingerprint leaves, so the merged tree mints a value matching
+// neither parent. No capture was retaken.
+// Re-minted on PR 3150's v0.36.0 base merge: the branch's renderer.ts prewarm
+// changes and the PR 3165 reseal converged here. No capture was retaken.
+// Re-minted for the bounded-prewarm point-light pin (renderer.ts edit only).
+// No capture was retaken.
+// Re-minted for the entry-prewarm compile dedupe/batch + initial-frame reserve
+// (renderer.ts + prewarm_policy.ts edits). No capture was retaken.
+// Re-minted for the prewarm coverage completion (settle-state entry, program
+// content keys, widened depth arm). No capture was retaken.
+// Re-minted for the merge of release/v0.36.0 into the render caches branch:
+// the release-side prewarm compile and point-light reseals converge with this
+// branch's bounded character-visual pool wiring on the rendererIntegration
+// leaf, so the merged tree mints a value matching neither parent. No capture
+// was retaken.
+// Re-minted for the merge of release/v0.36.0 (post PR 3220/3221) into the KTX2
+// mip-release branch: both parents move renderer.ts, so the rendererIntegration
+// leaf mints a value matching neither parent. No capture was retaken.
+// Re-minted for the merge of release/v0.36.0 (post PR 3222) into the prewarm
+// sky-unstarve branch: both parents move renderer.ts (this branch also moves
+// prewarm_policy.ts; sky.ts moved too but is not a provenance input), so the
+// rendererIntegration leaf mints a value matching neither parent. No capture
+// was retaken.
+// Re-minted for the review fixes on the prewarm sky-unstarve PR (deadlineExempt
+// sky entry, unified view-cap trim rule, deferred-lane gate and priority
+// threading; renderer.ts edits only). No capture was retaken.
+// Re-minted for review round 2 on the prewarm sky-unstarve PR (honest
+// archetype and scene-texture counts; renderer.ts edits only). No capture
+// was retaken.
+// Re-minted for the shadow-batch PR (shadow-camera texel snapping and the
+// budget-governed shadow cadence; renderer.ts edits only). No capture was
+// retaken.
+// Re-minted for the merge of the shadow-batch PR with the iOS constrained-
+// memory zone-eviction fix: both parents move renderer.ts, so the
+// rendererIntegration leaf mints a value matching neither parent. No capture
+// was retaken.
+// Re-minted for the merge of PR #3314's rift windup telegraph school tint
+// (issue #2917) with the release branch's renderer changes. Both parents move
+// renderer.ts, so the rendererIntegration leaf mints a value matching neither
+// parent. No capture was retaken.
+// Re-minted for the Three.js audit batch (light budget seam, blob shadows, sky
+// residency lane, splat colour pack-source fix): renderer.ts edits only. No
+// capture was retaken.
+// Re-minted for the base sync of the Three.js audit batch with the release
+// branch renderer changes. Both parents move renderer.ts, so the
+// rendererIntegration leaf mints a value matching neither parent. No capture
+// was retaken.
+// Re-minted for the release base-health repair after renderer.ts changed. No
+// capture was retaken.
+// Re-minted for the v0.37.0 base sync with the login-storm base commit. The
+// merged renderer/prewarm/source bytes mint a value matching neither parent.
+// No capture was retaken.
+// Re-minted after organizing renderer imports changed the provenance inputs.
+// No capture was retaken.
+// Re-minted for the merge of the iOS constrained-memory zone-eviction fix
+// (evictFarZoneIfConstrained) with the release branch's organized renderer
+// imports. Both parents move renderer.ts, so the rendererIntegration leaf
+// mints a value matching neither parent. No capture was retaken.
+// Re-minted after the point-light adoption seam moved the fire-light budget
+// pass out of renderer.ts into fire_light_registry.ts. renderer.ts is a
+// provenance input, so its bytes move the composite. No capture was retaken.
+// Re-minted again for the review fixes on the same PR: the stranded-light
+// reparent moved out of renderer.ts too, and the budget-pass descriptor became
+// a pooled field. renderer.ts bytes only. No capture was retaken.
+// Re-minted for the merge of release/v0.38.0 into the night-lighting branch:
+// both parents move renderer.ts (the release's point-light seam, this branch's
+// moon-phase grade threading), so the merged tree mints a value matching
+// neither parent. No capture was retaken.
+// Re-minted for PR #3339's healGlowAt view-eviction fix on the newer release
+// renderer. The rendererIntegration leaf moves; no capture was retaken.
+// Re-minted for PR #3344 after removing the unused Eastbrook civic-beacon
+// preload test hook. The civicShader leaf moves; no capture was retaken.
+// Re-minted after applying the PR #3339 review repair atop PR #3344. The
+// rendererIntegration and civicShader leaves both survive; no capture was retaken.
+// Re-minted for final PR #3345 integration. The reviewed offscreen-heal
+// renderer bytes remain while the new lockfile and accepted GLBs join the
+// provenance inputs. No capture was retaken.
+// Re-minted after extracting entity-view policy from renderer.ts to satisfy
+// the release monolith ratchet. Behavior is unchanged; no capture was retaken.
+// Re-minted again after making that extracted policy an explicit provenance
+// leaf. The evidence now follows policy-only changes; no capture was retaken.
+// Re-minted for the merge of release/v0.38.0 into the Armory warming branch:
+// both parents move renderer.ts, so the merged tree mints a value matching
+// neither parent. No capture was retaken.
+// Re-minted for the quest-collectable spawn gate: this branch's renderer.ts
+// edits (the view gate call sites and the ground-object pool key move) shift
+// the runtimeRender.renderer leaf, the only leaf that moved. No Eastbrook
+// input, geometry value, or capture moved.
+// Re-minted for the merge of PR #3359's quest-collectable spawn gate with the
+// release branch's extracted entity-view policy. Both renderer.ts and the
+// entityViewPolicy leaf are provenance inputs; no capture was retaken.
+// Re-minted for the review fixes on this branch (Soul Rend warms every rig a
+// live body can take, plus the lazy form-visual fold): renderer.ts moves
+// again, so the composite follows its bytes. No capture was retaken.
+// Re-minted for the r185 frozen-camera aim fix: updateCamera now aims through
+// lookAtFrozen, so renderer.ts moves and the composite follows its bytes. No
+// capture was retaken.
+// Re-minted after extracting the delve interior build-cache scheduling into
+// src/render/delve_interior_tracker.ts (renderer.ts moved again, no capture retaken).
+// Re-minted again for the login preview/self-spirit prewarm merge with the
+// delve interior tracker extraction. Renderer/prewarm bytes moved; captures
+// were adopted verbatim.
+// Re-minted for the sky KTX2 UASTC HDR conversion: the renderer publishes the
+// sky module's held textures into the residency table and its idle sky upload
+// comment follows the compressed path, so renderer.ts moves and the composite
+// follows its bytes. No capture was retaken.
+// Re-minted for the corrected PR #3446 merge: the v0.39 wrapper renderer and
+// prewarm repairs combine with the sky KTX2 renderer bytes, so the merged tree
+// mints a value matching neither parent. No capture was retaken.
+// Re-minted for the vfx.mount-programs prewarm entry (#2571): renderer.ts and
+// prewarm_policy.ts both move, so the composite follows their bytes. No
+// capture was retaken.
+// Re-minted for the vfx.mount-programs review fixes (scene-reparent bug,
+// honest desktop-path progress, depth compile, timeout-bounded fetch,
+// constrained-device removal): renderer.ts and prewarm_policy.ts both move
+// again, so the composite follows their bytes. No capture was retaken.
+// Re-minted for the PR #3447 merge: the v0.39 wrapper, corrected PR #3446 sky
+// KTX2 renderer bytes, and mount-program prewarm bytes combine in one tree. No
+// capture was retaken.
+// Re-minted for the moved-base v0.39 wrapper refresh: the castle renderer bytes
+// and v0.39 wrapper bytes combine in one tree. No capture was retaken.
+// Re-minted for the approved PR #3425 merge into the v0.39 wrapper: the
+// resolved renderer bytes combine the delve tracker extraction with later
+// wrapper fixes. No capture was retaken.
+// Re-minted after syncing current release/v0.39.0 into the v0.39 wrapper: the
+// resolved renderer bytes retain the queued self-spirit prewarm and delve
+// rebuild repair. No capture was retaken.
+// Re-minted for the GPU-preparation scheduler batch and its second and third
+// passes (extractions, the upload lane, the present-host watch, the program
+// signature fields and manifest ids in prewarm_policy.ts, the arrival and
+// coverage wiring): both fingerprinted inputs moved, so the composite follows
+// their bytes. No capture was retaken.
+// Re-minted for the touch tail's readiness fix (the walk no longer asks the
+// driver): renderer.ts moved, the seals follow the swept evidence bytes. No
+// capture was retaken.
+// Re-minted for the build-ledger instrumentation (timed view and zone
+// builds, the arrival mark): renderer.ts and entity_view_policy_core.ts
+// moved, the seals follow the swept evidence bytes. No capture was retaken.
+// Re-minted for the build-span sink wiring (view-part sub-spans): renderer.ts
+// moved, the seals follow the swept evidence bytes. No capture was retaken.
+// Re-minted for the composed-look pieces hold (live candidate path wiring):
+// renderer.ts moved, the seals follow the swept evidence bytes. No capture was
+// retaken.
+// Re-minted for the gc hitch cause (the heap read on the hitch sample):
+// renderer.ts moved, the seals follow the swept evidence bytes. No capture was
+// retaken.
+// Re-minted for the deferred-decal stand-in (the live candidate path builds
+// the body without its face decals): renderer.ts moved, the seals follow the
+// swept evidence bytes. No capture was retaken.
+// Re-minted for the compile gate's piece cut (one queue unit per material
+// group of the target): renderer.ts moved, the seals follow the swept evidence
+// bytes. No capture was retaken.
+// Re-minted for the hitch sample alignment (the top-of-sync reading and the
+// aligned end-of-sync sample): renderer.ts moved, the seals follow the swept
+// evidence bytes. No capture was retaken.
+// Re-minted for the compile gate's variant settle (the third piece arm) and
+// the shadow arm's every-mesh depth twin: renderer.ts moved, the seals follow
+// the swept evidence bytes. No capture was retaken.
+// Re-minted for the resume lane ordering (program debt before upload debt):
+// prewarm_policy.ts moved, the seals follow the swept evidence bytes. No
+// capture was retaken.
+// Re-minted for the three patch-hash bump in pnpm-lock.yaml: the lockfile is a
+// hashed leaf of the town fingerprint, so the seals follow the swept evidence
+// bytes. No capture was retaken.
+// Re-minted for the merge of upstream/main into the GPU-preparation
+// scheduler branch: both parents' renderer and prewarm bytes combine in one
+// tree, so the seals follow the swept evidence bytes. No capture was retaken.
+// Re-minted for the second three patch-hash bump in pnpm-lock.yaml (the count 0
+// instanced-mesh render-list skip): the lockfile is a hashed leaf of the town
+// fingerprint, so the seals follow the swept evidence bytes. No capture was
+// retaken.
+// Re-minted for the merge of the moved release/v0.40.0 tip into
+// feature/masterwrought: both sides re-minted since the common base, so the
+// merged tree mints values matching neither parent. No capture was retaken.
+// Re-minted for the farming absorb (Phase 11d): renderer.ts moved (the
+// farming runtime integration landed on the masterwrought renderer; the other
+// swept inputs, prewarm_policy.ts included, held their sealed bytes), the
+// seals follow the swept evidence bytes. No capture was retaken.
+// Upstream re-minted the same leaf on its own side for the shader-memory-probes
+// renderer instrumentation and VFX teardown extraction, calling both changes
+// behavior-neutral for the accepted visual evidence and retaking no capture.
+// RE-MINTED AGAIN at the Phase 11e QA release sync (release tip fd705304ee,
+// PR #3531): the third consecutive sync where BOTH parents re-minted this seal
+// since their common base, so the merged tree mints a value matching NEITHER
+// parent, and taking either side's literal would pin a tree that never existed.
+// Parent values for the record: ours 9fdb68de, the release 87e05c78. The moved
+// input is the same renderer.ts leaf both sides edited (13546 base, ours 13576,
+// theirs 13548, merged 13578); every other swept input holds its sealed bytes.
+// Minted from the merged WORKING TREE with the repo's own tool
+// (scripts/assets/eastbrook_grand_armoury/remint_polish_provenance.mjs) rather
+// than hand-edited, and committed with exactly the bytes it read. No capture
+// was retaken: the merged renderer delta is upstream's instrumentation plus
+// this branch's farm-visual wiring, neither of which moves the sealed pixels.
+//
+// UPSTREAM'S OWN RE-MINT HISTORY over the same span, kept rather than dropped:
+// for the shader-memory-probes renderer instrumentation and VFX teardown
+// extraction; for the fast-loading-screen-variety merge with release/v0.40.0,
+// where the renderer runtime leaf moved on both sides of THAT merge (its
+// character asset-ready wiring, the release's shader-memory probes); and for
+// its review-fix round (the nearby-view floor in prewarm_policy.ts, the
+// weapon-skin early-out wiring in renderer.ts). No capture retaken in any.
+//
+// RE-MINTED AGAIN at the Phase 11f release sync (release tip 098372138a, PR
+// #3232). The FOURTH consecutive sync to re-mint this seal, but the first
+// where only ONE parent re-minted it: the four seal JSONs on this branch are
+// byte-identical to the merge base, and only the release moved them. The
+// re-mint is owed anyway, because the seal is a fingerprint OF renderer.ts and
+// BOTH parents edited that file, so the merged renderer is a third content
+// (13548 base, ours 13578, theirs 13573, merged 13603) and the release's fresh
+// seal describes a tree that stops existing the moment this merge lands. That
+// is the durable lesson: the trigger is a moved SWEPT INPUT, not a conflicting
+// seal. Parent values for the record: ours 1c3ae800, the release e922918a.
+// Minted from the merged WORKING TREE with the repo's own tool and committed
+// with exactly the bytes it read. No capture was retaken: the merged renderer
+// delta is upstream's loading-screen wiring plus this branch's farm-visual
+// wiring, neither of which moves the sealed pixels.
+//
+// RE-MINTED AGAIN at the Phase 11g QA release sync (release tip 3e49dc11b3,
+// PR #3566's rift long-session perf work; prior synced release parent
+// 098372138a). The FIFTH consecutive sync to re-mint this seal, and the
+// trigger is the one it has always been: a MOVED SWEPT INPUT, never a
+// conflicting seal.
+//
+// TWO COUNTERS RUN THROUGH THIS PACKET AND THEY COUNT DIFFERENT THINGS, said
+// here because a reader using either as evidence will otherwise trip: this one
+// counts SYNCS THAT RE-MINTED THIS SEAL (the entry above is the fourth), while
+// the packet record counts RELEASE SYNCS ATTEMPTED, of which this is the
+// eighth and only the ones that actually merged could re-mint anything. The
+// two agree; they measure different events. BOTH parents edited src/render/renderer.ts since the
+// common base (base 13573, ours 13603, theirs 13584, merged 13614), so the
+// merged renderer is a third content and NEITHER parent's literal describes
+// it. Parent values for the record: composite ours 6b9ee410 / theirs
+// 0ae18f49; metadata sha256 ours fe37c37c / theirs 1cd098ab; second-order
+// performance digest ours d3fc845b / theirs cfd7bd7e. Every other swept input
+// holds its sealed bytes.
+//
+// UPSTREAM'S NEW HALF over this span, kept rather than dropped: the release
+// re-minted for its own rift long-session perf merge with release/v0.40.0,
+// where renderer.ts moved on both sides of THAT merge (its object-view
+// material disposal and build-retry-gate wiring, the release's
+// loading-screen-variety work), and again for that branch's review round. No
+// capture was retaken in either.
+//
+// Minted from the merged WORKING TREE with the repo's own tool
+// (scripts/assets/eastbrook_grand_armoury/remint_polish_provenance.mjs) rather
+// than hand-edited, and committed with exactly the bytes it read. No capture
+// was retaken: the merged renderer delta is upstream's rift collision and
+// view-resource-disposal work plus this branch's farm-visual wiring, neither
+// of which moves the sealed pixels.
+//
+// RE-MINTED AGAIN at the Phase 11h release sync (release tip 50462dda83, PR
+// #3582's entry-admission perf work; prior synced release parent 3e49dc11b3).
+// The SIXTH consecutive sync to re-mint this seal, and the trigger is the one
+// it has always been: a MOVED SWEPT INPUT, never a conflicting seal. BOTH
+// parents edited src/render/renderer.ts since the common base (base 13584,
+// ours 13614, theirs 13541, merged 13571), and the release also moved
+// src/render/prewarm_policy.ts, so the merged tree is a third content and
+// NEITHER parent's literal describes it. Parent values for the record:
+// composite ours 18bcb514 / theirs 9c27fa70; metadata sha256 ours bb2148e4 /
+// theirs af5eef8b; second-order performance digest ours fa94c388 / theirs
+// f06481ca. The merged mint matches neither on any of the three.
+//
+// UPSTREAM'S NEW HALF over this span, kept rather than dropped: the release
+// re-minted after merging release/v0.40.0 into its loading-hitch branch, where
+// renderer.ts combined mandatory entry admission with the rift long-session
+// resource lifecycle changes, and again for that branch's loading review fixes
+// (rebuild reveal gates, the inactive horizon fast path, display-pacing
+// admission and the restored rationale). No capture was retaken in either.
+//
+// Minted from the merged WORKING TREE with the repo's own tool
+// (scripts/assets/eastbrook_grand_armoury/remint_polish_provenance.mjs) rather
+// than hand-edited, and committed with exactly the bytes it read. No capture
+// was retaken: the merged renderer delta is upstream's entry-admission and
+// texture/compile extraction work plus this branch's farm-visual wiring,
+// neither of which moves the sealed pixels.
+// RE-MINTED AT THE PHASE 11k QA RELEASE SYNC (the FOURTEENTH sync,
+// release/v0.40.0 b39b16022e to efb1220e85). BOTH parents re-minted this seal
+// since their common base again, so the merged tree mints a value matching
+// NEITHER parent and taking either side's literal would pin a tree that never
+// existed. Parent values for the record: ours 6c733d41, the release 4ad25d5f.
+// Minted from the merged WORKING TREE with the repo's own tool
+// (scripts/assets/eastbrook_grand_armoury/remint_polish_provenance.mjs), never
+// hand-edited, and committed with exactly the bytes it read. No capture was
+// retaken: the merged renderer delta is this branch's farm-visual wiring plus
+// the release's own renderer work (the far-mesh swap holdout, the stale
+// remote-entity repair, the loading-review admission gates), none of which
+// moves the sealed pixels.
+//
+// UPSTREAM'S OWN RE-MINT HISTORY over this span, kept rather than dropped:
+// the shader-memory-probes instrumentation and VFX teardown extraction, the
+// fast-loading-screen-variety merge, its review-fix round (the nearby-view
+// floor in prewarm_policy.ts, the weapon-skin early-out in renderer.ts), the
+// release/v0.40.0 merge into the loading-hitch branch, the v0.40 batch
+// merge-forward, the loading review fixes (rebuild reveal gates, inactive
+// horizon fast path, display-pacing admission), the sliding-far-mob-freeze fix
+// and the stale remote-entity holdout repair. Every one of them retook no
+// capture and moved only the renderer/prewarm runtime leaves.
+//
+// UPSTREAM'S OWN RE-MINT HISTORY over the release/v0.41.0 span, kept rather
+// than dropped (the block that follows is the release's record verbatim).
+// Re-minted for shader-memory-probes renderer instrumentation and VFX teardown
+// extraction. The renderer leaf moved; no capture was retaken because both
+// changes are behavior-neutral for the accepted visual evidence.
+// Re-minted for the fast-loading-screen-variety merge with release/v0.40.0:
+// the renderer runtime leaf moved on both sides of the merge (this branch's
+// character asset-ready wiring, the release's shader-memory probes). No
+// capture was retaken.
+// Re-minted for the review-fix round (the nearby-view floor in
+// prewarm_policy.ts, the weapon-skin early-out wiring in renderer.ts):
+// both runtime leaves moved. No capture was retaken.
+// Re-minted for the Sowfield demolition: the Vale Cup removal strips the set
+// piece, ball, team rings, practice sky and fireworks arms from renderer.ts,
+// so the rendererIntegration leaf moves and the composite follows its bytes.
+// No capture was retaken.
+// Re-minted 2026-08-18 for the Eastbrook harbor move (layout v3, commit
+// d19aa33f76, docs/design/eastbrook-revamp/site-plan.md): the town move
+// commits the authoritativeLayout leaf (src/sim/eastbrook_layout.ts), the
+// townRuntime leaf (src/render/eastbrook_town.ts) and the rendererIntegration
+// leaf (the wave D harbor wiring in src/render/renderer.ts), and re-aiming
+// the polish views and matched-view overrides at the v3 lots moves the
+// captureContract leaf too. No capture was retaken: the accepted evidence
+// keeps its pre-move framing (frozen in the artifact-integrity suite) and
+// only the swept provenance bytes follow the merged inputs.
+// Re-minted for owner refinement round 6b: the chapel re-shell and the NPC
+// redistribution move the authoritativeLayout leaf (src/sim/eastbrook_layout.ts)
+// and re-aiming the apothecary-lin view at Lin's quayside stand moves the
+// captureContract leaf, so the composite mints anew. No capture was retaken:
+// the accepted evidence keeps its frozen framing and only the swept provenance
+// bytes follow the merged inputs.
+// Re-minted again for owner round 6b's world wave: the authoritativeLayout leaf
+// moves once more (the two market stalls opened out across the square, and
+// forgemistress_darva, tinker_gizzel and FURY moved off their neighbours), so
+// the composite mints anew. No capture was retaken: the accepted evidence keeps
+// its frozen framing and only the swept provenance bytes follow the inputs.
+// The same round re-aimed the captureContract leaf: the two market stall views
+// and FURY's portrait view follow their moved subjects, so the composite mints
+// once more on top of the layout move.
+// Re-minted for the integration merge of the eastbrook program onto the
+// release tip (spell-icon revert, sky KTX2, druid auto-unshift): both parents'
+// renderer and layout bytes combine in one tree, so the composite mints a
+// value matching neither parent. No capture was retaken.
+// Re-minted for the release/v0.39.0 base merge into feature/tutorial-island: the
+// resolved renderer.ts and prewarm_policy.ts combine the release's delve tracker,
+// mount prewarm and shadow-depth bytes with the Proving Shore island_guidance
+// call sites, so the composite matches neither parent. No capture was retaken.
+// Re-minted for the island far-shore haze band: renderer.ts passes the camera
+// to horizonHazePlan at its two call sites, so the composite follows those
+// bytes. No capture was retaken.
+// Re-minted after merging release/v0.40.0 into the loading-hitch branch:
+// renderer.ts combines mandatory entry admission with the release's rift
+// long-session resource lifecycle changes. No capture was retaken.
+// Re-minted for the v0.40 batch merge-forward over the loading review fixes:
+// renderer.ts and prewarm_policy.ts now seal the combined release-batch tree.
+// No capture was retaken.
+// Re-minted for the loading review fixes (rebuild reveal gates, inactive
+// horizon fast path, display-pacing admission, and restored rationale): the
+// renderer integration leaf moved. No capture was retaken.
+// Re-minted for the sliding-far-mob-freeze fix (the far-mesh swap now also
+// holds out a moving entity): the renderer integration leaf moved. No
+// capture was retaken.
+// Re-minted for the stale remote-entity holdout repair (renderer.ts): the
+// renderer integration leaf moved. No capture was retaken.
+// Re-minted for the v0.40.0 sync merge into the guild pledge branch (the
+// OSSBrain v0.40 batch landed on the release arm; renderer inputs moved on
+// both sides). No capture was retaken.
+//
+// RE-MINTED AT THE MERGE OF release/v0.41.0 (tip ff2837da1f) into
+// feature/masterwrought (base 9a89e3483e). BOTH parents
+// re-minted this seal since their common base again (the release for the
+// Sowfield demolition, the Eastbrook harbor move and its owner rounds, the
+// Proving Shore island and the guild pledge sync; this branch for its farm
+// visual wiring and its own release syncs), and BOTH parents edited
+// src/render/renderer.ts, so the merged tree mints a value matching NEITHER
+// parent. Parent values for the record: ours 0e27f9ad, the release
+// b4f994b0. The release literal stood in as a placeholder while the merge
+// was mid-resolution; the value below is the re-mint (node
+// scripts/assets/eastbrook_grand_armoury/remint_polish_provenance.mjs over
+// the fully resolved tree, with renderer.ts, eastbrook_town.ts and
+// eastbrook_layout.ts as the drifted inputs), committed with exactly the
+// bytes it read. No capture was retaken.
+// Re-minted 2026-08-28 for the Masterwrought phase 14 farm-visuals prewarm guard: the
+// one-line renderer.ts change (prewarmWorldFrame gates the farm sync on the
+// world holding its own player) moved the runtimeRender renderer leaf; the
+// evidence seals were swept by the one-step re-mint. No capture was retaken.
+//
+// UPSTREAM'S OWN RE-MINT HISTORY over the release/v0.41.0 span, kept rather
+// than dropped (the block that follows is the release's record verbatim).
+// Re-minted for the weapon-stow overlay fix (renderer.ts: single-writer
+// removal + the mount sheathe clause): the renderer integration leaf moved.
+// No capture was retaken.
+// Re-minted for the entry-horizon scenery cull (renderer.ts hands the four
+// reveal-gated painters the horizon-capped cull far at both frame sites): the
+// renderer integration leaf moved. No capture was retaken.
+// Re-minted for the battleground field-stream compile gate (renderer.ts
+// injects the gate at the buildBattleground site; renderer.ts is a
+// provenance input). No capture was retaken.
+// Re-minted for the v0.41.0 sync merge into the entry-fade-gate branch (the
+// compile-gate batch landed on the release arm; renderer inputs moved on
+// both sides). No capture was retaken.
+// Re-minted for the sixth v0.41.0 sync merge into the ground-aim branch: the
+// merged renderer.ts carries the entry-fade arm's scenery cull beside this
+// branch's aim blocked pass-through, so the composite matches neither parent.
+// No capture was retaken.
+//
+// Re-minted at the merge of release/v0.41.0 (tip d3f8bae369 onward) into
+// feature/masterwrought: BOTH parents edited src/render/renderer.ts (the
+// release's entry-horizon cull, compile gate and ground-aim rounds beside
+// this branch's farm-visuals prewarm guard) and the release also moved
+// src/render/eastbrook_town.ts, so the merged tree mints a value matching
+// NEITHER parent. Parent values for the record: ours 01fcf59e, the release
+// fd58a923. The value below is the re-mint over the resolved tree, committed
+// with exactly the bytes it read. No capture was retaken.
+// Re-minted at Phase 16 (2026-08-30): the zone prewarm-group extraction moved
+// the builder family out of renderer.ts and the composite's renderer leaf
+// followed the file. REMINT_COMMAND on the committed tree; no capture retaken.
+//
+// UPSTREAM'S OWN RE-MINT HISTORY over the later release/v0.41.0 span (tip
+// 3e801dc925), kept rather than dropped (the block that follows is the
+// release's record verbatim).
+// Re-minted after the Forgefather strike-route call-site swap in renderer.ts
+// (routeVarkhulForgeHammer replaced the bare forge-hammer dispatch) moved the
+// runtimeRender.renderer leaf. No capture was retaken.
+// Re-minted for the raid encounter tuning PR's nameplate direct-click pick
+// integration in renderer.ts: the runtimeRender.renderer leaf moved. No
+// capture was retaken.
+// Re-minted for PR #3740's forge-lift room (the lift room render hookup and
+// door-portal arm moved the renderer integration leaf). No capture was
+// retaken.
+// Re-minted for the Drakelands entrance merge into the raid branch (PRs 3689
+// plus 3734: both arms had re-minted, the merged renderer and evidence inputs
+// land together). No capture was retaken.
+//
+// Re-minted at the merge of release/v0.41.0 (tip 3e801dc925) into
+// feature/masterwrought: BOTH parents edited src/render/renderer.ts again
+// (the release's Ignivar/Varkhul wiring, backface twin staging and the
+// Ignivar mechanic-visual prewarm beside this branch's farmPatchVisuals
+// dispose seam, zone_prewarm extraction and reduced-motion regalia gate), so
+// the merged tree mints a value matching NEITHER parent. Parent values for
+// the record: ours f2e6c8c3, the release 23415789. The literal below is the
+// re-mint (node scripts/assets/eastbrook_grand_armoury/remint_polish_provenance.mjs)
+// run over the fully resolved merged tree on 2026-08-30, after every
+// renderer.ts byte was final, and committed with exactly the bytes it read.
+// No capture was retaken.
+// Re-minted 2026-08-31 for the Phase 18 farm render unit: renderer.ts moved
+// again (the farm compile gate handed at construction, the gate's label
+// parameter, the typed zone-prewarm host weld, the single-sited farm drive,
+// and the shadow arm's body extracted to src/render/shadow_depth_compile.ts).
+// Run over the finished unit, after every renderer.ts byte was final and
+// after biome left the file unchanged. No capture was retaken.
+// The release re-minted this composite again over its v0.42.0 span, without a
+// comment of its own: renderer.ts moved 207 lines there (the validated local
+// locomotion and client movement prediction, the self-pose frame seams pulled
+// into pure modules, the FOV slider fix, and the Bonebound Rickshaw render arm).
+//
+// Parent values for the record: ours 161370d0, the release 89c8a62f.
+// RE-MINTED at the TENTH release sync, the merge of release/v0.42.0 (tip
+// 22e909839f) into feature/masterwrought (base e6b8edb375).
+// BOTH parents moved renderer.ts, so the merged tree is a
+// third content and neither parent's literal described it; the tool was run
+// over the fully resolved tree, LAST, after every renderer.ts byte was final
+// and after biome left the file unchanged. The four polish evidence JSONs were
+// swept by the tool in the same run and are committed with these pins. No
+// capture was retaken; ACCEPTED_POLISH_V2_TOWN_SOURCE_FINGERPRINT is untouched.
+// Re-minted at the next release/v0.42.0 sync (tip 178dfd46db): the release's
+// mount-lifecycle and rickshaw hooks moved renderer.ts against this branch's
+// Masterwrought farm integration. The final renderer sha256 is ed29e747 after
+// the semantic merge audit's mount compile-gate fixes,
+// matching neither ours (8e5722cb) nor the release (72d8b7ce); every other
+// provenance input is byte-identical between the parents. The tool swept the
+// four evidence JSONs over the resolved renderer, with no capture retaken.
+// Re-minted at the Cluckwork Mech Bird release sync (tip 1fdf0f55a3): its
+// stride-audio extraction and mounted idle-hum poll moved renderer.ts against
+// the already merged Masterwrought and mount-lifecycle integrations. The
+// resolved renderer sha256 is 36b780c6, matching neither ours (ed29e747) nor
+// the release (9b4d40e5); every other provenance input remains byte-identical.
+// The four evidence JSONs were swept again, with no capture retaken.
+// Re-minted at Masterwrought closeout after the Mech Bird transition/audio
+// sequencing fix moved renderer.ts to 7c10f934. No capture was retaken.
+// Re-minted during PR closeout after farm compile staging changed renderer.ts.
+// No capture was retaken.
+//
+// UPSTREAM'S OWN RE-MINT HISTORY over the same later release/v0.42.0 span,
+// kept rather than dropped (the block that follows is the release's record
+// verbatim).
+// Re-minted for the 2026-08-31 v0.41.0 sync into the shader-warm branch: both
+// arms had re-minted, and the merged renderer, three patch, lockfile, and
+// re-stamped GLB inputs land together. No capture was retaken.
+// Re-minted for review round 3 of the shader-warm PR (the battleground ward
+// walk left renderer.ts for battleground_views.ts and the prebuild release
+// call replaced it). No capture was retaken.
+// Re-minted for the shader-warm PR's give-up rule and its review fixes
+// (renderer.ts: the census bracket and the cast units' compile-arm host).
+// No capture was retaken.
+// Re-minted at the release/v0.42.0 sync of PR #3439: renderer.ts moved for the
+// mount lifecycle seam (mount_lifecycle.ts) and the rickshaw hooks it absorbed.
+// Re-minted for the Cluckwork Mech Bird store mount (PR #3464) on top of the
+// v0.42.0 mount-lifecycle move: the renderer's stride accumulator moved to
+// src/render/stride_audio_core.ts and the mounted audio branch gained the
+// idle-hum poll. No capture was retaken.
+// Re-minted for the 2026-09-04 release/v0.42.0 sync into the shader-warm branch:
+// both arms had re-minted, and the merged renderer (the mount lifecycle and
+// stride audio moves beside this branch's changes) and evidence inputs land
+// together. No capture was retaken.
+// Re-minted for the Realm Builder monument (PR #3695) at its release/v0.42.0
+// base merge: the civic centrepiece changed asset, subject and shader cache
+// key on top of the mount-lifecycle and occluder-fade moves already sealed
+// above, so every fingerprinted input carries the merged bytes. No capture
+// was retaken.
+// Re-minted for the PR #3695 review fixes: the monument's impostor fragment
+// gained the fog, tonemapping and colourspace tail, moving
+// realm_builder_monument_fx.ts. No capture was retaken.
+// Re-minted for the 2026-09-05 release/v0.42.0 sync into the shader-warm branch:
+// the Realm Builder monument (PR #3695) and this branch's renderer changes
+// land together on the merged tree. No capture was retaken.
+//
+// RE-MINTED for the professions/Crucible base merge into release/v0.42.0:
+// renderer.ts changed on both sides again (ours: farm/shadow compile-gate
+// churn; theirs: the shader-warm branch's own renderer moves above), so this
+// composite mints a value matching neither parent's pin (ours d137e84a,
+// theirs 3a5b183e). Resealed the existing historical captures for the merged
+// runtime tree, not a new capture or owner acceptance, via:
+//   node scripts/assets/eastbrook_grand_armoury/remint_polish_provenance.mjs
+// No capture was retaken.
+//
+// UPSTREAM'S OWN RE-MINT HISTORY over the same later release/v0.42.0 span,
+// kept rather than dropped (the block that follows is the release's record
+// verbatim).
+// Re-minted for the release/v0.42.0 merge into the Nythraxis playtest-tuning
+// branch (PR #3903's Varkhul heroic add-health lands beside this branch's
+// Nythraxis hazard-color renderer change): both arms had re-minted, so the
+// merged renderer.ts bytes replace either side's value. No capture was
+// retaken.
+// Re-minted for the release/v0.42.0 merge into the weapon-sheathe-swim-mount
+// branch (the merged renderer.ts carries this branch's mount sheathe overlay
+// beside the release's forge-lift room and Drakelands entrance render
+// integrations, so the composite matches neither parent). No capture was
+// retaken.
+//
+// OSSBrain PR #3781: re-sealed with the canonical remint command after
+// renderer reconciliation and the lockfile compatibility fix. Shipping GLB
+// changes are fingerprint-only; no capture or visual approval was retaken.
+// Re-minted for the v0.42.0 release batch renderer merge: runtimeRender.renderer
+// moved with the shipped renderer tree. No capture was retaken.
+// Re-minted for the release/v0.42.0 reconcile with the Realm Builder and
+// store-mount renderer leaves. No capture was retaken.
+// Re-minted for the post-chain pixel budget: the renderer's coalesced
+// viewport-resize pass moves the runtimeRender.renderer leaf. No capture
+// was retaken.
+// Re-minted again for the review answers on the same branch (the viewport
+// poll now books the coalesced pass). No capture was retaken.
+// Re-minted for the coalesced-resize flush point (the frame drains the gate
+// before it draws). No capture was retaken.
+// Re-minted for the PR #3834 merge after PR #3833: runtimeRender.renderer
+// now carries pooled VFX material cleanup beside the coalesced viewport-resize
+// pass, so the composite matches neither parent. No capture was retaken.
+// Re-minted for the Lambert terrain fill fix (the outdoor hemisphere
+// constants moved out to outdoor_light_rig_core.ts and the per-frame
+// uTerrainFillBoost write moved into updateAmbience): the
+// runtimeRender.renderer leaf moved. No capture was retaken.
+// Re-minted for the PR #3841 merge after PR #3839: the candidate's render-stack
+// renderer bytes and #3841's Lambert terrain fill write combine in one tree,
+// so the composite matches neither parent. No capture was retaken.
+// Re-minted for the compositor-surfaces batch (renderer.ts only: the opaque
+// world context, the nameplate surface-ratio and cadence wiring, the spirit
+// grade hookup and the build-diag extraction). No capture was retaken.
+// Re-minted for the PR #3844 merge after PR #3841: the candidate's render-stack
+// renderer bytes and #3844's compositor surface/nameplate/spirit-grade bytes
+// combine in one tree, so the composite matches neither parent. No capture was
+// retaken.
+// Re-minted for the v0.42.0 release candidate renderer merge: the selected
+// renderer changes move the runtimeRender.renderer leaf. No capture was retaken.
+// Re-minted for the v0.42.0 reconcile after the release branch advanced with
+// Nythraxis renderer work: the merged runtimeRender.renderer leaf matches
+// neither parent. No capture was retaken.
+// Re-minted for the second v0.42.0 reconcile after the release branch advanced
+// with Drakelands/hotkey renderer work. No capture was retaken.
+// PR3946: remint the renderer leaf after restoring school-aware resurrection VFX.
+// Existing captures, performance measurements and capture identity are unchanged.
+// v0.42.0 dependency-floor bump (sharp, js-yaml, vitest): the lockfile is a
+// fingerprint input, so every shipping GLB was size-preserving re-minted and this
+// seal follows the swept evidence. No capture was retaken.
+const PINNED_POLISH_COMPOSITE_FINGERPRINT =
+  '5ae21044dd1b636f9c293ec628a7d316f740bb92a5962f848c6e58c80218ebbc';
+
+function validPolishAttributionTargets(): AttributionTargetFixture[] {
+  return [
+    {
+      key: 'town-root',
+      kind: 'scene-root',
+      rootName: EASTBROOK_TOWN_ROOT_NAME,
+      layoutId: 'eastbrook_civic_layout_v2',
+      templateId: null,
+      surfaceAtlas: {
+        url: EASTBROOK_TOWN_SURFACE_ATLAS_URL,
+        textureUuid: 'shared-eastbrook-atlas',
+        materialBindings: 14,
+      },
+      present: true,
+      visible: false,
+      childMeshCount: 18,
+    },
+    {
+      key: 'mailbox',
+      kind: 'layout-entity',
+      rootName: 'ravenpostMailbox',
+      layoutId: 'eastbrook_civic_layout_v2',
+      layoutServiceId: 'mailbox_eastbrook',
+      templateId: 'mailbox',
+      surfaceAtlas: {
+        url: EASTBROOK_TOWN_SURFACE_ATLAS_URL,
+        textureUuid: 'shared-eastbrook-atlas',
+        materialBindings: 2,
+      },
+      present: true,
+      visible: false,
+      childMeshCount: 2,
+    },
+    {
+      key: 'noticeboard',
+      kind: 'layout-entity',
+      rootName: 'eastbrookNoticeboard',
+      layoutId: 'eastbrook_civic_layout_v2',
+      layoutServiceId: 'eastbrook_noticeboard',
+      templateId: 'noticeboard_eastbrook',
+      surfaceAtlas: {
+        url: EASTBROOK_TOWN_SURFACE_ATLAS_URL,
+        textureUuid: 'shared-eastbrook-atlas',
+        materialBindings: 2,
+      },
+      present: true,
+      visible: false,
+      childMeshCount: 2,
+    },
+  ];
+}
+
+function validNpcFacingOverlay() {
+  return {
+    requested: true,
+    npcFacings: {
+      sourceLayoutId: 'eastbrook_civic_layout_v2',
+      arrowLength: 1.5,
+      records: [
+        {
+          id: 'merchant_elsbeth',
+          position: { x: 5, z: 7 },
+          facing: Math.PI,
+          end: { x: 5, z: 5.5 },
+        },
+        {
+          id: 'trader_niall',
+          position: { x: -4, z: 8 },
+          facing: Math.PI / 2,
+          end: { x: -2.5, z: 8 },
+        },
+      ],
+    },
+  };
+}
+
+function validTownMotionEvidence() {
+  return {
+    viewName: 'civic-motion',
+    frameIntervalMs: 1_600,
+    beacon: structuredClone(EASTBROOK_TOWN_MOTION_CAPTURE.beacon),
+    contact: {
+      defaultReducedMotionOutput: '/tmp/polish-civic-motion.png',
+      defaultRuntimeReduceMotion: true,
+      pairedFrameCount: 4,
+    },
+    modes: [
+      {
+        id: 'motion-on',
+        runtimeReduceMotion: false,
+        frames: [
+          {
+            phase: 't0',
+            output: '/tmp/polish-civic-motion-motion-on-t0.png',
+            bytes: 120_000,
+            sha256: 'a'.repeat(64),
+          },
+          {
+            phase: 't1',
+            output: '/tmp/polish-civic-motion-motion-on-t1.png',
+            bytes: 120_000,
+            sha256: 'b'.repeat(64),
+          },
+        ],
+      },
+      {
+        id: 'reduced-motion',
+        runtimeReduceMotion: true,
+        frames: [
+          {
+            phase: 't0',
+            output: '/tmp/polish-civic-motion-reduced-motion-t0.png',
+            bytes: 120_000,
+            sha256: 'c'.repeat(64),
+          },
+          {
+            phase: 't1',
+            output: '/tmp/polish-civic-motion-reduced-motion-t1.png',
+            bytes: 120_000,
+            sha256: 'd'.repeat(64),
+          },
+        ],
+      },
+    ],
+    restored: true,
+  };
+}
+
+describe('Eastbrook polish capture contract', () => {
+  it('keeps the accepted 15-view rebuild evidence immutable and adds eight polish subjects', () => {
+    expect(EASTBROOK_TOWN_CAPTURE_VIEWS).toHaveLength(15);
+    expect(EASTBROOK_TOWN_POLISH_CAPTURE_VIEWS.map((view: { name: string }) => view.name)).toEqual([
+      'stall-world-market',
+      'stall-provisions',
+      'apothecary-lin',
+      'ravenpost-mailbox',
+      'noticeboard',
+      'civic-motion',
+      'ravenpost-chronicler',
+      'west-wall-quartermaster',
+    ]);
+    expect(
+      EASTBROOK_TOWN_POLISH_CAPTURE_VIEWS.map((view: { subject: string }) => view.subject),
+    ).toEqual([
+      'eastbrook_market_stall_world_market',
+      'eastbrook_market_stall_provisions',
+      'apothecary_lin',
+      'mailbox_eastbrook',
+      'eastbrook_noticeboard',
+      'eastbrook_realm_builder_monument',
+      'chronicler_saul',
+      'fury',
+    ]);
+  });
+
+  it('separates historical rebuild evidence from matched polish before/after contracts', () => {
+    expect(Object.keys(EASTBROOK_TOWN_CAPTURE_CONTRACTS)).toEqual([
+      'rebuild-v1',
+      'polish-baseline',
+      'polish-v2',
+    ]);
+    expect(EASTBROOK_TOWN_CAPTURE_CONTRACTS['rebuild-v1']).toMatchObject({
+      id: 'rebuild-v1',
+      layoutId: 'eastbrook_civic_layout_v1',
+      sourceComparison: 'feature-worktree',
+      views: EASTBROOK_TOWN_CAPTURE_VIEWS,
+      placementInventory: EASTBROOK_TOWN_REBUILD_PLACEMENT_INVENTORY,
+      townTriangles: 29_436,
+      attributionTargets: [
+        {
+          key: 'town-root',
+          kind: 'scene-root',
+          rootName: EASTBROOK_TOWN_ROOT_NAME,
+        },
+        {
+          key: 'mailbox',
+          kind: 'layout-entity',
+          layoutServiceKey: 'mailbox',
+          templateId: 'mailbox',
+          runtimeBodyName: null,
+        },
+      ],
+      motionCapture: null,
+    });
+    expect(EASTBROOK_TOWN_CAPTURE_CONTRACTS['rebuild-v1'].views).toBe(EASTBROOK_TOWN_CAPTURE_VIEWS);
+    expect(EASTBROOK_TOWN_CAPTURE_CONTRACTS['polish-baseline']).toMatchObject({
+      id: 'polish-baseline',
+      layoutId: 'eastbrook_civic_layout_v1',
+      sourceComparison: 'polish-baseline-worktree',
+      views: EASTBROOK_TOWN_POLISH_MATCHED_CAPTURE_VIEWS,
+      placementInventory: EASTBROOK_TOWN_REBUILD_PLACEMENT_INVENTORY,
+      townTriangles: 29_436,
+      attributionTargets: [
+        {
+          key: 'town-root',
+          kind: 'scene-root',
+          rootName: EASTBROOK_TOWN_ROOT_NAME,
+        },
+        {
+          key: 'mailbox',
+          kind: 'layout-entity',
+          layoutServiceKey: 'mailbox',
+          templateId: 'mailbox',
+          runtimeBodyName: null,
+        },
+      ],
+      motionCapture: null,
+    });
+    expect(EASTBROOK_TOWN_CAPTURE_CONTRACTS['polish-v2']).toMatchObject({
+      id: 'polish-v2',
+      layoutId: 'eastbrook_civic_layout_v2',
+      sourceComparison: 'polish-v2-worktree',
+      placementInventory: EASTBROOK_TOWN_POLISH_V2_PLACEMENT_INVENTORY,
+      townTriangles: 28_902,
+      attributionTargets: [
+        {
+          key: 'town-root',
+          kind: 'scene-root',
+          rootName: EASTBROOK_TOWN_ROOT_NAME,
+        },
+        {
+          key: 'mailbox',
+          kind: 'layout-entity',
+          layoutServiceKey: 'mailbox',
+          templateId: 'mailbox',
+          runtimeBodyName: 'ravenpostMailbox',
+        },
+        {
+          key: 'noticeboard',
+          kind: 'layout-entity',
+          layoutServiceKey: 'noticeboard',
+          templateId: 'noticeboard_eastbrook',
+          runtimeBodyName: 'eastbrookNoticeboard',
+        },
+      ],
+      motionCapture: EASTBROOK_TOWN_MOTION_CAPTURE,
+    });
+    expect(EASTBROOK_TOWN_CAPTURE_CONTRACTS['rebuild-v1'].assetUrls).toContain(
+      '/models/props/mailbox_pillar.glb',
+    );
+    expect(EASTBROOK_TOWN_CAPTURE_CONTRACTS['rebuild-v1'].assetUrls).not.toContain(
+      '/models/props/eastbrook_noticeboard.glb',
+    );
+    expect(EASTBROOK_TOWN_CAPTURE_CONTRACTS['polish-baseline'].assetUrls).toEqual(
+      EASTBROOK_TOWN_CAPTURE_CONTRACTS['rebuild-v1'].assetUrls,
+    );
+    expect(EASTBROOK_TOWN_CAPTURE_CONTRACTS['polish-baseline'].assetUrls).not.toContain(
+      '/models/props/eastbrook_noticeboard.glb',
+    );
+    expect(EASTBROOK_TOWN_CAPTURE_CONTRACTS['polish-v2'].assetUrls).toContain(
+      '/models/props/eastbrook_noticeboard.glb',
+    );
+    expect(EASTBROOK_TOWN_CAPTURE_CONTRACTS['polish-baseline'].views).toBe(
+      EASTBROOK_TOWN_CAPTURE_CONTRACTS['polish-v2'].views,
+    );
+    expect(EASTBROOK_TOWN_CAPTURE_CONTRACTS['polish-v2'].views).toBe(
+      EASTBROOK_TOWN_POLISH_MATCHED_CAPTURE_VIEWS,
+    );
+  });
+
+  it('pins baseline revision provenance and hashes every v2 polish input separately', async () => {
+    expect(EASTBROOK_POLISH_BASELINE_REVISION).toBe('3ab740db453bd8b5858a52c304edc811c9d520ca');
+    expect(EASTBROOK_TOWN_CAPTURE_CONTRACTS['polish-baseline'].polishProvenance).toEqual({
+      mode: 'baseline-revision',
+      baselineRevision: EASTBROOK_POLISH_BASELINE_REVISION,
+    });
+    expect(EASTBROOK_TOWN_CAPTURE_CONTRACTS['polish-v2'].polishProvenance).toEqual({
+      mode: 'composite-sha256',
+      algorithm: 'sha256',
+      baselineRevision: EASTBROOK_POLISH_BASELINE_REVISION,
+      inputs: EASTBROOK_POLISH_PROVENANCE_INPUTS,
+    });
+
+    const [
+      { createHash },
+      { readFile },
+      townFingerprint,
+      mailboxFingerprint,
+      noticeboardFingerprint,
+    ] = await Promise.all([
+      import('node:crypto'),
+      import('node:fs/promises'),
+      import('../scripts/assets/eastbrook_town/source_fingerprint.mjs'),
+      import('../scripts/assets/eastbrook_mailbox/source_fingerprint.mjs'),
+      import('../scripts/assets/eastbrook_noticeboard/source_fingerprint.mjs'),
+    ]);
+    const repoRoot = new URL('../', import.meta.url);
+    const fileSha256 = async (relativePath: string) =>
+      createHash('sha256')
+        .update(await readFile(new URL(relativePath, repoRoot)))
+        .digest('hex');
+    const provenanceInputs = {
+      townAssetSourceFingerprint: townFingerprint.eastbrookTownSourceFingerprint(),
+      authoritativeLayoutSha256: await fileSha256(
+        EASTBROOK_POLISH_PROVENANCE_INPUTS.authoritativeLayout,
+      ),
+      civicShaderSha256: await fileSha256(EASTBROOK_POLISH_PROVENANCE_INPUTS.civicShader),
+      townRuntimeSha256: await fileSha256(EASTBROOK_POLISH_PROVENANCE_INPUTS.townRuntime),
+      mailboxRuntimeSha256: await fileSha256(EASTBROOK_POLISH_PROVENANCE_INPUTS.mailboxRuntime),
+      noticeboardRuntimeSha256: await fileSha256(
+        EASTBROOK_POLISH_PROVENANCE_INPUTS.noticeboardRuntime,
+      ),
+      rendererIntegrationSha256: await fileSha256(
+        EASTBROOK_POLISH_PROVENANCE_INPUTS.rendererIntegration,
+      ),
+      entityViewPolicySha256: await fileSha256(EASTBROOK_POLISH_PROVENANCE_INPUTS.entityViewPolicy),
+      viewPriorityPolicySha256: await fileSha256(
+        EASTBROOK_POLISH_PROVENANCE_INPUTS.viewPriorityPolicy,
+      ),
+      mailboxSourceFingerprint: mailboxFingerprint.eastbrookMailboxSourceFingerprint(),
+      mailboxGlbSha256: await fileSha256(EASTBROOK_POLISH_PROVENANCE_INPUTS.mailboxGlb),
+      noticeboardSourceFingerprint: noticeboardFingerprint.eastbrookNoticeboardSourceFingerprint(),
+      noticeboardGlbSha256: await fileSha256(EASTBROOK_POLISH_PROVENANCE_INPUTS.noticeboardGlb),
+    };
+    const provenance = deriveEastbrookPolishCompositeProvenance(provenanceInputs);
+    const policyOnlyChange = deriveEastbrookPolishCompositeProvenance({
+      ...provenanceInputs,
+      entityViewPolicySha256: '0'.repeat(64),
+    });
+    expect(policyOnlyChange.fingerprint).not.toBe(provenance.fingerprint);
+    expect(policyOnlyChange.components.runtimeRender.entityViewPolicy.sha256).toBe('0'.repeat(64));
+    // On a mismatch the diagnostics module names the moved leaf against the
+    // committed evidence seal, reports whether any fingerprinted input is
+    // dirty vs HEAD (the stale-mint hazard: the 2026-08-05 craft-cast pin
+    // was minted and then renderer.ts moved again before commit, so the pin
+    // matched no tree), and prints the one-step remint command. The plain
+    // toMatchObject diff buried all three of those answers.
+    if (provenance.fingerprint !== PINNED_POLISH_COMPOSITE_FINGERPRINT) {
+      const [diagnostics, { fileURLToPath }] = await Promise.all([
+        import('../scripts/assets/eastbrook_grand_armoury/provenance_diagnostics.mjs'),
+        import('node:url'),
+      ]);
+      // The whole composition (seal read, path collection, git verdict,
+      // formatting) lives in the builder so the glue that only ever runs
+      // when a pin is already stale stays unit-tested with injected
+      // seal-reader and git (tests/eastbrook_provenance_diagnostics.test.ts).
+      expect.fail(
+        diagnostics.buildPolishProvenanceMismatchReport({
+          pinnedFingerprint: PINNED_POLISH_COMPOSITE_FINGERPRINT,
+          computed: provenance,
+          repoRoot: fileURLToPath(repoRoot),
+          inputs: EASTBROOK_POLISH_PROVENANCE_INPUTS,
+          sourceFileLists: [
+            townFingerprint.EASTBROOK_TOWN_SOURCE_FILES,
+            mailboxFingerprint.EASTBROOK_MAILBOX_SOURCE_FILES,
+            noticeboardFingerprint.EASTBROOK_NOTICEBOARD_SOURCE_FILES,
+          ],
+        }),
+      );
+    }
+    expect(provenance).toMatchObject({
+      schemaVersion: 1,
+      mode: 'composite-sha256',
+      algorithm: 'sha256',
+      baselineRevision: EASTBROOK_POLISH_BASELINE_REVISION,
+      fingerprint: PINNED_POLISH_COMPOSITE_FINGERPRINT,
+      components: {
+        captureContract: {
+          id: 'polish-v2',
+          sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+        },
+        runtimeRender: {
+          entityViewPolicy: {
+            path: 'src/render/entity_view_policy_core.ts',
+            sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+          },
+          viewPriorityPolicy: {
+            path: 'src/render/prewarm_policy.ts',
+            sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+          },
+        },
+      },
+    });
+  });
+
+  it('literal-pins v2 service framing overrides without mutating historical rebuild views', () => {
+    // Re-pinned 2026-08-18 for the Eastbrook harbor move (layout v3, commit
+    // d19aa33f76, docs/design/eastbrook-revamp/site-plan.md): every override
+    // re-derived to the v3 lots (targets on the buildings' front standing
+    // points, cameras collision-clear on the public faces).
+    // Re-pinned for owner round 6b's world wave: the stall-world-market
+    // override moves with its stall to the opened-out market square, in
+    // lockstep with the polish view it mirrors, so the matched shot still
+    // frames the stall rather than the ground it left.
+    expect(EASTBROOK_TOWN_POLISH_MATCHED_VIEW_OVERRIDES).toEqual({
+      'armoury-relation': {
+        camera: { x: 34, y: 15, z: 25 },
+        target: { x: 12.5, y: 4, z: -5.5 },
+      },
+      'bank-and-chest': {
+        camera: { x: 5, y: 7, z: -101 },
+        target: { x: 8.994796179957174, y: 3.2, z: -97.00520382004282 },
+      },
+      'smithy-and-forge': {
+        camera: { x: -9.5, y: 7, z: -126 },
+        target: { x: -6.293250516799596, y: 3, z: -124.1466252583998 },
+      },
+      'inn-and-kitchens': {
+        camera: { x: -43, y: 8, z: -94 },
+        target: { x: -42.82589170715949, y: 3, z: -90.73189846640925 },
+      },
+      'chapel-and-weaving': {
+        camera: { x: 26, y: 12, z: -100 },
+        target: { x: -10.5, y: 3, z: -100 },
+      },
+      'toolworks-service-perimeter': {
+        camera: { x: -11, y: 7, z: -120 },
+        target: { x: -13.614789156231515, y: 5, z: -124.42218373434727 },
+      },
+      'stall-world-market': {
+        camera: { x: -16, y: 6, z: -93 },
+        target: { x: -19.517695018376127, y: 2.5, z: -95.26296354780212 },
+      },
+    });
+    expect(EASTBROOK_TOWN_POLISH_MATCHED_CAPTURE_VIEWS).toHaveLength(23);
+    const overridden = new Set(Object.keys(EASTBROOK_TOWN_POLISH_MATCHED_VIEW_OVERRIDES));
+    for (const historical of EASTBROOK_TOWN_CAPTURE_VIEWS) {
+      const matched = EASTBROOK_TOWN_POLISH_MATCHED_CAPTURE_VIEWS.find(
+        (view: { name: string }) => view.name === historical.name,
+      );
+      expect(matched, historical.name).toBeDefined();
+      if (overridden.has(historical.name)) expect(matched).not.toBe(historical);
+      else expect(matched).toBe(historical);
+    }
+  });
+
+  it('keeps every matched polish target collider-clear and service cameras on public faces', () => {
+    for (const view of EASTBROOK_TOWN_POLISH_MATCHED_CAPTURE_VIEWS) {
+      expect(
+        isBlocked(EASTBROOK_ARMOURY_CAPTURE_SEED, view.target.x, view.target.z, 0),
+        `${view.name} target`,
+      ).toBe(false);
+    }
+    const serviceSubjects = new Map([
+      ['bank-and-chest', ['eastbrook_bank']],
+      ['smithy-and-forge', ['eastbrook_smithy']],
+      ['inn-and-kitchens', ['eastbrook_inn']],
+      ['chapel-and-weaving', ['eastbrook_chapel', 'eastbrook_weaving_workshop']],
+      ['toolworks-service-perimeter', ['eastbrook_toolworks']],
+    ]);
+    for (const [viewName, buildingIds] of serviceSubjects) {
+      const view = EASTBROOK_TOWN_POLISH_MATCHED_CAPTURE_VIEWS.find(
+        (candidate: { name: string }) => candidate.name === viewName,
+      );
+      expect(view, viewName).toBeDefined();
+      if (!view) throw new Error(`missing matched service view ${viewName}`);
+      expect(
+        isBlocked(EASTBROOK_ARMOURY_CAPTURE_SEED, view.camera.x, view.camera.z, 0.5),
+        `${viewName} camera`,
+      ).toBe(false);
+      expect(
+        isBlocked(EASTBROOK_ARMOURY_CAPTURE_SEED, view.target.x, view.target.z, 0.5),
+        `${viewName} target`,
+      ).toBe(false);
+      for (const buildingId of buildingIds) {
+        const building = EASTBROOK_LAYOUT.buildings.find(
+          (candidate) => candidate.id === buildingId,
+        );
+        expect(building, buildingId).toBeDefined();
+        if (!building) throw new Error(`missing service building ${buildingId}`);
+        const publicFront = {
+          x: building.frontStandingPoint.x - building.position.x,
+          z: building.frontStandingPoint.z - building.position.z,
+        };
+        const cameraSide = {
+          x: view.camera.x - building.position.x,
+          z: view.camera.z - building.position.z,
+        };
+        expect(
+          publicFront.x * cameraSide.x + publicFront.z * cameraSide.z,
+          `${viewName} must photograph ${buildingId}'s public face`,
+        ).toBeGreaterThan(0);
+      }
+    }
+    const worldMarketView = EASTBROOK_TOWN_POLISH_MATCHED_CAPTURE_VIEWS.find(
+      (candidate: { name: string }) => candidate.name === 'stall-world-market',
+    );
+    const worldMarketStall = EASTBROOK_LAYOUT.market.stalls.find(
+      (stall) => stall.id === 'eastbrook_market_stall_world_market',
+    );
+    expect(worldMarketView).toBeDefined();
+    expect(worldMarketStall).toBeDefined();
+    if (!worldMarketView || !worldMarketStall) throw new Error('missing World Market view/stall');
+    const stallPublicFront = {
+      x: worldMarketStall.frontStandingPoint.x - worldMarketStall.position.x,
+      z: worldMarketStall.frontStandingPoint.z - worldMarketStall.position.z,
+    };
+    const stallCameraSide = {
+      x: worldMarketView.camera.x - worldMarketStall.position.x,
+      z: worldMarketView.camera.z - worldMarketStall.position.z,
+    };
+    expect(
+      stallPublicFront.x * stallCameraSide.x + stallPublicFront.z * stallCameraSide.z,
+      'World Market camera must remain on the public side',
+    ).toBeGreaterThan(0);
+  });
+
+  it('pins the final toolworks seam and stable noticeboard capture anchors', () => {
+    const toolworks = EASTBROOK_LAYOUT.buildings.find(
+      (building) => building.id === 'eastbrook_toolworks',
+    );
+    const toolworksStation = EASTBROOK_LAYOUT.services.stations.find(
+      (station) => station.id === 'station_eastbrook_toolworks',
+    );
+    const toolworksView = EASTBROOK_TOWN_POLISH_MATCHED_CAPTURE_VIEWS.find(
+      (view: { name: string }) => view.name === 'toolworks-service-perimeter',
+    );
+    expect(toolworks).toBeDefined();
+    expect(toolworksView).toBeDefined();
+    if (!toolworks || !toolworksView) throw new Error('missing toolworks capture seam');
+    // Re-pinned 2026-08-18 for the Eastbrook harbor move (layout v3, commit
+    // d19aa33f76, docs/design/eastbrook-revamp/site-plan.md): the toolworks
+    // was re-lotted to the crafts lane.
+    expect(toolworks).toMatchObject({
+      position: { x: -16, z: -128 },
+      rotation: 0.5880026035475675,
+      frontStandingPoint: { x: -13.614789156231515, z: -124.42218373434727 },
+    });
+    expect(toolworksStation?.position).toEqual(toolworks?.frontStandingPoint);
+    expect(
+      Math.hypot(
+        toolworksView.target.x - toolworks.frontStandingPoint.x,
+        toolworksView.target.z - toolworks.frontStandingPoint.z,
+      ),
+      'shared target must remain beside the final toolworks interaction anchor',
+    ).toBeLessThan(0.25);
+    expect(EASTBROOK_LAYOUT.services.noticeboard.entityId).toBe(2_000_000_001);
+    expect(EASTBROOK_TOWN_CAPTURE_CONTRACTS['polish-v2'].overlayRecordCounts).toEqual({
+      obbs: 43,
+      circles: 1,
+      points: 32,
+      gates: 6,
+    });
+  });
+
+  it('keeps historical placement and draw truth by default while selecting polish-v2 explicitly', () => {
+    const historical = expectedTownPlacementInventory(true);
+    expect(historical.rebuild).toBe(EASTBROOK_TOWN_REBUILD_PLACEMENT_INVENTORY);
+    expect(historical.rebuild.stalls).toEqual([
+      'eastbrook_market_stall_world_market',
+      'eastbrook_market_stall_provisions',
+      'eastbrook_market_stall_artisans',
+    ]);
+    expect(expectedTownPlacementInventory(true, 'rebuild-v1').rebuild).toBe(
+      EASTBROOK_TOWN_REBUILD_PLACEMENT_INVENTORY,
+    );
+    expect(expectedTownPlacementInventory(true, 'polish-baseline').rebuild).toBe(
+      EASTBROOK_TOWN_REBUILD_PLACEMENT_INVENTORY,
+    );
+    expect(expectedTownPlacementInventory(true, 'polish-v2').rebuild).toBe(
+      EASTBROOK_TOWN_POLISH_V2_PLACEMENT_INVENTORY,
+    );
+    expect(EASTBROOK_TOWN_POLISH_V2_PLACEMENT_INVENTORY.stalls).toEqual([
+      'eastbrook_market_stall_world_market',
+      'eastbrook_market_stall_provisions',
+    ]);
+
+    const perfRaw = (triangles: number) => ({
+      targetName: EASTBROOK_TOWN_ROOT_NAME,
+      targetChildMeshes: 18,
+      observed: {
+        rootName: EASTBROOK_TOWN_ROOT_NAME,
+        rootPresent: true,
+        rootVisible: true,
+        shadowMapEnabled: true,
+        sunCastShadow: true,
+      },
+      drawStats: {
+        colorDraws: 18,
+        shadowDraws: 9,
+        triangles,
+        buildingCount: 6,
+        wallBatchCount: 4,
+        wallSegmentCount: 26,
+        gateCount: 6,
+      },
+    });
+    const assertPerf = (triangles: number, contractId?: string) =>
+      assertTownPerformanceBlockState({
+        raw: perfRaw(triangles),
+        label: contractId ?? 'historical-direct-call',
+        rootVisible: true,
+        shadowEnabled: true,
+        ...(contractId ? { contractId } : {}),
+      });
+    expect(() => assertPerf(29_436)).not.toThrow();
+    expect(() => assertPerf(29_436, 'rebuild-v1')).not.toThrow();
+    expect(() => assertPerf(29_436, 'polish-baseline')).not.toThrow();
+    expect(() => assertPerf(28_902, 'polish-v2')).not.toThrow();
+    expect(() => assertPerf(29_644, 'polish-v2')).toThrow('draw stats');
+  });
+
+  it('rejects mismatched historical capture and performance snapshots before validation', () => {
+    const mismatchedSnapshot = structuredClone(EASTBROOK_TOWN_CAPTURE_CONTRACTS['polish-v2']);
+    mismatchedSnapshot.id = 'rebuild-v1';
+    expect(() =>
+      assertTownCaptureMetadata({
+        metadata: {
+          schemaVersion: 2,
+          captureScope: 'town',
+          townContract: { id: 'polish-v2' },
+        },
+        contractId: 'polish-v2',
+        captureContractSnapshot: mismatchedSnapshot,
+      }),
+    ).toThrow('town capture contract snapshot id does not match the requested contract');
+    expect(() =>
+      assertTownPerformanceBlockState({
+        raw: {},
+        label: 'mismatched-snapshot',
+        rootVisible: true,
+        shadowEnabled: true,
+        contractId: 'polish-v2',
+        captureContractSnapshot: mismatchedSnapshot,
+      }),
+    ).toThrow('town performance contract snapshot id does not match the requested contract');
+    expect(() => expectedTownPlacementInventory(true, 'polish-v2', mismatchedSnapshot)).toThrow(
+      'town placement contract snapshot id does not match the requested contract',
+    );
+    expect(() =>
+      assertTownAttributionTargetState({
+        targets: [],
+        contractId: 'polish-v2',
+        requestedVisible: true,
+        captureContractSnapshot: mismatchedSnapshot,
+      }),
+    ).toThrow('town attribution contract snapshot id does not match the requested contract');
+    expect(() =>
+      assertTownMotionEvidence({
+        evidence: null,
+        contractId: 'polish-v2',
+        captureContractSnapshot: mismatchedSnapshot,
+      }),
+    ).toThrow('town motion contract snapshot id does not match the requested contract');
+  });
+
+  it('aims every added view at a collision-clear point beside its stable layout subject', () => {
+    const subjectPoints = new Map<string, { x: number; z: number }>();
+    for (const stall of EASTBROOK_LAYOUT.market.stalls) {
+      subjectPoints.set(stall.id, stall.frontStandingPoint);
+    }
+    subjectPoints.set(EASTBROOK_LAYOUT.services.mailbox.id, {
+      x: EASTBROOK_LAYOUT.services.mailbox.position.x,
+      z: EASTBROOK_LAYOUT.services.mailbox.position.z + 1.3,
+    });
+    subjectPoints.set(
+      EASTBROOK_LAYOUT.services.noticeboard.id,
+      EASTBROOK_LAYOUT.services.noticeboard.frontStandingPoint,
+    );
+    subjectPoints.set(EASTBROOK_LAYOUT.civic.monument.id, {
+      x: EASTBROOK_LAYOUT.civic.monument.position.x + 2.7,
+      z: EASTBROOK_LAYOUT.civic.monument.position.z - 3.2,
+    });
+    for (const npc of EASTBROOK_LAYOUT.services.npcs) {
+      subjectPoints.set(npc.id, npc.position);
+    }
+    for (const view of EASTBROOK_TOWN_POLISH_CAPTURE_VIEWS) {
+      const expected = subjectPoints.get(view.subject);
+      expect(expected, view.name).toBeDefined();
+      if (!expected) throw new Error(`missing subject point for ${view.name}`);
+      expect(view.target.x, `${view.name}.target.x`).toBeCloseTo(expected.x, 2);
+      expect(view.target.z, `${view.name}.target.z`).toBeCloseTo(expected.z, 2);
+      expect(
+        isBlocked(EASTBROOK_ARMOURY_CAPTURE_SEED, view.target.x, view.target.z, 0.5),
+        `${view.name} target`,
+      ).toBe(false);
+      // The camera is an ELEVATED point: a low standable prop (a headstone, a
+      // bench) whose top sits below the camera's altitude does not contain it.
+      // Route the check through the height-aware resolver so only full-height
+      // geometry and props reaching the camera's y count as blockers.
+      const cameraResolved = resolvePosition(
+        EASTBROOK_ARMOURY_CAPTURE_SEED,
+        view.camera.x,
+        view.camera.z,
+        0.5,
+        false,
+        undefined,
+        { y: view.camera.y, lift: 0 },
+      );
+      expect(
+        Math.abs(cameraResolved.x - view.camera.x) > 1e-4 ||
+          Math.abs(cameraResolved.z - view.camera.z) > 1e-4,
+        `${view.name} camera`,
+      ).toBe(false);
+    }
+  });
+
+  it('pins public-facing NPC portraits at Lin, Saul, and FURY authored positions', () => {
+    // Re-pinned 2026-08-18 for the Eastbrook harbor move (layout v3, commit
+    // d19aa33f76, docs/design/eastbrook-revamp/site-plan.md): Lin now serves
+    // the market square, Saul the Ravenpost mailbox lane, and FURY the
+    // graveyard approach (the view name stays immutable evidence naming).
+    // Re-pinned for owner refinement round 6b: the town's NPCs were
+    // redistributed by role along the dock road, moving Lin from the civic
+    // green to the quayside home at (-72, -96). Her portrait view follows her
+    // (target on the authored stand, camera 7 yd out along her facing);
+    // Saul and FURY did not move, so their rows are unchanged.
+    // Re-pinned again for owner round 6b's world wave: FURY moved off the
+    // chapel step out to the town's eastern edge at (16, -78), so his portrait
+    // row follows him (target on the authored stand, camera holding its former
+    // 4.47 yd offset on his re-derived public-facing side). Lin and Saul did
+    // not move this round.
+    const expectedViews = {
+      'apothecary-lin': {
+        subject: 'apothecary_lin',
+        camera: { x: -65, y: 6, z: -96 },
+        target: { x: -72, y: 2.5, z: -96 },
+      },
+      'ravenpost-chronicler': {
+        subject: 'chronicler_saul',
+        camera: { x: 10.5, y: 6.5, z: -85 },
+        target: { x: 10.2, y: 2.5, z: -87.5 },
+      },
+      'west-wall-quartermaster': {
+        subject: 'fury',
+        camera: { x: 12, y: 6, z: -80 },
+        target: { x: 16, y: 2.5, z: -78 },
+      },
+    };
+    for (const [name, expected] of Object.entries(expectedViews)) {
+      const view = EASTBROOK_TOWN_POLISH_CAPTURE_VIEWS.find(
+        (candidate: { name: string }) => candidate.name === name,
+      );
+      const npc = EASTBROOK_LAYOUT.services.npcs.find(
+        (candidate) => candidate.id === expected.subject,
+      );
+      expect(view, name).toEqual({ name, ...expected });
+      expect(npc, expected.subject).toBeDefined();
+      if (!view || !npc) throw new Error(`missing portrait contract ${name}`);
+      expect({ x: view.target.x, z: view.target.z }).toEqual(npc.position);
+      const cameraOffset = {
+        x: view.camera.x - npc.position.x,
+        z: view.camera.z - npc.position.z,
+      };
+      expect(
+        cameraOffset.x * Math.sin(npc.facing) + cameraOffset.z * Math.cos(npc.facing),
+        `${name} camera must remain on the NPC's public-facing side`,
+      ).toBeGreaterThan(0);
+    }
+  });
+
+  it('photographs the Ravenpost mailbox from its authored public +Z face', () => {
+    const view = EASTBROOK_TOWN_POLISH_CAPTURE_VIEWS.find(
+      (candidate: { name: string }) => candidate.name === 'ravenpost-mailbox',
+    );
+    expect(view).toBeDefined();
+    if (!view) throw new Error('missing Ravenpost mailbox capture view');
+    const mailbox = EASTBROOK_LAYOUT.services.mailbox;
+    const authoredPublicFront = {
+      x: view.target.x - mailbox.position.x,
+      z: view.target.z - mailbox.position.z,
+    };
+    const cameraSide = {
+      x: view.camera.x - mailbox.position.x,
+      z: view.camera.z - mailbox.position.z,
+    };
+    expect(
+      authoredPublicFront.x * cameraSide.x + authoredPublicFront.z * cameraSide.z,
+      'mailbox camera must remain on the public/front side',
+    ).toBeGreaterThan(0);
+  });
+
+  it('selects polish evidence explicitly without changing the historical default', () => {
+    const baseEnv = {
+      GAME_URL: 'http://127.0.0.1:5183',
+      SHOT_PREFIX: 'polish',
+      EXPECT_ARMOURY: '1',
+      CAPTURE_SCOPE: 'town',
+      EXPECT_TOWN: '1',
+    };
+    const rebuild = selectCaptureConfiguration(baseEnv);
+    expect(rebuild.townContractId).toBe('rebuild-v1');
+    expect(rebuild.views).toEqual(EASTBROOK_TOWN_CAPTURE_VIEWS);
+
+    const polish = selectCaptureConfiguration({
+      ...baseEnv,
+      TOWN_CONTRACT: 'polish-v2',
+    });
+    expect(polish.townContractId).toBe('polish-v2');
+    expect(polish.townContract).toBe(EASTBROOK_TOWN_CAPTURE_CONTRACTS['polish-v2']);
+    expect(polish.views).toEqual(EASTBROOK_TOWN_POLISH_MATCHED_CAPTURE_VIEWS);
+    const baseline = selectCaptureConfiguration({
+      ...baseEnv,
+      TOWN_CONTRACT: 'polish-baseline',
+    });
+    expect(baseline.townContractId).toBe('polish-baseline');
+    expect(baseline.sourceRevision).toBe(EASTBROOK_POLISH_BASELINE_REVISION);
+    expect(baseline.views).toEqual(polish.views);
+    expect(
+      baseline.views.map((view: { name: string; camera: object; target: object }) => ({
+        name: view.name,
+        camera: view.camera,
+        target: view.target,
+      })),
+    ).toEqual(
+      polish.views.map((view: { name: string; camera: object; target: object }) => ({
+        name: view.name,
+        camera: view.camera,
+        target: view.target,
+      })),
+    );
+    expect(() => selectCaptureConfiguration({ ...baseEnv, TOWN_CONTRACT: 'polish-v3' })).toThrow(
+      'TOWN_CONTRACT must be rebuild-v1, polish-baseline, or polish-v2',
+    );
+    expect(() =>
+      selectCaptureConfiguration({
+        ...baseEnv,
+        EXPECT_TOWN: '0',
+        TOWN_CONTRACT: 'polish-v2',
+      }),
+    ).toThrow('TOWN_CONTRACT requires EXPECT_TOWN=1');
+    expect(() =>
+      selectCaptureConfiguration({
+        ...baseEnv,
+        CAPTURE_SCOPE: 'armoury',
+        TOWN_CONTRACT: 'polish-v2',
+      }),
+    ).toThrow('TOWN_CONTRACT requires EXPECT_TOWN=1 with CAPTURE_SCOPE=town');
+  });
+
+  it('requires stable layout/template attribution records and excludes transient entity ids', () => {
+    const targets = validPolishAttributionTargets();
+    const assertTargets = (candidate: AttributionTargetFixture[]) =>
+      assertTownAttributionTargetState({
+        targets: candidate,
+        contractId: 'polish-v2',
+        requestedVisible: false,
+      });
+    expect(() => assertTargets(targets)).not.toThrow();
+    expect(JSON.stringify(targets)).not.toContain('entityId');
+
+    const failures: Array<[string, string, (candidate: AttributionTargetFixture[]) => void]> = [
+      ['key', 'stable layout ids', (candidate) => (candidate[1].key = 'wrong-mailbox')],
+      ['kind', 'stable layout ids', (candidate) => (candidate[1].kind = 'scene-root')],
+      [
+        'layoutId',
+        'stable layout ids',
+        (candidate) => (candidate[1].layoutId = 'eastbrook_civic_layout_v1'),
+      ],
+      [
+        'templateId',
+        'stable layout ids',
+        (candidate) => (candidate[1].templateId = 'wrong-mailbox-template'),
+      ],
+      [
+        'layoutServiceId',
+        'stable layout ids',
+        (candidate) => (candidate[1].layoutServiceId = 'wrong-mailbox-service'),
+      ],
+      ['present', 'visibility is incorrect', (candidate) => (candidate[1].present = false)],
+      [
+        'childMeshCount',
+        'has no shipping meshes',
+        (candidate) => (candidate[1].childMeshCount = 0),
+      ],
+      [
+        'non-integer childMeshCount',
+        'has no shipping meshes',
+        (candidate) => (candidate[1].childMeshCount = 1.5),
+      ],
+      [
+        'atlas URL',
+        'lacks the shared atlas',
+        (candidate) => (candidate[1].surfaceAtlas.url = '/textures/wrong.webp'),
+      ],
+      [
+        'empty atlas UUID',
+        'lacks the shared atlas',
+        (candidate) => (candidate[1].surfaceAtlas.textureUuid = ''),
+      ],
+      [
+        'non-string atlas UUID',
+        'lacks the shared atlas',
+        (candidate) => (candidate[1].surfaceAtlas.textureUuid = 7 as unknown as string),
+      ],
+      [
+        'atlas bindings',
+        'lacks the shared atlas',
+        (candidate) => (candidate[1].surfaceAtlas.materialBindings = 0),
+      ],
+      [
+        'non-integer atlas bindings',
+        'lacks the shared atlas',
+        (candidate) => (candidate[1].surfaceAtlas.materialBindings = 1.5),
+      ],
+    ];
+    for (const [label, message, mutate] of failures) {
+      const changed = validPolishAttributionTargets();
+      mutate(changed);
+      expect(() => assertTargets(changed), label).toThrow(message);
+    }
+
+    const missing = validPolishAttributionTargets();
+    missing.pop();
+    expect(() => assertTargets(missing)).toThrow('attribution target inventory');
+    expect(() =>
+      assertTownAttributionTargetState({
+        targets: null,
+        contractId: 'polish-v2',
+        requestedVisible: false,
+      }),
+    ).toThrow('attribution target inventory');
+    const transient = validPolishAttributionTargets() as unknown as Array<Record<string, unknown>>;
+    transient[1].entityId = 301;
+    expect(() =>
+      assertTownAttributionTargetState({
+        targets: transient,
+        contractId: 'polish-v2',
+        requestedVisible: false,
+      }),
+    ).toThrow('transient entity ids');
+    const unsharedAtlas = validPolishAttributionTargets();
+    unsharedAtlas[2].surfaceAtlas.textureUuid = 'different-atlas';
+    expect(() => assertTargets(unsharedAtlas)).toThrow('share one atlas texture identity');
+
+    const snapshot = structuredClone(EASTBROOK_TOWN_CAPTURE_CONTRACTS['polish-v2']);
+    snapshot.attributionTargets[0].key = 'historical-town-root';
+    const snapshotTargets = validPolishAttributionTargets();
+    snapshotTargets[0].key = 'historical-town-root';
+    expect(() =>
+      assertTownAttributionTargetState({
+        targets: snapshotTargets,
+        contractId: 'polish-v2',
+        requestedVisible: false,
+        captureContractSnapshot: snapshot,
+      }),
+    ).not.toThrow();
+    expect(() =>
+      assertTownAttributionTargetState({
+        targets,
+        contractId: 'polish-v2',
+        requestedVisible: false,
+        captureContractSnapshot: snapshot,
+      }),
+    ).toThrow('stable layout ids');
+  });
+
+  it('validates NPC-facing arrows as stable layout records', () => {
+    const overlay = validNpcFacingOverlay();
+    type Overlay = ReturnType<typeof validNpcFacingOverlay>;
+    const assertOverlay = (candidate: Overlay) =>
+      assertTownNpcFacingOverlay({ overlay: candidate, contractId: 'polish-v2' });
+    expect(() => assertTownNpcFacingOverlay({ overlay, contractId: 'polish-v2' })).not.toThrow();
+
+    const failures: Array<[string, string, (candidate: Overlay) => void]> = [
+      [
+        'requested',
+        'require the requested collider overlay',
+        (candidate) => (candidate.requested = false),
+      ],
+      [
+        'source layout',
+        'arrow inventory is incomplete',
+        (candidate) => (candidate.npcFacings.sourceLayoutId = 'eastbrook_civic_layout_v1'),
+      ],
+      [
+        'arrow length',
+        'arrow inventory is incomplete',
+        (candidate) => (candidate.npcFacings.arrowLength = 0),
+      ],
+      [
+        'non-finite arrow length',
+        'arrow inventory is incomplete',
+        (candidate) => (candidate.npcFacings.arrowLength = Number.POSITIVE_INFINITY),
+      ],
+      [
+        'empty records',
+        'arrow inventory is incomplete',
+        (candidate) => (candidate.npcFacings.records = []),
+      ],
+      [
+        'records non-array',
+        'arrow inventory is incomplete',
+        (candidate) =>
+          (candidate.npcFacings.records = null as unknown as ReturnType<
+            typeof validNpcFacingOverlay
+          >['npcFacings']['records']),
+      ],
+      [
+        'duplicate ids',
+        'contains invalid records',
+        (candidate) => (candidate.npcFacings.records[1].id = candidate.npcFacings.records[0].id),
+      ],
+      [
+        'empty id',
+        'contains invalid records',
+        (candidate) => (candidate.npcFacings.records[0].id = ''),
+      ],
+      [
+        'non-string id',
+        'contains invalid records',
+        (candidate) => (candidate.npcFacings.records[0].id = 7 as unknown as string),
+      ],
+      [
+        'position.x',
+        'contains invalid records',
+        (candidate) => (candidate.npcFacings.records[0].position.x = Number.NaN),
+      ],
+      [
+        'position.z',
+        'contains invalid records',
+        (candidate) => (candidate.npcFacings.records[0].position.z = Number.POSITIVE_INFINITY),
+      ],
+      [
+        'end.x',
+        'contains invalid records',
+        (candidate) => (candidate.npcFacings.records[0].end.x = Number.NaN),
+      ],
+      [
+        'end.z',
+        'contains invalid records',
+        (candidate) => (candidate.npcFacings.records[0].end.z = Number.NEGATIVE_INFINITY),
+      ],
+      [
+        'facing',
+        'contains invalid records',
+        (candidate) => (candidate.npcFacings.records[0].facing = Number.NaN),
+      ],
+    ];
+    for (const [label, message, mutate] of failures) {
+      const changed = validNpcFacingOverlay();
+      mutate(changed);
+      expect(() => assertOverlay(changed), label).toThrow(message);
+    }
+
+    const badEnd = structuredClone(overlay);
+    badEnd.npcFacings.records[0].end.x += 0.2;
+    expect(() => assertOverlay(badEnd)).toThrow('facing arrow endpoint');
+    const badEndZ = structuredClone(overlay);
+    badEndZ.npcFacings.records[0].end.z += 0.2;
+    expect(() => assertOverlay(badEndZ)).toThrow('facing arrow endpoint');
+    const transient = structuredClone(overlay) as typeof overlay & {
+      npcFacings: { records: Array<Record<string, unknown>> };
+    };
+    transient.npcFacings.records[0].entityId = 92;
+    expect(() =>
+      assertTownNpcFacingOverlay({
+        overlay: transient,
+        contractId: 'polish-v2',
+      }),
+    ).toThrow('transient entity ids');
+  });
+
+  it('pins paired motion-on frames and a paired reduced-motion proof', () => {
+    expect(EASTBROOK_TOWN_MOTION_CAPTURE).toEqual({
+      viewName: 'civic-motion',
+      frameIntervalMs: 1_600,
+      beacon: {
+        rootName: EASTBROOK_TOWN_ROOT_NAME,
+        batchName: 'eastbrookTownMicroEmissiveBatch',
+        maskAttribute: 'eastbrookCivicMask',
+        programCacheKey: 'eastbrook-civic-beacon-v1',
+      },
+      modes: [
+        { id: 'motion-on', reduceMotion: false },
+        { id: 'reduced-motion', reduceMotion: true },
+      ],
+    });
+    const evidence = validTownMotionEvidence();
+    type Evidence = ReturnType<typeof validTownMotionEvidence>;
+    const assertEvidence = (candidate: Evidence) =>
+      assertTownMotionEvidence({ evidence: candidate, contractId: 'polish-v2' });
+    expect(() => assertTownMotionEvidence({ evidence, contractId: 'polish-v2' })).not.toThrow();
+
+    const failures: Array<[string, string, (candidate: Evidence) => void]> = [
+      [
+        'view',
+        'civic motion evidence is incomplete',
+        (candidate) => (candidate.viewName = 'noticeboard'),
+      ],
+      [
+        'interval',
+        'civic motion evidence is incomplete',
+        (candidate) => (candidate.frameIntervalMs = 1_599),
+      ],
+      [
+        'beacon identity',
+        'civic motion evidence is incomplete',
+        (candidate) => (candidate.beacon.batchName = 'wrongBeaconBatch'),
+      ],
+      [
+        'beacon root',
+        'civic motion evidence is incomplete',
+        (candidate) => (candidate.beacon.rootName = 'wrongTownRoot'),
+      ],
+      [
+        'beacon mask',
+        'civic motion evidence is incomplete',
+        (candidate) => (candidate.beacon.maskAttribute = 'wrongMask'),
+      ],
+      [
+        'beacon program',
+        'civic motion evidence is incomplete',
+        (candidate) => (candidate.beacon.programCacheKey = 'wrong-program'),
+      ],
+      [
+        'contact runtime mode',
+        'civic motion evidence is incomplete',
+        (candidate) => (candidate.contact.defaultRuntimeReduceMotion = false),
+      ],
+      [
+        'contact output',
+        'civic motion evidence is incomplete',
+        (candidate) => (candidate.contact.defaultReducedMotionOutput = '/tmp/contact.webp'),
+      ],
+      [
+        'non-string contact output',
+        'civic motion evidence is incomplete',
+        (candidate) => (candidate.contact.defaultReducedMotionOutput = 7 as unknown as string),
+      ],
+      [
+        'contact frame count',
+        'civic motion evidence is incomplete',
+        (candidate) => (candidate.contact.pairedFrameCount = 3),
+      ],
+      ['mode count', 'civic motion evidence is incomplete', (candidate) => candidate.modes.pop()],
+      [
+        'modes non-array',
+        'civic motion evidence is incomplete',
+        (candidate) =>
+          (candidate.modes = null as unknown as ReturnType<
+            typeof validTownMotionEvidence
+          >['modes']),
+      ],
+      [
+        'mode identity',
+        'motion-on runtime reduce-motion state',
+        (candidate) => (candidate.modes[0].id = 'wrong-mode'),
+      ],
+      [
+        'mode runtime state',
+        'motion-on runtime reduce-motion state',
+        (candidate) => (candidate.modes[0].runtimeReduceMotion = true),
+      ],
+      [
+        'second mode runtime state',
+        'reduced-motion runtime reduce-motion state',
+        (candidate) => (candidate.modes[1].runtimeReduceMotion = false),
+      ],
+      [
+        'frame count',
+        'paired frame evidence is incomplete',
+        (candidate) => candidate.modes[0].frames.pop(),
+      ],
+      [
+        'frames non-array',
+        'paired frame evidence is incomplete',
+        (candidate) =>
+          (candidate.modes[0].frames = null as unknown as ReturnType<
+            typeof validTownMotionEvidence
+          >['modes'][number]['frames']),
+      ],
+      [
+        'frame phase',
+        'paired frame evidence is incomplete',
+        (candidate) => (candidate.modes[0].frames[0].phase = 't1'),
+      ],
+      [
+        't1 frame phase',
+        'paired frame evidence is incomplete',
+        (candidate) => (candidate.modes[0].frames[1].phase = 't0'),
+      ],
+      [
+        'frame output',
+        'paired frame evidence is incomplete',
+        (candidate) => (candidate.modes[0].frames[0].output = '/tmp/frame.webp'),
+      ],
+      [
+        'non-string frame output',
+        'paired frame evidence is incomplete',
+        (candidate) => (candidate.modes[0].frames[0].output = 7 as unknown as string),
+      ],
+      [
+        'frame bytes',
+        'paired frame evidence is incomplete',
+        (candidate) => (candidate.modes[0].frames[0].bytes = 0),
+      ],
+      [
+        'non-integer frame bytes',
+        'paired frame evidence is incomplete',
+        (candidate) => (candidate.modes[0].frames[0].bytes = 1.5),
+      ],
+      [
+        'frame SHA',
+        'paired frame evidence is incomplete',
+        (candidate) => (candidate.modes[0].frames[0].sha256 = 'not-a-sha'),
+      ],
+      [
+        'reduced-motion cleanup',
+        'civic motion evidence is incomplete',
+        (candidate) => (candidate.restored = false),
+      ],
+    ];
+    for (const [label, message, mutate] of failures) {
+      const changed = validTownMotionEvidence();
+      mutate(changed);
+      expect(() => assertEvidence(changed), label).toThrow(message);
+    }
+
+    expect(() =>
+      assertTownMotionEvidence({ evidence: null, contractId: 'rebuild-v1' }),
+    ).not.toThrow();
+    expect(() =>
+      assertTownMotionEvidence({
+        evidence: null,
+        contractId: 'polish-baseline',
+      }),
+    ).not.toThrow();
+    expect(() =>
+      assertTownMotionEvidence({
+        evidence: validTownMotionEvidence(),
+        contractId: 'polish-baseline',
+      }),
+    ).toThrow('motion evidence must be absent');
+  });
+
+  it('wires stable targets, facing arrows, motion pairs, and contract metadata into the helper', async () => {
+    const { readFile } = await import('node:fs/promises');
+    const source = await readFile(
+      new URL('../scripts/assets/eastbrook_grand_armoury/capture_ingame.mjs', import.meta.url),
+      'utf8',
+    );
+    for (const call of [
+      'resolveTownContractTargets(page)',
+      'readTownPlacementInventory(page, townContractId)',
+      'assertTownAttributionTargetState({',
+      'assertTownNpcFacingOverlay({ overlay, contractId: townContractId })',
+      'captureTownMotionEvidence(',
+      'assertTownMotionEvidence({ evidence, contractId: townContractId })',
+      'const objectBody = view?.objectMesh ?? null;',
+      'const body = view?.objectMesh;',
+      'target.root.visible = requestedRootVisible',
+      'npcFacings:',
+      'polishProvenance',
+      'deriveEastbrookPolishCompositeProvenance({',
+      'EASTBROOK_POLISH_PROVENANCE_INPUTS.entityViewPolicy',
+      'TOWN_CONTRACT',
+    ]) {
+      expect(source, call).toContain(call);
+    }
+    expect(source).not.toContain('renderer.views.get(ref.entityId)?.group');
+    expect(source).not.toMatch(/renderer\.views\.get\(\d+\)/);
+
+    const metadataAssertionAt = source.indexOf('assertTownCaptureMetadata({');
+    const metadataAssertionEnd = source.indexOf('\n          });', metadataAssertionAt);
+    const metadataAssertion = source.slice(metadataAssertionAt, metadataAssertionEnd);
+    expect(metadataAssertionAt).toBeGreaterThan(-1);
+    expect(metadataAssertionEnd).toBeGreaterThan(metadataAssertionAt);
+    expect(metadataAssertion).toContain('contractId: townContractId,');
+    expect(metadataAssertion).toContain('expectedPolishProvenance: polishProvenance,');
+
+    expect(source).toContain(
+      'const measurement = await measureTownScenario(page, assetFailures, townContractId);',
+    );
+    const measureAt = source.indexOf('async function measureTownScenario(');
+    const measureEnd = source.indexOf('\nasync function measurePerformance(', measureAt);
+    const measureBlock = source.slice(measureAt, measureEnd);
+    expect(measureAt).toBeGreaterThan(-1);
+    expect(measureEnd).toBeGreaterThan(measureAt);
+    expect(measureBlock).toContain('attributionRefs: attribution.refs,\n              contractId,');
+    expect(measureBlock).toContain(
+      'await measureTownDirectRenderAttribution(page, attribution.refs, contractId)',
+    );
+  });
+});

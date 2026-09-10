@@ -1,0 +1,759 @@
+import { describe, expect, it } from 'vitest';
+import { bagCapacity } from '../src/sim/bags';
+import { GATHER_NODE_TYPES, GATHER_NODES } from '../src/sim/content/gather_nodes';
+import { DUNGEON_X_THRESHOLD, zoneAt } from '../src/sim/data';
+import {
+  announceGatherRareEvent,
+  emitToZonePlayers,
+  GATHER_RARE_EVENT_CHANCE,
+  GATHER_RARE_EVENT_SOURCES,
+  GATHER_RARE_EVENT_YIELD_MULT,
+  gatherRareEventFlavor,
+  rollGatherRareEvent,
+} from '../src/sim/professions/gather_events';
+import { isSignableMaterialRarity, resolveHarvest } from '../src/sim/professions/gathering';
+import { freshReliquaryState } from '../src/sim/reliquary';
+import { Rng } from '../src/sim/rng';
+import type { PlayerMeta } from '../src/sim/sim';
+import { Sim } from '../src/sim/sim';
+import type { SimContext } from '../src/sim/sim_context';
+import type { GatherNodeType, GatherRareEventFlavor, SimEvent } from '../src/sim/types';
+import { terrainHeight } from '../src/sim/world';
+import { placeAtHarvestSpot } from './helpers/harvest_spot';
+
+const FLAVOR_BY_TYPE: Record<GatherNodeType, GatherRareEventFlavor> = {
+  ore: 'pristine_vein',
+  wood: 'ancient_heartwood',
+  herb: 'moonlit_bloom',
+};
+
+// The tier-1 tool per node family (#2343: every node harvest needs a
+// matching-profession tool in bags; a tier-1 tool at a tier-1 node leaves the
+// cast formula and both rng draws untouched). Hunt loops that wipe the bags
+// re-add the tool by direct push, never sim.addItem: a push emits no loot
+// event, so the pinned one-loot-line frames below stay exact.
+const TOOL_BY_TYPE: Record<GatherNodeType, string> = {
+  ore: 'copper_mining_pick',
+  wood: 'handaxe',
+  herb: 'gathering_sickle',
+};
+
+// A minimal rng whose single next() returns a fixed value, for boundary pins.
+function stubRng(value: number): Rng {
+  return { next: () => value } as unknown as Rng;
+}
+
+function mustNode(nodeId: string) {
+  const node = GATHER_NODES.find((n) => n.id === nodeId);
+  if (!node) throw new Error(`missing node ${nodeId}`);
+  return node;
+}
+
+// harvestNode STARTS a gather cast; the draws, grant, and events
+// land at completion. The hunts below advance the shared rng stream only, so
+// completion is driven synchronously the way the lifecycle does it (clear the
+// cast fields, then route to ctx.completeGatherCast): zero world ticks, the
+// deterministic stream untouched between iterations.
+function completeCastNow(sim: Sim, pid: number) {
+  const p = sim.entities.get(pid);
+  const meta = sim.players.get(pid);
+  if (!p || !meta) throw new Error('missing player for completeCastNow');
+  p.castingAbility = null;
+  p.castRemaining = 0;
+  sim.ctx.completeGatherCast(p, meta);
+}
+
+describe('gather rare events: cadence knob + flavor mapping', () => {
+  it('pins the shared cadence and yield constants', () => {
+    // Load-bearing tuning literals (roughly 1 rare event per zone per 20
+    // minutes at ~90 harvests per zone per 20 minutes); the cadence is ONE
+    // shared knob (a per-family split is deferred), so a change must
+    // consciously re-pin here.
+    expect(GATHER_RARE_EVENT_CHANCE).toBe(1 / 90);
+    expect(GATHER_RARE_EVENT_YIELD_MULT).toBe(5);
+  });
+
+  it('maps each source family to its own flavor, the crop arm included', () => {
+    expect(gatherRareEventFlavor('ore')).toBe('pristine_vein');
+    expect(gatherRareEventFlavor('wood')).toBe('ancient_heartwood');
+    expect(gatherRareEventFlavor('herb')).toBe('moonlit_bloom');
+    // The farming harvest source (Professions 2.0 celebrations): the same
+    // shared mapping, never a farming copy of the roll or the constants.
+    expect(gatherRareEventFlavor('crop')).toBe('golden_harvest');
+  });
+
+  it('the runtime source list is every node type plus the crop, and answers no prototype key', () => {
+    // Derived, not listed: the node types come from the content table and the
+    // crop is the farming source; the export must be exactly their union (a
+    // fifth source lands here the day it compiles). The record behind it is
+    // null-prototype, so the switch's old contract of returning undefined for
+    // an out-of-union value holds for 'constructor' and 'toString' too (the
+    // farming harvest's `!= null` belt depends on it).
+    expect(new Set(GATHER_RARE_EVENT_SOURCES)).toEqual(new Set([...GATHER_NODE_TYPES, 'crop']));
+    expect(GATHER_RARE_EVENT_SOURCES.length).toBe(GATHER_NODE_TYPES.length + 1);
+    expect(Object.isFrozen(GATHER_RARE_EVENT_SOURCES)).toBe(true);
+    for (const stray of ['constructor', 'toString', '__proto__', 'reef'])
+      expect(gatherRareEventFlavor(stray as never), stray).toBeUndefined();
+  });
+
+  it('hits exactly when the draw lands strictly below the chance', () => {
+    expect(rollGatherRareEvent(stubRng(0), 'ore')).toBe('pristine_vein');
+    expect(rollGatherRareEvent(stubRng(GATHER_RARE_EVENT_CHANCE - 1e-9), 'wood')).toBe(
+      'ancient_heartwood',
+    );
+    expect(rollGatherRareEvent(stubRng(0), 'crop')).toBe('golden_harvest');
+    // At or above the threshold: a miss (strict <).
+    expect(rollGatherRareEvent(stubRng(GATHER_RARE_EVENT_CHANCE), 'herb')).toBeNull();
+    expect(rollGatherRareEvent(stubRng(0.9), 'ore')).toBeNull();
+    expect(rollGatherRareEvent(stubRng(GATHER_RARE_EVENT_CHANCE), 'crop')).toBeNull();
+  });
+
+  it('draws exactly one rng value on EVERY call, hit or miss (constant draw count)', () => {
+    let draws = 0;
+    const rng = new Rng(7);
+    rng.setObserver(() => {
+      draws++;
+    });
+    let hits = 0;
+    const calls = 500;
+    for (let i = 0; i < calls; i++) {
+      if (rollGatherRareEvent(rng, 'ore')) hits++;
+    }
+    expect(draws).toBe(calls);
+    // Sanity that both outcomes occurred inside the constant-draw window.
+    expect(hits).toBeGreaterThan(0);
+    expect(hits).toBeLessThan(calls);
+  });
+});
+
+// The pinned determinism contract: once the harvest gate passes, resolveHarvest
+// draws EXACTLY twice, draw #1 the rarity roll and draw #2 the rare-event roll.
+// The order is made observable by hunting seeds whose two opening draws sit on
+// opposite sides of the rare-event threshold: swapping the draws would flip the
+// rareEvent outcome.
+describe('resolveHarvest two-draw order pin', () => {
+  const node = mustNode('ore_eastbrook_1');
+
+  // The tier-1 pick is load-bearing, not decoration: resolveHarvest resolves
+  // the material GRADE off the bags (D8), so an inventory-less fixture no
+  // longer models a real harvester. A tier-1 tool at this tier-1 eastbrook
+  // vein is the plain-grade case, which is what these draw-order pins are
+  // about; the fine-grade arm has its own coverage in
+  // tests/material_grades.test.ts.
+  function freshMeta(): PlayerMeta {
+    return {
+      gatheringProficiency: { mining: 0, logging: 0, herbalism: 0 },
+      nodeHarvestReadyAt: {},
+      pendingGatherGrants: [],
+      inventory: [{ itemId: 'copper_mining_pick', count: 1 }],
+    } as unknown as PlayerMeta;
+  }
+
+  function firstTwoDraws(seed: number): [number, number] {
+    const rng = new Rng(seed);
+    return [rng.next(), rng.next()];
+  }
+
+  function huntSeed(want: (d1: number, d2: number) => boolean): number {
+    for (let seed = 1; seed < 200000; seed++) {
+      const [d1, d2] = firstTwoDraws(seed);
+      if (want(d1, d2)) return seed;
+    }
+    throw new Error('no seed found');
+  }
+
+  it('draw #1 feeds the rarity roll, draw #2 the rare-event roll (miss arm)', () => {
+    // First draw BELOW the threshold, second at/above: with the pinned order
+    // the rare event MISSES; a swapped order would hit off draw #1.
+    const seed = huntSeed(
+      (d1, d2) => d1 < GATHER_RARE_EVENT_CHANCE && d2 >= GATHER_RARE_EVENT_CHANCE,
+    );
+    const rng = new Rng(seed);
+    let draws = 0;
+    rng.setObserver(() => {
+      draws++;
+    });
+    const result = resolveHarvest(freshMeta(), node, 0, rng);
+    expect(result.granted).toBe(true);
+    expect(draws).toBe(2);
+    expect(result.rareEvent).toBeNull();
+    expect(result.rarity).toBe('common'); // proficiency 0: always common
+    expect(result.qty).toBe(1);
+    expect(result.signed).toBe(false);
+  });
+
+  it('draw #2 below the threshold hits, multiplies the yield by 5, and forces signing (hit arm)', () => {
+    const seed = huntSeed(
+      (d1, d2) => d1 >= GATHER_RARE_EVENT_CHANCE && d2 < GATHER_RARE_EVENT_CHANCE,
+    );
+    const rng = new Rng(seed);
+    let draws = 0;
+    rng.setObserver(() => {
+      draws++;
+    });
+    const result = resolveHarvest(freshMeta(), node, 0, rng);
+    expect(result.granted).toBe(true);
+    expect(draws).toBe(2);
+    expect(result.rareEvent).toBe('pristine_vein');
+    // Common rolled rarity (proficiency 0), so signing here is FORCED by the
+    // rare event, not by the rarity floor; qty is the common unit times 5.
+    expect(result.rarity).toBe('common');
+    expect(result.signed).toBe(true);
+    expect(result.qty).toBe(1 * GATHER_RARE_EVENT_YIELD_MULT);
+  });
+
+  it('the full resolution is reproducible from the same seed', () => {
+    const run = () => resolveHarvest(freshMeta(), node, 0, new Rng(1234));
+    expect(run()).toEqual(run());
+  });
+});
+
+describe('announceGatherRareEvent: soft zone fanout + dormant deed mark', () => {
+  const node = mustNode('ore_eastbrook_1');
+
+  function fakeCtx() {
+    const emitted: SimEvent[] = [];
+    const marks: string[] = [];
+    const players = new Map<number, PlayerMeta>();
+    const entities = new Map<number, { pos: { x: number; y: number; z: number } }>();
+    const addPlayer = (pid: number, name: string, z: number, x = 0) => {
+      // Reliquary field-note marks write through noteReliquaryMark, which
+      // scores curator rank off live ownedMounts: the finder needs a real
+      // sparse reliquary state AND the containers ownedMounts scans (bags and
+      // bank), not a bare stub. Since Phase 18 the mark path also runs the
+      // completion-ladder sync unconditionally, whose earned-set early-out
+      // reads meta.deedsEarned, so the stub carries the empty Map too (no
+      // ladder read can pass on one mark, so ctx.grantDeed stays uncalled).
+      const meta = {
+        entityId: pid,
+        name,
+        inventory: [],
+        bank: { inventory: [], purchasedSlots: 0, bonusSlots: 0 },
+        reliquary: freshReliquaryState(),
+        deedStats: { itemsDiscovered: new Set<string>() },
+        deedsEarned: new Map<string, string>(),
+      } as unknown as PlayerMeta;
+      players.set(pid, meta);
+      entities.set(pid, { pos: { x, y: 0, z } });
+      return meta;
+    };
+    const ctx = {
+      players,
+      entities,
+      emit: (e: SimEvent) => emitted.push(e),
+      markVisited: (_meta: PlayerMeta, markId: string) => marks.push(markId),
+      grantDeed: () => false,
+    } as unknown as SimContext;
+    return { ctx, emitted, marks, addPlayer };
+  }
+
+  it('sanity: the fanout z positions used below sit in the intended zones', () => {
+    expect(zoneAt(0, 0).id).toBe('eastbrook_vale');
+    expect(zoneAt(0, 340).id).toBe('mirefen_marsh');
+    expect(zoneAt(400, 340).id).toBe('galecrest');
+  });
+
+  it('routes same-row players by both atlas coordinates', () => {
+    const { ctx, emitted, addPlayer } = fakeCtx();
+    addPlayer(1, 'GalecrestOne', 340, 400);
+    addPlayer(2, 'GalecrestTwo', 340, 420);
+    addPlayer(3, 'Mirefen', 340, 0);
+
+    emitToZonePlayers(ctx, 'galecrest', (pid) => ({
+      type: 'log',
+      pid,
+      text: `recipient:${pid}`,
+    }));
+
+    expect(emitted.map((event) => event.pid)).toEqual([1, 2]);
+  });
+
+  it('emits one pid-scoped copy per in-zone player (finder included), none out of zone', () => {
+    const { ctx, emitted, addPlayer } = fakeCtx();
+    const finder = addPlayer(1, 'Alba', 0);
+    addPlayer(2, 'Bystander', 0); // same zone as the eastbrook node
+    addPlayer(3, 'FarAway', 340); // mirefen_marsh: must not receive
+    // Instance space: z overlaps the zone strip but x sits past
+    // DUNGEON_X_THRESHOLD (600), so a dungeon/arena/delve runner is excluded.
+    addPlayer(4, 'Delver', 0, DUNGEON_X_THRESHOLD + 100);
+
+    announceGatherRareEvent(ctx, finder, node, 'pristine_vein', 'copper_ore');
+
+    const events = emitted.filter((e) => e.type === 'gatherRareEvent');
+    expect(events.map((e) => e.pid).sort()).toEqual([1, 2]);
+    for (const ev of events) {
+      expect(ev.flavor).toBe('pristine_vein');
+      expect(ev.finderName).toBe('Alba');
+      expect(ev.finderPid).toBe(1);
+      expect(ev.zoneId).toBe('eastbrook_vale');
+      expect(ev.nodeType).toBe('ore');
+      expect(ev.itemId).toBe('copper_ore');
+    }
+  });
+
+  it('records the dormant per-flavor deed mark for the finder, one named mark per flavor', () => {
+    for (const flavor of [
+      'pristine_vein',
+      'ancient_heartwood',
+      'moonlit_bloom',
+    ] as GatherRareEventFlavor[]) {
+      const { ctx, marks, addPlayer, emitted } = fakeCtx();
+      const finder = addPlayer(1, 'Alba', 0);
+      announceGatherRareEvent(ctx, finder, node, flavor, 'copper_ore');
+      const visitMark = `gather_event:${flavor}`;
+      expect(marks).toEqual([visitMark]);
+      // Reliquary field-note trophy reuses the same gather_event:* id.
+      expect(finder.reliquary.marks.has(visitMark)).toBe(true);
+      expect(emitted.some((e) => e.type === 'reliquaryUnlock' && e.markId === visitMark)).toBe(
+        true,
+      );
+    }
+  });
+
+  it('a crop source announces golden_harvest with the structural payload, the mark, and its reliquary cell', () => {
+    // The farming harvest caller (professions/farming.ts harvestCrop) passes
+    // a STRUCTURAL source ({ zoneId, type: 'crop' }): farm beds never become
+    // gather nodes, and the fanout, event shape, and visit mark are the
+    // shared ones. The reliquary used to be the deliberate difference here
+    // (golden_harvest had no field-note cell, a ledgered deferral, so
+    // noteReliquaryMark no-opped and this arm asserted the negative). The
+    // cell landed at masterwrought Phase 18, so the arm flipped WITH it: the
+    // crop flavor now pages exactly like its three node siblings above.
+    const { ctx, emitted, marks, addPlayer } = fakeCtx();
+    const finder = addPlayer(1, 'Alba', 0);
+    addPlayer(2, 'Bystander', 0); // eastbrook_vale, receives the fanout
+    addPlayer(3, 'FarAway', 340); // mirefen_marsh: must not receive
+    // Instance space: the crop path proves the exclusion itself rather than
+    // inheriting it from the node arm above (same predicate, own proof).
+    addPlayer(4, 'Delver', 0, DUNGEON_X_THRESHOLD + 100);
+
+    announceGatherRareEvent(
+      ctx,
+      finder,
+      { zoneId: 'eastbrook_vale', type: 'crop' },
+      'golden_harvest',
+      'vale_wheat',
+    );
+
+    const events = emitted.filter((e) => e.type === 'gatherRareEvent');
+    expect(events.map((e) => e.pid).sort()).toEqual([1, 2]);
+    for (const ev of events) {
+      expect(ev.flavor).toBe('golden_harvest');
+      expect(ev.nodeType).toBe('crop');
+      expect(ev.zoneId).toBe('eastbrook_vale');
+      expect(ev.itemId).toBe('vale_wheat');
+      expect(ev.finderName).toBe('Alba');
+      expect(ev.finderPid).toBe(1);
+    }
+    // The visit mark writes through the shared path...
+    expect(marks).toEqual(['gather_event:golden_harvest']);
+    // ...and so does the Reliquary field note, first find included.
+    expect(finder.reliquary.marks.has('gather_event:golden_harvest')).toBe(true);
+    expect(
+      emitted.some(
+        (e) => e.type === 'reliquaryUnlock' && e.markId === 'gather_event:golden_harvest',
+      ),
+    ).toBe(true);
+  });
+});
+
+// End-to-end through the real Sim command path: hunt the deterministic rng
+// stream (fixed world seed, repeated harvests with the per-player cooldown
+// cleared) until draw #2 hits, then pin the whole observable surface of the
+// hit: both events, the x5 signed yield, and the deed mark.
+describe('rare events through Sim.harvestNode (all three flavors)', () => {
+  function huntHit(nodeId: string) {
+    const sim = new Sim({ seed: 42, playerClass: 'warrior', noPlayer: true });
+    const pid = sim.addPlayer('warrior', 'Finder');
+    const node = mustNode(nodeId);
+    const p = sim.entities.get(pid);
+    if (!p) throw new Error('missing player entity');
+    placeAtHarvestSpot(sim, pid, nodeId);
+    const meta = sim.players.get(pid);
+    if (!meta) throw new Error('missing player meta');
+    for (let i = 0; i < 2000; i++) {
+      // Reset the session-only cooldown and bag state so every iteration is a
+      // clean granted harvest: the hunt advances ONLY the shared rng stream.
+      // The wipe removes the #2343 tool too, so re-add it (event- and
+      // draw-free) before the harvest.
+      meta.inventory.length = 0;
+      meta.inventory.push({ itemId: TOOL_BY_TYPE[node.type], count: 1 });
+      delete meta.nodeHarvestReadyAt[nodeId];
+      expect(sim.harvestNode(nodeId, undefined, pid)).toBe(true);
+      completeCastNow(sim, pid);
+      const events = sim.drainEvents();
+      const rare = events.find((e) => e.type === 'gatherRareEvent');
+      if (rare && rare.type === 'gatherRareEvent') {
+        const gather = events.find((e) => e.type === 'gatherResult');
+        if (gather?.type !== 'gatherResult') throw new Error('expected gatherResult on the hit');
+        return { sim, pid, meta, node, rare, gather, events, iteration: i };
+      }
+    }
+    throw new Error(`no rare event within 2000 harvests of ${nodeId}`);
+  }
+
+  it('an ore node hit is a pristine vein: zone event, x5 yield, all units signed', () => {
+    const { pid, meta, rare, gather, node, events } = huntHit('ore_eastbrook_1');
+    expect(rare.flavor).toBe('pristine_vein');
+    expect(rare.nodeType).toBe('ore');
+    expect(rare.itemId).toBe('copper_ore');
+    expect(rare.zoneId).toBe('eastbrook_vale');
+    expect(rare.finderPid).toBe(pid);
+    expect(rare.finderName).toBe('Finder');
+    expect(rare.pid).toBe(pid); // the finder is part of their own zone fanout
+
+    expect(gather.rareEvent).toBe('pristine_vein');
+    expect(gather.nodeId).toBe(node.id);
+    // Proficiency never drains without a tick, so the rolled rarity is common
+    // and the x5 multiplier is the ONLY reason qty exceeds 1.
+    expect(gather.rarity).toBe('common');
+    expect(gather.qty).toBe(GATHER_RARE_EVENT_YIELD_MULT);
+
+    // The yield landed as ONE merged signed stack (forced signing on a common
+    // roll: the rare event, not the rarity floor, drives it; identical-payload
+    // stacking merges the same-signer units into a single slot).
+    const slots = meta.inventory.filter((s) => s.itemId === 'copper_ore');
+    expect(slots).toHaveLength(1);
+    expect(slots[0].count).toBe(GATHER_RARE_EVENT_YIELD_MULT);
+    // The premium mark rides the fresh slot's exact source bucket now, not a
+    // per-slot payload: the whole windfall is one signer-attributed unit.
+    expect(slots[0].instance).toBeUndefined();
+    expect(slots[0].materialSources).toEqual([
+      { source: { signer: 'Finder' }, count: GATHER_RARE_EVENT_YIELD_MULT },
+    ]);
+
+    // The whole windfall is ONE batched loot line with the x5 suffix, never
+    // one line and cue per unit (the recorded loot-burst polish).
+    const lootEvents = events.filter((e) => e.type === 'loot') as Array<{
+      text: string;
+      silent?: boolean;
+      callerLogs?: boolean;
+    }>;
+    expect(lootEvents.map((e) => e.text)).toEqual(['You receive: Copper Ore x5.']);
+    // #2430: this is the SIGNED batched arm of the harvest grant, a different
+    // call site from the fungible one tests/professions_silent_loot.test.ts
+    // drives, and it is the arm every rare-event windfall takes. Both hub
+    // feedbacks stand down here too, so the gatherResult line above is the
+    // only line and the node cue the only cue. Without this the arm was
+    // pinned only by an opaque parity digest.
+    expect(lootEvents[0].silent).toBe(true);
+    expect(lootEvents[0].callerLogs).toBe(true);
+
+    // The per-flavor deed mark (deeds.ts registers a deed per flavor).
+    expect(meta.deedStats.visited.has('gather_event:pristine_vein')).toBe(true);
+    // Reliquary field-note trophy (Phase 7) reuses the same gather_event:* id.
+    expect(meta.reliquary.marks.has('gather_event:pristine_vein')).toBe(true);
+  });
+
+  it('a wood node hit is an ancient heartwood with the same signed x5 yield', () => {
+    const { meta, rare, gather } = huntHit('wood_eastbrook_1');
+    expect(rare.flavor).toBe('ancient_heartwood');
+    expect(rare.itemId).toBe('ironbark_log');
+    expect(gather.rareEvent).toBe('ancient_heartwood');
+    expect(gather.qty).toBe(GATHER_RARE_EVENT_YIELD_MULT);
+    const slots = meta.inventory.filter((s) => s.itemId === 'ironbark_log');
+    expect(slots).toHaveLength(1);
+    expect(slots[0].count).toBe(GATHER_RARE_EVENT_YIELD_MULT);
+    expect(slots[0].instance).toBeUndefined();
+    expect(slots[0].materialSources).toEqual([
+      { source: { signer: 'Finder' }, count: GATHER_RARE_EVENT_YIELD_MULT },
+    ]);
+    expect(meta.deedStats.visited.has('gather_event:ancient_heartwood')).toBe(true);
+    expect(meta.reliquary.marks.has('gather_event:ancient_heartwood')).toBe(true);
+  });
+
+  it('a herb node hit is a moonlit bloom with the same signed x5 yield', () => {
+    const { meta, rare, gather } = huntHit('herb_eastbrook_1');
+    expect(rare.flavor).toBe('moonlit_bloom');
+    expect(rare.itemId).toBe('silverleaf_herb');
+    expect(gather.rareEvent).toBe('moonlit_bloom');
+    expect(gather.qty).toBe(GATHER_RARE_EVENT_YIELD_MULT);
+    const slots = meta.inventory.filter((s) => s.itemId === 'silverleaf_herb');
+    expect(slots).toHaveLength(1);
+    expect(slots[0].count).toBe(GATHER_RARE_EVENT_YIELD_MULT);
+    expect(slots[0].instance).toBeUndefined();
+    expect(slots[0].materialSources).toEqual([
+      { source: { signer: 'Finder' }, count: GATHER_RARE_EVENT_YIELD_MULT },
+    ]);
+    expect(meta.deedStats.visited.has('gather_event:moonlit_bloom')).toBe(true);
+    expect(meta.reliquary.marks.has('gather_event:moonlit_bloom')).toBe(true);
+  });
+
+  it('same seed, same hunt: the hit lands on the same harvest with identical events', () => {
+    const a = huntHit('ore_eastbrook_1');
+    const b = huntHit('ore_eastbrook_1');
+    expect(a.iteration).toBe(b.iteration);
+    expect(a.rare).toEqual(b.rare);
+    expect(a.gather).toEqual(b.gather);
+  });
+
+  it('every flavor pins to its family through the shared mapping table', () => {
+    for (const type of ['ore', 'wood', 'herb'] as GatherNodeType[]) {
+      expect(gatherRareEventFlavor(type)).toBe(FLAVOR_BY_TYPE[type]);
+    }
+  });
+});
+
+// The rarity-floor signing arm (no rare event involved): a rolled
+// rare/epic/legendary yield lands as { signer } instances at its qtyByRarity
+// count, while uncommon stays a plain fungible stack.
+describe('rarity-floor signing through Sim.harvestNode', () => {
+  function huntRarity(want: (rarity: string, rareEvent: unknown) => boolean) {
+    const sim = new Sim({ seed: 42, playerClass: 'warrior', noPlayer: true });
+    const pid = sim.addPlayer('warrior', 'Prospector');
+    const nodeId = 'ore_eastbrook_1';
+    const node = mustNode(nodeId);
+    const p = sim.entities.get(pid);
+    if (!p) throw new Error('missing player entity');
+    placeAtHarvestSpot(sim, pid, nodeId);
+    const meta = sim.players.get(pid);
+    if (!meta) throw new Error('missing player meta');
+    // Max proficiency: zero common weight, so rare-or-better shows up fast.
+    meta.gatheringProficiency.mining = 100;
+    for (let i = 0; i < 3000; i++) {
+      meta.inventory.length = 0;
+      meta.inventory.push({ itemId: TOOL_BY_TYPE.ore, count: 1 }); // the #2343 tool gate
+      delete meta.nodeHarvestReadyAt[nodeId];
+      expect(sim.harvestNode(nodeId, undefined, pid)).toBe(true);
+      completeCastNow(sim, pid);
+      const gather = sim.drainEvents().find((e) => e.type === 'gatherResult');
+      if (gather?.type !== 'gatherResult') throw new Error('expected gatherResult');
+      if (want(gather.rarity, gather.rareEvent)) return { meta, gather };
+    }
+    throw new Error('no matching harvest within 3000 attempts');
+  }
+
+  it('a rolled rare-or-better yield (rare event MISSED) is signed at its qtyByRarity count', () => {
+    const QTY: Record<string, number> = { rare: 2, epic: 3, legendary: 4 };
+    const { meta, gather } = huntRarity((rarity, rareEvent) => rareEvent === null && rarity in QTY);
+    expect(gather.rareEvent).toBeNull();
+    expect(gather.qty).toBe(QTY[gather.rarity]);
+    // Identical-payload stacking: the same-signer units merge into
+    // one signed stack at the qtyByRarity count instead of one slot per unit.
+    const slots = meta.inventory.filter((s) => s.itemId === 'copper_ore');
+    expect(slots).toHaveLength(1);
+    expect(slots[0].count).toBe(QTY[gather.rarity]);
+    expect(slots[0].instance).toBeUndefined();
+    expect(slots[0].materialSources).toEqual([
+      { source: { signer: 'Prospector' }, count: QTY[gather.rarity] },
+    ]);
+  });
+
+  it('a rolled uncommon yield (rare event missed) stays an unsigned fungible stack of 2', () => {
+    const { meta, gather } = huntRarity(
+      (rarity, rareEvent) => rareEvent === null && rarity === 'uncommon',
+    );
+    expect(gather.qty).toBe(2);
+    const slots = meta.inventory.filter((s) => s.itemId === 'copper_ore');
+    expect(slots).toHaveLength(1);
+    expect(slots[0].count).toBe(2);
+    expect(slots[0].instance).toBeUndefined();
+  });
+});
+
+// The signing threshold itself, pinned tier by tier: the full-Sim hunts above
+// nearly always surface 'rare' as the first signable tier, so epic and
+// legendary signing are guarded here at the unit level.
+describe('isSignableMaterialRarity threshold', () => {
+  it('signs rare, epic, and legendary; never common or uncommon', () => {
+    expect(isSignableMaterialRarity('common')).toBe(false);
+    expect(isSignableMaterialRarity('uncommon')).toBe(false);
+    expect(isSignableMaterialRarity('rare')).toBe(true);
+    expect(isSignableMaterialRarity('epic')).toBe(true);
+    expect(isSignableMaterialRarity('legendary')).toBe(true);
+  });
+});
+
+// The command-boundary truncation: harvestNode owns capacity clamping because
+// the Sim grant hubs never capacity-cap. Both branches (signed windfall and
+// fungible stack fit) are exercised against genuinely full bags, and
+// gatherResult.qty must report the GRANTED count, not the resolved one.
+describe('grant truncation at the command boundary (full bags)', () => {
+  function simAtOreNode() {
+    const sim = new Sim({ seed: 42, playerClass: 'warrior', noPlayer: true });
+    const pid = sim.addPlayer('warrior', 'Packrat');
+    const nodeId = 'ore_eastbrook_1';
+    const node = mustNode(nodeId);
+    const p = sim.entities.get(pid);
+    if (!p) throw new Error('missing player entity');
+    placeAtHarvestSpot(sim, pid, nodeId);
+    const meta = sim.players.get(pid);
+    if (!meta) throw new Error('missing player meta');
+    return { sim, pid, nodeId, meta };
+  }
+
+  it('an oversized rare-event windfall lands whole in one merged stack through one free slot', () => {
+    const { sim, pid, nodeId, meta } = simAtOreNode();
+    const capacity = bagCapacity(meta.bags);
+    for (let i = 0; i < 2000; i++) {
+      // Each attempt starts with exactly ONE free slot: the #2343 tool takes
+      // one slot and the filler (a non-copper junk id so nothing merges with
+      // the harvest yield) tops the bag up to capacity - 1.
+      meta.inventory.length = 0;
+      meta.inventory.push({ itemId: TOOL_BY_TYPE.ore, count: 1 });
+      for (let f = 0; f < capacity - 2; f++)
+        meta.inventory.push({ itemId: 'bone_fragments', count: 1 });
+      delete meta.nodeHarvestReadyAt[nodeId];
+      expect(sim.harvestNode(nodeId, undefined, pid)).toBe(true);
+      completeCastNow(sim, pid);
+      const events = sim.drainEvents();
+      const gather = events.find((e) => e.type === 'gatherResult');
+      if (gather?.type !== 'gatherResult') throw new Error('expected gatherResult');
+      if (gather.rareEvent === null) continue;
+      // The hit: resolved qty is at least x5, and identical-payload stacking
+      // merges every same-signer unit into the single stack the
+      // one free slot opened, so the windfall no longer truncates per slot
+      // (the pre-stacking contract granted one unit per free slot).
+      expect(gather.qty).toBeGreaterThanOrEqual(GATHER_RARE_EVENT_YIELD_MULT);
+      // The signed grant landed signed: no downgrade notice fires here.
+      expect(events.filter((e) => e.type === 'gatherDowngrade')).toHaveLength(0);
+      const copper = meta.inventory.filter((s) => s.itemId === 'copper_ore');
+      expect(copper).toHaveLength(1);
+      expect(copper[0].count).toBe(gather.qty);
+      expect(copper[0].instance).toBeUndefined();
+      expect(copper[0].materialSources).toEqual([
+        { source: { signer: 'Packrat' }, count: gather.qty },
+      ]);
+      // Merged into the one opened slot, not overflowed: exactly at capacity.
+      expect(meta.inventory.length).toBe(capacity);
+      return;
+    }
+    throw new Error('no rare event within 2000 harvests');
+  });
+
+  it('a signed roll with zero free slots still lands its exact signature through the plain top-up, never past capacity', () => {
+    const { sim, pid, nodeId, meta } = simAtOreNode();
+    const capacity = bagCapacity(meta.bags);
+    // Max proficiency so signed (rare-or-better) rolls appear quickly.
+    meta.gatheringProficiency.mining = 100;
+    for (let i = 0; i < 3000; i++) {
+      // The crossing case: the bag is slot-full and the ONLY room is fungible
+      // top-up on a partial copper stack. The premium mark now rides the
+      // granted units' own source bucket rather than a distinct instanced
+      // payload, so it shares that top-up room with plain stock instead of
+      // needing a byte-equal signed slot or a free one of its own: the old
+      // gatherDowngrade fallback for this crossing is unreachable. The #2343
+      // tool takes one of the full slots, so the filler drops to capacity - 2.
+      meta.inventory.length = 0;
+      meta.inventory.push({ itemId: TOOL_BY_TYPE.ore, count: 1 });
+      for (let f = 0; f < capacity - 2; f++)
+        meta.inventory.push({ itemId: 'bone_fragments', count: 1 });
+      meta.inventory.push({ itemId: 'copper_ore', count: 15 });
+      delete meta.nodeHarvestReadyAt[nodeId];
+      if (!sim.harvestNode(nodeId, undefined, pid)) continue;
+      completeCastNow(sim, pid);
+      const events = sim.drainEvents();
+      const gather = events.find((e) => e.type === 'gatherResult');
+      if (gather?.type !== 'gatherResult') throw new Error('expected gatherResult');
+      // Truncation, not overflow, on EVERY iteration (fungible rolls included).
+      expect(meta.inventory.length).toBeLessThanOrEqual(capacity);
+      const wouldSign = gather.rareEvent !== null || isSignableMaterialRarity(gather.rarity);
+      // No node-harvest crossing ever downgrades a mark anymore: the merge
+      // always has room (the pre-seeded stack's 5-unit gap covers even the
+      // x5 rare-event ceiling), so this is a standing negative control.
+      expect(events.filter((e) => e.type === 'gatherDowngrade')).toHaveLength(0);
+      if (!wouldSign) continue;
+      // The signed-roll arm: merged into the ONE existing stack (no new
+      // slot), its exact source buckets conserved: the pre-seeded unrecorded
+      // 15 plus a full-count premium bucket for the granted units, a
+      // positive proof the whole signature landed rather than being lost.
+      expect(meta.inventory.length).toBe(capacity);
+      expect(meta.inventory.filter((s) => s.itemId === 'copper_ore')).toHaveLength(1);
+      const stack = meta.inventory.find((s) => s.itemId === 'copper_ore');
+      expect(gather.qty).toBeGreaterThanOrEqual(1);
+      expect(stack?.instance).toBeUndefined();
+      expect(stack?.count).toBe(15 + gather.qty);
+      expect(stack?.materialSources).toEqual([
+        { source: {}, count: 15 },
+        { source: { signer: 'Packrat' }, count: gather.qty },
+      ]);
+      return;
+    }
+    throw new Error('no signed roll within 3000 attempts');
+  });
+
+  it('a signed roll with zero free slots merges into the first compatible stock and leaves an untouched legacy stack alone', () => {
+    const { sim, pid, nodeId, meta } = simAtOreNode();
+    const capacity = bagCapacity(meta.bags);
+    // Max proficiency so signed (rare-or-better) rolls appear quickly.
+    meta.gatheringProficiency.mining = 100;
+    for (let i = 0; i < 3000; i++) {
+      // Still zero free slots, now with TWO pre-existing copper_ore stacks: a
+      // plain one (room 5) ahead of a legacy signer-payload one. Since the
+      // premium mark no longer lives in the instanced payload, both stacks
+      // read as the SAME compatible target family; the packing walk fills
+      // targets in inventory order, so the whole grant (never more than the
+      // x5 rare-event ceiling) lands in the earlier, plain stack and the
+      // legacy signed stack is never touched at all. The #2343 tool takes
+      // one of the full slots, so the filler drops to capacity - 3.
+      meta.inventory.length = 0;
+      meta.inventory.push({ itemId: TOOL_BY_TYPE.ore, count: 1 });
+      for (let f = 0; f < capacity - 3; f++)
+        meta.inventory.push({ itemId: 'bone_fragments', count: 1 });
+      meta.inventory.push({ itemId: 'copper_ore', count: 15 });
+      meta.inventory.push({ itemId: 'copper_ore', count: 5, instance: { signer: 'Packrat' } });
+      delete meta.nodeHarvestReadyAt[nodeId];
+      if (!sim.harvestNode(nodeId, undefined, pid)) continue;
+      completeCastNow(sim, pid);
+      const events = sim.drainEvents();
+      const gather = events.find((e) => e.type === 'gatherResult');
+      if (gather?.type !== 'gatherResult') throw new Error('expected gatherResult');
+      // Never past capacity, on EVERY iteration (fungible rolls included).
+      expect(meta.inventory.length).toBeLessThanOrEqual(capacity);
+      const wouldSign = gather.rareEvent !== null || isSignableMaterialRarity(gather.rarity);
+      if (!wouldSign) continue;
+      // The signed arm: still exactly two copper_ore slots (no new one), no
+      // downgrade, the granted units landed in the earlier plain stack with
+      // an exact premium source bucket, and the untouched legacy stack keeps
+      // its own raw instance.signer shape and its original count exactly.
+      expect(meta.inventory.length).toBe(capacity);
+      const slots = meta.inventory.filter((s) => s.itemId === 'copper_ore');
+      expect(slots).toHaveLength(2);
+      const topped = slots.find((s) => s.materialSources !== undefined);
+      const untouched = slots.find((s) => s.instance !== undefined);
+      expect(gather.qty).toBeGreaterThanOrEqual(1);
+      expect(topped?.instance).toBeUndefined();
+      expect(topped?.count).toBe(15 + gather.qty);
+      expect(topped?.materialSources).toEqual([
+        { source: {}, count: 15 },
+        { source: { signer: 'Packrat' }, count: gather.qty },
+      ]);
+      expect(untouched?.count).toBe(5);
+      expect(untouched?.instance?.signer).toBe('Packrat');
+      expect(events.filter((e) => e.type === 'gatherDowngrade')).toHaveLength(0);
+      return;
+    }
+    throw new Error('no signed roll within 3000 attempts');
+  });
+
+  it('a fungible yield larger than the remaining stack room truncates to what fits', () => {
+    const { sim, pid, nodeId, meta } = simAtOreNode();
+    const capacity = bagCapacity(meta.bags);
+    // Max proficiency so uncommon (qty 2, unsigned) rolls appear quickly.
+    meta.gatheringProficiency.mining = 100;
+    for (let i = 0; i < 3000; i++) {
+      // Bag completely full, with the only room being ONE unit of top-up on
+      // an existing copper stack (stack size 20). The #2343 tool takes one of
+      // the full slots, so the filler drops to capacity - 2.
+      meta.inventory.length = 0;
+      meta.inventory.push({ itemId: TOOL_BY_TYPE.ore, count: 1 });
+      for (let f = 0; f < capacity - 2; f++)
+        meta.inventory.push({ itemId: 'bone_fragments', count: 1 });
+      meta.inventory.push({ itemId: 'copper_ore', count: 19 });
+      delete meta.nodeHarvestReadyAt[nodeId];
+      if (!sim.harvestNode(nodeId, undefined, pid)) continue;
+      completeCastNow(sim, pid);
+      const events = sim.drainEvents();
+      const gather = events.find((e) => e.type === 'gatherResult');
+      if (gather?.type !== 'gatherResult') throw new Error('expected gatherResult');
+      if (!(gather.rareEvent === null && gather.rarity === 'uncommon')) continue;
+      // Resolved qty 2, but only 1 fits: granted count reported, stack capped.
+      expect(gather.qty).toBe(1);
+      const copper = meta.inventory.find((s) => s.itemId === 'copper_ore' && !s.instance);
+      expect(copper?.count).toBe(20);
+      expect(meta.inventory.length).toBe(capacity);
+      return;
+    }
+    throw new Error('no plain uncommon harvest within 3000 attempts');
+  });
+});

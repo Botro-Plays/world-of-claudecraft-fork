@@ -1,0 +1,475 @@
+// Localizes a failed REST/WS call into player-facing text. Two layers, tried in
+// order:
+//
+//   1. CODE-FIRST. The API request pipeline (server/http/) answers errors
+//      with a stable machine `code` (`domain.reason`) drawn from the server
+//      catalog (server/http/error_codes.ts): either the RFC 9457 problem+json
+//      `code`, or the additive `code` on a migrated legacy `{ error, code, date }`
+//      body. A code in API_ERROR_KEYS resolves to its `apiError.<domain>.<reason>`
+//      key, with the two parametric cases (a suspension date, a rate-limit
+//      duration) formatted CLIENT-side (the server never localizes or formats).
+//   2. PROSE FALLBACK. Routes still on the old ladder (until it is removed) answer with
+//      bare English text and no code. The historical string matcher recognizes
+//      those and re-renders them through `t()` / `tServer()`; a code that is NOT
+//      in the table (an un-migrated route that grew one) also lands here.
+//
+// Anything neither layer recognizes is a transport/protocol diagnostic and stays
+// English by design (browser logs and support reports match the server source).
+//
+// This module is DOM-free and host-agnostic (a Vitest drives it directly): it reads
+// the stable code + params structurally off the thrown value, never importing the
+// `net/` ApiError class (the src/ui -> net dependency ban).
+
+import { durationText } from './duration_text';
+import { formatDateTime, formatDuration, type TranslationKey, t } from './i18n';
+import { tServer } from './server_i18n';
+
+// The stable-code -> translation-key table, the fixed cross-layer convention:
+// code `domain.reason` maps to key `apiError.domain.reason` VERBATIM. It covers
+// every code in the server catalog (server/http/error_codes.ts); the parity guard
+// (tests/api_error_code_parity.test.ts) cross-checks this table against that
+// catalog so a new server code without a client key (or vice versa) fails the gate.
+// `satisfies Record<string, TranslationKey>` keeps every value a real, typed
+// translation key (a typo or a key missing from the catalog is a tsc error).
+/**
+ * The admin-panel kick's disconnect prefix, a byte-exact copy of
+ * server/admin_kick_api.ts ADMIN_KICK_MESSAGE_PREFIX (the client never imports
+ * server code; tests/main_api_error.test.ts pins the two equal). The reason the
+ * operator typed follows it on the wire.
+ */
+export const ADMIN_KICK_MESSAGE_PREFIX = 'A moderator has disconnected you: ';
+
+export const API_ERROR_KEYS = {
+  // Structural pipeline primitives.
+  'validation.failed': 'apiError.validation.failed',
+  'json.malformed': 'apiError.json.malformed',
+  'auth.token_missing': 'apiError.auth.token_missing',
+  'auth.token_invalid': 'apiError.auth.token_invalid',
+  'auth.forbidden': 'apiError.auth.forbidden',
+  'body.too_large': 'apiError.body.too_large',
+  'db.conflict': 'apiError.db.conflict',
+  'rate_limit.exceeded': 'apiError.rate_limit.exceeded',
+  'internal.error': 'apiError.internal.error',
+
+  // auth: authentication, session, and credential-check failures.
+  'auth.invalid_credentials': 'apiError.auth.invalid_credentials',
+  'auth.required': 'apiError.auth.required',
+  'auth.web_login_only': 'apiError.auth.web_login_only',
+  'auth.too_many_attempts': 'apiError.auth.too_many_attempts',
+  'auth.too_many_failed_attempts': 'apiError.auth.too_many_failed_attempts',
+  'auth.current_password_incorrect': 'apiError.auth.current_password_incorrect',
+  'auth.password_incorrect': 'apiError.auth.password_incorrect',
+  'auth.verification_failed': 'apiError.auth.verification_failed',
+
+  // account: account-field validation and self-service account state.
+  'account.username_invalid': 'apiError.account.username_invalid',
+  'account.username_not_allowed': 'apiError.account.username_not_allowed',
+  'account.username_taken': 'apiError.account.username_taken',
+  'account.username_mismatch': 'apiError.account.username_mismatch',
+  'account.password_too_short': 'apiError.account.password_too_short',
+  'account.password_too_long': 'apiError.account.password_too_long',
+  'account.characters_online': 'apiError.account.characters_online',
+  'account.deactivated': 'apiError.account.deactivated',
+  'account.not_found': 'apiError.account.not_found',
+  'account.password_already_set': 'apiError.account.password_already_set',
+
+  // character: creation, selection, and world-entry failures.
+  'character.name_invalid': 'apiError.character.name_invalid',
+  'character.name_not_allowed': 'apiError.character.name_not_allowed',
+  'character.invalid_class': 'apiError.character.invalid_class',
+  'character.limit_reached': 'apiError.character.limit_reached',
+  'character.name_taken': 'apiError.character.name_taken',
+  'character.not_found': 'apiError.character.not_found',
+  'character.online': 'apiError.character.online',
+  'character.rename_not_permitted': 'apiError.character.rename_not_permitted',
+  'character.delete_confirm': 'apiError.character.delete_confirm',
+  'character.storage_purchase_open': 'apiError.character.storage_purchase_open',
+  'character.delete_busy': 'apiError.character.delete_busy',
+  'character.already_in_world': 'apiError.character.already_in_world',
+  'character.taken_over': 'apiError.character.taken_over',
+  'character.rename_required': 'apiError.character.rename_required',
+  'character.invalid_appearance': 'apiError.character.invalid_appearance',
+  'character.reroll_unavailable': 'apiError.character.reroll_unavailable',
+
+  // moderation: enforcement states set by a moderator.
+  'moderation.suspended_until': 'apiError.moderation.suspended_until',
+  'moderation.suspended': 'apiError.moderation.suspended',
+  'moderation.banned': 'apiError.moderation.banned',
+  'moderation.force_rename': 'apiError.moderation.force_rename',
+
+  // email: email-change validation.
+  'email.invalid': 'apiError.email.invalid',
+  'email.unchanged': 'apiError.email.unchanged',
+
+  // two_factor: two-factor setup and verification state.
+  'two_factor.code_invalid': 'apiError.two_factor.code_invalid',
+  'two_factor.setup_required': 'apiError.two_factor.setup_required',
+  'two_factor.already_enabled': 'apiError.two_factor.already_enabled',
+  'two_factor.not_enabled': 'apiError.two_factor.not_enabled',
+
+  // The Content-Type / Origin gate hardening contracts (no legacy English identity).
+  'body.unsupported_media_type': 'apiError.body.unsupported_media_type',
+  'origin.cross_site': 'apiError.origin.cross_site',
+
+  // discord: Discord link / sign-in / reward-claim failures.
+  'discord.not_configured': 'apiError.discord.not_configured',
+  'discord.expired': 'apiError.discord.expired',
+  'discord.already_linked': 'apiError.discord.already_linked',
+  'discord.password_required': 'apiError.discord.password_required',
+  'discord.unknown_swag': 'apiError.discord.unknown_swag',
+  'discord.link_required': 'apiError.discord.link_required',
+  'discord.swag_claimed': 'apiError.discord.swag_claimed',
+  'discord.swag_tier': 'apiError.discord.swag_tier',
+  'discord.swag_points': 'apiError.discord.swag_points',
+  'discord.invalid_input': 'apiError.discord.invalid_input',
+  'deeds.invalid_input': 'apiError.deeds.invalid_input',
+  'guilds.invalid_roster_name': 'apiError.guilds.invalid_roster_name',
+  'guilds.unknown': 'apiError.guilds.unknown',
+
+  // steam: the env-gated Steam link family (server/steam/).
+  'steam.disabled': 'apiError.steam.disabled',
+  'steam.invalid_ticket': 'apiError.steam.invalid_ticket',
+  'steam.banned': 'apiError.steam.banned',
+  'steam.already_linked': 'apiError.steam.already_linked',
+  'steam.account_taken': 'apiError.steam.account_taken',
+  'steam.upstream': 'apiError.steam.upstream',
+  // epic: the env-gated Epic link family (server/epic/).
+  'epic.disabled': 'apiError.epic.disabled',
+  'epic.invalid_token': 'apiError.epic.invalid_token',
+  'epic.banned': 'apiError.epic.banned',
+  'epic.already_linked': 'apiError.epic.already_linked',
+  'epic.account_taken': 'apiError.epic.account_taken',
+  'epic.upstream': 'apiError.epic.upstream',
+  'wallet.handoff_invalid': 'apiError.wallet.handoff_invalid',
+  'wallet.reauth_required': 'apiError.wallet.reauth_required',
+  'wallet.reauth_two_factor': 'apiError.wallet.reauth_two_factor',
+  'wallet.reauth_no_password': 'apiError.wallet.reauth_no_password',
+  'wallet.reauth_bad_signature': 'apiError.wallet.reauth_bad_signature',
+  'wallet.reauth_bad_password': 'apiError.wallet.reauth_bad_password',
+  'wallet.reauth_bad_two_factor': 'apiError.wallet.reauth_bad_two_factor',
+  'ota_updates.invalid_input': 'apiError.ota_updates.invalid_input',
+  'seeker.native_only': 'apiError.seeker.native_only',
+  'seeker.attestation_failed': 'apiError.seeker.attestation_failed',
+  'seeker.solana_artifact_required': 'apiError.seeker.solana_artifact_required',
+  'seeker.wallet_required': 'apiError.seeker.wallet_required',
+  'seeker.genesis_token_required': 'apiError.seeker.genesis_token_required',
+  'seeker.genesis_token_claimed': 'apiError.seeker.genesis_token_claimed',
+  'seeker.entitlement_required': 'apiError.seeker.entitlement_required',
+  'seeker.current_ownership_required': 'apiError.seeker.current_ownership_required',
+
+  // cheater_mark: the operator-applied public Cheater tag (server/cheater_mark_api.ts).
+  'cheater_mark.admin_target': 'apiError.cheater_mark.admin_target',
+  'cheater_mark.reason_required': 'apiError.cheater_mark.reason_required',
+  'cheater_mark.invalid_duration': 'apiError.cheater_mark.invalid_duration',
+  'cheater_mark.not_marked': 'apiError.cheater_mark.not_marked',
+  // kick: the admin-panel kick of a live player (server/admin_kick_api.ts).
+  'kick.reason_required': 'apiError.kick.reason_required',
+  'kick.admin_target': 'apiError.kick.admin_target',
+  'kick.target_offline': 'apiError.kick.target_offline',
+
+  // woc_market: the config-gated $WOC Exchange family (server/woc_market_routes.ts).
+  'woc_market.invalid_input': 'apiError.woc_market.invalid_input',
+  'woc_market.disabled': 'apiError.woc_market.disabled',
+  'woc_market.paused': 'apiError.woc_market.paused',
+  'woc_market.wallet_required': 'apiError.woc_market.wallet_required',
+  'woc_market.recipient_wallet_required': 'apiError.woc_market.recipient_wallet_required',
+  'woc_market.self_offer': 'apiError.woc_market.self_offer',
+  'woc_market.offer_expired': 'apiError.woc_market.offer_expired',
+  'woc_market.terms_required': 'apiError.woc_market.terms_required',
+  // RETIRED, never raised (B6/R1); kept with their append-only codes.
+  'woc_market.totp_required': 'apiError.woc_market.totp_required',
+  'woc_market.totp_invalid': 'apiError.woc_market.totp_invalid',
+  'woc_market.suspended': 'apiError.woc_market.suspended',
+  'woc_market.character_invalid': 'apiError.woc_market.character_invalid',
+  'woc_market.not_found': 'apiError.woc_market.not_found',
+  'woc_market.not_yours': 'apiError.woc_market.not_yours',
+  'woc_market.not_active': 'apiError.woc_market.not_active',
+  'woc_market.own_listing': 'apiError.woc_market.own_listing',
+  'woc_market.has_bids': 'apiError.woc_market.has_bids',
+  'woc_market.bid_too_low': 'apiError.woc_market.bid_too_low',
+  'woc_market.already_pending': 'apiError.woc_market.already_pending',
+  'woc_market.insufficient_balance': 'apiError.woc_market.insufficient_balance',
+  'woc_market.quote_unavailable': 'apiError.woc_market.quote_unavailable',
+  'woc_market.quote_expired': 'apiError.woc_market.quote_expired',
+  'woc_market.not_pending': 'apiError.woc_market.not_pending',
+  'woc_market.confirm_failed': 'apiError.woc_market.confirm_failed',
+  'woc_market.confirm_in_flight': 'apiError.woc_market.confirm_in_flight',
+  'woc_market.buy_now_locked': 'apiError.woc_market.buy_now_locked',
+  'woc_market.cancel_pending': 'apiError.woc_market.cancel_pending',
+  'woc_market.claim_cooldown': 'apiError.woc_market.claim_cooldown',
+  'woc_market.bond_window_closed': 'apiError.woc_market.bond_window_closed',
+  'woc_market.settlement_in_flight': 'apiError.woc_market.settlement_in_flight',
+  'woc_market.contended': 'apiError.woc_market.contended',
+  'woc_market.sale_conflict': 'apiError.woc_market.sale_conflict',
+  'woc_market.no_buy_now': 'apiError.woc_market.no_buy_now',
+  'woc_market.cap_reached': 'apiError.woc_market.cap_reached',
+  'woc_market.stale_item': 'apiError.woc_market.stale_item',
+  'woc_market.item_mismatch': 'apiError.woc_market.item_mismatch',
+  'woc_market.offer_pending': 'apiError.woc_market.offer_pending',
+  'woc_market.not_eligible': 'apiError.woc_market.not_eligible',
+  'woc_market.invalid_params': 'apiError.woc_market.invalid_params',
+  'woc_market.signature_reused': 'apiError.woc_market.signature_reused',
+  'woc_market.item_locked': 'apiError.woc_market.item_locked',
+  'woc_market.stepup_required': 'apiError.woc_market.stepup_required',
+  'woc_market.stepup_challenge_invalid': 'apiError.woc_market.stepup_challenge_invalid',
+  'woc_market.stepup_challenge_expired': 'apiError.woc_market.stepup_challenge_expired',
+  'woc_market.stepup_wallet_mismatch': 'apiError.woc_market.stepup_wallet_mismatch',
+  'woc_market.stepup_binding_mismatch': 'apiError.woc_market.stepup_binding_mismatch',
+  'woc_market.stepup_signature_invalid': 'apiError.woc_market.stepup_signature_invalid',
+} satisfies Record<string, TranslationKey>;
+
+/** The message of an Error, or the string form of any other thrown value. */
+export function technicalErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
+}
+
+// The stable code carried on a thrown value (an ApiError-shaped object, or any
+// object with a string `code`), read structurally so this module never imports the
+// net/ ApiError class. An empty or non-string code is treated as absent.
+function errorCode(err: unknown): string | undefined {
+  if (err && typeof err === 'object' && 'code' in err) {
+    const code = (err as { code?: unknown }).code;
+    if (typeof code === 'string' && code.length > 0) return code;
+  }
+  return undefined;
+}
+
+// The params bag carried alongside the code (the parsed problem+json / legacy body;
+// e.g. `retryAfterSeconds` for a rate limit, `date` for a suspension).
+function errorParams(err: unknown): Record<string, unknown> | undefined {
+  if (err && typeof err === 'object' && 'params' in err) {
+    const params = (err as { params?: unknown }).params;
+    if (params && typeof params === 'object') return params as Record<string, unknown>;
+  }
+  return undefined;
+}
+
+// Resolves a coded error to localized text, or null to defer to the prose fallback.
+// null when: the code is not in the table (an un-migrated route), or a parametric
+// code arrives without the value it needs (a rate limit with no seconds).
+function resolveByCode(code: string, params: Record<string, unknown> | undefined): string | null {
+  const key = (API_ERROR_KEYS as Partial<Record<string, TranslationKey>>)[code];
+  if (key === undefined) return null;
+
+  if (code === 'moderation.suspended_until') {
+    // The server sends the suspension deadline as an ISO/epoch value; format it
+    // client-side. With no date to render, defer to prose (which may still capture
+    // the legacy `suspended until <toUTCString>` text); an unparseable but present
+    // value passes through raw so the message is never empty.
+    const raw = params?.date;
+    if (raw === undefined || raw === null || raw === '') return null;
+    const ms = new Date(raw as string | number).getTime();
+    return Number.isFinite(ms)
+      ? t(key, { date: formatDateTime(new Date(ms)) })
+      : t(key, { date: String(raw) });
+  }
+
+  if (code === 'rate_limit.exceeded') {
+    // {seconds} in the catalog receives an already-localized duration phrase, not a
+    // bare number. Without a numeric retryAfterSeconds, defer to prose.
+    const seconds = params?.retryAfterSeconds;
+    if (typeof seconds !== 'number' || !Number.isFinite(seconds)) return null;
+    return t(key, { seconds: formatDuration(seconds) });
+  }
+
+  if (code === 'woc_market.claim_cooldown') {
+    // With the server-computed remaining time, say WHEN a retry can succeed.
+    // The retry sentence lives under hudChrome (the apiError catalog is a
+    // strict bijection with the server code set, so a client-side variant
+    // leaf cannot live there); an older server sends no params and the plain
+    // apiError sentence still renders (never null: "later" is honest, just
+    // less useful).
+    // Through the shared multi-unit phrase, never a raw seconds count: the
+    // common answer is the half-hour per-listing cooldown, and formatDuration
+    // alone rendered "1,800 seconds".
+    const seconds = params?.retryAfterSeconds;
+    if (typeof seconds === 'number' && Number.isFinite(seconds) && seconds > 0) {
+      return t('hudChrome.wocMarket.claimCooldownRetry', {
+        duration: durationText(seconds),
+      });
+    }
+    return t(key);
+  }
+
+  return t(key);
+}
+
+// A failed fetch (connection refused, DNS failure, or an offline device) rejects
+// with a TypeError and no stable error code. Engines word that TypeError differently,
+// so recognize their known messages without treating arbitrary application Errors
+// containing words such as "load failed" as transport failures.
+const TRANSPORT_FAILURE_MESSAGES = new Set([
+  'failed to fetch',
+  'load failed', // Safari
+  'fetch failed', // Node / undici (the underlying cause is e.g. ECONNREFUSED)
+  'network request failed',
+  'the network connection was lost',
+]);
+
+// True for a fetch transport failure, or for the empty gateway response produced
+// when a reverse/dev proxy cannot reach its backend. An explicit server error body
+// remains a diagnostic even when it uses the same gateway status.
+function isTransportFailure(err: unknown): boolean {
+  // A problem body with a stable code came from the application server. RFC
+  // problem bodies omit the legacy `error` field, so ApiError's message is the
+  // same generic status text as an empty proxy response; the code is what
+  // distinguishes those cases.
+  if (errorCode(err) !== undefined) return false;
+  const status =
+    err && typeof err === 'object' && typeof (err as { status?: unknown }).status === 'number'
+      ? (err as { status: number }).status
+      : undefined;
+  const message = technicalErrorMessage(err).trim().toLowerCase();
+  if (status !== undefined) {
+    return (
+      (status === 502 || status === 503 || status === 504) &&
+      message === `request failed (${status})`
+    );
+  }
+  if (!(err instanceof TypeError)) return false;
+  const normalized = message.replace(/[.!]+$/, '');
+  return normalized.includes('networkerror') || TRANSPORT_FAILURE_MESSAGES.has(normalized);
+}
+
+export function userFacingApiError(err: unknown): string {
+  const code = errorCode(err);
+  if (code) {
+    const byCode = resolveByCode(code, errorParams(err));
+    if (byCode !== null) return byCode;
+  }
+
+  // The server was unreachable (fetch rejected). Surface the same localized connection
+  // message the WebSocket-drop path already uses, not the raw browser diagnostic.
+  if (isTransportFailure(err)) return t('loading.connectionLost');
+
+  // --- Prose fallback (old-ladder routes, until the ladder is removed). Moved verbatim from
+  // src/main.ts; each arm re-localizes a stable English source string. ---
+  const text = technicalErrorMessage(err);
+  const suspended = text.match(/^This account is suspended until (.+)\.$/);
+  if (suspended) return t('errors.api.accountSuspended', { date: suspended[1] });
+
+  const normalized = text.toLowerCase();
+  if (normalized.startsWith('too many attempts')) return t('errors.api.tooManyAttempts');
+  // The Discord rate-limit bucket (server/discord.ts) answers a bare { error: 'rate
+  // limited' } 429; resolve it to the same "slow down" message rather than leaking the
+  // raw English (the discordRateLimited gap the choice panel already handled inline).
+  if (normalized === 'rate limited') return t('errors.api.tooManyAttempts');
+  if (normalized === 'username must be 3-24 chars (letters, digits, _)')
+    return t('errors.api.usernameShape');
+  if (normalized === 'username is not allowed') return t('errors.api.usernameNotAllowed');
+  if (normalized === 'password must be at least 6 chars') return t('errors.api.passwordMin');
+  if (normalized === 'username already taken') return t('errors.api.usernameTaken');
+  if (normalized === 'invalid username or password') return t('errors.api.invalidCredentials');
+  if (normalized === 'invalid character name (2-16 letters)')
+    return t('errors.api.invalidCharacterName');
+  if (normalized === 'character name is not allowed')
+    return t('errors.api.characterNameNotAllowed');
+  if (normalized === 'invalid class') return t('errors.api.invalidClass');
+  if (normalized === 'character limit reached') return t('errors.api.characterLimit');
+  if (normalized === 'that name is taken') return t('errors.api.nameTaken');
+  if (
+    normalized === 'character not found' ||
+    normalized === 'no such character' ||
+    normalized === 'not found'
+  )
+    return t('errors.api.characterNotFound');
+  if (normalized === 'character is currently online') return t('errors.api.characterOnline');
+  if (normalized === 'character rename is not permitted') return t('errors.api.renameNotPermitted');
+  if (normalized === 'type the character name to confirm deletion')
+    return t('errors.api.deleteConfirm');
+  if (normalized === 'not authenticated' || normalized === 'authentication required')
+    return t('errors.api.notAuthenticated');
+  if (normalized === 'this account has been banned.') return t('errors.api.accountBanned');
+  if (normalized === 'character already in world') return t('errors.api.alreadyInWorld');
+  if (normalized === 'too many characters on this account are already in the world')
+    return t('errors.api.accountSessionLimit');
+  if (normalized === 'character taken over') return t('errors.api.takenOver');
+  if (normalized === 'this character must be renamed before entering the world.')
+    return t('errors.api.renameBeforeEntering');
+  if (normalized === 'logins are only allowed from the game client')
+    return t('errors.api.webLoginOnly');
+  // Account portal REST errors (server/main.ts /api/account/*). English-source,
+  // re-localized here onto the English-only hudChrome.account.* keys.
+  if (normalized === 'current password is incorrect')
+    return t('hudChrome.account.errCurrentPassword');
+  if (normalized === 'enter a valid email address') return t('hudChrome.account.errEmailInvalid');
+  if (normalized === 'username does not match') return t('hudChrome.account.errUsernameMatch');
+  if (normalized === 'password is incorrect') return t('hudChrome.account.errPasswordIncorrect');
+  if (normalized === 'log out all characters before deactivating')
+    return t('hudChrome.account.errCharactersOnline');
+  if (normalized === 'this account has been deactivated.')
+    return t('hudChrome.account.deactivatedLocked');
+  if (normalized === 'password must be at most 128 chars')
+    return t('hudChrome.account.errPasswordLong');
+  if (normalized === 'that is already your email address')
+    return t('hudChrome.account.errEmailUnchanged');
+  // Password-reset ("forgot password") link is invalid or expired (server/account.ts).
+  if (normalized === 'invalid or expired link') return t('hudChrome.auth.resetErrInvalid');
+  if (
+    normalized === 'that code is not valid, try again' ||
+    normalized === 'invalid authentication code'
+  )
+    return t('hudChrome.account.errTwoFactorCode');
+  if (
+    normalized === 'start two-factor setup first' ||
+    normalized === 'two-factor is already enabled' ||
+    normalized === 'two-factor is not enabled'
+  )
+    return t('hudChrome.account.errTwoFactorState');
+  // The account row vanished mid-session (404 from /api/account/*); treat as a
+  // dropped session rather than rendering raw English in the form.
+  if (normalized === 'account not found') return t('errors.api.notAuthenticated');
+  // Cloudflare Turnstile rejection on login/register (passesTurnstile in
+  // server/turnstile.ts).
+  if (normalized === 'verification failed, please try again')
+    return t('errors.api.verificationFailed');
+  // Desktop app login handoff (server/desktop_login.ts exchange, plus the
+  // client-side guard in completeDesktopBrowserLogin when the mint response
+  // carries no code).
+  if (
+    normalized === 'invalid or expired desktop login code' ||
+    normalized === 'missing desktop login code'
+  )
+    return t('errors.api.desktopCodeInvalid');
+  // WebSocket disconnect reasons surfaced through the fatal overlay (net/online.ts).
+  if (normalized === 'connection to the server was lost.') return t('loading.connectionLost');
+  if (normalized === 'rejected by server') return t('loading.connectionRejected');
+  // The inbound flood kick. 'message rate exceeded' is a byte-exact wire contract
+  // with server/msg_rate_limit.ts (MSG_RATE_KICK_REASON), passed by both limiter
+  // kick arms in server/game.ts and deliberately session-fatal: reconnect_policy
+  // has no transient arm for it, since an immediately reconnecting flooder
+  // re-floods (lockstep pinned by tests/localization_fixes.test.ts).
+  if (normalized === 'message rate exceeded') return t('loading.messageRateExceeded');
+  // The realm admission cap refused a fresh join. 'realm is full' is a byte-exact
+  // wire contract with server/ws_auth.ts (WS_AUTH_ERROR).
+  if (normalized === 'realm is full') return t('loading.realmFull');
+  // The per-IP connection cap refused the handshake. 'too many connections from your
+  // network' is a byte-exact wire contract with server/ws_auth.ts (WS_AUTH_ERROR).
+  if (normalized === 'too many connections from your network')
+    return t('loading.tooManyConnections');
+  // A rolling deploy paired client and server binaries whose authoritative
+  // world layouts disagree. The wire literal remains actionable to legacy
+  // clients that lack this matcher; current clients render the localized form.
+  if (normalized === 'game and server versions are incompatible. reload or update, then try again.')
+    return t('loading.incompatibleWorldVersion');
+  // NOTE: protocol/transport diagnostics ('bad auth message', 'authentication timed out',
+  // etc.) are intentionally NOT translated, they are developer/diagnostic errors and must
+  // stay English so browser logs and support reports match the server source.
+  // Moderation kicks and the login brute-force throttle (server/admin.ts, server/main.ts).
+  if (normalized === 'this account is suspended.') return tServer('moderation.suspended');
+  if (normalized === 'a moderator requires one of your characters to be renamed.')
+    return tServer('moderation.forceRename');
+  // The admin-panel kick (server/admin_kick_api.ts adminKickMessage). The prefix
+  // is the byte-exact wire contract; the operator's free-text reason rides after
+  // it and is interpolated into the localized line, never translated. Matched on
+  // the ORIGINAL text so the reason keeps its case.
+  if (text.startsWith(ADMIN_KICK_MESSAGE_PREFIX)) {
+    return t('loading.kickedByModerator', {
+      reason: text.slice(ADMIN_KICK_MESSAGE_PREFIX.length),
+    });
+  }
+  if (normalized.startsWith('too many failed attempts')) return tServer('moderation.tooManyFailed');
+  // Transport/runtime failures are diagnostic code errors. Preserve their
+  // English source text so browser logs and support reports match exactly.
+  return text;
+}

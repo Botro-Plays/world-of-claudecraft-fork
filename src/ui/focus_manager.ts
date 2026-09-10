@@ -1,0 +1,317 @@
+// Shared focus manager (WIRING, not a registered pure core): the ONE owner of the
+// HUD's window focus behavior. It unifies the previously ad-hoc per-window focus
+// helpers that lived on Hud (currentFocusableElement / restoreFocus /
+// focusFirstInteractive) into a single trap + focus-first + return-to-opener system,
+// so there is one system, not two. It touches document.activeElement and listens on
+// document, so it is intentionally NOT in tests/architecture.test.ts UI_PURE_CORES;
+// it is registered in that file's UI_DOM_MODULES instead, as a module that owns
+// browser state. The DOM-FREE boundary math it leans on lives in ./focus_order and
+// IS a registered pure core.
+//
+// WHAT THIS OWNS:
+//   - the ONE canonical FOCUSABLE_SELECTOR (lifted from the old Hud helper, never
+//     re-spelled),
+//   - Tab / Shift+Tab cycle within the open window (wrapping at both ends),
+//   - focus-first-interactive on open,
+//   - return-to-opener on close.
+//
+// WHAT THIS DELIBERATELY DOES NOT OWN:
+//   - Escape. The HUD already routes Escape through ONE dispatcher (src/main.ts game
+//     input -> hud.closeAll(), plus the gamepad path and the few capture-phase modal
+//     handlers that beat game input). Adding a second Escape listener here would
+//     duplicate it, so Escape stays with the existing
+//     unified dispatcher. The trap still lets a keyboard user leave: Escape closes the
+//     window via that dispatcher, which returns focus through release().
+//
+// WHY THE TRAP ONLY FIRES WHEN FOCUS IS ALREADY INSIDE THE WINDOW: in this game Tab
+// is the target-nearest-enemy key (src/main.ts onTab) while no window is focused.
+// Intercepting Tab unconditionally would hijack tab-targeting, so the trap only
+// cycles Tab when document.activeElement is already within the trapped window; from
+// the game world Tab still targets. The 3D world / game canvas is OUT of a11y scope
+// (not screen-readable); the trap never reaches it.
+import { nextFocusIndex } from './focus_order';
+
+/**
+ * The canonical focusable set for the Tab CYCLE: every keyboard-focusable element in a
+ * trapped window, INCLUDING the window close (X) button. Before this trap existed, native
+ * Tab order reached the X; the cycle must keep it reachable (closing a window
+ * from the keyboard must never depend on Escape alone). Lifted to ONE named constant (it
+ * was previously spelled inline in Hud.focusFirstInteractive); never re-spelled.
+ *
+ * Focus-FIRST-on-open is a derivation of this set, not a second selector: focusFirst()
+ * skips the [data-close] X so opening a window lands on a meaningful control rather than
+ * the dismiss affordance, falling back to the X only when it is the sole focusable.
+ *
+ * tabindex="-1" is excluded from EVERY clause, not just the bare [tabindex] one: an element
+ * with tabindex="-1" is programmatically focusable but deliberately OUT of the Tab sequence
+ * (the roving-tabindex idiom, e.g. the inactive social / talents / market tabs), so the Tab
+ * cycle must skip it exactly as native Tab does, or a roving widget inside a trapped window
+ * would stop on every inactive item instead of behaving as one Tab stop.
+ */
+export const FOCUSABLE_SELECTOR =
+  'button:not([disabled]):not([tabindex="-1"]), [href]:not([tabindex="-1"]), input:not([disabled]):not([tabindex="-1"]), select:not([disabled]):not([tabindex="-1"]), textarea:not([disabled]):not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])';
+
+export interface FocusTrapOptions {
+  /**
+   * Re-resolve the trapped window root lazily: it may be hidden or unpopulated at
+   * open() time, and the focusable set is re-queried on every Tab, so the manager
+   * always reads the live DOM.
+   */
+  root: () => HTMLElement | null;
+  /**
+   * The element to refocus on release. Captured from the active element at open()
+   * when omitted (the old currentFocusableElement idiom).
+   */
+  returnFocusTo?: HTMLElement | null;
+}
+
+export interface FocusTrapHandle {
+  /**
+   * Move focus to the first interactive element in the trapped window (or the
+   * preferredSelector match), matching the old focusFirstInteractive entry point.
+   */
+  focusFirst(preferredSelector?: string): void;
+  /**
+   * Remove this trap. When returnFocus is true (the default) focus returns to the
+   * recorded opener (the old restoreFocus behavior), or to `returnTo` when the
+   * caller names one (the window-focus bridge hands back the opener the window
+   * stored for itself; pass null to return focus nowhere).
+   *
+   * A trap released while a LIVE trap sits above it returns no focus at all: the
+   * window that went away is under a modal the player is still using. It hands
+   * its return target UP instead, to the traps it OWNS (recorded when they opened,
+   * see TrapState.owner) whose own opener can no longer take focus.
+   */
+  release(returnFocus?: boolean, returnTo?: HTMLElement | null): void;
+  /**
+   * The element recorded as this trap's opener (what release() would restore focus
+   * to). Exposed so a successor window opened FROM WITHIN the trapped window (e.g.
+   * quest dialog -> vendor) can hand its own opener chain forward instead of
+   * capturing an element inside the trap's own subtree, which is about to be
+   * hidden and would fail canFocus by the time the successor closes.
+   */
+  opener(): HTMLElement | null;
+}
+
+interface TrapState {
+  root: () => HTMLElement | null;
+  opener: HTMLElement | null;
+  /**
+   * The trap that OWNS this one: the window whose root held the opener at the
+   * moment this trap opened (a bind confirmation opened from a button inside the
+   * corpse popup is owned by the corpse popup's trap).
+   *
+   * Recorded at open() rather than derived at release() BECAUSE the owning window
+   * is live at open and may not be later: these windows repaint themselves from
+   * the world, and a rebuild destroys the opener element outright. Asking "is this
+   * opener still inside that root" once the answer matters is asking about a node
+   * that no longer has a parent, and the honest answer, no, is the wrong one.
+   */
+  owner: TrapState | null;
+}
+
+/**
+ * Whether an element can actually take focus right now: connected AND rendered.
+ * A control inside a closed overlay has zero client rects, so focus() on it is a
+ * silent no-op that drops the caller to <body>. Exported because callers outside
+ * a trap need the same test before they hand focus somewhere (the More tray's
+ * trigger lives inside the collapsible menu strip).
+ */
+export function canTakeFocus(el: HTMLElement | null): el is HTMLElement {
+  return Boolean(el?.isConnected && el.getClientRects().length > 0);
+}
+
+export class FocusManager {
+  private readonly stack: TrapState[] = [];
+  private listening = false;
+
+  /**
+   * The currently focused element worth returning to later (the old
+   * currentFocusableElement idiom): a connected, rendered, non-body element.
+   */
+  activeFocusable(): HTMLElement | null {
+    const active = document.activeElement;
+    return active instanceof HTMLElement && active !== document.body && this.canFocus(active)
+      ? active
+      : null;
+  }
+
+  /**
+   * Return focus to target (or fallback), matching the old Hud.restoreFocus: deferred
+   * a tick so it wins over a close handler that is still settling the DOM.
+   */
+  restore(target: HTMLElement | null, fallback?: HTMLElement | null): void {
+    const resolvedFallback = fallback ?? null;
+    const candidate = this.canFocus(target)
+      ? target
+      : this.canFocus(resolvedFallback)
+        ? resolvedFallback
+        : null;
+    if (!candidate) return;
+    window.setTimeout(() => candidate.focus(), 0);
+  }
+
+  /**
+   * Focus the first interactive element in root (or the preferredSelector match),
+   * matching the old Hud.focusFirstInteractive.
+   */
+  focusFirst(root: HTMLElement, preferredSelector?: string): void {
+    window.setTimeout(() => {
+      if (preferredSelector) {
+        const preferred = root.querySelector<HTMLElement>(preferredSelector);
+        if (preferred) {
+          preferred.focus();
+          return;
+        }
+      }
+      const focusables = this.focusablesIn(root);
+      // Skip dismiss and explicitly secondary header actions on open so focus
+      // lands on the window's primary content; keep them in the Tab cycle.
+      const target =
+        focusables.find(
+          (el) => !el.matches('[data-close]') && !el.matches('[data-skip-open-focus]'),
+        ) ?? focusables[0];
+      (target ?? root).focus();
+    }, 0);
+  }
+
+  /**
+   * Open a focus trap for a window: record the opener, push the trap, install the Tab
+   * cycle. Returns a handle whose release() removes the trap and returns focus. The
+   * most recently opened trap is the active one (a stack), so closing the top window
+   * reactivates the one beneath it.
+   */
+  open(opts: FocusTrapOptions): FocusTrapHandle {
+    const opener = opts.returnFocusTo !== undefined ? opts.returnFocusTo : this.activeFocusable();
+    const state: TrapState = { root: opts.root, opener, owner: this.ownerOf(opener) };
+    this.stack.push(state);
+    this.ensureListening();
+    return {
+      focusFirst: (preferredSelector?: string) => {
+        const root = state.root();
+        if (root) this.focusFirst(root, preferredSelector);
+      },
+      release: (returnFocus = true, returnTo?: HTMLElement | null) => {
+        const i = this.stack.lastIndexOf(state);
+        const above = i === -1 ? [] : this.stack.slice(i + 1);
+        if (i !== -1) this.stack.splice(i, 1);
+        if (this.stack.length === 0) this.stopListening();
+        const target = returnTo !== undefined ? returnTo : state.opener;
+        this.reparent(state, target, above);
+        // A window can go away UNDERNEATH a modal it opened (a corpse popup whose
+        // body despawns while its bind-on-pickup confirmation is still up). The
+        // modal is what the player is looking at, so this release must not pull
+        // focus out of it; the inheritance above is what gives that modal somewhere
+        // real to return to when the player finally answers it.
+        const covering = above.filter((t) => this.stack.includes(t) && this.canFocus(t.root()));
+        if (covering.length > 0) return;
+        if (returnFocus) this.restore(target);
+      },
+      opener: () => state.opener,
+    };
+  }
+
+  /**
+   * The live trap whose window contains `opener`, topmost first, or null when the
+   * opener is outside every trapped window (a rail button, the game world) or was
+   * never recorded (a pointer-only open, which deliberately restores nothing).
+   */
+  private ownerOf(opener: HTMLElement | null): TrapState | null {
+    if (!opener) return null;
+    for (let i = this.stack.length - 1; i >= 0; i--) {
+      const root = this.stack[i].root();
+      if (root?.contains(opener)) return this.stack[i];
+    }
+    return null;
+  }
+
+  /**
+   * Hand a closing trap's children up to its own parent: they were opened from
+   * inside a window that is now gone, so it stops being their owner, and any of
+   * them whose opener can no longer take focus (hidden with that window, or
+   * destroyed by one of its repaints) inherits the closing window's return target
+   * instead of pointing at a control that no longer exists.
+   *
+   * A child whose opener is still focusable keeps it: the window may have released
+   * its trap without going away, and the player's own return point wins over an
+   * inherited one.
+   */
+  private reparent(
+    state: TrapState,
+    target: HTMLElement | null,
+    above: readonly TrapState[],
+  ): void {
+    for (const child of above) {
+      if (child.owner !== state || !this.stack.includes(child)) continue;
+      if (!this.canFocus(child.opener)) child.opener = target;
+      child.owner = state.owner;
+    }
+  }
+
+  private canFocus(el: HTMLElement | null): el is HTMLElement {
+    return canTakeFocus(el);
+  }
+
+  private ensureListening(): void {
+    if (this.listening) return;
+    document.addEventListener('keydown', this.onKeyDown, true);
+    this.listening = true;
+  }
+
+  private stopListening(): void {
+    if (!this.listening) return;
+    document.removeEventListener('keydown', this.onKeyDown, true);
+    this.listening = false;
+  }
+
+  // Bound once for stable add/removeEventListener identity.
+  private readonly onKeyDown = (e: KeyboardEvent): void => {
+    if (e.key !== 'Tab') return;
+    // Self-heal: drop any top traps whose window was closed without releasing, so a
+    // leaked trap can never strand the user.
+    let top = this.stack[this.stack.length - 1];
+    while (top && !this.canFocus(top.root())) {
+      this.stack.pop();
+      top = this.stack[this.stack.length - 1];
+    }
+    if (!top) {
+      this.stopListening();
+      return;
+    }
+    const root = top.root();
+    if (!root) return;
+    const active = document.activeElement;
+    // Only trap Tab when focus is already inside the window: from the game world Tab
+    // is the target-nearest key and must not be hijacked.
+    if (!(active instanceof HTMLElement) || !root.contains(active)) return;
+    const focusables = this.focusablesIn(root);
+    if (focusables.length === 0) return;
+    const nextIndex = nextFocusIndex(focusables.length, focusables.indexOf(active), e.shiftKey);
+    if (nextIndex < 0) return;
+    e.preventDefault();
+    focusables[nextIndex].focus();
+  };
+
+  private focusablesIn(root: HTMLElement): HTMLElement[] {
+    const visible = [...root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)].filter(
+      (el) => el.getClientRects().length > 0,
+    );
+    // Native Tab order exposes a named radio group as one stop: the checked
+    // radio, or the first member when none is checked. The manager drives Tab
+    // manually, so reproduce that derivation instead of stopping on every
+    // unchecked radio in the group.
+    const radioStopByName = new Map<string, HTMLElement>();
+    for (const el of visible) {
+      if (el.tagName.toLowerCase() !== 'input') continue;
+      const input = el as HTMLInputElement;
+      if (input.type !== 'radio' || input.name.length === 0) continue;
+      if (!radioStopByName.has(input.name) || input.checked) radioStopByName.set(input.name, el);
+    }
+    return visible.filter((el) => {
+      if (el.tagName.toLowerCase() !== 'input') return true;
+      const input = el as HTMLInputElement;
+      if (input.type !== 'radio' || input.name.length === 0) return true;
+      return radioStopByName.get(input.name) === el;
+    });
+  }
+}

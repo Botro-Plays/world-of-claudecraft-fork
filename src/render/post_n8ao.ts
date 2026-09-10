@@ -1,0 +1,400 @@
+import { N8AOPass } from 'n8ao';
+import type {
+  Camera,
+  DataTexture,
+  Scene,
+  ShaderMaterial,
+  WebGLRenderer,
+  WebGLRenderTarget,
+} from 'three';
+
+interface N8AOFullScreenTriangle {
+  material: ShaderMaterial;
+  render(renderer: WebGLRenderer): void;
+  dispose(): void;
+}
+
+interface N8AOStaticFrameInternals {
+  beautyRenderTarget: WebGLRenderTarget;
+  writeTargetInternal: WebGLRenderTarget;
+  readTargetInternal: WebGLRenderTarget;
+  accumulationRenderTarget: WebGLRenderTarget;
+  accumulationQuad: N8AOFullScreenTriangle;
+  bluenoise: DataTexture;
+  effectShaderQuad?: N8AOFullScreenTriangle;
+  poissonBlurQuad?: N8AOFullScreenTriangle;
+  effectCompositerQuad: N8AOFullScreenTriangle;
+  depthDownsampleTarget?: WebGLRenderTarget | null;
+  depthDownsampleQuad?: N8AOFullScreenTriangle | null;
+  transparencyRenderTargetDWFalse?: WebGLRenderTarget | null;
+  transparencyRenderTargetDWTrue?: WebGLRenderTarget | null;
+  depthCopyPass?: N8AOFullScreenTriangle | null;
+}
+
+interface N8AOStaticConfiguration {
+  accumulate: boolean;
+  biasMultiplier: number;
+  biasOffset: number;
+  screenSpaceRadius: boolean;
+}
+
+const noClearQuads = new WeakSet<N8AOFullScreenTriangle>();
+
+const ACCUMULATION_QUANTIZE_SHADER = /* glsl */ `
+    vec4 quantizeAccumulatedAo(vec4 value) {
+      vec2 rg = unpackHalf2x16(packHalf2x16(value.rg));
+      vec2 ba = unpackHalf2x16(packHalf2x16(vec2(value.b, 1.0)));
+      return vec4(rg, ba);
+    }
+
+    vec4 sampleAccumulatedAo(vec2 uv) {
+      return quantizeAccumulatedAo(texture2D(tDiffuse, uv));
+    }
+
+    vec4 fetchAccumulatedAo(ivec2 pixel) {
+      return quantizeAccumulatedAo(texelFetch(tDiffuse, pixel, 0));
+    }
+`;
+
+function replacePinned(source: string, from: string, to: string, expected: number): string {
+  const count = source.split(from).length - 1;
+  if (count !== expected) {
+    throw new Error(
+      `Pinned n8ao 2.0.0 shader changed at "${from}" (${count}, expected ${expected})`,
+    );
+  }
+  return source.split(from).join(to);
+}
+
+function preserveAccumulationQuantization(material: ShaderMaterial): void {
+  let shader = material.fragmentShader;
+  shader = replacePinned(
+    shader,
+    'vec4 texel = texture2D(tDiffuse, vUv);',
+    'vec4 texel = sampleAccumulatedAo(vUv);',
+    3,
+  );
+  shader = replacePinned(
+    shader,
+    'texel = texture2D(tDiffuse, vUv);',
+    'texel = sampleAccumulatedAo(vUv);',
+    1,
+  );
+  shader = replacePinned(shader, 'texelFetch(tDiffuse, p, 0)', 'fetchAccumulatedAo(p)', 1);
+  shader = replacePinned(
+    shader,
+    '    void main() {',
+    `${ACCUMULATION_QUANTIZE_SHADER}\n    void main() {`,
+    1,
+  );
+  material.fragmentShader = shader;
+  material.needsUpdate = true;
+}
+
+function assertStaticShaderConfiguration(configuration: N8AOStaticConfiguration): void {
+  if (
+    configuration.accumulate ||
+    configuration.biasMultiplier !== 0 ||
+    configuration.biasOffset !== 0 ||
+    configuration.screenSpaceRadius
+  ) {
+    throw new Error(
+      'Static N8AO shaders require accumulation, bias adjustment, and screen-space radius off',
+    );
+  }
+}
+
+/**
+ * The static path fixes frame and bias adjustment at zero and uses world-space
+ * radius on every preset. At full resolution, sceneDepth is nearest-filtered,
+ * so the center texture2D sample is the same texel computeNormal fetched again.
+ * Passing that depth and its reconstructed position removes one depth fetch and
+ * one identical reconstruction without changing any later operation.
+ */
+function specializeStaticEvaluation(material: ShaderMaterial): void {
+  let shader = material.fragmentShader;
+  shader = replacePinned(shader, '      vec4 diffuse = texture2D(sceneDiffuse, vUv);\n', '', 1);
+  shader = replacePinned(
+    shader,
+    '  vec3 computeNormal(vec3 worldPos, vec2 vUv) {',
+    '  vec3 computeNormal(vec3 worldPos, float c0, vec2 vUv) {',
+    1,
+  );
+  // n8ao 2.0.0 removed computeNormal's #ifdef REVERSEDEPTH arm (the
+  // "1.0 - texelFetch" spelling), so only the plain c0 declaration remains
+  // to delete. We never enable three's reversed depth buffer.
+  shader = replacePinned(shader, '    float c0 = texelFetch(sceneDepth, p, 0).x;\n', '', 1);
+  shader = replacePinned(
+    shader,
+    '    vec3 ce = getWorldPos(c0, vUv).xyz;',
+    '    vec3 ce = worldPos;',
+    1,
+  );
+  shader = replacePinned(
+    shader,
+    '        vec3 normal = computeNormal(worldPos, vUv);',
+    '        vec3 normal = computeNormal(worldPos, depth, vUv);',
+    1,
+  );
+  shader = replacePinned(
+    shader,
+    `      vec2 harmoniousNumbers = vec2(
+        1.618033988749895,
+        1.324717957244746
+      );
+      noise.rg += harmoniousNumbers * frame;
+`,
+    '',
+    1,
+  );
+  shader = replacePinned(
+    shader,
+    `      float radiusToUse = screenSpaceRadius ? distance(
+        worldPos,
+        getWorldPos(depth, vUv +
+          vec2(radius, 0.0) / resolution)
+      ) : radius;
+      float distanceFalloffToUse =screenSpaceRadius ?
+          radiusToUse * distanceFalloff
+      : radiusToUse * distanceFalloff * 0.2;
+`,
+    `      float radiusToUse = radius;
+      float distanceFalloffToUse = radius * distanceFalloff * 0.2;
+`,
+    1,
+  );
+  shader = replacePinned(
+    shader,
+    `      float bias = (min(
+        0.1,
+        distanceFalloffToUse * 0.1
+      ) / near) * fwidth(distance(worldPos, cameraPos)) / radiusToUse;
+      bias = biasAdjustment.x + biasAdjustment.y * bias;
+`,
+    '      float bias = 0.0;\n',
+    1,
+  );
+  material.fragmentShader = shader;
+  material.needsUpdate = true;
+}
+
+/**
+ * World-space radius removes the unused screen-space alternative. count starts
+ * at 1 and only receives nonnegative bilateral weights, so its divide guard is
+ * always taken for every finite shipped input.
+ */
+function specializeStaticDenoise(material: ShaderMaterial): void {
+  let shader = material.fragmentShader;
+  shader = replacePinned(
+    shader,
+    `        float radiusToUse = screenSpaceRadius ? distance(
+          worldPos,
+          getWorldPos(d, vUv +
+            vec2(worldRadius, 0.0) / resolution)
+        ) : worldRadius;
+        float distanceFalloffToUse =screenSpaceRadius ?
+        radiusToUse * distanceFalloff
+    : radiusToUse * distanceFalloff * 0.2;
+`,
+    `        float radiusToUse = worldRadius;
+        float distanceFalloffToUse = worldRadius * distanceFalloff * 0.2;
+`,
+    1,
+  );
+  shader = replacePinned(
+    shader,
+    `        if (count > 0.0) {
+          occlusion /= count;
+        }
+`,
+    '        occlusion /= count;\n',
+    1,
+  );
+  material.fragmentShader = shader;
+  material.needsUpdate = true;
+}
+
+/**
+ * The depth-derived normal both the AO evaluation and the HALFRES compositer
+ * upsample reconstruct is normalize(cross(dpdx, dpdy)). Where the two position
+ * derivatives are parallel or one of them vanishes (a pixel whose neighbours
+ * reconstruct to the same world position), the cross product is zero and
+ * normalize returns NaN. In the compositer that NaN enters the bilateral weight
+ * (exp(NaN) times anything is NaN), so totalWeight is NaN, the divide guard is
+ * not taken, and a NaN texel is written into the composer beauty. Measured on
+ * Mali-G715 (Android Chrome): exactly one NaN pixel per affected frame, at a
+ * different place each time, on unrelated surfaces, while the raw beauty is
+ * finite; the bloom blur then spread it frame-wide. Guard with the same
+ * length-checked normalize n8ao itself uses elsewhere (its 1e-12 threshold is
+ * upstream's, not a derived bound); a zero-derivative pixel gets a screen-up
+ * normal in the view space these shaders work in, so its one weight is finite
+ * and bounded. The test is written so that its fallback branch is the one a
+ * NaN comparison lands on: GLSL ES leaves that comparison implementation
+ * defined, and a non-finite length squared must never reach the normalize.
+ * The depth downsample pass reconstructs the same normal into a HalfFloat
+ * attachment on the half-resolution tiers, so it carries the guard too.
+ */
+const DEGENERATE_NORMAL_RETURN = 'return normalize(cross(dpdx, dpdy));';
+const SAFE_NORMAL_RETURN = `vec3 faceNormal = cross(dpdx, dpdy);
+    float faceNormalLengthSq = dot(faceNormal, faceNormal);
+    return faceNormalLengthSq < 1e-12
+      ? vec3(0.0, 1.0, 0.0)
+      : faceNormal * inversesqrt(faceNormalLengthSq);`;
+
+function guardDegenerateNormal(material: ShaderMaterial): void {
+  if (material.fragmentShader.includes('faceNormalLengthSq')) return;
+  material.fragmentShader = replacePinned(
+    material.fragmentShader,
+    DEGENERATE_NORMAL_RETURN,
+    SAFE_NORMAL_RETURN,
+    1,
+  );
+  material.needsUpdate = true;
+}
+
+function suppressFullCoverageClear(quad: N8AOFullScreenTriangle | null | undefined): void {
+  if (!quad || noClearQuads.has(quad)) return;
+  const render = quad.render.bind(quad);
+  quad.render = (renderer): void => {
+    const oldAutoClear = renderer.autoClear;
+    renderer.autoClear = false;
+    try {
+      render(renderer);
+    } finally {
+      renderer.autoClear = oldAutoClear;
+    }
+  };
+  noClearQuads.add(quad);
+}
+
+const passthroughQuads = new WeakSet<N8AOFullScreenTriangle>();
+
+/**
+ * The `ao-off` rung of the post shed (post_shed_core.ts): the occlusion
+ * quads (depth downsample, evaluate, both denoise iterations) draw nothing
+ * while the pass is in passthrough. What the rung sheds is the GPU draws;
+ * the package's render() still binds their targets and writes their
+ * uniforms (with the per-frame matrix and vector allocations it makes for
+ * them, unchanged by the shed), and the composite still runs, reading the
+ * AO target post_shed.ts cleared to white once (its depth-aware upsample
+ * falls back to the plain sample on a zero weight sum, so a stale
+ * downsampled depth cannot darken it), so the beauty passes through
+ * unoccluded. Nothing here changes a program or a target size.
+ */
+function skipWhilePassthrough(
+  quad: N8AOFullScreenTriangle | null | undefined,
+  pass: { readonly occlusionPassthrough: boolean },
+): void {
+  if (!quad || passthroughQuads.has(quad)) return;
+  const render = quad.render.bind(quad);
+  quad.render = (renderer): void => {
+    if (pass.occlusionPassthrough) return;
+    render(renderer);
+  };
+  passthroughQuads.add(quad);
+}
+
+/**
+ * The shipped static-frame path never enables N8AO temporal accumulation.
+ * Its frame-zero accumulation draw is only an RGBA8 to RGBA16F copy with
+ * alpha 1. The composite samples the final denoise target directly and
+ * performs the same binary16 conversion in shader instead.
+ */
+export class StaticOpaqueN8AOPass extends N8AOPass {
+  private resourcesDisposed = false;
+  /** The post shed's `ao-off` rung (post_shed_core.ts): while true the
+   *  occlusion quads skip their draws and the composite reads the AO target
+   *  post_shed.ts cleared to white. Written by post_shed.ts only. */
+  occlusionPassthrough = false;
+
+  /** The target the composite samples its occlusion from: the one target
+   *  the shed clears to white for the passthrough. The two denoise
+   *  iterations swap the internal pair an even number of times per frame,
+   *  so this is the same target at composite time as at construction. */
+  get occlusionTarget(): WebGLRenderTarget {
+    return (this as unknown as N8AOStaticFrameInternals).accumulationRenderTarget;
+  }
+
+  constructor(scene: Scene, camera: Camera, width: number, height: number) {
+    super(scene, camera, width, height);
+    assertStaticShaderConfiguration(this.configuration as unknown as N8AOStaticConfiguration);
+    if (this.configuration.denoiseIterations !== 2) {
+      throw new Error('Static N8AO path requires exactly two denoise passes');
+    }
+
+    const state = this as unknown as N8AOStaticFrameInternals;
+    state.accumulationRenderTarget.dispose();
+    state.accumulationRenderTarget = state.writeTargetInternal;
+    state.accumulationQuad.material.dispose();
+    state.accumulationQuad.render = () => {};
+  }
+
+  override detectTransparency(): void {
+    // The shipped mode is transparencyAware=false. Overriding the virtual
+    // constructor hook avoids two beauty targets and a depth-copy pass.
+  }
+
+  override configureAOPass(depthBufferType?: number, ortho?: boolean): void {
+    assertStaticShaderConfiguration(this.configuration as unknown as N8AOStaticConfiguration);
+    super.configureAOPass(depthBufferType, ortho);
+    const state = this as unknown as N8AOStaticFrameInternals;
+    if (state.effectShaderQuad) {
+      specializeStaticEvaluation(state.effectShaderQuad.material);
+      guardDegenerateNormal(state.effectShaderQuad.material);
+    }
+    suppressFullCoverageClear(state.effectShaderQuad);
+    skipWhilePassthrough(state.effectShaderQuad, this);
+  }
+
+  override configureDenoisePass(depthBufferType?: number, ortho?: boolean): void {
+    assertStaticShaderConfiguration(this.configuration as unknown as N8AOStaticConfiguration);
+    super.configureDenoisePass(depthBufferType, ortho);
+    const state = this as unknown as N8AOStaticFrameInternals;
+    if (state.poissonBlurQuad) specializeStaticDenoise(state.poissonBlurQuad.material);
+    suppressFullCoverageClear(state.poissonBlurQuad);
+    skipWhilePassthrough(state.poissonBlurQuad, this);
+  }
+
+  override configureEffectCompositer(depthBufferType?: number, ortho?: boolean): void {
+    super.configureEffectCompositer(depthBufferType, ortho);
+    const state = this as unknown as N8AOStaticFrameInternals;
+    preserveAccumulationQuantization(state.effectCompositerQuad.material);
+    guardDegenerateNormal(state.effectCompositerQuad.material);
+    suppressFullCoverageClear(state.effectCompositerQuad);
+  }
+
+  override configureHalfResTargets(): void {
+    super.configureHalfResTargets();
+    const state = this as unknown as N8AOStaticFrameInternals;
+    if (state.depthDownsampleTarget) state.depthDownsampleTarget.depthBuffer = false;
+    if (state.depthDownsampleQuad) guardDegenerateNormal(state.depthDownsampleQuad.material);
+    suppressFullCoverageClear(state.depthDownsampleQuad);
+    skipWhilePassthrough(state.depthDownsampleQuad, this);
+  }
+
+  override dispose(): void {
+    if (this.resourcesDisposed) return;
+    this.resourcesDisposed = true;
+    const state = this as unknown as N8AOStaticFrameInternals;
+    const targets = new Set<WebGLRenderTarget>([
+      state.beautyRenderTarget,
+      state.writeTargetInternal,
+      state.readTargetInternal,
+      state.accumulationRenderTarget,
+    ]);
+    if (state.depthDownsampleTarget) targets.add(state.depthDownsampleTarget);
+    if (state.transparencyRenderTargetDWFalse) targets.add(state.transparencyRenderTargetDWFalse);
+    if (state.transparencyRenderTargetDWTrue) targets.add(state.transparencyRenderTargetDWTrue);
+    for (const target of targets) target.dispose();
+    state.bluenoise.dispose();
+    const quads = new Set<N8AOFullScreenTriangle>([
+      state.accumulationQuad,
+      state.effectCompositerQuad,
+    ]);
+    if (state.effectShaderQuad) quads.add(state.effectShaderQuad);
+    if (state.poissonBlurQuad) quads.add(state.poissonBlurQuad);
+    if (state.depthDownsampleQuad) quads.add(state.depthDownsampleQuad);
+    if (state.depthCopyPass) quads.add(state.depthCopyPass);
+    for (const quad of quads) quad.dispose();
+  }
+}

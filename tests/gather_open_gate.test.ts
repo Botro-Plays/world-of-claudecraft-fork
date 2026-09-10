@@ -1,0 +1,339 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { describe, expect, it, vi } from 'vitest';
+import { corpseLootAvailability } from '../src/game/corpse_loot_availability';
+import { handleGatherNodeInteract } from '../src/game/gather_node_interact';
+import {
+  handlePickedEntity,
+  shouldApproachPickedEntity,
+  shouldDeferPickedCorpseToGatherNode,
+} from '../src/game/interactions';
+import { tryNearbyInteraction } from '../src/game/nearby_interaction';
+import { MOBS } from '../src/sim/data';
+import { harvestFamilyYieldsItem } from '../src/sim/professions/gathering';
+import { type Entity, INTERACT_RANGE } from '../src/sim/types';
+import {
+  UNMAPPED_FAMILY,
+  UNMAPPED_FAMILY_2,
+  withRetaggedTemplates,
+} from './helpers/unmapped_family';
+
+// The open-gate flip: the hcb wire mirror (PR 2087) made online corpse
+// harvest-claim state reliable, so the helper arms main.ts calls now run with
+// harvestStateReliable = TRUE by DEFAULT (no `online === null` override). A
+// harvest-only corpse (componentTags, no regular loot) therefore OPENS online
+// when unclaimed and STAYS CLOSED when claimed. This suite pins the flipped
+// default on every arm; the pre-flip false arm stays pinned in
+// tests/interactions.test.ts and tests/corpse_loot_availability.test.ts.
+
+function corpse(overrides: Partial<Entity>): Entity {
+  return {
+    id: 2,
+    kind: 'mob',
+    // forest_wolf carries componentTags (#1140): a harvest-only corpse.
+    templateId: 'forest_wolf',
+    dead: true,
+    lootable: true,
+    loot: null,
+    harvestClaimedBy: null,
+    pos: { x: 1, y: 0, z: 0 },
+    ...overrides,
+  } as Entity;
+}
+
+function playerAt(x: number): Entity {
+  return { id: 1, kind: 'player', dead: false, ghost: false, pos: { x, y: 0, z: 0 } } as Entity;
+}
+
+function rig(player: Entity, e: Entity) {
+  const world = {
+    playerId: 1,
+    player,
+    entities: new Map([
+      [1, player],
+      [e.id, e],
+    ]),
+    targetEntity: () => {},
+  } as unknown as Parameters<typeof handlePickedEntity>[0];
+  const hud = {
+    openLoot: vi.fn(),
+    showError: vi.fn(),
+    closeContextMenu: () => {},
+  } as unknown as Parameters<typeof handlePickedEntity>[1] & { openLoot: ReturnType<typeof vi.fn> };
+  return { world, hud };
+}
+
+describe('open-gate flip: sanity on the fixture', () => {
+  it('forest_wolf is a harvestable template (componentTags present)', () => {
+    expect(MOBS.forest_wolf.componentTags?.length).toBeGreaterThan(0);
+  });
+});
+
+describe('corpseLootAvailability with the flipped default (no third argument)', () => {
+  it('an unclaimed harvest-only corpse OPENS by default (the online flip)', () => {
+    const result = corpseLootAvailability(corpse({}), 1);
+    expect(result.harvestable).toBe(true);
+    expect(result.hasLoot).toBe(false);
+    expect(result.canOpen).toBe(true);
+  });
+
+  it('a claimed harvest-only corpse STAYS CLOSED (hcb mirrored claim)', () => {
+    for (const claimer of [1, 9]) {
+      const result = corpseLootAvailability(corpse({ harvestClaimedBy: claimer }), 1);
+      expect(result.harvestable, `claimed by ${claimer}`).toBe(false);
+      expect(result.canOpen, `claimed by ${claimer}`).toBe(false);
+    }
+  });
+});
+
+describe('handlePickedEntity default arm (both buttons)', () => {
+  it.each([0, 2])('opens an unclaimed harvest-only corpse in range with button %i', (button) => {
+    const { world, hud } = rig(playerAt(0), corpse({}));
+    expect(handlePickedEntity(world, hud, 2, button, 10, 20)).toBe(true);
+    expect(hud.openLoot).toHaveBeenCalledWith(2, 10, 20);
+  });
+
+  it.each([0, 2])('refuses a CLAIMED harvest-only corpse with button %i', (button) => {
+    const { world, hud } = rig(playerAt(0), corpse({ harvestClaimedBy: 9 }));
+    expect(handlePickedEntity(world, hud, 2, button, 10, 20)).toBe(false);
+    expect(hud.openLoot).not.toHaveBeenCalled();
+  });
+
+  it.each([0, 2])(
+    'never opens a grace-frozen boundary corpse at interest-radius distance with button %i',
+    (button) => {
+      // Despawn-grace pin: an openable corpse sitting ~90 yd away (the
+      // interest boundary a grace-frozen corpse can occupy) must not be
+      // actionable; opening requires closing to interact range first (the
+      // corpse arm gates at INTERACT_RANGE + 1).
+      const far = corpse({ pos: { x: 90, y: 0, z: 0 } });
+      expect(corpseLootAvailability(far, 1).canOpen).toBe(true); // availability alone is range-blind
+      const { world, hud } = rig(playerAt(0), far);
+      expect(handlePickedEntity(world, hud, 2, button, 10, 20)).toBe(false);
+      expect(hud.openLoot).not.toHaveBeenCalled();
+    },
+  );
+
+  it('opens at the exact corpse interact boundary and refuses just past it', () => {
+    const boundary = corpse({ pos: { x: INTERACT_RANGE + 1, y: 0, z: 0 } });
+    const inRange = rig(playerAt(0), boundary);
+    expect(handlePickedEntity(inRange.world, inRange.hud, 2, 0, 10, 20)).toBe(true);
+
+    const past = corpse({ pos: { x: INTERACT_RANGE + 1.01, y: 0, z: 0 } });
+    const outOfRange = rig(playerAt(0), past);
+    expect(handlePickedEntity(outOfRange.world, outOfRange.hud, 2, 0, 10, 20)).toBe(false);
+    expect(outOfRange.hud.openLoot).not.toHaveBeenCalled();
+  });
+});
+
+describe('shouldApproachPickedEntity default arm', () => {
+  it('approaches a distant unclaimed harvest-only corpse (click-to-walk stays live)', () => {
+    const far = corpse({ pos: { x: 20, y: 0, z: 0 } });
+    expect(shouldApproachPickedEntity(playerAt(0), far, false)).toBe(true);
+    // Even at the interest boundary the APPROACH intent survives; only the
+    // OPEN is range-gated (previous describe).
+    const boundary = corpse({ pos: { x: 90, y: 0, z: 0 } });
+    expect(shouldApproachPickedEntity(playerAt(0), boundary, false)).toBe(true);
+  });
+
+  it('never approaches a claimed harvest-only corpse (nothing to open on arrival)', () => {
+    const far = corpse({ pos: { x: 20, y: 0, z: 0 }, harvestClaimedBy: 9 });
+    expect(shouldApproachPickedEntity(playerAt(0), far, false)).toBe(false);
+  });
+});
+
+describe('direct corpse hits over gather nodes', () => {
+  it('defers a claimed harvest-only corpse so a node raycast can handle the click', () => {
+    const blockedCorpse = corpse({ harvestClaimedBy: 9 });
+    expect(shouldDeferPickedCorpseToGatherNode(blockedCorpse, 1)).toBe(true);
+
+    const openCorpse = corpse({});
+    expect(shouldDeferPickedCorpseToGatherNode(openCorpse, 1)).toBe(false);
+  });
+
+  it('defers an all-unmapped corpse with nothing to loot, claim or no claim (#2513)', () => {
+    // The click-path knock-on of the corpse-level harvest gate. fen_troll
+    // carried claw and tusk, neither mapped at the time, so it had no harvest
+    // half to open for; both are mapped now (#2905), and Phase 11m mapped
+    // gills and horn after them, so no shipped template is left in that
+    // shape. This retags two real, otherwise-untagged templates with the
+    // synthetic never-mapped families (tests/helpers/unmapped_family.ts) for
+    // the duration of the case, restored in a finally: warlock_imp
+    // all-unmapped, warlock_voidwalker mixed. With no loot either, `canOpen`
+    // is false and a click on the corpse mesh should fall through to a gather
+    // node sitting under it rather than being swallowed. Pinned with the claim
+    // UNSPENT, which is the state that used to keep it open, so this is the
+    // predicate talking and not the pre-existing claim arm.
+    const retags = {
+      warlock_imp: [UNMAPPED_FAMILY, UNMAPPED_FAMILY_2],
+      warlock_voidwalker: ['hide', UNMAPPED_FAMILY],
+    };
+    withRetaggedTemplates(retags, () => {
+      const troll = corpse({ templateId: 'warlock_imp', harvestClaimedBy: null, loot: null });
+      expect(shouldDeferPickedCorpseToGatherNode(troll, 1)).toBe(true);
+      // ...and click-to-walk no longer marches the player to it either: there is
+      // nothing to open on arrival. Same fixture, moved out of interact range.
+      const farTroll = corpse({
+        templateId: 'warlock_imp',
+        harvestClaimedBy: null,
+        loot: null,
+        pos: { x: 20, y: 0, z: 0 },
+      });
+      expect(shouldApproachPickedEntity(playerAt(0), farTroll, false)).toBe(false);
+      // It still owns the click while it holds loot the viewer can take, so
+      // suppressing the dead harvest does not cost the player the live coin.
+      const withCoin = corpse({
+        templateId: 'warlock_imp',
+        harvestClaimedBy: null,
+        loot: { copper: 50, items: [] },
+      });
+      expect(shouldDeferPickedCorpseToGatherNode(withCoin, 1)).toBe(false);
+      // The discriminator: a MIXED template carrying an unmapped family
+      // beside a mapped one keeps its harvest half, so an empty one still
+      // opens (same two-tag width as the all-unmapped fixture, so it is the
+      // yield table deciding and not the count).
+      const mixed = corpse({
+        templateId: 'warlock_voidwalker',
+        harvestClaimedBy: null,
+        loot: null,
+      });
+      expect(shouldDeferPickedCorpseToGatherNode(mixed, 1)).toBe(false);
+    });
+    // ...and on real content: sethrael_palecoil (the shipped mixed exemplar
+    // until Phase 11m mapped its horn) still carries horn, every tag it
+    // carries maps now, and an empty one still opens.
+    expect(MOBS.sethrael_palecoil.componentTags).toContain('horn');
+    expect(MOBS.sethrael_palecoil.componentTags?.every(harvestFamilyYieldsItem)).toBe(true);
+    const palecoil = corpse({
+      templateId: 'sethrael_palecoil',
+      harvestClaimedBy: null,
+      loot: null,
+    });
+    expect(shouldDeferPickedCorpseToGatherNode(palecoil, 1)).toBe(false);
+  });
+
+  // The defer arm shares corpseLootAvailability with the open and approach arms,
+  // so it must share their party roster too: a party member's tap grants ME
+  // shared rights, and that corpse is mine to open, never deferred to a node
+  // sitting under it.
+  it('does not defer a party member claimed kill once the roster is passed', () => {
+    // Harvest already claimed, so the ONLY thing that can open this corpse is
+    // shared loot rights from the tapper being in my party.
+    const partyKill = corpse({
+      harvestClaimedBy: 9,
+      tappedById: 7,
+      loot: { copper: 120, items: [] },
+    } as Partial<Entity>);
+
+    // Solo (no roster): a stranger's kill, correctly deferred.
+    expect(shouldDeferPickedCorpseToGatherNode(partyKill, 1)).toBe(true);
+
+    // Same corpse, but pid 7 is my party member: mine to open, so no defer.
+    expect(shouldDeferPickedCorpseToGatherNode(partyKill, 1, true, [1, 7])).toBe(false);
+  });
+});
+
+describe('tryNearbyInteraction default arm', () => {
+  function nearbyRig(e: Entity) {
+    const lootCorpse = vi.fn(() => true as const);
+    const harvestCorpse = vi.fn();
+    const harvestNode = vi.fn(() => true as const);
+    const world = {
+      player: playerAt(0),
+      playerId: 1,
+      entities: new Map([[e.id, e]]),
+      questLog: new Map(),
+      targetEntity: () => {},
+      interact: () => {},
+      lootCorpse,
+      harvestCorpse,
+      delveInteract: () => false as const,
+      enterDungeon: () => false as const,
+      leaveDungeon: () => false as const,
+      pickUpObject: () => false as const,
+      resurrectAtSpiritHealer: () => false as const,
+      nodeHarvestableByMe: () => true,
+      harvestNode,
+      // The press now falls through past the corpse to the bed arm, which
+      // reads these; inert here.
+      farmPatches: [],
+      myFarmPlots: [],
+    } as unknown as Parameters<typeof tryNearbyInteraction>[0];
+    const hud = {
+      openMailbox: () => {},
+      openQuestDialog: () => {},
+      openDelveBoard: () => {},
+      showError: vi.fn(),
+    } as unknown as Parameters<typeof tryNearbyInteraction>[1] & {
+      showError: ReturnType<typeof vi.fn>;
+    };
+    return { world, hud, lootCorpse, harvestCorpse, harvestNode };
+  }
+
+  it('dispatches a lootable corpse without any harvest-state argument (the default arm)', () => {
+    const withLoot = corpse({ loot: { copper: 5, items: [] } });
+    const { world, hud, lootCorpse } = nearbyRig(withLoot);
+    expect(tryNearbyInteraction(world, hud, 'escortAway', 'nothing')).toBe(true);
+    expect(lootCorpse).toHaveBeenCalledWith(2);
+  });
+
+  it('a harvest-only corpse is no interact-key target (intentional gathering: loot only)', () => {
+    // The nearby-interact corpse pick keys off hasLoot: an OPENABLE
+    // harvest-only corpse (canOpen true, the click path above) is still not
+    // a generic press target, so neither half is sent and the press reports
+    // nothing to interact rather than a loot denial toast.
+    const { world, hud, lootCorpse, harvestCorpse } = nearbyRig(corpse({}));
+    expect(corpseLootAvailability(corpse({}), 1).canOpen).toBe(true);
+    expect(tryNearbyInteraction(world, hud, 'escortAway', 'nothing')).toBe(false);
+    expect(harvestCorpse).not.toHaveBeenCalled();
+    expect(lootCorpse).not.toHaveBeenCalled();
+    expect(hud.showError).toHaveBeenCalledTimes(1);
+    expect(hud.showError).toHaveBeenCalledWith('nothing');
+  });
+
+  it('never gathers an overlapped node from the press; the explicit node action still does', () => {
+    const blockedCorpse = corpse({ loot: null, harvestClaimedBy: 9 });
+    const node = {
+      id: 'ore_under_corpse',
+      zoneId: 'zone',
+      type: 'ore',
+      pos: { x: 1, z: 0 },
+      level: 1,
+      tier: 1,
+    } as const;
+    const { world, hud, lootCorpse, harvestCorpse, harvestNode } = nearbyRig(blockedCorpse);
+
+    expect(tryNearbyInteraction(world, hud, 'escortAway', 'nothing')).toBe(false);
+    expect(harvestCorpse).not.toHaveBeenCalled();
+    expect(lootCorpse).not.toHaveBeenCalled();
+    expect(harvestNode).not.toHaveBeenCalled();
+    expect(hud.showError).toHaveBeenCalledWith('nothing');
+
+    // The blocked corpse does not block the deliberate node click beside it.
+    expect(
+      handleGatherNodeInteract(
+        world as unknown as Parameters<typeof handleGatherNodeInteract>[0],
+        hud,
+        world.player.pos,
+        node.id,
+        node.pos,
+        'far',
+        'notReady',
+      ),
+    ).toBe(true);
+    expect(harvestNode).toHaveBeenCalledWith('ore_under_corpse');
+    expect(harvestCorpse).not.toHaveBeenCalled();
+    expect(lootCorpse).not.toHaveBeenCalled();
+  });
+});
+
+describe('main.ts no longer overrides the reliable default', () => {
+  it('the old offline-only gate idiom (online === null) is gone from src/main.ts', () => {
+    // The flip's whole point: the three call sites (tryNearbyInteraction,
+    // handlePickedEntity, shouldApproachPickedEntity) trust the hcb mirror and
+    // lean on the helpers' default parameter. Reintroducing the pre-flip
+    // `online === null` reliability override must re-pin this deliberately.
+    const source = readFileSync(path.resolve(process.cwd(), 'src/main.ts'), 'utf8');
+    expect(source.includes('online === null')).toBe(false);
+  });
+});

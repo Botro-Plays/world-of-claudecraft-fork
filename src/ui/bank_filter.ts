@@ -1,0 +1,83 @@
+// Pure, DOM/i18n-free core for the Bank window's search / category / sort, the
+// sibling of bag_filter.ts. The bank reuses the bag filter's shared vocabulary
+// (BAG_CATEGORIES / BAG_SORTS / BagFilterState and the tolerant serialize/parse),
+// so the persisted state shape is identical; only the localStorage KEY differs
+// ('woc_bank_filter' in the consumer, bank_window.ts), keeping the two windows'
+// preferences independent. This module adds the ONE bank-specific piece: filtering
+// the bank's own BankSlotModel[] (which carries an explicit slotIndex that must
+// survive filter + sort) and matching / sorting on the LOCALIZED item name via an
+// injected resolver (the bank searches the displayed name, unlike bags which
+// matches the raw English item.name today; that divergence is intentional).
+//
+// Registered in UI_PURE_CORES + BARE_NAMED (tests/architecture.test.ts): the
+// clean-up-ladder tiebreak gave this module its first runtime sim import
+// (compareBagStacks, below), so its purity is scanned, exactly the road
+// bag_filter.ts took when phase 19 gave it material_taxonomy.
+
+import { compareBagStacks } from '../sim/inventory_sort';
+import {
+  type BagFilterState,
+  type ItemLookup,
+  matchesCategory,
+  qualityRank,
+  UNKNOWN_QUALITY_RANK,
+} from './bag_filter';
+import type { BankSlotModel } from './bank_view';
+
+// Resolve one bank SLOT to the name its cell shows (the painter's
+// worn_item_cell_view rule: a copy's own chosen name when it has one, else the
+// def's localized display name). Injected so the pure core never imports the
+// i18n/entity layer; the bank matches and sorts on this string so search and the
+// name-sort agree with what the player sees.
+//
+// It takes the SLOT, not the item id, because a chosen name belongs to a COPY:
+// two cells of one id can show different names, and an id-keyed resolver could
+// answer only one of them. That was the gap this closed (a legendary the player
+// named "Dawn Oath" was findable in the bank only by its def name, which the
+// cell no longer shows anywhere).
+export type BankNameResolver = (slot: BankSlotModel) => string;
+
+// Filter, then sort a bank grid model. Returns a NEW array; never mutates the input.
+// slotIndex is preserved verbatim through both filter and sort (it is the exact
+// bankWithdraw/bankDeposit wire argument, so a filtered/sorted cell must still act on
+// its ORIGINAL slot). Unknown-id slots (bank contents are server truth, so a stale
+// bundle can hold ids it predates, R34) stay VISIBLE in the everything view exactly
+// like bag_filter's applyBagFilter: they occupy real, counted bank slots, and hiding
+// them is how a slot turns invisible. A category chip or a name search still excludes
+// them (no def means no kind to classify; the injected nameOf resolves an unknown id
+// to the raw id, but a player searches display names, not ids). Sorts are stable
+// (spec-stable Array.prototype.sort), so 'recent' is simply the unsorted filtered
+// list in original slot order; unknown-id slots rank below poor in the quality sort
+// and name-sort by what nameOf returns for them (the raw id).
+export function filterBankSlots(
+  models: readonly BankSlotModel[],
+  lookup: ItemLookup,
+  state: BagFilterState,
+  nameOf: BankNameResolver,
+): BankSlotModel[] {
+  const query = state.search.trim().toLowerCase();
+  const filtered = models.filter((m) => {
+    const item = lookup(m.itemId);
+    if (!item) return state.category === 'all' && !query;
+    if (!matchesCategory(item, state.category)) return false;
+    if (query && !nameOf(m).toLowerCase().includes(query)) return false;
+    return true;
+  });
+  if (state.sort === 'quality') {
+    const rank = (m: BankSlotModel) => {
+      const item = lookup(m.itemId);
+      return item ? qualityRank(item) : UNKNOWN_QUALITY_RANK;
+    };
+    // Ties break on the sim's canonical clean-up ladder (like the bags'
+    // quality view): same-item stacks sit adjacent and a fine material grade
+    // sits beside its base grade. BankSlotModel carries itemId + count, the
+    // whole shape the comparator reads, and slotIndex rides through untouched.
+    filtered.sort((a, b) => rank(a) - rank(b) || compareBagStacks(a, b, lookup));
+  } else if (state.sort === 'name') {
+    filtered.sort((a, b) => nameOf(a).localeCompare(nameOf(b)) || compareBagStacks(a, b, lookup));
+  }
+  return filtered;
+}
+
+// The "is the filter showing everything" predicate is the shared bagFilterIsDefault
+// in bag_filter.ts (one copy for bags and bank, like matchesCategory/qualityRank).

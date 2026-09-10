@@ -1,0 +1,189 @@
+# tests/parity: the golden-trace parity gate
+
+The sim-drift safety net. The SimContext extraction campaign motivated it (moving a
+slice of behavior out of the large `Sim` class risks silent drift during a "move"),
+but it now guards ALL sim behavior change: any PR that alters sim behavior turns this
+gate red BY DESIGN. The harness records the FULL deterministic Sim behavior for
+seeded scenarios and fails if any future change alters it.
+
+## What it captures (the trace)
+
+Per scenario, on a fixed tick cadence, each `Frame` pins:
+
+- **Every player's `PlayerMeta` and every player + explicitly tracked mob/pet
+  `Entity`, by EXCLUSION** (`trace.ts`): `samplePlayerMeta`/`sampleEntity` copy every
+  field NOT listed in `META_EXCLUDE`/`ENTITY_EXCLUDE`, whose entries each carry a
+  per-field justification comment (session-only, presentation, derived from sampled
+  inputs). A NEW field is therefore pinned BY DEFAULT (see Adding a field). Players +
+  tracked ids only are sampled (NOT every world entity) to keep goldens lean.
+- **The SimEvent stream**, folded per window into one `eventDigest` (emit order
+  preserved, reordering events IS drift).
+- **The rng draw-order fingerprint**: a rolling FNV-1a over every `sim.rng` draw's
+  32-bit mulberry output, in draw order, plus the draw count. Pinned per frame.
+
+Maps/Sets are canonicalized to sorted arrays; floats are quantized to 1e-6
+(`round6`); non-finite numbers (e.g. `Entity.detonateTimer` Infinity) become string
+sentinels so JSON round-trips losslessly. Samples are VALUE COPIES (the sim mutates
+in place; the sampler must snapshot, never retain a live reference).
+
+**Inert keys, and where a ZERO is not inert.** A key whose canonical value is a
+boring default (`null`, `0`, `false`, `''`, `[]`) is DROPPED, which keeps goldens
+small without losing teeth: a field flipping to or from its default makes the key
+appear or disappear, which `toEqual` still flags. The exception is
+`ZERO_BEARING_CONTAINERS` in `trace.ts`: inside a per-copy item payload (`instance`,
+`equipmentInstance`, `rolled`, inherited by the whole subtree) a numeric `0` is
+INFORMATION and stays. That is not a preference. The Perfecting stamp merges its R5
+bonus into `rolled.stats` and SKIPS a share that rounds to zero, so "no share
+written" and "a share written as 0" canonicalized identically and no golden could
+tell them apart: the harness was blind to a real behavior change. Keep the carve-out
+SCOPED when you extend it (Entity and PlayerMeta carry dozens of resting zeros per
+sample, and keeping all of them balloons every golden for no gameplay reason); add a
+key to that list when a new sparse per-copy record grows a field whose zero is a
+real state. Pinned in `harness.test.ts`.
+
+## Adding a field (the everyday workflow)
+
+Every new `Entity`/`PlayerMeta` field interacts with this harness; decide once, in the
+same change. **Gameplay-affecting** (persisted, sim-read): leave it sampled (the
+default) and regenerate goldens via `UPDATE_PARITY=1` in its own reviewed commit
+(precedent: `enchantCastBagSlot`, stored 1-based so its resting value is the
+omitted 0; `craftThrottle` was the old exemplar until the throttle retired and
+it moved to `META_EXCLUDE` as inert). **Session-only / presentation / derived from sampled
+inputs**: add it to `ENTITY_EXCLUDE`/`META_EXCLUDE` in `trace.ts` with a one-line
+justification comment mirroring the existing entries (precedent: `wireRev`,
+`bankBonusSources`, `marketQuery`), or every golden churns for no gameplay reason.
+
+## RNG draw-order log: the design decision
+
+There is ONE shared `mulberry32` stream (`sim.rng`) drawn from sites all over
+`src/sim`. A reordered guard or early-bail that draws at a different global stream
+position forks the world for all later draws while final scalars can still match by
+luck. The draw-order digest is the precise detector.
+
+- We observe **only the shared `sim.rng`** via the default-off `Rng.setObserver`
+  seam (`src/sim/rng.ts`). The observer is pure bookkeeping: it never draws, never
+  branches sim behavior, and is a no-op when unset (so production determinism and
+  `tests/architecture.test.ts` / `tests/sim.test.ts` are unchanged). It is reset
+  between recordings (each `Recorder.finish` detaches it).
+- We fold the **draw VALUE in draw ORDER** (count + ordered values), NOT a
+  callsite tag. A stack-derived tag churns on every `sim.ts` edit (which is
+  exactly what an extraction does), so it would make every extraction's golden
+  falsely red. Count + ordered-value already catches reordering without that churn.
+- **Construction-time draws** happen inside the `Sim` ctor, before the Rng exists
+  to be observed; they are pinned by the frame-0 state sample instead. The draw log
+  covers everything from `drive()` onward (the tick loop + in-drive internal calls),
+  which is the extraction target.
+- **Sub-streams** (`FiestaState.rng`, per-delve/lockpick seeds) are NOT folded into
+  the digest. Their effects are fully observable through the sampled `PlayerMeta` +
+  entity state + event stream, so drift there still turns a scenario red.
+
+## Coverage
+
+`SCENARIOS` in `scenarios.ts` is the source of truth: scenarios span combat (swings,
+pets, affixes, ground AoE), arena/duel/fiesta, delves + lockpick, dungeons/raids
+(NORMAL and HEROIC, at both the raid and the five-man tier), quests, loot rolls,
+market, bank, trade, chat/social, talents, xp/prestige, casting, consumable auras,
+and mob lifecycle. Every playable class appears in some scenario; enumerate with
+`grep -o "playerClass: '[a-z]*'\|addPlayer('[a-z]*'" tests/parity/scenarios.ts | sort -u`.
+The coverage shards (`coverage_a..c.test.ts`) assert each scenario's subsystem actually
+FIRES (not merely named in a comment). Read those files, never a hand-written list,
+before adding a scenario.
+
+The exemplar for closing a documented gap with a driving scenario:
+`professions_fishing_session` runs the fishing lifecycle through the REAL entry
+points (`startFishing` cast start with its bite-delay draw, the tick-path bite,
+the reel re-press whose `completeFishing` spends the one table draw, then a fresh
+post-completion cast). It exists because the phase-10 reel-arm hoist above the
+in-combat and swim denials was a guard reorder the old cancel-only coverage
+(scenarios hand-assigning `castingAbility`) could not see.
+
+Layout note: the gate is SHARDED for wall-time (`parity_a..g.test.ts` +
+`coverage_a..c.test.ts`, contiguous scenario slices over the shared runner in
+`run_scenarios.ts`); `npx vitest run tests/parity` and `UPDATE_PARITY=1` work
+unchanged, and a shard minting run touches only its own slice's goldens.
+
+## Known boundaries (what is NOT pinned, read before extracting these)
+
+The net is deliberately scoped. These gaps are documented so a later session knows
+to add coverage when it extracts the affected subsystem (an adversarial review
+confirmed each):
+
+- **Sub-stream draw order is not in the draw digest.** Only the shared `sim.rng` is
+  observed. `FiestaState.rng`, the per-delve `run.seed`, and the lockpick board seed
+  are distinct `Rng` instances; their draw *order* is not fingerprinted. Their
+  *outcomes* are pinned where they surface into a sampled `PlayerMeta`/entity field
+  or an emitted event (the fiesta scenario picks an augment so `fiestaAugments` +
+  `augmentOffer`/`augmentChosen` are pinned; the delve walks the lockpick so the
+  `lockpickStep` stream is pinned). When you extract a subsystem that uses a
+  sub-stream, add a sub-stream draw-order check (or observe the sub-stream) in the
+  same change.
+- **Transient Sim-owned collections are not sampled directly.** `arenaMatches`,
+  `delveRuns`, `marketListings`/`marketCollections`, `instances`, `groundAoEs`,
+  `pendingMobRespawns`, `pendingLootRolls` are pinned only via their
+  entity/event/`PlayerMeta` projection. `pendingLootRolls` is the sharpest case:
+  a roll's `choices` map is wiped by `convertMasterRollToNeedGreed` and deleted by
+  `resolveLootRoll`, so a mid-window write to it that draws no rng leaves the whole
+  trace byte-identical. `master_loot` reaches around that with a `rec.notes`
+  readout (its refused curate-phase votes assert `choices.size === 0`); anything
+  else that must pin an unresolved roll needs the same trick. Extracting one of these should add a scenario that drives it (the
+  precedents: `market_round_trip`, `bank_round_trip`, `dungeon_instances`) or sample
+  the collection directly.
+- **The farming SESSION is driven; profession DENY arms are not.** `farming_session`
+  drives real plants and harvests through `plantCrop`/`harvestCrop` (its growth
+  window writes `readyAtMs` down rather than ticking 45 minutes, the draw-free
+  `/dev farmgrow` equivalence) and pins its own draws, the exact sibling of the
+  `professions_fishing_session` exemplar described above. What is still NOT
+  driven is a profession's DENY arms: those denials are draw-free by contract,
+  which is exactly why nothing here would notice one starting to draw, so a
+  change to a gate order still needs its own suite. Farming's live coverage is
+  `tests/professions_farming.test.ts` (the lifecycle plus the draw-count pins);
+  this gate pins the session, not the surface around it. The one exception is
+  `perfecting_walk`, and since masterwrought Phase 18 it is a WHOLE ladder
+  rather than a sample of one: it stages all six Perfecting deny arms (skill,
+  the phase 13 promotion's missing-name refusal on the Perfected copy, missing
+  materials, the unresolvable-ref noItem, not-apex, and the lock-only shortfall
+  on its dedicated line) between bracketing frames, so its coverage arm pins
+  each as draw-free AND state-identical. The promotion's own ladder stays with
+  `tests/orange_promotion.test.ts`. Use that scenario as the template when you
+  bring another profession's deny ladder here: stage the precondition BEFORE
+  the opening frame so the denial itself is the only thing between the two.
+- **Construction-time draws + ambient world mobs.** The `Rng` is born inside the Sim
+  ctor, so ctor draws are not in the draw digest; ambient camp mobs are spawned but
+  never tracked. A same-draw-count reorder of ctor spawns that changes only
+  untracked world-mob state is invisible. Scenarios that move ctor/spawn logic should
+  track the affected mobs or add a ctor fingerprint.
+- **Sample granularity.** Full state is digested every `sampleEvery` ticks (plus
+  init/final/snapshots), not every tick. A change that draws no rng, emits no event,
+  and reverts within one window is not pinned. The per-draw rng digest is the tighter
+  net for anything that touches randomness; use `rec.snapshot()` to pin a precise
+  instant when needed.
+- **Lockpick hidden cells.** Only the walked solution path + the visibility window in
+  the `lockpickStep`/`lockpickSession` events are pinned; un-walked, non-visible
+  board cells are not.
+
+## Running it
+
+```
+npx vitest run tests/parity                  # the gate (+ coverage + unit tests)
+UPDATE_PARITY=1 npx vitest run tests/parity  # mint/refresh goldens (deliberate, reviewable)
+du -sh tests/parity/golden                   # sanity: a few MB TOTAL, tens of KB per scenario
+```
+
+One scenario ballooning past a few hundred KB means you are tracking too many entities.
+
+## The rule
+
+A red trace means behavior changed. **Fix the extraction, never the harness.** Do
+not widen `round6`, delete sampled fields, or regenerate goldens to "make it pass."
+Regenerate only via `UPDATE_PARITY=1` as a deliberate, separate, reviewed commit.
+
+One sanctioned exception, for pure renames: display names (and sanctioned coined
+ids) flow into the state and event digests, so a rename legitimately moves those
+hashes while every rng fingerprint and frame shape stays byte-identical.
+`rename_state_proof.test.ts` (env-gated on `RENAME_PROOF=1`; baseline golden set
+read from the `RENAME_PROOF_BASE` git ref, default `HEAD`) machine-proves that
+ONLY the renamed tokens moved: it re-records each scenario, reverse-maps every
+string leaf new-to-old, re-digests, and requires the result to equal the baseline
+goldens frame by frame, so any behavioral drift cannot survive the reverse map.
+It is the ONLY sanctioned path for accepting state-hash-only golden deltas
+(`ip-refactor/golden_token_inspector.mjs --allow-state-hashes`).

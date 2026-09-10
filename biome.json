@@ -1,0 +1,118 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.4/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true,
+    "defaultBranch": "origin/main"
+  },
+  "files": {
+    "maxSize": 2097152,
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!dist",
+      "!dist-*",
+      "!public",
+      "!**/*.generated.ts",
+      "!scripts/ci_shard_weights.generated.json",
+      "!src/ui/i18n.resolved.generated",
+      "!src/admin/i18n.resolved.generated",
+      "!tests/parity/golden",
+      "!tests/server/fixtures",
+      "!docs/screenshots",
+      "!**/*.svelte",
+      "!**/*.min.js",
+      "!docs/design/professions-system",
+      "!docs/design/professions-system.html",
+      "!ip-refactor"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100,
+    "lineEnding": "lf"
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "always",
+      "trailingCommas": "all",
+      "arrowParentheses": "always"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended"
+    }
+  },
+  "overrides": [
+    {
+      "includes": [
+        "docs/achievements/placeholder-art-completion-2026-08-09/accepted-art.json",
+        "docs/achievements/placeholder-art-completion-2026-08-09/mob-portrait-source-manifest.json",
+        "docs/achievements/placeholder-art-completion-2026-08-09/weapons-a-generation-record.json",
+        "docs/achievements/placeholder-art-completion-2026-08-09/weapons-b-generation-record.json",
+        "docs/achievements/item-art-consistency-2026-08-09/*.json",
+        "docs/perf/hitch/gate.json"
+      ],
+      "formatter": {
+        "enabled": false
+      }
+    },
+    {
+      "includes": ["index.html", "play.html", "guide.html"],
+      "formatter": {
+        "enabled": false
+      },
+      "linter": {
+        "enabled": false
+      }
+    },
+    {
+      "includes": ["src/sim/content/talents_warrior.ts"],
+      "formatter": {
+        "enabled": false
+      },
+      "assist": {
+        "enabled": false
+      }
+    },
+    {
+      "includes": ["src/styles/**"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noImportantStyles": "off"
+          },
+          "style": {
+            "noDescendingSpecificity": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/sim/rng.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noAssignInExpressions": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/net/online.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "warn"
+          }
+        }
+      }
+    }
+  ]
+}

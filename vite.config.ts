@@ -1,0 +1,623 @@
+import { execSync } from 'node:child_process';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
+import { svelteTesting } from '@testing-library/svelte/vite';
+import { browserslistToTargets } from 'lightningcss';
+import { defineConfig } from 'vite';
+import { loadBrowserslistFloors } from './scripts/browserslist_targets.mjs';
+import { BalancedSequencer } from './scripts/ci_balanced_sequencer.mjs';
+// Untyped zero-dep build helper (same convention as the other scripts/*.mjs tools).
+// vite.config.ts is outside tsconfig `include`, so this import is never type-checked.
+import { templateModulepreload } from './scripts/i18n_modulepreload.mjs';
+import {
+  diagnosticsCaptureAllowed,
+  diagnosticsReadAllowed,
+} from './scripts/lib/diagnostics_capture_guard.mjs';
+import { shouldDisableVitestFsModuleCache } from './scripts/lib/vitest_fs_module_cache.mjs';
+
+const root = fileURLToPath(new URL('.', import.meta.url));
+const disableVitestFsModuleCache = shouldDisableVitestFsModuleCache(root);
+
+// Lightning CSS engine targets, derived from .browserslistrc (the single source of
+// the floor) via the zero-dep parser, never a hand-typed object. Drives both the
+// CSS transform and the minifier below, so the floor governs which prefixes and
+// fallbacks survive minification (for example the -webkit-backdrop-filter twin).
+const cssTargets = browserslistToTargets(
+  loadBrowserslistFloors(fileURLToPath(new URL('.browserslistrc', import.meta.url))),
+);
+
+// `#bot-detector` → the private detector if its clone is present, else the no-op
+// stub. Mirrors scripts/build_server.mjs (bundle) and tsconfig.json `paths` (tsc).
+const privateBotDetector = fileURLToPath(
+  new URL('private/bot_detector/src/index.ts', import.meta.url),
+);
+const botDetectorImpl = existsSync(privateBotDetector)
+  ? privateBotDetector
+  : fileURLToPath(new URL('server/bot_detector/stub.ts', import.meta.url));
+const pkg = JSON.parse(readFileSync(new URL('package.json', import.meta.url), 'utf8')) as {
+  version?: string;
+};
+
+function env(names: string[]): string | undefined {
+  for (const name of names) {
+    const value = process.env[name]?.trim();
+    if (value) return value;
+  }
+  return undefined;
+}
+
+function gitSha(): string | undefined {
+  try {
+    return execSync('git rev-parse --short=12 HEAD', {
+      cwd: root,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
+  } catch {
+    return undefined;
+  }
+}
+
+const appVersion = pkg.version ?? env(['APP_VERSION', 'npm_package_version']) ?? '0.0.0';
+const appBuildDate = env(['APP_BUILD_DATE', 'BUILD_DATE']) ?? new Date().toISOString();
+const appBuildId =
+  env([
+    'APP_BUILD_ID',
+    'APP_BUILD_NUMBER',
+    'BUILD_NUMBER',
+    'GITHUB_RUN_NUMBER',
+    'RENDER_BUILD_ID',
+    'RENDER_GIT_COMMIT',
+    'VERCEL_GIT_COMMIT_SHA',
+    'CF_PAGES_COMMIT_SHA',
+  ]) ??
+  gitSha() ??
+  appBuildDate.replace(/[-:TZ.]/g, '').slice(0, 12);
+const desktopApiOrigin = env(['VITE_DESKTOP_API_ORIGIN']);
+const isDesktopDevBuild = env(['VITE_DESKTOP_APP']) === '1';
+const apiProxyTarget =
+  env(['WOC_DEV_API_TARGET']) ??
+  (isDesktopDevBuild && desktopApiOrigin ? desktopApiOrigin : 'http://127.0.0.1:8787');
+const wsProxyTarget = apiProxyTarget.replace(/^https:/, 'wss:').replace(/^http:/, 'ws:');
+
+// Pretty-URL aliases for standalone static HTML pages. Mirrors the production
+// server rewrite in server/main.ts so these paths resolve in dev and preview too.
+const STATIC_PAGE_ALIASES = new Map([
+  ['/links', '/links.html'],
+  ['/links/', '/links.html'],
+  ['/social', '/links.html'],
+  ['/social/', '/links.html'],
+  ['/social-media-links', '/links.html'],
+  ['/social-media-links/', '/links.html'],
+  ['/play', '/play.html'],
+  ['/play/', '/play.html'],
+  ['/wallet-handoff', '/wallet-handoff.html'],
+  ['/wallet-handoff/', '/wallet-handoff.html'],
+  ['/privacy', '/privacy.html'],
+  ['/privacy/', '/privacy.html'],
+  ['/terms', '/terms.html'],
+  ['/terms/', '/terms.html'],
+  ['/merch', '/merch.html'],
+  ['/merch/', '/merch.html'],
+  ['/press', '/press.html'],
+  ['/press/', '/press.html'],
+  ['/data-deletion', '/data-deletion.html'],
+  ['/data-deletion/', '/data-deletion.html'],
+  ['/support', '/support.html'],
+  ['/support/', '/support.html'],
+  ['/wiki', '/guide.html'],
+  ['/wiki/', '/guide.html'],
+  ['/editor', '/editor.html'],
+  ['/editor/', '/editor.html'],
+]);
+// The Guide is the site wiki: a client-routed SPA at /wiki. Deep paths like
+// /wiki/classes/warrior have no static file, so any extensionless /wiki* request falls
+// back to guide.html (mirrored in server/main.ts serveStatic). Asset requests under
+// /wiki keep their extension and are left alone so they 404 rather than serving HTML.
+function isGuideSpaPath(pathOnly: string): boolean {
+  if (pathOnly !== '/wiki' && !pathOnly.startsWith('/wiki/')) return false;
+  const last = pathOnly.slice(pathOnly.lastIndexOf('/') + 1);
+  return !last.includes('.');
+}
+function staticPageAliasPlugin() {
+  const rewrite = (req: { url?: string }) => {
+    const url = req.url ?? '';
+    const pathOnly = url.split('?')[0];
+    const target =
+      STATIC_PAGE_ALIASES.get(pathOnly) ?? (isGuideSpaPath(pathOnly) ? '/guide.html' : undefined);
+    if (target) req.url = target + url.slice(pathOnly.length);
+  };
+  const attach = (server: {
+    middlewares: {
+      use: (fn: (req: { url?: string }, res: unknown, next: () => void) => void) => void;
+    };
+  }) => {
+    server.middlewares.use((req, _res, next) => {
+      rewrite(req);
+      next();
+    });
+  };
+  return { name: 'woc-static-page-alias', configureServer: attach, configurePreviewServer: attach };
+}
+
+// Phase 4 (i18n Lazy Locales): after the production build, resolve each lazy locale
+// chunk's content-hashed URL from Vite's manifest and template a { locale: hashedChunkUrl }
+// lookup into dist/index.html. The inline boot <script> reads it to modulepreload a stored
+// non-en visitor's locale chunk before main parses. Build-only: in dev the inline script's
+// sentinel stays undefined (no-op). The manifest is metadata, so enabling it does not move
+// the resolved-table SHA. See scripts/i18n_modulepreload.mjs.
+function i18nModulepreloadPlugin() {
+  let outDir = path.resolve(root, 'dist');
+  let base = '/';
+  return {
+    name: 'woc-i18n-modulepreload',
+    apply: 'build' as const,
+    configResolved(cfg: { root: string; base: string; build: { outDir: string } }) {
+      base = cfg.base || '/';
+      outDir = path.isAbsolute(cfg.build.outDir)
+        ? cfg.build.outDir
+        : path.resolve(cfg.root, cfg.build.outDir);
+    },
+    closeBundle() {
+      const { map } = templateModulepreload({ root, outDir, base });
+      // eslint-disable-next-line no-console
+      console.log(
+        `[i18n] modulepreload: templated ${Object.keys(map).length} locale chunk URLs into index.html`,
+      );
+    },
+  };
+}
+
+// Dev-only save endpoint for the music editor (music_editor.html): receives the
+// edited theme map as JSON and writes src/game/music_overrides.generated.ts so
+// the game, tests, and render tool pick the edits up immediately via HMR.
+// configureServer only runs under the dev server, so this never ships.
+function musicEditorSavePlugin() {
+  const INST_RE = /^[a-zA-Z]{2,20}$/;
+  const NAME_RE = /^[a-z0-9_]{1,40}$/;
+  type RawEvent = { beat?: unknown; midi?: unknown; dur?: unknown; vel?: unknown; inst?: unknown };
+  type RawTheme = { bpm?: unknown; bars?: unknown; events?: RawEvent[] };
+  const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+  const validTheme = (t: RawTheme): boolean =>
+    !!t &&
+    isNum(t.bpm) &&
+    t.bpm > 20 &&
+    t.bpm < 400 &&
+    Number.isInteger(t.bars) &&
+    (t.bars as number) > 0 &&
+    (t.bars as number) <= 128 &&
+    Array.isArray(t.events) &&
+    t.events.length <= 20000 &&
+    t.events.every(
+      (e) =>
+        isNum(e.beat) &&
+        isNum(e.midi) &&
+        isNum(e.dur) &&
+        isNum(e.vel) &&
+        typeof e.inst === 'string' &&
+        INST_RE.test(e.inst),
+    );
+  const round = (v: number, places: number) => {
+    const p = 10 ** places;
+    return Math.round(v * p) / p;
+  };
+  return {
+    name: 'woc-music-editor-save',
+    configureServer(server: {
+      middlewares: {
+        use: (
+          route: string,
+          fn: (
+            req: { method?: string; on: (ev: string, cb: (chunk?: unknown) => void) => void },
+            res: { statusCode: number; end: (body?: string) => void },
+          ) => void,
+        ) => void;
+      };
+    }) {
+      server.middlewares.use('/__music_editor/save', (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          res.end('POST only');
+          return;
+        }
+        let body = '';
+        req.on('data', (chunk) => {
+          body += String(chunk);
+          if (body.length > 8_000_000) {
+            res.statusCode = 413;
+            res.end('too large');
+          }
+        });
+        req.on('end', () => {
+          try {
+            type SavedEvent = {
+              beat: number;
+              midi: number;
+              dur: number;
+              vel: number;
+              inst: string;
+            };
+            type SavedTheme = { bpm: number; bars: number; events: SavedEvent[] };
+            const overrides = JSON.parse(body) as Record<string, SavedTheme>;
+            const names = Object.keys(overrides);
+            if (
+              !names.every((n) => NAME_RE.test(n)) ||
+              !names.every((n) => validTheme(overrides[n]))
+            ) {
+              res.statusCode = 400;
+              res.end('invalid payload');
+              return;
+            }
+            const lines: string[] = [
+              '// Generated by music_editor.html (dev tool): themes edited in the browser are',
+              '// saved here and override the composed versions in buildMusicThemes(), for the',
+              '// editor, the tests, and the render tool alike (the shipped game streams the',
+              '// remastered renders from public/audio/music/). Do not hand-edit: run',
+              '// npm run dev, open /music_editor.html, edit, and press Save.',
+              "import type { Theme } from './music';",
+              '',
+              'export const MUSIC_OVERRIDES: Record<string, Theme> = {',
+            ];
+            for (const name of names) {
+              const t = overrides[name];
+              lines.push(
+                `  ${name}: {`,
+                `    bpm: ${t.bpm},`,
+                `    bars: ${t.bars},`,
+                '    events: [',
+              );
+              const sorted = [...t.events].sort((a, b) => a.beat - b.beat);
+              for (const e of sorted) {
+                const vel = round(Math.min(1, Math.max(0.005, e.vel)), 3);
+                lines.push(
+                  '      { beat: ' +
+                    round(e.beat, 4) +
+                    ', midi: ' +
+                    Math.round(e.midi) +
+                    ', dur: ' +
+                    round(e.dur, 4) +
+                    ', vel: ' +
+                    vel +
+                    ", inst: '" +
+                    e.inst +
+                    "' },",
+                );
+              }
+              lines.push('    ],', '  },');
+            }
+            lines.push('};', '');
+            writeFileSync(
+              path.resolve(root, 'src/game/music_overrides.generated.ts'),
+              lines.join('\n'),
+            );
+            res.statusCode = 200;
+            res.end('ok');
+          } catch (err) {
+            res.statusCode = 400;
+            res.end(String(err));
+          }
+        });
+      });
+    },
+  };
+}
+
+// Dev-only in-memory collector for an unattended local diagnostics run. Reports never
+// touch disk and the endpoints do not exist in preview or production builds.
+function diagnosticsCapturePlugin() {
+  let latestReport = '';
+  return {
+    name: 'woc-diagnostics-capture',
+    apply: 'serve' as const,
+    configureServer(server: {
+      middlewares: {
+        use: (
+          fn: (
+            req: {
+              url?: string;
+              method?: string;
+              headers: Record<string, string | string[] | undefined>;
+              socket: { remoteAddress?: string };
+              setEncoding: (encoding: BufferEncoding) => void;
+              on: (event: string, callback: (chunk?: unknown) => void) => void;
+            },
+            res: {
+              statusCode: number;
+              setHeader: (name: string, value: string) => void;
+              end: (body?: string) => void;
+            },
+            next: () => void,
+          ) => void,
+        ) => void;
+      };
+    }) {
+      server.middlewares.use((req, res, next) => {
+        const pathOnly = (req.url ?? '').split('?')[0];
+        const host = Array.isArray(req.headers.host) ? req.headers.host[0] : req.headers.host;
+        if (pathOnly === '/__diagnostics/latest') {
+          if (req.method !== 'GET') {
+            res.statusCode = 405;
+            res.end('GET only');
+            return;
+          }
+          if (!diagnosticsReadAllowed(req.socket.remoteAddress, host)) {
+            res.statusCode = 403;
+            res.end('loopback requests only');
+            return;
+          }
+          res.setHeader('Cache-Control', 'no-store');
+          res.setHeader('Content-Type', 'text/markdown; charset=utf-8');
+          res.statusCode = latestReport ? 200 : 404;
+          res.end(latestReport || 'No completed diagnostics capture yet.');
+          return;
+        }
+        if (pathOnly !== '/__diagnostics/capture') {
+          next();
+          return;
+        }
+        if (req.method !== 'POST') {
+          res.statusCode = 405;
+          res.end('POST only');
+          return;
+        }
+        const origin = Array.isArray(req.headers.origin)
+          ? req.headers.origin[0]
+          : req.headers.origin;
+        if (!diagnosticsCaptureAllowed(req.socket.remoteAddress, origin, host)) {
+          res.statusCode = 403;
+          res.end('loopback same-origin requests only');
+          return;
+        }
+        let body = '';
+        let bodyBytes = 0;
+        let rejected = false;
+        req.setEncoding('utf8');
+        req.on('data', (chunk) => {
+          if (rejected) return;
+          const text = typeof chunk === 'string' ? chunk : String(chunk ?? '');
+          bodyBytes += Buffer.byteLength(text, 'utf8');
+          if (bodyBytes > 2_000_000) {
+            rejected = true;
+            res.statusCode = 413;
+            res.end('report too large');
+            return;
+          }
+          body += text;
+        });
+        req.on('end', () => {
+          if (rejected) return;
+          latestReport = body;
+          res.statusCode = 204;
+          res.end();
+        });
+      });
+    },
+  };
+}
+export default defineConfig({
+  base: '/',
+  // The Svelte plugin only transforms the standalone admin entry. The testing
+  // plugin is scoped to Vitest so it cannot affect production client builds.
+  plugins: [
+    svelte(),
+    ...(process.env.VITEST ? [svelteTesting({ autoCleanup: false })] : []),
+    staticPageAliasPlugin(),
+    i18nModulepreloadPlugin(),
+    musicEditorSavePlugin(),
+    ...(process.env.WOC_DIAGNOSTICS_CAPTURE === '1' ? [diagnosticsCapturePlugin()] : []),
+  ],
+  resolve: { alias: { '#bot-detector': botDetectorImpl } },
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+    __APP_BUILD_ID__: JSON.stringify(appBuildId.slice(0, 12)),
+    __APP_BUILD_DATE__: JSON.stringify(appBuildDate),
+  },
+  // Lightning CSS handles all CSS transform and minify. Under the lightningcss
+  // transformer css.postcss is inert, so no postcss.config is consulted and the
+  // project stays vanilla (no Tailwind, no PostCSS plugins).
+  css: {
+    transformer: 'lightningcss',
+    lightningcss: { targets: cssTargets },
+  },
+  server: {
+    port: 5173,
+    // Dev-only: never let the browser reuse cached asset bytes. GLBs and other
+    // public/ files are fetched LAZILY by the asset loader, after page load, so
+    // even a hard refresh (which bypasses cache only for the document's own
+    // requests) can leave a replaced model serving day-old bytes from disk
+    // cache; a swapped weapon or creature GLB then "looks exactly the same"
+    // through any number of reloads. Prod is unaffected (this is the dev
+    // server block); prod busts via content-hashed /media/ URLs instead.
+    headers: { 'Cache-Control': 'no-store' },
+    // Vite's default watch ignore list is only .git, node_modules, test-results,
+    // cacheDir and outDir, so the dev watcher otherwise descends into every agent
+    // runtime directory at the repo root. A linked worktree parked under one of them
+    // is a full second checkout: its 7 root *.html entries each trigger a page reload
+    // on change (Vite reloads for ANY watched .html, in the module graph or not), and
+    // its tsconfig.json triggers a full reload plus a moduleGraph.invalidateAll().
+    // Creating, deleting, or switching branches inside such a worktree rewrites all of
+    // them at once, so the served game reloads for edits that cannot reach it. Same
+    // rows as `test.exclude` below (see its comment), for the same reason; pinned by
+    // tests/vite_dev_watch.test.ts.
+    watch: {
+      ignored: [
+        '**/.claude/**',
+        '**/.codex/**',
+        '**/.agents/**',
+        '**/.worktrees/**',
+        '**/.wt/**',
+        '**/.venv/**',
+        '**/tmp/**',
+      ],
+    },
+    proxy: {
+      '/api': { target: apiProxyTarget, changeOrigin: true },
+      '/admin/api': { target: apiProxyTarget, changeOrigin: true },
+      '/ws': { target: wsProxyTarget, ws: true },
+      // MediaWiki community wiki runs as its own container on :8080. Proxy /wiki*
+      // to it so the in-app "Browse the Wiki" link resolves in dev too — mirrors
+      // the prod reverse-proxy route (nginx /wiki -> :8080). Needs the container
+      // up: `docker compose up -d mediawiki mediawiki-db`.
+      '/wiki': { target: 'http://127.0.0.1:8080', changeOrigin: true },
+      // No '/terms' proxy: STATIC_PAGE_ALIASES above already serves the
+      // Marketplace consent links' target from public/terms.html in dev, and a
+      // prefix proxy captured the rewritten '/terms.html' and made the page
+      // depend on a running game server with a built dist/.
+    },
+  },
+  build: {
+    target: 'es2022',
+    cssMinify: 'lightningcss',
+    chunkSizeWarningLimit: 1500,
+    // Emit dist/.vite/manifest.json so the Phase 4 modulepreload hook can resolve each
+    // lazy locale chunk's content-hashed filename. Metadata only - does not perturb the
+    // bundle or move the resolved-table SHA.
+    manifest: true,
+    rollupOptions: {
+      input: {
+        main: fileURLToPath(new URL('index.html', import.meta.url)),
+        admin: fileURLToPath(new URL('admin.html', import.meta.url)),
+        play: fileURLToPath(new URL('play.html', import.meta.url)),
+        guide: fileURLToPath(new URL('guide.html', import.meta.url)),
+        editor: fileURLToPath(new URL('editor.html', import.meta.url)),
+        walletHandoff: fileURLToPath(new URL('wallet-handoff.html', import.meta.url)),
+      },
+      output: {
+        // three.js almost never changes between our releases and is the single
+        // heaviest dependency in the game/editor bundles; splitting it into its
+        // own chunk lets the browser fetch it in parallel with app code and
+        // reuse the browser cache across app-only redeploys (its content hash
+        // stays stable unless the three version itself bumps).
+        manualChunks(id: string): string | undefined {
+          if (id.includes('node_modules/three/')) return 'vendor-three';
+          return undefined;
+        },
+      },
+    },
+  },
+  test: {
+    // server/db.ts (and every module importing it) requires DATABASE_URL at module
+    // load. Locally db.ts fills it from .env; a CI checkout has no .env, so default
+    // a dummy here to keep the suite runnable in plain Node. Unit tests never open
+    // a connection (the pg Pool connects only on first query, and db-touching tests
+    // use FakeDb/mocks), and a real DATABASE_URL from the shell still wins.
+    env: {
+      DATABASE_URL:
+        process.env.DATABASE_URL ?? 'postgres://vitest:vitest@127.0.0.1:5433/wocc_vitest_dummy',
+    },
+    // happy-dom resolves a relative resource URL against its window origin,
+    // which vitest defaults to http://localhost:3000, and then opens a REAL
+    // socket to that port. Nothing is listening, so several DOM-env window
+    // suites (professions, perfecting) printed one ECONNREFUSED AggregateError
+    // per request on top of otherwise green output. Traced with a
+    // net.Socket.prototype.connect probe, the requests are the character
+    // model preloads (`/models/weapons/sword_1handed.glb` and kin), reached
+    // through the painters those suites import.
+    //
+    // The virtual server is what a happy-dom origin is SUPPOSED to have: it
+    // resolves the origin against the filesystem instead of the network, and
+    // `public/` is exactly what Vite (and server/main.ts serveStatic) serves
+    // at that origin, so `/models/...` now resolves to the same bytes a real
+    // browser would get, and a path with no file answers 404 locally. Nothing
+    // opens a socket either way. Disabling resource loading was tried first
+    // and is NOT the fix here: the loaders these suites trip are neither the
+    // CSS nor the JS one, so `disableCSSFileLoading`/`disableJavaScriptFileLoading`
+    // left the noise exactly where it was. A fetch interceptor cannot be used
+    // at all: environmentOptions is structured-cloned to the worker, so a
+    // function value throws before any test runs.
+    environmentOptions: {
+      happyDOM: {
+        settings: {
+          fetch: {
+            virtualServers: [
+              {
+                url: 'http://localhost:3000',
+                directory: fileURLToPath(new URL('public', import.meta.url)),
+              },
+            ],
+          },
+        },
+      },
+    },
+    // Sharding: BalancedSequencer (LPT over MEASURED per-file durations,
+    // scripts/ci_shard_weights.generated.json, harvested from green CI runs
+    // by scripts/ci_shard_weights_harvest.mjs). Re-wired 2026-08-14: the D11
+    // follow-on's LPT missed its bar on static import-cost weights and
+    // stripe re-measured WORSE than sha1-contiguous with real durations.
+    // Measured on the lane-excluded shard pool, scored in real ms: contiguous
+    // worst 10.49m, measured-LPT worst 9.79m spread 0.06m; the
+    // measured-scale FALLBACK for unknown files is load-bearing (raw
+    // heuristic units regressed to 11.21m). shard() only runs under --shard, so unsharded
+    // local runs are untouched. passWithNoTests false so an empty pack
+    // cannot green the sequencer.
+    sequence: { sequencer: BalancedSequencer },
+    passWithNoTests: false,
+    globalSetup: ['./tests/global_setup.ts'],
+    // Runs per test file (unlike globalSetup, which runs once outside any
+    // DOM environment). Needed on Node 22+ for jsdom and happy-dom files;
+    // no-op when `window` is absent (default node env). See the file.
+    setupFiles: ['./tests/svelte_testing_setup.ts', './tests/jsdom_local_storage_setup.ts'],
+    // Two kinds of exclusion, kept together:
+    // - agent-runtime directories may contain local worktree copies, and their tracked
+    //   config or instruction files are not product test sources. Excluding them keeps a
+    //   stale local worktree from duplicating tests. .venv is local Python tooling.
+    //   .worktrees/ is the repo's own gitignored convention for local linked worktrees
+    //   (see .gitignore), while .wt/ is the OSS Brain linked-worktree cache used by
+    //   release automation. These entries are root-relative on purpose: an active
+    //   checkout can itself live under .wt/, and an absolute-style **/.wt/** pattern
+    //   hides its entire suite. Leaving either parked-worktree directory out of this
+    //   list means a stale branch snapshot can fail tests/architecture.test.ts or
+    //   tests/localization_fixes.test.ts and block pre-push for reasons unrelated to
+    //   the current branch.
+    // - the opt-in browser suite (vitest.browser.config.ts, npm run test:browser) must NOT
+    //   leak into a bare `vitest run`: excluding its files keeps the default Node run from
+    //   importing the Playwright provider or launching a browser. Cross-engine CI is P17b.
+    // - tmp/ is gitignored scratch (screenshot tours, the new:endpoint golden test's emitted
+    //   *.test.ts under a temp root); excluding it keeps a crashed golden run's orphan emitted
+    //   test out of a bare `vitest run`. The golden test runs its emitted test through a child
+    //   vitest with an explicit --config override so this exclude does not block it.
+    // - docs/ carries handoff snapshots that copy another branch's code in at its
+    //   ORIGINAL repo-relative path (docs/rallycart-mount/reference/, regenerated by
+    //   its own refresh script), so the tree holds *.test.ts files that are reference
+    //   TEXT, not product test sources: their imports resolve against the path they
+    //   were copied from and would fail a bare `vitest run`. Documentation never
+    //   holds a real suite, so the whole directory is excluded rather than each copy.
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '.claude/**',
+      '.codex/**',
+      '.agents/**',
+      '.worktrees/**',
+      '.wt/**',
+      '.venv/**',
+      'tmp/**',
+      'docs/**',
+      'tests/browser/**',
+      '**/*.browser.test.ts',
+    ],
+    // The world grew from 3 zones to 11 and Sim construction/tick cost with
+    // it: the long tick-loop tests written against the 3-zone world brush
+    // vitest's 5s default under full-suite parallel load and flip flakily by
+    // scheduling luck. Seed sweeps use subsystem-sized world fixtures instead of
+    // repeatedly constructing unrelated ambient content, so 20s remains honest
+    // headroom for the current world size; deliberately long walkers keep their
+    // own explicit budgets.
+    testTimeout: 20000,
+    // Phase 4 local-gate-perf: persist Vite module transform cache across runs
+    // (Vitest 4.1 experimental.fsModuleCache). Default path is under
+    // node_modules/.experimental-vitest-cache (gitignored via node_modules/).
+    // OSS Brain linked worktrees symlink node_modules back to the parent checkout,
+    // and base-health gates run from that parent checkout under ORCH. Both shapes
+    // can contend on the same experimental temp-file store and fail before
+    // reporting parseable tests. Disable it for OSS Brain-controlled checkouts;
+    // normal local checkouts and CI keep the warm-cache path.
+    // Clear with `npx vitest --clearCache` if a warm run misbehaves. Full gate
+    // remains the merge bar; this speeds warm re-runs and related/day-loop paths.
+    experimental: {
+      fsModuleCache: !disableVitestFsModuleCache,
+    },
+  },
+});

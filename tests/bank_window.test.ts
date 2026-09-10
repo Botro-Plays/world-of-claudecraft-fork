@@ -1,0 +1,1068 @@
+// Source-level guards for the bank painter (the bags_window.test.ts shape). The pure
+// slot/action decisions are unit-tested in bank_view.test.ts; here we pin the
+// no-magic-values contract (no raw hex; the unranked-quality fallback is a token), the
+// load-bearing behaviors (reuse the pure core, preserve the grid scroll offset), the
+// modal-prompt a11y contract, and the hud.ts wiring that opens/closes/refreshes the
+// window plus the docking body class.
+
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import { MATERIAL_ITEM_IDS } from '../src/sim/material_taxonomy';
+import { MATERIAL_GRADES } from '../src/sim/professions/material_grades';
+import { CHROME_GUARDED_PANELS } from '../src/ui/chrome_focus_wiring';
+import { ensureLocaleLoaded, getLanguage, setLanguage, t } from '../src/ui/i18n';
+import { SUPPORTED_LANGUAGES } from '../src/ui/i18n.resolved.generated/loaders';
+import { itemKindLabel } from '../src/ui/item_kind_label';
+
+const painter = readFileSync(new URL('../src/ui/bank_window.ts', import.meta.url), 'utf8');
+// The personal-bank grid CELL (icon/mark/aria/tooltip) was extracted out of
+// BankWindow into its own module; the quality-color fallback pin below lives
+// there now, not in the coordinator it was pulled out of.
+const personalBankItemCell = readFileSync(
+  new URL('../src/ui/personal_bank_item_cell.ts', import.meta.url),
+  'utf8',
+);
+const promptDialog = readFileSync(new URL('../src/ui/prompt_dialog.ts', import.meta.url), 'utf8');
+const tokens = readFileSync(new URL('../src/styles/tokens.css', import.meta.url), 'utf8');
+const components = readFileSync(new URL('../src/styles/components.css', import.meta.url), 'utf8');
+const mobileCss = readFileSync(new URL('../src/styles/hud.mobile.css', import.meta.url), 'utf8');
+const hud = readFileSync(new URL('../src/ui/hud.ts', import.meta.url), 'utf8');
+const mainSrc = readFileSync(new URL('../src/main.ts', import.meta.url), 'utf8');
+const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const playHtml = readFileSync(new URL('../play.html', import.meta.url), 'utf8');
+
+describe('bank_window: no magic values', () => {
+  it('carries no literal hex color in TS (quality color comes from QUALITY_COLOR + a token)', () => {
+    const hex = painter.match(/#[0-9a-fA-F]{3,8}\b/g) ?? [];
+    expect(hex, `hex colors must move to tokens: ${hex.join(', ')}`).toEqual([]);
+  });
+
+  it('uses the --color-quality-default token for the unranked-quality fallback', () => {
+    expect(personalBankItemCell).toContain('var(--color-quality-default)');
+  });
+
+  it('defines --color-quality-default in the design-token sheet', () => {
+    expect(tokens).toContain('--color-quality-default:');
+  });
+
+  it('uses no em or en dashes (ASCII separators only)', () => {
+    // escape sequences, not literal dashes: the pre-push copy scan flags the raw characters
+    expect(painter.includes('\u2014'), 'em dash found').toBe(false);
+    expect(painter.includes('\u2013'), 'en dash found').toBe(false);
+  });
+
+  it('gives both keyboard-focusable bank controls a tokenized :focus-visible ring', () => {
+    expect(components).toMatch(
+      /\.bank-item:focus-visible,\s*\.bank-buy-btn:focus-visible \{\s*outline: 2px solid var\(--color-border-focus\);/,
+    );
+  });
+});
+
+describe('bank_window: load-bearing behaviors preserved', () => {
+  it('reuses the pure core (buildBankView + bankSlotAction), not a re-derived bag filter', () => {
+    expect(painter).toContain('buildBankView(');
+    expect(painter).toContain('bankSlotAction(');
+    // the bank window is not a bags clone: it must not re-run the bag filter
+    expect(painter).not.toContain('applyBagFilter(');
+  });
+
+  it('carries the pane scroll offset across a rebuild through the layout core', () => {
+    // WHICH element scrolls depends on the viewport (Bank Storage phase 18), so
+    // both candidates are captured and both are written back. The DECISION is
+    // driven in tests/bank_chrome_layout.test.ts, which also drives the
+    // BEHAVIOUR against a real accessor (a layout-free DOM stores no scroll
+    // offset at all, so an arm over it here would be vacuous whatever the window
+    // did). What this pins is the WIRING: the window consults the plan instead
+    // of re-deciding, and neither candidate is dropped.
+    expect(painter).toContain('planBankScrollRestore(');
+    expect(painter).toContain('inner: scroll?.scrollTop ?? 0, outer: el.scrollTop');
+    expect(painter).toContain('scroll.scrollTop = next.inner');
+    expect(painter).toContain('el.scrollTop = next.outer');
+  });
+
+  it('closes itself after a grace window once bankInfo goes null (walked away)', () => {
+    // Pin the literal (a silent change to 100ms would insta-close on any mirror
+    // hiccup) and the whole null-gate arm INCLUDING the close() action: replacing
+    // the action with a re-render must red this, not just renaming the constant.
+    expect(painter).toContain('BANK_INFO_GRACE_MS = 3_000');
+    expect(painter).toMatch(
+      /if \(!info\) \{\s*if \(performance\.now\(\) - this\.openedAt > BANK_INFO_GRACE_MS\) this\.close\(\);/,
+    );
+  });
+
+  it('open() is idempotent while already open (a re-interact must not re-capture focus)', () => {
+    expect(painter).toMatch(/open\(\): void \{\s*if \(this\.opened\) return;/);
+  });
+
+  it('a rebuild under an open prompt tears the prompt down and re-lands focus', () => {
+    // render() rebuilds innerHTML: an open prompt would go stale (old language, a
+    // captured slot index the fresh data may have shifted) and the focused node is
+    // destroyed. The rebuild must dismiss prompts, clear the inert they set, and
+    // re-focus the fresh close button when focus was inside the window/prompt.
+    const renderBody = painter.slice(
+      painter.indexOf('render(): void {'),
+      painter.indexOf('refreshIfChanged(): void {'),
+    );
+    expect(renderBody).toContain('dismissBankPrompts()');
+    expect(renderBody).toContain('inert = false');
+    expect(renderBody).toContain('hadFocus');
+    // Through the shared reader, never a bare el.contains(active): the pointer-only
+    // focus drop parks pointer focus on the root, and focusedWithin refuses the root
+    // itself, so a parked root cannot take the close-button fallback on a repaint.
+    expect(renderBody).toMatch(/const hadFocus =\s+focusedWithin\(el\) !== null \|\|/);
+    expect(renderBody).not.toContain('el.contains(active)');
+  });
+
+  it('marks the window as a dialog root for the accessible name', () => {
+    expect(painter).toContain('markDialogRoot(');
+  });
+});
+
+describe('bank_window: modal prompt a11y contract', () => {
+  // The modal recipe lives in the shared module (src/ui/prompt_dialog.ts) since
+  // the rule-of-three extraction; the recipe pins scan it there, and the
+  // delegation pin below keeps this window on the recipe with its own root.
+  it('the prompt is a labelled modal dialog', () => {
+    expect(promptDialog).toContain("setAttribute('role', 'dialog')");
+    expect(promptDialog).toContain("setAttribute('aria-modal', 'true')");
+  });
+
+  it('traps Tab inside the prompt via the one canonical focusable set', () => {
+    expect(promptDialog).toContain("import { FOCUSABLE_SELECTOR } from './focus_manager'");
+    expect(promptDialog).toContain('querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)');
+  });
+
+  it('sets and clears the parent-window inert on every teardown path', () => {
+    // Each arm is pinned in its own body slice so deleting either one reds this:
+    // the shared recipe sets inert on the handed-in root and dismiss() (the one
+    // teardown chokepoint) clears it...
+    expect(promptDialog).toContain('inertRoot.inert = true');
+    const dismissBody = promptDialog.slice(promptDialog.indexOf('const dismiss = ('));
+    expect(dismissBody).toContain('inert = false');
+    // ...this window hands the recipe ITS root...
+    expect(painter).toMatch(
+      /installModalPromptDialog\(prompt, opener, close, \{\s*inertRoot: this\.deps\.root\(\),/,
+    );
+    // ...and the force-close backstop in close() BOTH tears open prompts down and
+    // clears inert (Esc/keybind can close the window out from under a prompt).
+    const closeBody = painter.slice(
+      painter.indexOf('close(): void {'),
+      painter.indexOf('render(): void {'),
+    );
+    expect(closeBody).toContain('dismissBankPrompts()');
+    expect(closeBody).toContain('.inert = false');
+  });
+
+  it('Escape dismisses the prompt and returns focus without reaching the global escape', () => {
+    expect(promptDialog).toMatch(/'Escape'[\s\S]{0,160}dismissAndReturn\(\)/);
+    // stopPropagation keeps the keypress from bubbling to the input layer's window
+    // keydown, whose escape action would ALSO run closeAll and close the whole bank
+    // window in the same keypress (prompt buttons are not tag-exempt like inputs).
+    expect(promptDialog).toMatch(/ke\.preventDefault\(\);\s*ke\.stopPropagation\(\);/);
+  });
+
+  it('confirm lands focus on the always-present close button; cancel returns to the opener', () => {
+    // Three landings: buy confirm, quantity submit, and the render() re-land. The
+    // rebuild detaches the opener node, so falling to <body> is the WCAG 2.4.3 bug.
+    const landings =
+      painter.match(/querySelector\('\[data-close\]'\) as HTMLElement \| null\)\?\.focus\(\)/g) ??
+      [];
+    expect(landings.length).toBeGreaterThanOrEqual(3);
+    expect(promptDialog).toMatch(
+      /const dismissAndReturn = \(\): void => \{\s*dismiss\(\);\s*opener\?\.focus\(\);/,
+    );
+  });
+
+  it('the withdraw prompt resolves its def through knownItemDef (R34, prototype keys)', () => {
+    // The one bare ITEMS read the stale-client conversion missed: the prompt
+    // title falls back to the raw id for an unknown or prototype-key slot id
+    // instead of dereferencing a Function's fields.
+    const stripped = painter.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+    const promptBody = stripped.slice(stripped.indexOf('private showWithdrawQuantityPrompt('));
+    expect(promptBody.slice(0, 400)).toContain('knownItemDef(ITEMS, slot.itemId)');
+    expect(promptBody.slice(0, 400)).not.toContain('? ITEMS[slot.itemId]');
+    // The title reads the cell authority, and reads it through the SHARED core
+    // the bank's search and name-sort read (bank_item_name_core), not through a
+    // second open-coded copy of that core's body. Pinning the duplicated text
+    // was itself holding the duplication in place, so the pin moved to the call
+    // (inert today: the partial rung offers only on !slot.instance; pinned so
+    // an instanced rung cannot regress it silently, the round-4 audit).
+    expect(promptBody.slice(0, 600)).toContain('bankSlotDisplayName(item, slot)');
+    // The regression this actually guards: falling back to the def name, which
+    // is what the title showed before a copy could carry its own.
+    expect(promptBody.slice(0, 600)).not.toContain('itemDisplayName(item)');
+  });
+
+  it('re-validates the live slot at quantity-prompt submit (stale-index guard)', () => {
+    // The prompt captures slotIndex at open; the bank can repaint under it. Sending
+    // the captured index blind would withdraw whatever now sits there, so submit
+    // re-resolves the live slot, refuses on an itemId mismatch, and clamps the
+    // count to the live stack.
+    expect(painter).toMatch(/if \(!live \|\| !slot \|\| live\.itemId !== slot\.itemId\)/);
+    expect(painter).toMatch(/Math\.min\(maxCount, live\.count,/);
+  });
+
+  it('mounts the prompt into #prompt-stack (outside the window)', () => {
+    // The buy confirm mounts through the SHARED family builder (the QA fix
+    // round extracted the third copy into bank_buy_prompt.ts), so the
+    // #prompt-stack mount lives in the leaf; the quantity prompt's own leaf
+    // (bank_quantity_prompt.ts) carries its twin. Pin the delegation AND the
+    // leaf's mount so neither half can silently drop the contract.
+    expect(painter).toContain('showBuyConfirmPrompt(');
+    const buyPromptLeaf = readFileSync(
+      new URL('../src/ui/bank_buy_prompt.ts', import.meta.url),
+      'utf8',
+    );
+    expect(buyPromptLeaf).toContain("getElementById('prompt-stack')");
+  });
+
+  it('both prompt leaves hold the cold contract the perf sweep cannot see', () => {
+    // The perf-budget discovery regex sweeps only *_painter/_window/_controller
+    // names, so DOM chrome extracted into a leaf leaves the gate's field of
+    // view; each leaf's docblock claims "no driver, no layout read" and this
+    // pin is what enforces it. A future edit that positions a prompt with
+    // getBoundingClientRect, or re-arms one with an interval, reds here.
+    for (const rel of ['../src/ui/bank_buy_prompt.ts', '../src/ui/bank_quantity_prompt.ts']) {
+      const leaf = readFileSync(new URL(rel, import.meta.url), 'utf8');
+      expect(leaf, `${rel} must not read layout`).not.toMatch(
+        /offsetWidth|offsetHeight|getBoundingClientRect|getComputedStyle|scrollHeight|scrollWidth/,
+      );
+      expect(leaf, `${rel} must not own a repeating driver`).not.toMatch(
+        /requestAnimationFrame|setInterval|requestIdleCallback/,
+      );
+    }
+  });
+
+  it('open() warms the vault material-set memo ahead of the first bag click', () => {
+    // A bare call expression whose only effect is memo population: nothing
+    // else reds when a cleanup pass deletes it, so the pin is a source
+    // scrape on the open() region (the first-derive walk over the content
+    // tables must land on the open path, not inside a click handler).
+    const openBody = painter.slice(painter.indexOf('open(): void {'));
+    expect(openBody.slice(0, 900)).toContain('vaultMaterialIds();');
+  });
+
+  it('buy-slots confirm calls bankBuySlots and withdraw-partial calls bankWithdraw with a count', () => {
+    expect(painter).toContain('bankBuySlots()');
+    expect(painter).toMatch(/bankWithdraw\(slotIndex, count\)/);
+  });
+});
+
+describe('bank_window: the bag-socket row (phase 07 source pins)', () => {
+  // The behavioral half (rendered cells, dispatched verbs, the signature
+  // repaint) lives in tests/bank_window_sockets.test.ts; these pins hold the
+  // contracts a behavioral rig cannot see.
+  it('every price the row shows comes from the wire, never a client table', () => {
+    // The phase 09 tunables rule (and this phase's stopping rule): the painter
+    // must never import or restate the socket price ladder. The only price it
+    // touches is the model's unlockCost, which buildBankView copies from
+    // BankInfo.nextSocketCost verbatim.
+    expect(painter).not.toContain('BANK_SOCKET_PRICES');
+    expect(painter).not.toContain('1000000');
+    expect(painter).toContain('cell.unlockCost');
+  });
+
+  it('the repaint signature carries the three socket terms, in the signed array', () => {
+    // COMMENTS STRIPPED before slicing (the pool_wiring_pins helper): the
+    // signed array carries prose that names the fields, so a raw-source scan
+    // would stay green with a term deleted and only its comment left behind.
+    // The per-term behavioral arms live in tests/bank_window_sockets.test.ts;
+    // this pins WHERE the terms live (inside the one signed array).
+    const stripped = painter
+      .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+    const sigStart = stripped.indexOf('const sig = JSON.stringify([');
+    expect(sigStart).toBeGreaterThan(-1);
+    const sigBody = stripped.slice(sigStart, stripped.indexOf(']);', sigStart));
+    expect(sigBody).toContain('info.socketsUnlocked');
+    expect(sigBody).toContain('info.socketBags');
+    expect(sigBody).toContain('info.nextSocketCost');
+  });
+
+  it('the deposit-all plan consumes the wire pool split, never the flat capacity', () => {
+    // Sliced to the click handler's own body (info.capacity legitimately
+    // appears elsewhere, e.g. as a repaint-signature term).
+    const body = painter.slice(
+      painter.indexOf('private onDepositAll(): void {'),
+      painter.indexOf('private setDepositStatus('),
+    );
+    expect(body).toContain(
+      'planDepositAllMaterials(world.inventory, info.slots, bankPoolsOf(info)',
+    );
+    expect(body).not.toContain('info.capacity');
+  });
+
+  it('the socket cells reuse the bag-socket family (focus ring and hover ride along)', () => {
+    // Family reuse, not a bespoke cell: the bags' .bag-socket:focus-visible
+    // ring and hover apply to every bank socket cell through the shared class.
+    expect(painter).toContain("'bag-socket bank-socket");
+    expect(components).toMatch(/\.bag-socket:focus-visible,/);
+  });
+});
+
+describe('bank_window: hud.ts wiring', () => {
+  it('opens the bank on the bank SimEvent', () => {
+    expect(hud).toContain("case 'bank':");
+    expect(hud).toContain('this.openBank();');
+  });
+
+  it('routes the managed-window close through the painter (focus return)', () => {
+    expect(hud).toContain("case 'bank-window':");
+    expect(hud).toContain('this.closeBank();');
+  });
+
+  it('toggles the bank-open docking body class on open and close', () => {
+    expect(hud).toContain("classList.add('bank-open')");
+    expect(hud).toContain("classList.remove('bank-open')");
+  });
+
+  it('re-renders the open bank on a language switch and refreshes it on the slow band', () => {
+    expect(hud).toContain('if (this.bankWindow.isOpen) this.bankWindow.render();');
+    expect(hud).toContain(
+      'if (slowHud && this.bankWindow.isOpen) this.bankWindow.refreshIfChanged();',
+    );
+  });
+
+  it('wires the painter deps: the onClosed teardown and the NON-trapping focus pair', () => {
+    // Gutting onClosed leaves body.bank-open stuck and the bags companion docked
+    // forever; windowFocus would install the Tab trap the non-modal cluster forbids.
+    expect(hud).toContain('onClosed: () => this.onBankClosed(),');
+    expect(hud).toContain('captureFocus: () => this.focusManager.activeFocusable(),');
+    expect(hud).not.toMatch(/this\.windowFocus\('#bank-window'\)/);
+  });
+
+  it('the bags companion is exclusive: bank and vendor close each other on open', () => {
+    // Every hub has a vendor within simultaneous interact range of its banker
+    // (quartermaster_bree is 8.6yd from Bursar Crane), and both companions dock
+    // on the same side of #bags: without the mutual close, mobile cluster-close
+    // precedence (vendor first) strands the bank at half-width with its x-btn
+    // hidden and no touch close affordance.
+    expect(hud).toMatch(
+      /openBank\(\): void \{[\s\S]{0,600}?if \(this\.vendorOpen\) this\.closeVendor\(\);[\s\S]{0,600}?classList\.add\('bank-open'\)/,
+    );
+    expect(hud).toMatch(
+      /openVendor\(npcId: number, opener\?: HTMLElement \| null\): void \{[\s\S]{0,600}?if \(this\.bankWindowOpen\) this\.closeBank\(\);/,
+    );
+  });
+
+  it('the heroic marks shop, the second tenant of #vendor-window, honors the same exclusivity', () => {
+    // Quartermaster Vex stands ~4.5yd from Bursar Aldous Crane at Highwatch, so the
+    // marks shop and the bank cluster are simultaneously reachable. openBank's
+    // vendorOpen guard reads only openVendorNpcId (the heroic arm nulls it), so both
+    // arms need their own wiring or the two windows overlap and the mobile
+    // cluster-close precedence strands the bank at half-width with its x-btn hidden.
+    expect(hud).toMatch(
+      /openHeroicVendor\(npcId: number, opener\?: HTMLElement \| null\): void \{[\s\S]{0,600}?if \(this\.bankWindowOpen\) this\.closeBank\(\);/,
+    );
+    expect(hud).toMatch(
+      /openBank\(\): void \{[\s\S]{0,600}?if \(this\.openHeroicVendorNpcId !== null\) this\.closeHeroicVendor\(\);[\s\S]{0,600}?classList\.add\('bank-open'\)/,
+    );
+  });
+
+  it('both mobile cluster-close paths dismiss orphaned bag prompts before hiding #bags', () => {
+    // The mobile branches hide #bags without running BagsWindow.close(), so a live
+    // discard/sell/deposit prompt would survive as a visible orphaned aria-modal in
+    // #prompt-stack that promptModalOpen() keeps gating game keys on. Both sites
+    // (closeVendor and onBankClosed) must remove the prompt node, not just clear inert.
+    const sites = hud.match(/dismissBagPrompts\(\);\s*const bags = \$\('#bags'\);/g) ?? [];
+    expect(sites.length).toBe(2);
+  });
+});
+
+describe('bank_window: static window element is wired in both game entries', () => {
+  it('index.html declares #bank-window', () => {
+    expect(indexHtml).toContain('id="bank-window"');
+  });
+
+  it('play.html declares #bank-window', () => {
+    expect(playHtml).toContain('id="bank-window"');
+  });
+});
+
+describe('bank_window: search / sort / deposit-all', () => {
+  it('mounts the toolbar between the socket row and the grid, always in bank state', () => {
+    // Phase 08 moved the used/total readout into the footer meter, so the
+    // socket row is the anchor above the toolbar now; the old header
+    // capacity band must not come back (its behavioral absence is pinned in
+    // tests/bank_window_sockets.test.ts).
+    const socketIdx = painter.indexOf('el.appendChild(this.buildSocketRow(model.sockets));');
+    const barIdx = painter.indexOf('el.appendChild(this.buildFilterBar(model.empty));');
+    const gridIdx = painter.indexOf("grid.className = 'bank-grid';");
+    expect(socketIdx).toBeGreaterThan(0);
+    expect(barIdx).toBeGreaterThan(socketIdx);
+    expect(gridIdx).toBeGreaterThan(barIdx);
+  });
+
+  it('keeps the deposit-all button visible over an empty bank (filter controls gated)', () => {
+    // buildFilterBar drops chips/search/sort when the bank is empty but always appends
+    // the deposit-all button, so a fresh character can dump materials into an empty bank.
+    // The indentation proves the nesting: the search append sits at 6 spaces INSIDE the
+    // `if (!bankEmpty)` block, the deposit append at 4 spaces OUTSIDE it (unconditional).
+    expect(painter).toMatch(/private buildFilterBar\(bankEmpty: boolean\)/);
+    expect(painter).toContain('if (!bankEmpty) {');
+    expect(painter).toContain('\n      tools.appendChild(search);'); // 6 spaces: gated
+    expect(painter).toContain('\n    tools.appendChild(deposit);'); // 4 spaces: unconditional
+    expect(painter).toContain('bank-deposit-all');
+  });
+
+  it('persists category/sort under the bank-specific key; the search never enters storage', () => {
+    // Comment-stripped view so a comment carrying a pinned literal cannot satisfy
+    // these (the known source-text-pin trap); behavior is driven in
+    // tests/bank_window_search_reset.test.ts, these anchors keep the source rule
+    // named next to the storage key.
+    const code = painter.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+    expect(code).toContain("const BANK_FILTER_KEY = 'woc_bank_filter'");
+    // The per-visit search rule holds at BOTH ends of the round trip:
+    // construction drops any stored query (legacy or reload-stranded) and
+    // eagerly rewrites a non-empty stored search out of existence...
+    expect(code).toContain('parseBagFilter(localStorage.getItem(BANK_FILTER_KEY))');
+    expect(code).toContain("const next = { ...parsed, search: '' }");
+    expect(code).toContain("if (parsed.search !== '')");
+    expect(code).toContain('localStorage.setItem(BANK_FILTER_KEY, serializeBagFilter(next))');
+    // ...and the serializer strips it from every write.
+    expect(code).toContain("serializeBagFilter({ ...this.filter, search: '' })");
+  });
+
+  it('runs the pure bank filter core, never a re-derived bag filter', () => {
+    expect(painter).toContain('filterBankSlots(');
+    expect(painter).toContain('bagFilterIsDefault(');
+    expect(painter).not.toContain('applyBagFilter(');
+  });
+
+  it('shows the no-match line under a narrowing filter and suppresses the empty pad', () => {
+    expect(painter).toContain("t('hudChrome.bags.noMatch')");
+    expect(painter).toContain('this.appendEmptyCells(grid, isDefault ? emptyCells : 0)');
+  });
+
+  it('refreshes ONLY the grid on a search keystroke, preserving input focus/caret + scroll', () => {
+    expect(painter).toMatch(/addEventListener\('input',[\s\S]{0,140}this\.refreshGrid\(\)/);
+    const refreshBody = painter.slice(
+      painter.indexOf('private refreshGrid(): void {'),
+      painter.indexOf('private buildFilterBar(bankEmpty: boolean): HTMLElement {'),
+    );
+    // Guard the slice itself: a renamed anchor would silently widen the body to EOF.
+    expect(refreshBody.length).toBeGreaterThan(0);
+    expect(refreshBody).toContain('private refreshGrid');
+    expect(refreshBody).not.toContain('private buildBuyRow');
+    expect(refreshBody).toContain(".bank-grid')");
+    // Emptying the grid collapses whichever element is scrolling (clamping its
+    // scrollTop to 0), so BOTH candidates must be captured and reapplied: this
+    // is the search-keystroke path, and getting it wrong on one viewport jumps
+    // the view under a player who is typing.
+    expect(refreshBody).toContain(".bank-scroll')");
+    expect(refreshBody).toContain('if (scroll) scroll.scrollTop = prev.inner');
+    expect(refreshBody).toContain('root.scrollTop = prev.outer');
+  });
+
+  it('carries the ORIGINAL slotIndex through the filtered grid to the click handler', () => {
+    // The click wiring itself now sits in the extracted personal-bank cell
+    // (personal_bank_item_cell.ts), which reads the click straight off the
+    // slot it was minted for: slot.slotIndex + event.shiftKey. BankWindow
+    // only forwards that pair into its own onSlotClick via the injected
+    // onWithdraw callback; both halves are load-bearing for the ORIGINAL
+    // (unfiltered) index to actually reach the world command.
+    // The callback/leaf pins alone could both pass against an orphan leaf that
+    // no longer wires from BankWindow's actual grid-fill call, so also span the
+    // real buildPersonalBankItemCell(...) call site itself, comment-stripped,
+    // with its exact args in construction context.
+    const code = painter.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+    expect(code).toMatch(
+      /buildPersonalBankItemCell\(\s*this\.deps,\s*slot,\s*this\.fmt\(slot\.count\),\s*\(slotIndex, partial\) => this\.onSlotClick\(slotIndex, partial\),\s*\(\) => this\.render\(\),\s*\)/,
+    );
+    expect(personalBankItemCell).toContain('onWithdraw(slot.slotIndex, event.shiftKey)');
+  });
+
+  it('gates the deposit-all button on hasDepositableMaterials and plans + sends on click', () => {
+    expect(painter).toContain("t('hudChrome.bank.depositAll')");
+    expect(painter).toContain('hasDepositableMaterials(this.deps.world().inventory');
+    expect(painter).toMatch(
+      /for \(const send of plan\.sends\) world\.bankDeposit\(send\.slot, send\.count\)/,
+    );
+  });
+
+  it('gives the deposit-all button a tooltip clarifying which items it moves (issue #2132)', () => {
+    expect(painter).toContain("const depositTooltip = t('hudChrome.bank.depositAllTooltip')");
+    expect(painter).toContain('deposit.title = depositTooltip');
+  });
+
+  it('the deposit-all tooltip says what the sweep does: every Material moves, everything else stays', () => {
+    // The full-sentence pin (#2715; moved here from the cooking-catch suite
+    // at the Masterwrought 11l QA, beside the render pins above). The sweep
+    // is set membership on isMaterialItem (src/ui/bank_view.ts), which is
+    // exactly the set whose tooltip kind line reads Material
+    // (src/ui/item_kind_label.ts): seeds, husks, compost and the growth tonic
+    // included, gray junk and every non-poor keepsake excluded, so the copy
+    // names the kind line rather than "reagents" and refuses to enumerate what
+    // stays. A rewrite that keeps only loose tokens fails here; the 18
+    // overlays were re-filled in the same change (the reword-staleness class).
+    expect(t('hudChrome.bank.depositAllTooltip')).toBe(
+      'Sends every crafting material (anything whose tooltip reads Material or Fine Material) from your bags to the bank in one trip. Everything else stays in your bags, gathering tools, quest items, consumables, and gray items included.',
+    );
+    // The parenthetical names BOTH kind lines the swept set renders: the nine
+    // fine grades are in MATERIAL_ITEM_IDS (so the sweep moves them) and their
+    // line reads Fine Material, not Material, which the first reword missed
+    // (in pt_BR the two labels share no word, so a player could not read
+    // through). Pinned against the live set and the live label for EVERY
+    // fine grade, not one exemplar: fine_iron_ore is also a recipe reagent
+    // (the tier-4 pick), so it enters the set through the recipes loop even
+    // with the grade rule deleted, and three grades no recipe consumes
+    // (fine_copper_ore, fine_ironbark_log, fine_silverleaf_herb) are what
+    // make the grade rule itself visible here.
+    const grades = Object.values(MATERIAL_GRADES);
+    expect(grades).toHaveLength(9);
+    for (const row of grades) {
+      expect(MATERIAL_ITEM_IDS.has(row.fineItemId), row.fineItemId).toBe(true);
+      expect(itemKindLabel('junk', row.fineItemId), row.fineItemId).toBe('Fine Material');
+    }
+    expect(itemKindLabel('junk', 'iron_ore')).toBe('Material');
+  });
+
+  it('every locale carries both of its own kind labels inside the deposit-all tooltip', async () => {
+    // The English parenthetical quotes the two kind lines a swept item can
+    // render; each locale's fill must quote ITS OWN itemUi.kind.material and
+    // itemUi.kind.fineMaterial, or the player is told to look for a word that
+    // never appears on the tooltip (the pt_BR miss the 11l QA closed, where
+    // the two labels share no word). The reword-staleness class has no hash
+    // gate; this containment is locale-agnostic and would have caught it. A
+    // locale still pending on the key resolves to English and passes on the
+    // English labels, which is the same containment.
+    const before = getLanguage();
+    try {
+      for (const lang of SUPPORTED_LANGUAGES) {
+        await ensureLocaleLoaded(lang);
+        setLanguage(lang);
+        const tooltip = t('hudChrome.bank.depositAllTooltip');
+        expect(tooltip, `${lang} material`).toContain(t('itemUi.kind.material'));
+        expect(tooltip, `${lang} fine material`).toContain(t('itemUi.kind.fineMaterial'));
+      }
+    } finally {
+      setLanguage(before);
+    }
+  });
+
+  it('exposes the deposit-all clarification beyond hover-only title (PR #2715 review)', () => {
+    // A native `title` is hover-only in practice: unreliable on mobile touch and never
+    // read by a keyboard-only user. aria-describedby is announced by assistive tech on
+    // BOTH hover and keyboard focus, and needs no pointer at all, so it also covers a
+    // touch user who taps the button directly. The visually-hidden span carries the
+    // SAME localized text as the title so sighted and assistive-tech users read
+    // identical copy, and its id is wired to the button via aria-describedby.
+    expect(painter).toContain("deposit.setAttribute('aria-describedby', 'bank-deposit-all-desc')");
+    expect(painter).toContain("depositDesc.id = 'bank-deposit-all-desc'");
+    expect(painter).toContain("depositDesc.className = 'visually-hidden'");
+    expect(painter).toContain('depositDesc.textContent = depositTooltip');
+    expect(painter).toContain("const depositTooltip = t('hudChrome.bank.depositAllTooltip')");
+    expect(painter).toContain('tools.appendChild(depositDesc)');
+    // The description span must be appended AFTER the button so document order matches
+    // the visual/DOM relationship the aria-describedby id lookup assumes.
+    const buttonIdx = painter.indexOf('tools.appendChild(deposit);');
+    const descIdx = painter.indexOf('tools.appendChild(depositDesc);');
+    expect(buttonIdx).toBeGreaterThan(0);
+    expect(descIdx).toBeGreaterThan(buttonIdx);
+  });
+
+  it('snapshots the plan against the click-time state (no mid-run re-read under mirror lag)', () => {
+    const body = painter.slice(
+      painter.indexOf('private onDepositAll(): void {'),
+      painter.indexOf('private setDepositStatus('),
+    );
+    expect(body).toContain('planDepositAllMaterials(');
+    expect(body).toContain('for (const send of plan.sends)');
+  });
+
+  it('renders the summary as a transient polite aria-live status line (no hud.ts toast dep)', () => {
+    expect(painter).toContain("status.setAttribute('role', 'status')");
+    expect(painter).toContain("status.setAttribute('aria-live', 'polite')");
+    // The arm CHOICE (none fit / notable / partial / all fit) lives in the pure
+    // core's depositAllSummaryKey, pinned per-arm in bank_view.test.ts; here pin
+    // that the painter delegates to it, and resolves a notable item's name
+    // through knownItemDef, never a raw ITEMS index (the reviewed
+    // vault_window.ts nit, mirrored here from the start). The actual text
+    // (None arm count-less, {item} interpolation) is shared with the vault via
+    // deposit_all_status_text.ts, pinned directly in that module's own test.
+    expect(painter).toContain('depositAllSummaryKey(plan)');
+    expect(painter).toContain(
+      'const notable = plan.notableItemId ? knownItemDef(ITEMS, plan.notableItemId) : undefined;',
+    );
+    expect(painter).toContain(
+      'depositAllStatusText(depositAllSummaryKey(plan), this.fmt(plan.stacks), notable)',
+    );
+    // Pin the literal like BANK_INFO_GRACE_MS above: it drives BOTH the status-line
+    // lifetime and the deposit-all pending-guard fallback timer.
+    expect(painter).toContain('DEPOSIT_STATUS_MS = 4_000');
+  });
+
+  it('carries search focus and caret across a FULL render (slow-band repaint mid-typing)', () => {
+    // refreshIfChanged can land a data repaint moments after the player focused the
+    // search box; render() must re-focus the fresh input and restore the caret (its
+    // value is restored from this.filter.search), only falling back to [data-close]
+    // when the rebuild dropped the search box entirely.
+    const body = painter.slice(
+      painter.indexOf('render(): void {'),
+      painter.indexOf('refreshIfChanged(): void {'),
+    );
+    // The carry itself lives in bank_search_focus.ts (captureSearchCaret /
+    // restoreSearchCaret, unit-tested there); render() must capture before the
+    // wipe and restore on BOTH pane arms (the guild history has a search box too).
+    expect(body).toContain('const searchFocus = captureSearchCaret(el, active);');
+    expect(body.split('restoreSearchCaret(el, searchFocus)').length).toBe(3);
+    // Non-search focus re-lands via the key ladder (the focused control by its
+    // data-focus-key, else [data-close]), never a blanket close-button yank.
+    expect(body).toContain('} else if (hadFocus) {');
+    expect(body).toContain('this.restoreControlFocus(el, focusKey)');
+  });
+
+  it('holds deposit-all disabled from send until the mirror echoes (double-click guard)', () => {
+    // A rapid second click online would re-plan from the STALE mirror and re-send slot
+    // indices the server already spliced, banking whatever shifted into them. The guard:
+    // the send path arms depositAllPending, the button's disabled expression reads it,
+    // a data-signature change in refreshIfChanged clears it (the echo arrived), and a
+    // fallback timer plus the close() teardown ensure it can never wedge shut.
+    expect(painter).toContain('this.depositAllPending = true;');
+    expect(painter).toMatch(
+      /deposit\.disabled =\s*\n\s*this\.depositAllPending \|\|\s*\n\s*!hasDepositableMaterials\(/,
+    );
+    const refresh = painter.slice(
+      painter.indexOf('refreshIfChanged(): void {'),
+      painter.indexOf('private fmt('),
+    );
+    expect(refresh).toContain('if (sig === this.lastSig) return;');
+    expect(refresh).toContain('this.clearDepositAllPending();');
+    const closeBody = painter.slice(
+      painter.indexOf('close(): void {'),
+      painter.indexOf('private clearDepositStatus('),
+    );
+    expect(closeBody).toContain('this.clearDepositAllPending();');
+    // The fallback timer only backstops a lost echo; it must not clear an already-cleared
+    // guard into a spurious render.
+    expect(painter).toContain('if (!this.depositAllPending) return;');
+  });
+
+  it('gives the deposit-all button a tokenized :focus-visible ring and pins the toolbar flex', () => {
+    expect(components).toMatch(
+      /\.bank-deposit-all:focus-visible \{\s*outline: 2px solid var\(--color-border-focus\);/,
+    );
+    expect(components).toContain('#bank-window .bag-filter-bar {');
+  });
+});
+
+describe('bank_window: the bags companion repaints when a bank op moves items or coin', () => {
+  // Bank ops emit no client repaint event and the bags grid has no per-frame refresh
+  // (bags_window.ts pins the same constraint on its deposit side), so every
+  // bank-window-initiated op that changes inventory or money must nudge the hud
+  // coordinator: offline the sim applied the op synchronously and nothing else
+  // repaints the bags (the reported bug: a withdraw left the bags stale until
+  // close/reopen); online the nudge paints the still-stale mirror harmlessly and the
+  // snapshot echo repaints again authoritatively (main.ts consumeInventoryChanged).
+  it('whole-stack withdraw nudges onInventoryChanged', () => {
+    // The {0,400} window keeps the pin decisive (the nearest FOREIGN nudge sits
+    // thousands of chars away) while tolerating a few inserted comment lines.
+    expect(painter).toMatch(
+      /bankWithdraw\(action\.slotIndex\);[\s\S]{0,400}?this\.deps\.onInventoryChanged\(\);/,
+    );
+  });
+
+  it('the quantity-prompt partial withdraw nudges onInventoryChanged', () => {
+    expect(painter).toMatch(
+      /bankWithdraw\(slotIndex, count\);[\s\S]{0,400}?this\.deps\.onInventoryChanged\(\);/,
+    );
+  });
+
+  it('deposit-all nudges onInventoryChanged only when stacks were actually sent', () => {
+    const startIdx = painter.indexOf('private onDepositAll(): void {');
+    const endIdx = painter.indexOf('private setDepositStatus');
+    // Guard BOTH slice anchors: a renamed START collapses the slice (caught by the
+    // length check); a renamed END (-1) would silently widen the body to EOF, where
+    // the unbounded inside-guard regex could false-pass on a FOREIGN nudge in a
+    // sibling method, so pin the end anchor's existence and ordering too.
+    expect(startIdx).toBeGreaterThan(-1);
+    expect(endIdx).toBeGreaterThan(startIdx);
+    const body = painter.slice(startIdx, endIdx);
+    expect(body).toContain('private onDepositAll');
+    // ...and prove the slice did not swallow a sibling op site.
+    expect(body).not.toContain('bankWithdraw(');
+    // The nudge sits INSIDE the sends-guard block: a no-op click (nothing fit, the
+    // bank-full arm) moved nothing and must not repaint the bags.
+    expect(body).toMatch(
+      /if \(plan\.sends\.length > 0\) \{[\s\S]*?this\.deps\.onInventoryChanged\(\);[\s\S]*?\n {4}\}/,
+    );
+  });
+
+  it('buy-slots nudges onInventoryChanged (the bags money row shows the spent coin)', () => {
+    expect(painter).toMatch(/bankBuySlots\(\);[\s\S]{0,400}?this\.deps\.onInventoryChanged\(\);/);
+  });
+
+  it('hud wires the nudge to its onInventoryChanged coordinator', () => {
+    // The same coordinator the online inventory-delta path calls
+    // (net.consumeInventoryChanged in main.ts), so both hosts repaint the bags,
+    // vendor, and character window through one seam.
+    expect(hud).toContain('onInventoryChanged: () => this.onInventoryChanged(),');
+  });
+});
+
+describe('bank_window: touch peek suppression', () => {
+  it('consults the shared peek guard FIRST in the cell click, before onSlotClick', () => {
+    // A long-press peek shows the tooltip and marks the guard; the release click must
+    // consume that peek and inspect the slot instead of withdrawing. The guard check
+    // must sit BEFORE the withdraw callback, so deleting it (or moving the withdraw
+    // above it) reds this. A plain tap / desktop click returns false and falls through.
+    // The click itself now lives in the extracted personal-bank cell
+    // (personal_bank_item_cell.ts): deps.consumePeek is threaded through as an
+    // injected dep, and the actual click handler moved with it.
+    expect(painter).toContain('consumePeek(): boolean;');
+    expect(personalBankItemCell).toMatch(
+      /cell\.addEventListener\('click', \(event\) => \{[\s\S]{0,260}?if \(deps\.consumePeek\(\)\) \{\s*deps\.hideTooltip\(\);\s*return;\s*\}\s*onWithdraw\(slot\.slotIndex, event\.shiftKey\);/,
+    );
+  });
+
+  it('hud wires consumePeek to the shared TouchPeekGuard at the BANK construction site', () => {
+    // Slice to the bank construction block (its own `});` terminator, robust to a
+    // constructor reorder) so this pins the BANK wiring specifically, not the
+    // identically-worded bags one.
+    const start = hud.indexOf('new BankWindow({');
+    const bankSite = hud.slice(start, hud.indexOf('});', start));
+    expect(start).toBeGreaterThan(0);
+    expect(bankSite).toContain('consumePeek: () => this.peekGuard.consume(),');
+  });
+});
+
+describe('bank_window: mobile pairing (hud.mobile.css)', () => {
+  it('pairs the bank cluster 50/50 at a SCALE-AWARE split point, mirroring the vendor', () => {
+    // #ui's zoom multiplies author lengths, so a raw 50vw split only tiles at
+    // uiScale 1 (halves gap above 1, overlap below 1; the 2026-07-07 QA finding).
+    // The split must divide the shared --app-vw box by the live scale.
+    const split = 'calc(var(--app-vw) / var(--ui-scale, 1) / 2)';
+    expect(mobileCss).toContain(
+      `body.mobile-touch.bank-open #bank-window {\n    left: max(10px, env(safe-area-inset-left));\n    right: ${split};`,
+    );
+    // The bags RIGHT half is shared with the market cluster (the market docks
+    // #bags the same way on touch, see market_window.test.ts). Pin against a
+    // whitespace-normalized view: biome re-wraps multi-selector lists, so a
+    // raw multi-line source pin here would rot on a reformat.
+    expect(mobileCss.replace(/\s+/g, ' ')).toContain(
+      `body.mobile-touch.bank-open #bags, body.mobile-touch.market-open #bags { left: ${split}; right: max(10px, env(safe-area-inset-right));`,
+    );
+  });
+
+  it('standalone mobile block neutralizes the desktop dock (transform:none, max-height:none, safe-area)', () => {
+    const start = mobileCss.indexOf('body.mobile-touch #bank-window {');
+    const block = mobileCss.slice(start, mobileCss.indexOf('}', start));
+    expect(start).toBeGreaterThan(0);
+    expect(block).toContain('transform: none');
+    expect(block).toContain('max-height: none');
+    // Full-screen is inset-driven: the base .window max-width clamp divides by
+    // --window-scale, not --ui-scale, and under-fills below uiScale 1 without this.
+    expect(block).toContain('max-width: none');
+    expect(block).toContain('top: max(10px, env(safe-area-inset-top))');
+    // Full-height standalone (the issue-1577 bags rationale, adopted for the bank
+    // by a deliberate QA adjudication); the 50/50 pairing keeps its 72px reservation.
+    expect(block).toContain('bottom: max(10px, env(safe-area-inset-bottom))');
+  });
+
+  it('hides the bank x-btn under the pairing (the bags x-btn closes the whole cluster)', () => {
+    expect(mobileCss).toMatch(
+      /body\.mobile-touch\.bank-open #bank-window \.panel-title \.x-btn \{\s*display: none;/,
+    );
+  });
+
+  it('keeps every bank tap target at the 40px floor and never weakens it on mobile', () => {
+    // The 40px floors live in components.css (WCAG 2.5.8: 40x40 preferred, never
+    // deliberately weakened to the 24px minimum). Pin the load-bearing floors...
+    expect(components).toMatch(/\.bank-item \{[^}]*min-height: 40px/);
+    expect(components).toMatch(/\.bank-buy-btn \{[^}]*min-height: 40px/);
+    expect(components).toMatch(/body\.mobile-touch \.bank-deposit-all \{\s*min-height: 40px;/);
+    // ...and prove no mobile bank rule introduces a sub-40 min tap dimension.
+    // .bank-scroll is exempt: it is the grid's scroll CONTAINER, not a tap target,
+    // and its min-height is the short-viewport layout budget (the grid-floor yield
+    // that keeps the buy row visible, pinned below); its cells keep the .bank-item
+    // floor pinned above.
+    const bankMobileRules = [
+      ...mobileCss.matchAll(/(?:#bank-window|\.bank-[\w-]*)[^{}]*\{[^}]*\}/g),
+    ]
+      .map((m) => m[0])
+      .filter((rule) => !rule.slice(0, rule.indexOf('{')).includes('.bank-scroll'))
+      .join('\n');
+    for (const m of bankMobileRules.matchAll(/min-(?:height|width):\s*(\d+)px/g)) {
+      expect(Number(m[1])).toBeGreaterThanOrEqual(40);
+    }
+  });
+
+  it('keeps the short-phone compression block the pinned footer sits on top of', () => {
+    // At phone heights the pairing box (viewport minus the 10px top inset and the
+    // 72px tray reservation) cannot hold the full-toolbar chrome, the two-row
+    // .bank-scroll floor (components.css), AND the buy row. This block is every
+    // compression that layout can honestly make; it was never enough on a
+    // STOCKED bank, which is what Bank Storage phase 18's pinned footer closed.
+    // The grid floor stays because the GUILD pane still scrolls inside
+    // .bank-scroll; the two :has() carve-outs went with the personal pane's
+    // inner scroller and their absence is pinned in
+    // tests/bank_chrome_layout.test.ts, which also owns the pinned-footer block.
+    // Behavioral oracle: scripts/bank_mobile_buyrow_check.mjs (live geometry at
+    // 740x360 / 844x390 / 915x412, needs npm run dev).
+    const start = mobileCss.indexOf('@media (max-height: 480px)');
+    expect(start).toBeGreaterThan(0);
+    expect(mobileCss).toMatch(
+      /@media \(max-height: 480px\) \{\s*body\.mobile-touch #bank-window \.bank-scroll \{\s*min-height: 44px;/,
+    );
+    expect(mobileCss).toMatch(
+      /body\.mobile-touch #bank-window \.bank-buy-row \{\s*margin-top: 4px;/,
+    );
+  });
+
+  it('exempts the bank cluster from the window-cascade position bake (mirrors the vendor guard)', () => {
+    // placeNewWindow bakes an inline cascade-offset inset; on mobile that inline inset
+    // beats the docking CSS and breaks the 50/50 pairing. The bank cluster must be
+    // exempted exactly as the vendor cluster is, or the mobile pairing silently regresses.
+    expect(hud).toMatch(
+      /classList\.contains\('bank-open'\)\s*&&\s*\(el\.id === 'bank-window' \|\| el\.id === 'bags'\)\s*\)\s*return;/,
+    );
+  });
+
+  it('keeps the bank-cluster chips one scrollable row (no two-row wrap eating the grid)', () => {
+    // At 360px-tall landscape phones a wrapped chip row squeezes the paired grid to a
+    // sub-row sliver; the cluster-scoped rule keeps ONE horizontally scrollable row
+    // (bank chips docked AND undocked, bags chips inside the bank and market
+    // clusters; the vendor cluster and standalone bags keep the family two-row
+    // wrap). Reverting flex-wrap to wrap, or dropping the scoped rule, reds this.
+    expect(mobileCss).toMatch(
+      /body\.mobile-touch #bank-window \.bag-chips,\s*body\.mobile-touch\.bank-open #bags \.bag-chips,\s*body\.mobile-touch\.market-open #bags \.bag-chips \{[^}]*flex-wrap: nowrap;[^}]*overflow-x: auto;/,
+    );
+    expect(mobileCss).toMatch(
+      /body\.mobile-touch #bank-window \.bag-chip,\s*body\.mobile-touch\.bank-open #bags \.bag-chip,\s*body\.mobile-touch\.market-open #bags \.bag-chip \{\s*flex: 0 0 auto;/,
+    );
+  });
+});
+
+describe('bank_window: keyboard a11y (non-modal activation + prompt Enter)', () => {
+  it('bank and bags are in the non-modal Enter/Space activation guard (WCAG 2.1.1)', () => {
+    // The bank cluster is non-modal, so canUseGameKeys() stays true while a bank
+    // button has focus: without the guard, Enter opens chat and Space jumps instead
+    // of activating the focused control. The guard stopPropagation's Enter/Space on
+    // a focused BUTTON so native activation survives (the delve/lockpick/map family
+    // precedent). Slice to the guard array so a removal reds this.
+    // The root list lives in src/ui/chrome_focus_wiring.ts (hud.ts is a one-line
+    // consumer, pinned below with line comments stripped).
+    expect(CHROME_GUARDED_PANELS).toContain('#bank-window');
+    expect(CHROME_GUARDED_PANELS).toContain('#bags');
+    expect(hud.replace(/^\s*\/\/.*$/gm, '')).toContain('wireChromeFocus($)');
+  });
+
+  it('an open aria-modal prompt suppresses game keybinds (WCAG 2.4.3 focus return)', () => {
+    // Enter that confirms a bank prompt synchronously re-focuses a button; the same
+    // keydown then bubbles to the window handler, and without this gate the chat
+    // bind fires and steals the focus return. promptModalOpen() matches ONLY the
+    // installPromptDialog family (party/trade/duel prompts carry no aria-modal and
+    // must stay non-blocking), and the shared gameplay gate consults it before
+    // every keyboard/gamepad action predicate.
+    expect(hud).toContain('promptModalOpen(): boolean {');
+    expect(hud).toContain(
+      `$('#prompt-stack').querySelector('.prompt[aria-modal="true"]') !== null`,
+    );
+    const gateStart = mainSrc.indexOf('const gameplayInputBlocked = () =>');
+    const gate = mainSrc.slice(gateStart, mainSrc.indexOf(';', gateStart));
+    expect(gateStart).toBeGreaterThan(0);
+    expect(gate).toContain('hud.promptModalOpen()');
+    expect(mainSrc.match(/gameplayInputBlocked\(\)/g)?.length ?? 0).toBeGreaterThanOrEqual(3);
+    expect(mainSrc).toMatch(/canUseGameKeys: \(\) => !gameplayInputBlocked\(\)/);
+  });
+
+  it('the prompt itself stops Enter/Space propagation (the submit-dismiss race)', () => {
+    // The window-level gate alone is NOT enough: submit() removes the prompt node
+    // synchronously during the Enter keydown, so by the time the event reaches the
+    // window handler promptModalOpen() is already false and the chat bind fires.
+    // The prompt's own keydown listener must stop the bubble, and once the prompt
+    // was detached mid-dispatch it must ALSO cancel the default (or the browser
+    // runs the activation against the re-landed focus, Enter ghost-clicking
+    // [data-close]). The older Escape-only handling must red this. The handler
+    // lives in the shared recipe; the delegation pin rides the inert test above.
+    expect(promptDialog).toMatch(
+      /if \(ke\.key === 'Enter' \|\| ke\.key === ' ' \|\| ke\.code === 'Space'\) \{\s*ke\.stopPropagation\(\);\s*if \(!prompt\.isConnected\) ke\.preventDefault\(\);\s*return;\s*\}/,
+    );
+  });
+});
+
+describe('bank_window: bonus-slot breakdown footer', () => {
+  it('rides the bonus section as the tail of the shared .bank-scroll region', () => {
+    // Order pin: grid into the scroll wrapper, bonus after it (the tail), the wrapper
+    // into the window, and the transactional footer (the phase 08 meter + the buy
+    // row) pinned AFTER the wrapper so it stays visible while the region scrolls
+    // (the 360px-phone budget: a fixed footer below the buy row crushed the grid
+    // or clipped itself, found live in QA).
+    const renderBody = painter.slice(
+      painter.indexOf('render(): void {'),
+      painter.indexOf('refreshIfChanged(): void {'),
+    );
+    const gridIdx = renderBody.indexOf('scroll.appendChild(grid);');
+    // Bank Storage phase 17 moved the section's markup to src/ui/bank_bonus_view.ts,
+    // so the painter's two lines (build, then append) became this one mount. The
+    // ORDER claim is what this arm was always for and it is unchanged; the content
+    // claims that used to be scraped out of this file are EXECUTED in
+    // tests/bank_bonus_view.test.ts now.
+    const bonusIdx = renderBody.indexOf(
+      "scroll.insertAdjacentHTML('beforeend', bankBonusSectionHtml(model.bonus));",
+    );
+    const scrollIdx = renderBody.indexOf('el.appendChild(scroll);');
+    const footerIdx = renderBody.indexOf(
+      'el.appendChild(this.buildFooter(model.meter, model.buy));',
+    );
+    expect(gridIdx).toBeGreaterThan(0);
+    expect(bonusIdx).toBeGreaterThan(gridIdx);
+    expect(scrollIdx).toBeGreaterThan(bonusIdx);
+    expect(footerIdx).toBeGreaterThan(scrollIdx);
+  });
+
+  it('the painter reaches the bonus section through the extracted core, not a private fork', () => {
+    // The POSITIVE half of the extraction, and the reason it is positive: the two
+    // all-negative price bans that scan this file (tests/bank_view.test.ts,
+    // tests/vault_view.test.ts) cannot notice their subject leaving, so this is
+    // where "the code really did move, and the painter really does call it" is
+    // asserted. A re-forked private builder reds the second arm.
+    expect(painter).toContain("import { bankBonusSectionHtml } from './bank_bonus_view';");
+    expect(painter).not.toContain('private buildBonusSection(');
+    expect(painter).not.toContain('private buildBonusRow(');
+    expect(painter).not.toContain('BANK_BONUS_SOURCE_KEYS');
+  });
+
+  it('the .bank-bonus CSS block carries no literal hex (tokens / color-mix only)', () => {
+    const start = components.indexOf('.bank-bonus {');
+    const end = components.indexOf('/* Desktop side-by-side docking', start);
+    expect(start).toBeGreaterThan(0);
+    expect(end).toBeGreaterThan(start);
+    const bonusCss = components.slice(start, end);
+    const hex = bonusCss.match(/#[0-9a-fA-F]{3,8}\b/g) ?? [];
+    expect(hex, `bonus CSS must use tokens: ${hex.join(', ')}`).toEqual([]);
+  });
+
+  it('the .bank-scroll wrapper owns the scroll (two-row floor); the grid does not', () => {
+    // Found live in QA at 740x360: a rigid flex:none footer below the buy row
+    // crushed the grid to a 4px sliver and clipped its own rows past the window
+    // bottom. The contract: ONE scroll region (grid + bonus tail) with a two-row
+    // floor, so cells and bonus copy are both reachable on every viewport.
+    const scroll = components.slice(
+      components.indexOf('.bank-scroll {'),
+      components.indexOf('.bank-grid {'),
+    );
+    expect(scroll).toContain('flex: 1 1 auto;');
+    expect(scroll).toContain('min-height: 92px;');
+    expect(scroll).toContain('overflow-y: auto;');
+    expect(scroll).toContain('touch-action: pan-y;');
+    const grid = components.slice(
+      components.indexOf('.bank-grid {'),
+      components.indexOf('.bank-item {'),
+    );
+    expect(grid).not.toContain('overflow-y');
+    expect(grid).not.toContain('min-height');
+  });
+});
+
+describe('bank_window: unknown-id slots stay visible (stale-client guard, R34)', () => {
+  // The keep/exclude decision lives in bank_filter.ts (pinned in
+  // bank_filter.test.ts); these pins hold the painter to rendering what the
+  // core keeps. Comment-stripped so prose naming an arm cannot satisfy a pin.
+  const code = painter.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+
+  it('renders an unknown-id slot with the fallback icon and its raw id as the label', () => {
+    // The grid loop used to drop the row entirely (`if (!item) continue`),
+    // which is how a counted bank slot turned invisible.
+    expect(code).not.toContain('if (!item) continue');
+    // The per-cell icon/aria/tooltip decisions were extracted out of
+    // BankWindow into personal_bank_item_cell.ts (buildPersonalBankItemCell);
+    // BankWindow's own grid loop now only forwards the slot into it, so the
+    // detailed pins below moved with the logic they describe.
+    const cell = personalBankItemCell.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+    expect(cell).toContain(
+      'item && parts ? deps.itemIcon(item, parts.quality) : unknownItemIconHtml(slot.itemId)',
+    );
+    // Plain unknown cells use unknownItemAria; instanced unknown cells (a
+    // masterwork / signed copy whose def this client predates) use the shared
+    // UNKNOWN_INSTANCE_GLYPH_ARIA_KEYS so the per-copy flag still announces,
+    // and the argument literal keeps the raw id as the {id} the unknown
+    // wording speaks.
+    expect(cell).toContain("'itemUi.bags.unknownItemAria'");
+    expect(cell).toContain('UNKNOWN_INSTANCE_GLYPH_ARIA_KEYS[glyphKind]');
+    expect(cell).toMatch(/\{\s*id: slot\.itemId,\s*count: countLabel,\s*\}/);
+  });
+
+  it('never skips a slot in the grid fill (no continue of any wording)', () => {
+    // The shipped defect was `if (!item) continue`; a re-worded equivalent
+    // would evade a literal pin, so the grid loop slice is held to zero
+    // continue statements.
+    const start = code.indexOf('for (const slot of visible)');
+    const end = code.indexOf('private appendEmptyCells(');
+    expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
+    expect(code.slice(start, end)).not.toContain('continue');
+  });
+
+  it('keeps the withdraw click def-free and swaps only the tooltip body', () => {
+    // Withdraw resolves server-side by slotIndex, so the click stays wired
+    // for an unknown slot; the def-derived tooltip body is what falls back.
+    // Both halves now live in the extracted personal-bank cell
+    // (personal_bank_item_cell.ts): BankWindow forwards the wiring, and the
+    // cell itself reads slot.slotIndex/event.shiftKey and swaps the tooltip
+    // body (the call also carries the material composition, displayedSources,
+    // since the source-count algebra landed).
+    expect(code).toContain('(slotIndex, partial) => this.onSlotClick(slotIndex, partial)');
+    const cell = personalBankItemCell.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+    expect(cell).toContain('onWithdraw(slot.slotIndex, event.shiftKey)');
+    expect(cell).toContain('? deps.itemTooltip(item, slot.instance, displayedSources)');
+    expect(cell).toContain("t('itemUi.bags.unknownItem')");
+  });
+});
+
+describe('the gilded tokens and the forced-colors fill pin (phase 08 QA)', () => {
+  it('the low-tier gilt re-pins are byte-equal to the base declarations', () => {
+    // tokens.css declares the four gilt aliases twice: the base values and a
+    // low-fx-tier !important copy that exists ONLY to keep the near-full
+    // treatment tier-invariant (fairness: the warmth is acted on). Nothing
+    // else pins the two blocks together, so a one-sided retune would silently
+    // fork the tiers; equality here is the coupling.
+    // Sliced to the :root[data-fx-level="low"] ruleset (the ornament-shed
+    // block) and partitioned by !important rather than by order, so a benign
+    // block reorder cannot false-red and a copy drifting OUT of the low-tier
+    // block is caught, not just a value fork.
+    const lowStart = tokens.indexOf(':root[data-fx-level="low"] {');
+    expect(lowStart).toBeGreaterThan(-1);
+    const lowBlock = tokens.slice(lowStart, tokens.indexOf('}', lowStart));
+    const giltProps = [
+      '--bank-meter-gilt',
+      '--bank-meter-gilt-fill',
+      '--bank-meter-gilt-text',
+      '--bank-meter-gilt-glow',
+    ];
+    for (const prop of giltProps) {
+      const decls = [...tokens.matchAll(new RegExp(`${prop}:\\s*([^;]+);`, 'g'))].map((m) =>
+        m[1].trim(),
+      );
+      expect(decls, prop).toHaveLength(2);
+      const important = decls.filter((v) => v.endsWith('!important'));
+      const base = decls.filter((v) => !v.endsWith('!important'));
+      expect(important, prop).toHaveLength(1);
+      expect(base, prop).toHaveLength(1);
+      expect(important[0].replace(/\s*!important$/, ''), prop).toBe(base[0]);
+      expect(lowBlock, prop).toContain(`${prop}: ${important[0]};`);
+    }
+  });
+
+  it('forced-colors pins the meter fill to Highlight inside its own media block', () => {
+    // Forced-colors strips background layers, and the .near-full fill rule
+    // outranks a bare class by specificity: the !important Highlight pin is
+    // what keeps the track legible there (the castbar .fill precedent).
+    // Containment is checked inside the balanced block, not by proximity.
+    const blocks: string[] = [];
+    for (const m of components.matchAll(/@media \(forced-colors: active\)\s*\{/g)) {
+      let depth = 1;
+      let i = (m.index as number) + m[0].length;
+      const start = i;
+      while (i < components.length && depth > 0) {
+        if (components[i] === '{') depth++;
+        else if (components[i] === '}') depth--;
+        i++;
+      }
+      blocks.push(components.slice(start, i - 1));
+    }
+    const fill = blocks.find((b) => b.includes('.bank-meter-fill'));
+    expect(fill).toBeDefined();
+    expect(fill).toMatch(/\.bank-meter-fill\s*\{[^}]*background: Highlight !important/);
+  });
+});

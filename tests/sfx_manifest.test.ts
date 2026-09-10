@@ -1,0 +1,552 @@
+// Manifest builder tests: verify that buildManifest probes multiple extensions
+// so custom recordings committed in non-MP3 formats are not silently dropped
+// when the manifest is regenerated. Uses real temp directories (existsSync is
+// the tested behaviour; mocking fs defeats the purpose).
+
+import { createHash } from 'node:crypto';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+// @ts-expect-error scripts use the repository's untyped Node ESM convention
+import * as manifestModule from '../scripts/sfx/manifest.mjs';
+import { SFX_CLIPS } from '../src/game/sfx_manifest.generated';
+
+const {
+  buildSfxManifestData,
+  catalogHashForEntries,
+  isSfxMobExtensionKey,
+  SFX_FIXED_CATALOG_KEYS,
+  SFX_MOB_EXTENSION_FAMILIES,
+  SFX_MOB_EXTENSION_KEY_PATTERN,
+  serializeSfxManifest,
+  spatialForSfx,
+} = manifestModule;
+
+import {
+  buildManifest,
+  discoverSfxTracks,
+  MOB_ACTIONS,
+} from '../scripts/sfx/sfx_manifest_builder.mjs';
+import { SFX } from '../scripts/sfx/sfx_prompts.mjs';
+
+const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const realSfxDir = path.join(repoRoot, 'public/audio/sfx');
+
+let sfxDir: string;
+let manifestPath: string;
+
+beforeEach(() => {
+  sfxDir = mkdtempSync(path.join(tmpdir(), 'woc_sfx_test_'));
+  manifestPath = path.join(sfxDir, 'manifest.generated.ts');
+});
+
+afterEach(() => {
+  rmSync(sfxDir, { recursive: true, force: true });
+});
+
+describe('buildManifest', () => {
+  it('includes a key whose only file is a .wav (non-mp3 survives rebuild)', () => {
+    writeFileSync(path.join(sfxDir, 'cast_lightning_bolt.wav'), '');
+    const { count } = buildManifest([{ key: 'cast_lightning_bolt' }], sfxDir, manifestPath);
+    expect(count).toBe(1);
+    const manifest = readFileSync(manifestPath, 'utf8');
+    expect(manifest).toContain('cast_lightning_bolt.wav');
+  });
+
+  it('includes a key whose only file is an AIFF lossless master', () => {
+    writeFileSync(path.join(sfxDir, 'cast_lightning_bolt.aiff'), '');
+    const { count } = buildManifest([{ key: 'cast_lightning_bolt' }], sfxDir, manifestPath);
+    expect(count).toBe(1);
+    expect(readFileSync(manifestPath, 'utf8')).toContain('cast_lightning_bolt.aiff');
+  });
+
+  it('never promotes a source master into the rich runtime manifest', () => {
+    const runtimeSfxDirectory = path.join(sfxDir, 'public/audio/sfx');
+    mkdirSync(runtimeSfxDirectory, { recursive: true });
+    writeFileSync(path.join(runtimeSfxDirectory, 'amb_water.m4a'), 'source master');
+
+    expect(() => buildSfxManifestData(sfxDir, { requireComplete: false })).toThrow(
+      /runtime sampled SFX must be MP3.*amb_water\.m4a/,
+    );
+  });
+
+  it('includes a key whose only file is a .mp3', () => {
+    writeFileSync(path.join(sfxDir, 'melee_swing.mp3'), '');
+    const { count } = buildManifest([{ key: 'melee_swing' }], sfxDir, manifestPath);
+    expect(count).toBe(1);
+    const manifest = readFileSync(manifestPath, 'utf8');
+    expect(manifest).toContain('melee_swing.mp3');
+  });
+
+  it('prefers .mp3 over .wav when both exist for the same bare key', () => {
+    writeFileSync(path.join(sfxDir, 'melee_swing.mp3'), '');
+    writeFileSync(path.join(sfxDir, 'melee_swing.wav'), '');
+    buildManifest([{ key: 'melee_swing' }], sfxDir, manifestPath);
+    const manifest = readFileSync(manifestPath, 'utf8');
+    // Only the mp3 entry should appear; wav should not since mp3 is probed first.
+    const urls = JSON.parse(manifest.split('=\n')[1].replace(/ as const;/, ''));
+    expect(urls.melee_swing.urls).toEqual(['/audio/sfx/melee_swing.mp3']);
+  });
+
+  it('groups numbered variants under their base key', () => {
+    writeFileSync(path.join(sfxDir, 'foot_grass_1.mp3'), '');
+    writeFileSync(path.join(sfxDir, 'foot_grass_2.mp3'), '');
+    const { count } = buildManifest([{ key: 'foot_grass' }], sfxDir, manifestPath);
+    expect(count).toBe(1);
+    const manifest = readFileSync(manifestPath, 'utf8');
+    expect(manifest).toContain('foot_grass_1.mp3');
+    expect(manifest).toContain('foot_grass_2.mp3');
+  });
+
+  it('uses numbered variants instead of a bare file when both exist', () => {
+    writeFileSync(path.join(sfxDir, 'foot_grass.mp3'), 'bare');
+    writeFileSync(path.join(sfxDir, 'foot_grass_1.mp3'), 'one');
+    writeFileSync(path.join(sfxDir, 'foot_grass_2.mp3'), 'two');
+
+    const discovered = discoverSfxTracks([{ key: 'foot_grass' }], sfxDir);
+
+    expect(discovered.entries.foot_grass.tracks).toEqual([
+      {
+        id: '1',
+        filename: 'foot_grass_1.mp3',
+        url: '/audio/sfx/foot_grass_1.mp3',
+      },
+      {
+        id: '2',
+        filename: 'foot_grass_2.mp3',
+        url: '/audio/sfx/foot_grass_2.mp3',
+      },
+    ]);
+  });
+
+  it('rejects gapped or noncanonical fixed-catalog take ids instead of dropping files', () => {
+    writeFileSync(path.join(sfxDir, 'foot_grass.mp3'), 'bare');
+    writeFileSync(path.join(sfxDir, 'foot_grass_2.mp3'), 'orphan');
+    writeFileSync(path.join(sfxDir, 'foot_grass_03.mp3'), 'noncanonical');
+
+    const discovered = discoverSfxTracks([{ key: 'foot_grass' }], sfxDir);
+
+    expect(discovered.errors).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('invalid SFX variant id'),
+        expect.stringContaining('noncontiguous SFX variants'),
+      ]),
+    );
+    expect(discovered.entries.foot_grass.tracks.map((take) => take.filename)).toEqual([
+      'foot_grass_2.mp3',
+    ]);
+  });
+
+  it('omits keys with no matching file on disk', () => {
+    const { count } = buildManifest([{ key: 'ghost_key' }], sfxDir, manifestPath);
+    expect(count).toBe(0);
+  });
+
+  it('honours the loop flag from the catalog entry', () => {
+    writeFileSync(path.join(sfxDir, 'amb_wind.mp3'), '');
+    buildManifest([{ key: 'amb_wind', loop: true }], sfxDir, manifestPath);
+    const manifest = readFileSync(manifestPath, 'utf8');
+    const data = JSON.parse(manifest.split('=\n')[1].replace(/ as const;/, ''));
+    expect(data.amb_wind.loop).toBe(true);
+  });
+
+  // Decisive regression pin: a key present on disk but missing from the SFX
+  // catalog is silently dropped from every rebuild (the loop only visits
+  // catalog entries). cast_lightning_bolt was lost this way; pin it, and any
+  // future catalog omission, against the REAL catalog and REAL disk so this
+  // class of bug fails loudly instead of shipping silent.
+  it('rebuilds the real manifest from the real catalog without dropping any on-disk key', () => {
+    const { count } = buildManifest(SFX, realSfxDir, manifestPath);
+    expect(count).toBeGreaterThan(0);
+    const manifest = readFileSync(manifestPath, 'utf8');
+    expect(manifest).toContain('cast_lightning_bolt');
+  });
+
+  it('keeps the merged catalog, all 34 mount cues, and all 72 UI cues in one 299-key inventory', () => {
+    // Combine the release farming/crafting cues with the candidate mount cues.
+    // Counts measured from SFX: 299 total, 72 UI, 34 mount. A mount may share
+    // player footfalls or have several cues, so this is not a mount count.
+    const keys = new Set(SFX.map((entry) => entry.key));
+    expect(keys.size).toBe(299);
+    expect([...keys].filter((key) => key.startsWith('ui_'))).toHaveLength(72);
+    expect([...keys].filter((key) => key.startsWith('mount_'))).toHaveLength(34);
+    expect(keys.has('ui_craft_cast')).toBe(true);
+    expect(keys.has('ui_farm_plant')).toBe(true);
+    expect(keys.has('ui_farm_harvest')).toBe(true);
+    expect(keys.has('ui_farm_withered')).toBe(true);
+    expect(keys.has('ui_farm_ready')).toBe(true);
+    expect(keys.has('ui_farm_golden')).toBe(true);
+    expect(keys.has('ui_farm_feast')).toBe(true);
+    expect(keys.has('ui_perfecting_attempt')).toBe(true);
+    expect(keys.has('ui_perfecting_success')).toBe(true);
+    expect(keys.has('ui_legendary_forged')).toBe(true);
+    expect(keys.has('ui_sunder_complete')).toBe(true);
+    for (const key of [
+      'cast_lightning_bolt',
+      // the Mech Bird, the store mount: the 1-2-1 gait beat plus the game's
+      // first standstill idle hum and mount-specific jump/land takes
+      'mount_run_mech_bird',
+      'mount_idle_mech_bird',
+      'mount_jump_mech_bird',
+      'mount_land_mech_bird',
+      'mob_mudfin_attack',
+      'mob_burrower_attack',
+      'mob_reptile_attack',
+      'mob_beast_hurt',
+      'mob_dragonkin_hurt',
+      'mob_reptile_hurt',
+      'quest_ready',
+      'lockpick_success',
+      'ui_achievement',
+      'wand_arcane',
+      'wand_holy',
+      'wand_shadow',
+      'player_eat_food',
+      'player_drink_water',
+      'player_drink_potion',
+      'mount_run_terrorspark_groundshaker',
+      // the Drakemaw Raptor, the ninth mount cue (the brood rework's legendary)
+      'mount_run_drakemaw_raptor',
+      'fear_shout',
+      'fear',
+      'intimidating_shout',
+      'battle_shout',
+      'demoralizing_shout',
+      'emboldening_roar',
+      'defiant_bellow',
+      'rallying_cry',
+      'ice_block',
+      'frost_nova',
+      'hammer_of_justice',
+      'entangling_roots',
+      'blind',
+      'cloak_of_shadows',
+      'scorch',
+      'pyroblast',
+      'meteor',
+      'flamestrike',
+      'frozen_orb',
+      'glacial_spike',
+      'blizzard',
+      'blink',
+      'arcane_blast',
+      'shadowstep',
+      'vanish',
+      'cheap_shot',
+      'ambush',
+      'backstab',
+      'garrote',
+      'sap',
+      'sinister_strike',
+      'eviscerate',
+      'stealth',
+      'rift_portal_spawn',
+      'rift_portal_enter',
+      'rift_portal_drone',
+      'rift_gate_grind',
+      'rift_boulder_impact',
+      'rift_boulder_roll',
+      'rift_ice_start',
+      'rift_ice_glide',
+      'rift_ice_stop',
+      'rift_lava_tick',
+    ]) {
+      expect(keys.has(key), key).toBe(true);
+    }
+    expect(keys.has('mob_murloc_attack')).toBe(false);
+    expect(keys.has('mob_kobold_attack')).toBe(false);
+    // Every mob family (13, including reptile) now generates all 5 actions
+    // (aggro/attack/death/hurt/idle): pin the count so a future family
+    // addition can't silently drop coverage again. Subfamily keys
+    // (mob_beast_wolf_*, etc.) never appear in the static catalog, they are
+    // purely filesystem-discovered.
+    const mobFamilyKeys = [...keys].filter((key) => key.startsWith('mob_'));
+    expect(mobFamilyKeys).toHaveLength(65); // 13 families x 5 actions
+    expect(SFX_FIXED_CATALOG_KEYS).toHaveLength(299);
+  });
+});
+
+// Mob subfamily file scanning: mob_<family>_<sub>_<action>_N.mp3 on disk gets
+// added under the key mob_<family>_<sub>_<action> so hud.ts can prefer it over
+// the family-level fallback via sfx.hasVariants().
+describe('mob subfamily scanning', () => {
+  it('adds a subfamily key from mob_<family>_<sub>_<action>_N.mp3', () => {
+    writeFileSync(path.join(sfxDir, 'mob_beast_wolf_attack_1.mp3'), '');
+    const { count } = buildManifest([], sfxDir, manifestPath);
+    expect(count).toBe(1);
+    const data = JSON.parse(
+      readFileSync(manifestPath, 'utf8')
+        .split('=\n')[1]
+        .replace(/ as const;/, ''),
+    );
+    expect(data.mob_beast_wolf_attack).toBeDefined();
+    expect(data.mob_beast_wolf_attack.urls).toEqual(['/audio/sfx/mob_beast_wolf_attack_1.mp3']);
+  });
+
+  // Regression: MOB_ACTIONS gained 'idle' (#1887) but SFX_MOB_EXTENSION_KEY_PATTERN
+  // was never updated to match, so a subfamily-level idle recording (e.g. a
+  // dedicated wolf idle take distinct from the beast family default) could never
+  // be added: the action-token scan finds 'idle' fine, but the stricter grammar
+  // check right after it rejects the resulting key, forever.
+  it('adds a subfamily key from mob_<family>_<sub>_idle_N.mp3', () => {
+    writeFileSync(path.join(sfxDir, 'mob_beast_wolf_idle_1.mp3'), '');
+    const { count, errors } = buildManifest([], sfxDir, manifestPath);
+    expect(errors).toEqual([]);
+    expect(count).toBe(1);
+    const data = JSON.parse(
+      readFileSync(manifestPath, 'utf8')
+        .split('=\n')[1]
+        .replace(/ as const;/, ''),
+    );
+    expect(data.mob_beast_wolf_idle).toBeDefined();
+    expect(data.mob_beast_wolf_idle.urls).toEqual(['/audio/sfx/mob_beast_wolf_idle_1.mp3']);
+  });
+
+  it('groups multiple numbered variants under the same subfamily key (sorted)', () => {
+    writeFileSync(path.join(sfxDir, 'mob_beast_wolf_attack_2.mp3'), '');
+    writeFileSync(path.join(sfxDir, 'mob_beast_wolf_attack_1.mp3'), '');
+    buildManifest([], sfxDir, manifestPath);
+    const data = JSON.parse(
+      readFileSync(manifestPath, 'utf8')
+        .split('=\n')[1]
+        .replace(/ as const;/, ''),
+    );
+    expect(data.mob_beast_wolf_attack.urls).toEqual([
+      '/audio/sfx/mob_beast_wolf_attack_1.mp3',
+      '/audio/sfx/mob_beast_wolf_attack_2.mp3',
+    ]);
+  });
+
+  it('sorts subfamily takes numerically and preserves multi-token subfamilies', () => {
+    writeFileSync(path.join(sfxDir, 'mob_beast_dire_wolf_hurt_10.mp3'), 'ten');
+    writeFileSync(path.join(sfxDir, 'mob_beast_dire_wolf_hurt_2.mp3'), 'two');
+    writeFileSync(path.join(sfxDir, 'mob_beast_dire_wolf_hurt_1.mp3'), 'one');
+
+    const discovered = discoverSfxTracks([], sfxDir);
+
+    expect(discovered.errors).toEqual([]);
+    expect(discovered.entries.mob_beast_dire_wolf_hurt.tracks.map((track) => track.id)).toEqual([
+      '1',
+      '2',
+      '10',
+    ]);
+  });
+
+  it('rejects noncanonical or unsafe mob extension variant ids', () => {
+    for (const id of ['0', '01', String(Number.MAX_SAFE_INTEGER + 1)]) {
+      writeFileSync(path.join(sfxDir, `mob_beast_wolf_hurt_${id}.mp3`), id);
+    }
+
+    const discovered = discoverSfxTracks([], sfxDir);
+
+    expect(discovered.entries).toEqual({});
+    expect(discovered.errors).toHaveLength(3);
+    expect(discovered.errors.every((error) => error.includes('invalid mob sfx variant id'))).toBe(
+      true,
+    );
+  });
+
+  it('reports an error and sets errors[] for an unrecognized action token', () => {
+    writeFileSync(path.join(sfxDir, 'mob_beast_wolf_bogus_1.mp3'), '');
+    const { count, errors } = buildManifest([], sfxDir, manifestPath);
+    expect(count).toBe(0); // bogus file produces no valid key
+    expect(errors.length).toBe(1);
+    expect(errors[0]).toContain('mob_beast_wolf_bogus_1.mp3');
+  });
+
+  it('rejects a syntactically valid extension for an unsupported mob family', () => {
+    writeFileSync(path.join(sfxDir, 'mob_unknown_wolf_attack_1.mp3'), '');
+    const discovered = discoverSfxTracks([], sfxDir);
+    expect(discovered.entries).toEqual({});
+    expect(discovered.errors).toEqual([expect.stringContaining('unsupported mob family')]);
+  });
+
+  it('skips family-level mob files (fewer than 5 parts), covered by catalog loop', () => {
+    // mob_beast_attack_1.mp3 has only 4 parts: mob + beast + attack + 1
+    writeFileSync(path.join(sfxDir, 'mob_beast_attack_1.mp3'), '');
+    const catalog = [{ key: 'mob_beast_attack' }];
+    const { count } = buildManifest(catalog, sfxDir, manifestPath);
+    // The catalog loop picks it up; the mob scanner does not add a duplicate.
+    const data = JSON.parse(
+      readFileSync(manifestPath, 'utf8')
+        .split('=\n')[1]
+        .replace(/ as const;/, ''),
+    );
+    expect(count).toBe(1);
+    expect(Object.keys(data)).toEqual(['mob_beast_attack']);
+  });
+
+  // Decisive regression pin: a mob_*.mp3 file that matches neither a real
+  // catalog entry nor a valid numbered subfamily pattern used to be silently
+  // ignored (a `continue` with no error), the same silent-omission class as
+  // the cast_lightning_bolt bug. It must now fail loudly instead.
+  it('reports an error for a bare subfamily file missing its numbered suffix', () => {
+    // mob_beast_wolf_hurt.mp3 has no _<N> suffix and no matching catalog
+    // entry, so it is neither a valid subfamily file nor a catalog match.
+    writeFileSync(path.join(sfxDir, 'mob_beast_wolf_hurt.mp3'), '');
+    const { count, errors } = buildManifest([], sfxDir, manifestPath);
+    expect(count).toBe(0);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain('mob_beast_wolf_hurt.mp3');
+    expect(errors[0]).toContain('unrecognized mob sfx file');
+  });
+
+  it('reports an error for a family-level mob file with no matching catalog entry', () => {
+    // No catalog entry for 'mob_reptile_aggro' exists, so this bare file
+    // matches nothing: not the catalog loop, not the subfamily scanner.
+    writeFileSync(path.join(sfxDir, 'mob_reptile_aggro.mp3'), '');
+    const { count, errors } = buildManifest([], sfxDir, manifestPath);
+    expect(count).toBe(0);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain('mob_reptile_aggro.mp3');
+    expect(errors[0]).toContain('unrecognized mob sfx file');
+  });
+
+  it('does not flag a family-level file that legitimately matches a catalog entry', () => {
+    // Same shape as the two error cases above, but this time a catalog entry
+    // exists, so it must be consumed silently and cleanly, no error.
+    writeFileSync(path.join(sfxDir, 'mob_ogre_hurt.mp3'), '');
+    const catalog = [{ key: 'mob_ogre_hurt' }];
+    const { count, errors } = buildManifest(catalog, sfxDir, manifestPath);
+    expect(count).toBe(1);
+    expect(errors).toEqual([]);
+  });
+
+  it('MOB_ACTIONS covers the five expected vocalization types', () => {
+    expect(MOB_ACTIONS.has('aggro')).toBe(true);
+    expect(MOB_ACTIONS.has('attack')).toBe(true);
+    expect(MOB_ACTIONS.has('death')).toBe(true);
+    expect(MOB_ACTIONS.has('hurt')).toBe(true);
+    expect(MOB_ACTIONS.has('idle')).toBe(true);
+    expect(MOB_ACTIONS.size).toBe(5);
+  });
+
+  it('exports one constrained grammar for runtime mob extension keys', () => {
+    expect(SFX_MOB_EXTENSION_FAMILIES).toContain('beast');
+    expect(SFX_MOB_EXTENSION_KEY_PATTERN.source).toBe(
+      '^mob_([a-z0-9]+)_([a-z0-9]+(?:_[a-z0-9]+)*)_(aggro|attack|death|hurt|idle)$',
+    );
+    expect(isSfxMobExtensionKey('mob_beast_dire_wolf_hurt')).toBe(true);
+    expect(isSfxMobExtensionKey('mob_beast_dire_wolf_idle')).toBe(true);
+    expect(isSfxMobExtensionKey('mob_unknown_dire_wolf_hurt')).toBe(false);
+    expect(isSfxMobExtensionKey('mob_beast_attack')).toBe(false);
+    expect(isSfxMobExtensionKey('mob_beast_dire_wolf_bogus')).toBe(false);
+  });
+
+  it('keeps the fixed catalog hash stable when mob extensions change', () => {
+    const fixed = catalogHashForEntries({});
+    const withExtension = catalogHashForEntries({
+      mob_beast_dire_wolf_hurt: {
+        loop: false,
+        category: 'voices',
+        preload: 'lazy',
+        spatial: true,
+      },
+    });
+    expect(withExtension).toBe(fixed);
+  });
+
+  it('emits the fixed-key and mob-extension contract for the browser loader', () => {
+    const serialized = serializeSfxManifest({});
+    expect(serialized).toContain('export const SFX_FIXED_CATALOG_KEYS =');
+    expect(serialized).toContain('export const SFX_MOB_EXTENSION_FAMILIES =');
+    expect(serialized).toContain('export const SFX_MOB_EXTENSION_KEY_SOURCE = "^mob_([a-z0-9]+)');
+  });
+
+  it('marks point ambience spatial but keeps the global water bed non-spatial', () => {
+    expect(spatialForSfx('amb_campfire')).toBe(true);
+    expect(spatialForSfx('amb_forge')).toBe(true);
+    expect(spatialForSfx('amb_water')).toBe(false);
+  });
+});
+
+describe('Mech Bird jump and landing asset binding', () => {
+  it('ships byte-distinct launch and impact recordings', () => {
+    const jump = readFileSync(path.join(realSfxDir, 'mount_jump_mech_bird.mp3'));
+    const land = readFileSync(path.join(realSfxDir, 'mount_land_mech_bird.mp3'));
+    const jumpHash = createHash('sha256').update(jump).digest('hex');
+    const landHash = createHash('sha256').update(land).digest('hex');
+
+    expect(landHash).not.toBe(jumpHash);
+  });
+});
+
+// Pins the exact asset-to-ability binding this PR restored, so a future
+// re-swap (Meteor's landing recording and Flamestrike's cast recording were
+// mixed up once already, see the fix commit's history) gets caught by CI
+// instead of shipping silently. Reads the real committed files under
+// public/audio/sfx, not the manifest, since a manifest bug could hide the
+// exact same mistake.
+describe('meteor/flamestrike asset binding', () => {
+  const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+  const sfxDir = path.join(repoRoot, 'public/audio/sfx');
+
+  // Pinned via `sha256sum public/audio/sfx/meteor.mp3 public/audio/sfx/flamestrike.mp3`
+  // against the recordings committed by d83aab74ac (the swap fix). A byte-distinct
+  // check alone cannot catch a RE-swap: two swapped files are still byte-distinct
+  // from each other, and the original bug here was a missing meteor.mp3, not a
+  // swap. Pinning each file's own literal hash catches both a re-swap and either
+  // file silently changing out from under the binding.
+  const METEOR_SHA256 = 'd57a0627c1bfe6daacd67706c2359347af522be0c89ba13466dcb58d94b77416';
+  const FLAMESTRIKE_SHA256 = 'bd4257d3567b43f5228066cba5f1dff5c31b205c9314bfb4c7f0d6cbfebcdf15';
+
+  it('pins meteor.mp3 and flamestrike.mp3 to their exact committed recordings', () => {
+    const meteor = readFileSync(path.join(sfxDir, 'meteor.mp3'));
+    const flamestrike = readFileSync(path.join(sfxDir, 'flamestrike.mp3'));
+    expect(createHash('sha256').update(meteor).digest('hex')).toBe(METEOR_SHA256);
+    expect(createHash('sha256').update(flamestrike).digest('hex')).toBe(FLAMESTRIKE_SHA256);
+  });
+
+  it('binds the "meteor" and "flamestrike" manifest keys to the right file each', () => {
+    expect(SFX_CLIPS.meteor.url.split('?')[0]).toBe('/audio/sfx/meteor.mp3');
+    expect(SFX_CLIPS.flamestrike.url.split('?')[0]).toBe('/audio/sfx/flamestrike.mp3');
+  });
+});
+
+// The build step's ORDER, which is load-bearing rather than cosmetic.
+//
+// writeSfxManifest validates every custom key's resolved gain (category
+// baseline + keyTrimDb) against the per-key ceiling in
+// sfx_gain_ceiling.generated.json, and throws when the resolved value exceeds
+// it. writeSfxGainCeilings is what puts a key INTO that file, measured from the
+// audio. Running the manifest first therefore means a newly-added custom key
+// carrying a positive trim can never bootstrap: its ceiling does not exist yet,
+// so it defaults to 0dB, the bounds check throws, and the manifest is left
+// stale on disk.
+//
+// That failure mode is quiet in the worst way. The command exits non-zero, but
+// if the stale manifest is committed anyway the missing key is simply absent
+// from SFX_CLIPS, so the cue never loads and the game plays silence with
+// nothing red anywhere. Two shipped cues were lost to exactly this: a mount's
+// summon call and a mount's three reverse takes, both present on disk and
+// reachable in code.
+//
+// Ceilings depend only on the catalog and the audio files, never on the
+// manifest, so generating them first is safe as well as correct.
+describe('build_sfx_manifest.mjs step order', () => {
+  const entryScript = readFileSync(
+    path.join(fileURLToPath(new URL('..', import.meta.url)), 'scripts/build_sfx_manifest.mjs'),
+    'utf8',
+  );
+
+  it('writes the gain ceilings before loading the manifest that validates against them', () => {
+    expect(entryScript).not.toMatch(
+      /import\s+\{[^}]*\bwriteSfxManifest\b[^}]*\}\s+from\s+['"]\.\/sfx\/manifest\.mjs['"]/,
+    );
+    const ceilingsAt = entryScript.indexOf('writeSfxGainCeilings(');
+    const manifestImportAt = entryScript.indexOf("await import('./sfx/manifest.mjs')");
+    const manifestWriteAt = entryScript.indexOf('writeSfxManifest(');
+    expect(ceilingsAt).toBeGreaterThan(-1);
+    expect(manifestImportAt).toBeGreaterThan(-1);
+    expect(manifestWriteAt).toBeGreaterThan(-1);
+    expect(
+      ceilingsAt,
+      'writeSfxGainCeilings must run BEFORE manifest.mjs is imported: importing the ' +
+        'manifest evaluates playback_profile.mjs and reads the generated ceiling file, ' +
+        'so a new custom key with a positive trim cannot bootstrap if the import happens first',
+    ).toBeLessThan(manifestImportAt);
+    expect(manifestImportAt).toBeLessThan(manifestWriteAt);
+  });
+});

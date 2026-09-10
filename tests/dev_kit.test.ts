@@ -1,0 +1,589 @@
+import { describe, expect, it } from 'vitest';
+import { DEV_KIT_ROLE_COUNT, DEV_KIT_ROLES, devKitRole } from '../src/sim/content/dev_kit_roles';
+import { HEROIC_ITEMS, RETIRED_HEROIC_ITEMS } from '../src/sim/content/heroic_loot';
+import { HEROIC_VENDOR_ITEMS } from '../src/sim/content/heroic_vendor';
+import { WARFARE_ITEMS } from '../src/sim/content/pvp_honor';
+import { talentsFor } from '../src/sim/content/talents';
+import { ITEMS } from '../src/sim/data';
+import {
+  applyDevKit,
+  bestKitBag,
+  buildDevKit,
+  DEV_KIT_EXCLUDED_DUNGEON,
+  DEV_KIT_LEVEL,
+  dungeonLootIds,
+  isFreshTwentyItem,
+  QUALITY_TIE_RANK,
+  QUALITY_TIE_SCALE,
+} from '../src/sim/dev_kit';
+import { canDualWield, isShieldItem } from '../src/sim/equipment_rules';
+import { itemFromRaid } from '../src/sim/item_level';
+import { Sim } from '../src/sim/sim';
+import { ALL_CLASSES, type PlayerClass } from '../src/sim/types';
+
+// These presets exist so a tester can gear up in one click instead of being kitted
+// out through the database, and so a Gravewyrm Sanctum balance run measures the
+// ENCOUNTER rather than whatever gear happened to be lying around.
+
+function everySpec(): { cls: PlayerClass; spec: string }[] {
+  const out: { cls: PlayerClass; spec: string }[] = [];
+  for (const cls of ALL_CLASSES) {
+    for (const spec of talentsFor(cls)?.specs ?? []) out.push({ cls, spec: spec.id });
+  }
+  return out;
+}
+
+describe('dev kit role table', () => {
+  it('covers all 27 class-and-spec pairs', () => {
+    expect(everySpec()).toHaveLength(DEV_KIT_ROLE_COUNT);
+    const missing = everySpec().filter(({ cls, spec }) => devKitRole(cls, spec) === null);
+    expect(missing).toEqual([]);
+  });
+
+  it('declares no spec the talent tree does not have', () => {
+    // Guards the other direction: a typo'd or renamed spec id here would silently
+    // produce a preset nobody can reach.
+    const real = new Set(everySpec().map(({ cls, spec }) => `${cls}/${spec}`));
+    const declared = Object.entries(DEV_KIT_ROLES).flatMap(([cls, roles]) =>
+      roles.map((role) => `${cls}/${role.spec}`),
+    );
+    expect(declared.filter((key) => !real.has(key))).toEqual([]);
+  });
+
+  it('never claims dual-wield for a spec the equip rules refuse', () => {
+    // This exact mismatch shipped once during development: shaman/enhancement asked
+    // for a second weapon, canDualWield said no, and the spec silently lost its
+    // offhand entirely rather than falling back to a held item.
+    const bad = Object.entries(DEV_KIT_ROLES).flatMap(([cls, roles]) =>
+      roles
+        .filter(
+          (role) => role.hands === 'dualWield' && !canDualWield(cls as PlayerClass, role.spec),
+        )
+        .map((role) => `${cls}/${role.spec}`),
+    );
+    expect(bad).toEqual([]);
+  });
+
+  it('builds the Enhancement Shaman test kit with two weapons', () => {
+    const role = devKitRole('shaman', 'enhancement');
+    const kit = buildDevKit('shaman', 'enhancement');
+    const mainhand = kit?.equip.mainhand;
+    const offhand = kit?.equip.offhand;
+
+    expect(role?.hands).toBe('dualWield');
+    expect(mainhand).toBeDefined();
+    expect(offhand).toBeDefined();
+    expect(ITEMS[mainhand ?? '']?.kind).toBe('weapon');
+    expect(ITEMS[offhand ?? '']?.kind).toBe('weapon');
+  });
+});
+
+describe('fresh-20 item pool', () => {
+  it('excludes every item that drops in the dungeon under test', () => {
+    // Wearing Sanctum loot into a Sanctum balance run would contaminate the number
+    // the run exists to measure.
+    const sanctum = dungeonLootIds(DEV_KIT_EXCLUDED_DUNGEON);
+    expect(sanctum.size).toBeGreaterThan(0);
+    for (const cls of ALL_CLASSES) {
+      for (const id of sanctum) {
+        const item = ITEMS[id];
+        if (item) expect(isFreshTwentyItem(cls, item)).toBe(false);
+      }
+    }
+  });
+
+  it('excludes heroic variants, raid loot and PvP gear', () => {
+    for (const item of Object.values(ITEMS)) {
+      if (item.heroicOf !== undefined || item.priceHonor !== undefined) {
+        expect(isFreshTwentyItem('warrior', item)).toBe(false);
+      }
+    }
+  });
+
+  // REGRESSION. The first cut of this filter excluded by inferred source level
+  // (`> 20`), which was unsound twice over: the Heroic Marks vendor registers its
+  // stock at EXACTLY 20, and some heroic pieces (soulrend_diadem) have no derivable
+  // source at all. Three badge items and a heroic helm shipped in the priest kit as a
+  // result. The exclusions are now table identity, and this walks every finished kit.
+  it('no kit contains a single item from any excluded source', () => {
+    const banned: [string, ReadonlySet<string>][] = [
+      [
+        'heroic dungeon',
+        new Set([...Object.keys(HEROIC_ITEMS), ...Object.keys(RETIRED_HEROIC_ITEMS)]),
+      ],
+      ['heroic badge vendor', new Set(Object.keys(HEROIC_VENDOR_ITEMS))],
+      ['pvp', new Set(Object.keys(WARFARE_ITEMS))],
+      ['gravewyrm sanctum', dungeonLootIds(DEV_KIT_EXCLUDED_DUNGEON)],
+    ];
+    const violations: string[] = [];
+    for (const { cls, spec } of everySpec()) {
+      for (const [slot, id] of Object.entries(buildDevKit(cls, spec)?.equip ?? {})) {
+        for (const [label, ids] of banned) {
+          if (ids.has(id)) violations.push(`${cls}/${spec} ${slot}=${id} (${label})`);
+        }
+        if (itemFromRaid(id)) violations.push(`${cls}/${spec} ${slot}=${id} (raid)`);
+        if (ITEMS[id]?.heroicOf) violations.push(`${cls}/${spec} ${slot}=${id} (heroic variant)`);
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  // REGRESSION, and the one that matters most. Source filtering alone cannot express
+  // the tier: the scorer maximizes stats, so given an epic in the pool it takes it
+  // every time. 43% of the first shipped kits were epics reached through sources that
+  // each looked individually legal. A fresh 20 wears quest greens and blues; epics
+  // are what you enter a dungeon to GET, not what you arrive wearing.
+  it('never puts an epic or legendary in any of the 27 kits', () => {
+    const offenders: string[] = [];
+    for (const { cls, spec } of everySpec()) {
+      for (const [slot, id] of Object.entries(buildDevKit(cls, spec)?.equip ?? {})) {
+        const quality = ITEMS[id]?.quality;
+        if (quality === 'epic' || quality === 'legendary') {
+          offenders.push(`${cls}/${spec} ${slot}=${id} (${quality})`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('rejects epic and legendary from the pool outright', () => {
+    for (const item of Object.values(ITEMS)) {
+      if (item.quality === 'epic' || item.quality === 'legendary') {
+        for (const cls of ALL_CLASSES) expect(isFreshTwentyItem(cls, item)).toBe(false);
+      }
+    }
+  });
+
+  it('rejects an item with no declared quality', () => {
+    // Unset cannot be shown to be below the cap, and this is the one place the tier
+    // is not allowed to leak, so it fails closed.
+    const unset = Object.values(ITEMS).filter((item) => item.quality === undefined && item.slot);
+    for (const item of unset) {
+      for (const cls of ALL_CLASSES) expect(isFreshTwentyItem(cls, item)).toBe(false);
+    }
+  });
+
+  it('honours requiredClass even for armor, which canEquipItem alone does not', () => {
+    // canEquipItem returns on the armor-rank check for anything with an armorType, so
+    // a class-locked plate piece never reaches its own requiredClass test. Without the
+    // explicit re-check a mail class ends up wearing warrior-only tier pieces.
+    const locked = Object.values(ITEMS).filter(
+      (item) => item.requiredClass && item.requiredClass.length > 0 && item.stats,
+    );
+    expect(locked.length).toBeGreaterThan(0);
+    for (const item of locked) {
+      for (const cls of ALL_CLASSES) {
+        if (!item.requiredClass?.includes(cls)) expect(isFreshTwentyItem(cls, item)).toBe(false);
+      }
+    }
+  });
+});
+
+describe('kit construction', () => {
+  it('builds a kit for every one of the 27 specs, with no empty armor slot', () => {
+    // neck/ring1/ring2 are absent from this armor floor on purpose: the jewelry test
+    // below pins them by exact id, which is stricter than a truthiness check here.
+    const required = [
+      'helmet',
+      'shoulder',
+      'chest',
+      'waist',
+      'legs',
+      'gloves',
+      'feet',
+      'mainhand',
+    ] as const;
+    for (const { cls, spec } of everySpec()) {
+      const kit = buildDevKit(cls, spec);
+      expect(kit, `${cls}/${spec}`).not.toBeNull();
+      for (const slot of required) {
+        expect(kit?.equip[slot], `${cls}/${spec} ${slot}`).toBeTruthy();
+      }
+    }
+  });
+
+  it('fills neck and both rings from the jewelcrafting catalog, per archetype', () => {
+    // These three slots used to come back empty, and this test used to say so: before
+    // the jewelcrafting base catalog every neck and ring in the game was
+    // Heroic-badge-vendor stock or source level 22+, so a genuinely fresh 20 could
+    // wear none of it. The catalog put nine crafted pieces inside the tier and the
+    // slots filled themselves, by the same best-in-slot derivation that already
+    // dresses the kit in crafted armor and weapons. The catalog change itself
+    // touched no picker code; the phase 05 QA later hardened bestBy's tie
+    // handling (epsilon band + identity-first tiebreak) WITHOUT moving any
+    // pick, which this table proves by staying put.
+    //
+    // Revisited again when the Proving Shore's Mother of Pearl landed
+    // (release/v0.41.0: +1 all stats, the tutorial quest reward every fresh
+    // 20 realistically owns). On the release alone it was the single piece
+    // of fresh-20 jewelry in the game, worn in ring1 for every class with
+    // ring2 and neck empty; on this tree it joins the nine crafted pieces,
+    // so the fresh-20 jewelry roster is pinned below and the ring table
+    // admits it where it scores in (the agility camp's ring2 only, see
+    // AGI_RINGS). The day more fresh-20 jewelry lands, the roster pin reds
+    // and the presets get revisited again.
+    //
+    // The ids are pinned as literals rather than recomputed from roleItemScore, so a
+    // retune of the role weights has to be admitted here instead of quietly moving
+    // what every preset wears.
+    const FRESH_TWENTY_JEWELRY = [
+      'burnished_thorium_amulet',
+      'coiled_copper_torc',
+      'etched_iron_loop',
+      'gleaming_thorium_loop',
+      'hammered_copper_band',
+      'iron_link_choker',
+      'mother_of_pearl',
+      'polished_copper_loop',
+      'riveted_iron_signet',
+      'weighted_thorium_band',
+    ];
+    const jewelry = Object.values(ITEMS).filter(
+      (item) => item.slot === 'neck' || item.slot === 'ring',
+    );
+    expect(jewelry.length).toBeGreaterThan(0);
+    for (const cls of ALL_CLASSES) {
+      expect(
+        jewelry
+          .filter((item) => isFreshTwentyItem(cls, item))
+          .map((item) => item.id)
+          .sort(),
+        `${cls} fresh-20 jewelry changed: revisit the kit slots`,
+      ).toEqual(FRESH_TWENTY_JEWELRY);
+    }
+    //
+    // Neck is archetype-blind: burnished_thorium_amulet (agi 5, sta 3) outscores
+    // iron_link_choker (agi 3, sta 1) on stamina alone, so even a pure-intellect
+    // caster scoring its agility at zero still takes it.
+    const NECK = 'burnished_thorium_amulet';
+    // Strength roles: the rung-50 str ring, then the rung-25 str ring, an
+    // outright win for ring2 (str 3 at full weight clears the int loop's 3
+    // stamina, and the keepsake's 1/1/1 scores 2.1 against the signet's 3.6).
+    const STR_RINGS = ['weighted_thorium_band', 'riveted_iron_signet'] as const;
+    // Agility roles: the rung-50 str ring, then the tutorial keepsake. Before
+    // Mother of Pearl, ring2 here was a REAL TIE: the rung-25 str ring (str 3
+    // x 0.4 + sta 1 x 0.6) and the rung-50 int ring (sta 3 x 0.6) both score
+    // exactly 1.8 in real arithmetic, and only IEEE754 product rounding ever
+    // separated them (phase 05 QA probe); bestBy judges the tie inside an
+    // epsilon band and resolves it on the role IDENTITY sum first, so the
+    // signet won on the stats the role actually uses. The keepsake now
+    // clears both outright (agi 1 + str 1 x 0.4 + sta 1 x 0.6 = 2.0 against
+    // 1.8), a real score gap, so the tie no longer decides this camp. A pick
+    // that moves here means a weights retune (admit it) or the scorer broke.
+    const AGI_RINGS = ['weighted_thorium_band', 'mother_of_pearl'] as const;
+    // Intellect roles: the rung-50 int ring, then the rung-25 int ring (the
+    // keepsake scores 1.75 caster / 2.1 healer against the loop's 3.4).
+    const CASTER_RINGS = ['gleaming_thorium_loop', 'etched_iron_loop'] as const;
+    const STR_SPECS = [
+      'warrior/arms',
+      'warrior/fury',
+      'warrior/prot',
+      'paladin/protection',
+      'paladin/retribution',
+    ];
+    const AGI_SPECS = [
+      'hunter/beast_mastery',
+      'hunter/marksmanship',
+      'hunter/survival',
+      'rogue/assassination',
+      'rogue/combat',
+      'rogue/subtlety',
+      'shaman/enhancement',
+    ];
+    const CASTER_SPECS = [
+      'paladin/holy',
+      'priest/discipline',
+      'priest/holy',
+      'priest/shadow',
+      'shaman/elemental',
+      'shaman/restoration',
+      'mage/arcane',
+      'mage/fire',
+      'mage/frost',
+      'warlock/affliction',
+      'warlock/demonology',
+      'warlock/destruction',
+      'druid/balance',
+      'druid/restoration',
+    ];
+    // druid/feral takes the str ring and then the rung-50 INT ring, and it is
+    // not a mistake. It is the one TANK_AGI role, and stamina leads outright
+    // there (sta 1.0), so after the str ring it takes the int loop for its 3
+    // stamina rather than the rung-25 str ring or the keepsake: 3.0 against
+    // 1.9 and 2.1, real score gaps, not the epsilon tie above. A tank wearing
+    // an intellect ring looks wrong and is the scorer working as designed.
+    const FERAL_RINGS = ['weighted_thorium_band', 'gleaming_thorium_loop'] as const;
+
+    const expected = new Map<string, readonly [string, string]>();
+    for (const key of STR_SPECS) expected.set(key, STR_RINGS);
+    for (const key of AGI_SPECS) expected.set(key, AGI_RINGS);
+    for (const key of CASTER_SPECS) expected.set(key, CASTER_RINGS);
+    expected.set('druid/feral', FERAL_RINGS);
+    // Cross-check against the role table, so a spec added there without a row here
+    // fails rather than going unpinned.
+    expect(expected.size).toBe(DEV_KIT_ROLE_COUNT);
+
+    for (const { cls, spec } of everySpec()) {
+      const key = `${cls}/${spec}`;
+      const rings = expected.get(key);
+      expect(rings, `${key} is not classified above`).toBeDefined();
+      const kit = buildDevKit(cls, spec);
+      expect(kit?.equip.neck, `${key} neck`).toBe(NECK);
+      expect(kit?.equip.ring1, `${key} ring1`).toBe(rings?.[0]);
+      expect(kit?.equip.ring2, `${key} ring2`).toBe(rings?.[1]);
+    }
+  });
+
+  it('gives every one-hand caster the rare tome as its held offhand', () => {
+    // Before the inscription catalog the only class-legal held offhand in
+    // the fresh-20 pool was valefire_lantern (int 1, spi 1), so no caster
+    // pick was ever pinned and a displacement would have reddened nothing
+    // (the phase 06 coverage audit's gap). The rung-50 tome
+    // (int 5, spi 3, sta 2, budget 10 at ilvl 23) outscores the lantern for
+    // every caster role, so the pick is pinned as a literal the way the
+    // neck/ring table above is: a move here means a weights retune (admit
+    // it) or the tome ladder changed. Scope: CASTER_ALL classes only; a
+    // hunter's held offhand is its quiver (tomes are class-locked away), and
+    // dual-wield specs fill the slot with a second weapon first.
+    const CASTER_TOME = 'sunpetal_grimoire';
+    const casterClasses = new Set(['mage', 'priest', 'warlock', 'shaman', 'paladin', 'druid']);
+    let pinned = 0;
+    for (const { cls, spec } of everySpec()) {
+      const kit = buildDevKit(cls, spec);
+      const off = kit?.equip.offhand;
+      if (!off) continue;
+      if (ITEMS[off]?.kind !== 'held_offhand') continue;
+      if (!casterClasses.has(cls)) continue;
+      expect(off, `${cls}/${spec} held offhand`).toBe(CASTER_TOME);
+      pinned += 1;
+    }
+    // Liveness at the REAL count (the vacuity-floor rule): thirteen specs
+    // carry the pick today (mage x3, priest x3, warlock x3, druid x3,
+    // shaman/elemental; paladin contributes zero, holy and protection take
+    // shields and retribution takes nothing). A pool or picker change that
+    // moves ANY of them must be admitted here.
+    expect(pinned).toBe(13);
+  });
+
+  it('never puts the same ring in both ring slots', () => {
+    for (const { cls, spec } of everySpec()) {
+      const kit = buildDevKit(cls, spec);
+      if (kit?.equip.ring1 && kit.equip.ring2) {
+        expect(kit.equip.ring1, `${cls}/${spec}`).not.toBe(kit.equip.ring2);
+      }
+    }
+  });
+
+  it('is deterministic: the same spec yields byte-identical gear every time', () => {
+    // A balance run is only repeatable if the gear is. Any rng or map-order
+    // dependence here would silently move the number under test.
+    for (const { cls, spec } of everySpec()) {
+      expect(buildDevKit(cls, spec)).toEqual(buildDevKit(cls, spec));
+    }
+  });
+
+  it('an in-band tie prefers quality over id (the masterwrought Phase 11o tiebreak)', () => {
+    // The regression this pins: feral weights no int or spi, so the rare
+    // sunpetal_grimoire and the uncommon copperlens_ocular tie on identity
+    // (sta 2 each) inside the epsilon band, and before the quality term the
+    // alphabet handed the kit the strictly weaker uncommon the day its lower
+    // id shipped. The tome must win on quality.
+    expect(buildDevKit('druid', 'feral')?.equip.offhand).toBe('sunpetal_grimoire');
+    // The dominance order's other half: quality never outranks identity (a
+    // caster spec whose weights the tome's int/spi DO count keeps it too,
+    // trivially, and a role-stat edge beats any quality edge by construction;
+    // the integer-stat premise that construction rests on is pinned below).
+    expect(buildDevKit('mage', 'frost')?.equip.offhand).toBe('sunpetal_grimoire');
+  });
+
+  it('the tiebreak scale strictly exceeds the quality ladder top rank (dominance property)', () => {
+    // With integer identity sums (pinned below), scale > max rank is what
+    // makes a 1-point role-stat edge unbeatable by any quality gap.
+    expect(QUALITY_TIE_SCALE).toBeGreaterThan(Math.max(...Object.values(QUALITY_TIE_RANK)));
+  });
+
+  it('every primary stat in ITEMS is an integer (the tiebreak scale premise)', () => {
+    // buildDevKit scales the identity sum above the quality rank ladder; that
+    // dominance argument is sound only while stats are integers (a fractional
+    // stat could shrink an identity edge below a quality gap). Pin the
+    // premise where it is relied on.
+    for (const def of Object.values(ITEMS)) {
+      for (const stat of ['str', 'agi', 'sta', 'int', 'spi'] as const) {
+        const value = def.stats?.[stat];
+        if (value === undefined) continue;
+        expect(Number.isInteger(value), `${def.id}.${stat} = ${value}`).toBe(true);
+      }
+    }
+  });
+
+  it('gives a shield spec a one-hander so the shield actually fits', () => {
+    const kit = buildDevKit('warrior', 'prot');
+    const main = ITEMS[kit?.equip.mainhand ?? ''];
+    expect(main).toBeTruthy();
+    expect(main?.kind === 'weapon' && main.hand === 'twohand').toBe(false);
+    expect(isShieldItem(ITEMS[kit?.equip.offhand ?? ''])).toBe(true);
+  });
+
+  it('never hands a caster a strength piece over an intellect one', () => {
+    // The dead-stat armor discount exists precisely to stop "heaviest armor wins".
+    const kit = buildDevKit('priest', 'holy');
+    for (const id of Object.values(kit?.equip ?? {})) {
+      const stats = ITEMS[id]?.stats;
+      if (!stats) continue;
+      if ((stats.str ?? 0) > 0) expect(stats.int ?? 0).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('kit application order', () => {
+  it('equips every bag socket BEFORE any gear is granted', () => {
+    // Load-bearing ordering. Equipping a piece displaces what it replaces back into
+    // the bags, and that return leg IS capacity gated: without the bags on first, a
+    // full kit can run out of room mid-apply.
+    const calls: string[] = [];
+    const ctx = {
+      addItem: (itemId: string) => calls.push(`add:${itemId}`),
+      equipBag: (itemId: string) => calls.push(`bag:${itemId}`),
+      equipItem: (itemId: string) => calls.push(`equip:${itemId}`),
+      unequipItem: (slot: string) => {
+        calls.push(`unequip:${slot}`);
+        return true;
+      },
+    };
+    const applied = applyDevKit(ctx, 'warrior', 'prot');
+    expect(applied?.bagsEquipped).toBe(4);
+
+    const lastBag = calls.map((c) => c.startsWith('bag:')).lastIndexOf(true);
+    const firstEquip = calls.findIndex((c) => c.startsWith('equip:'));
+    expect(lastBag).toBeGreaterThanOrEqual(0);
+    expect(firstEquip).toBeGreaterThan(lastBag);
+  });
+
+  it('clears both hands before the weapons land', () => {
+    const calls: string[] = [];
+    const ctx = {
+      addItem: () => {},
+      equipBag: () => {},
+      equipItem: (itemId: string) => calls.push(`equip:${itemId}`),
+      unequipItem: (slot: string) => {
+        calls.push(`unequip:${slot}`);
+        return true;
+      },
+    };
+    applyDevKit(ctx, 'warrior', 'prot');
+    expect(calls).toContain('unequip:mainhand');
+    expect(calls).toContain('unequip:offhand');
+    expect(calls.indexOf('unequip:offhand')).toBeLessThan(
+      calls.findIndex((c) => c.startsWith('equip:')),
+    );
+  });
+
+  it('returns null for a spec the class does not have', () => {
+    const ctx = {
+      addItem: () => {},
+      equipBag: () => {},
+      equipItem: () => {},
+      unequipItem: () => true,
+    };
+    expect(applyDevKit(ctx, 'warrior', 'restoration')).toBeNull();
+  });
+});
+
+describe('/dev kit against a real Sim', () => {
+  function kitted(cls: PlayerClass, spec: string): Sim {
+    const sim = new Sim({ seed: 7, playerClass: cls, devCommands: true });
+    sim.setPlayerLevel(DEV_KIT_LEVEL);
+    if (!sim.setSpec(spec)) throw new Error(`could not select ${cls} ${spec}`);
+    sim.chat(`/dev kit ${spec}`);
+    return sim;
+  }
+
+  it('fills the sockets with the largest GENERAL bag, never a materials-only satchel', () => {
+    // The kit puts ONE bag in every socket, so the choice decides the whole carried
+    // budget. A materialsOnly bag feeds the materials pool instead of the general one
+    // (src/sim/bag_pools.ts): picking the biggest bag outright would leave the tester a
+    // bare backpack for gear and four sockets only raw materials could use, which is the
+    // opposite of what a gear command is for.
+    const best = bestKitBag();
+    expect(best).not.toBeNull();
+    expect(best?.materialsOnly).toBeUndefined();
+    const generalMax = Math.max(
+      ...Object.values(ITEMS)
+        .filter((item) => item.kind === 'bag' && item.materialsOnly !== true)
+        .map((item) => item.bagSlots ?? 0),
+    );
+    expect(best?.bagSlots).toBe(generalMax);
+    // Non-vacuity: the exclusion only proves something while a materials-only bag that
+    // WOULD have won exists. If the catalog ever loses that bag, this arm must be
+    // re-derived rather than left quietly passing.
+    const materialsOnlyMax = Math.max(
+      ...Object.values(ITEMS)
+        .filter((item) => item.kind === 'bag' && item.materialsOnly === true)
+        .map((item) => item.bagSlots ?? 0),
+    );
+    expect(materialsOnlyMax).toBeGreaterThan(generalMax);
+  });
+
+  it('dresses the character and fills all four bag sockets', () => {
+    const sim = kitted('warrior', 'prot');
+    const meta = sim.players.get(sim.playerId);
+    expect(meta?.bags.filter(Boolean)).toHaveLength(4);
+    // 8 armor/weapon slots minimum, kept as a floor rather than an exact count: this
+    // test is about the command dressing the character at all. A prot warrior wears
+    // 12 today (the jewelry test above pins neck and both rings by id, so the three
+    // slots this floor used to exclude are covered there).
+    const worn = Object.values(meta?.equipment ?? {}).filter(Boolean);
+    expect(worn.length).toBeGreaterThanOrEqual(8);
+    for (const slot of ['helmet', 'chest', 'legs', 'mainhand'] as const) {
+      expect(meta?.equipment?.[slot], slot).toBeTruthy();
+    }
+  });
+
+  it('equips Enhancement Shaman with an active offhand weapon', () => {
+    const sim = kitted('shaman', 'enhancement');
+    const equipment = sim.players.get(sim.playerId)?.equipment;
+
+    expect(ITEMS[equipment?.mainhand ?? '']?.kind).toBe('weapon');
+    expect(ITEMS[equipment?.offhand ?? '']?.kind).toBe('weapon');
+    expect(sim.player.dualWielding).toBe(true);
+    expect(sim.player.offhandWeapon).not.toBeNull();
+  });
+
+  it('leaves level and spec alone: this is a GEAR command', () => {
+    // Deliberately decoupled from /dev level and the spec UI so a tester can vary one
+    // without the other.
+    const sim = new Sim({ seed: 7, playerClass: 'mage', devCommands: true });
+    sim.setPlayerLevel(DEV_KIT_LEVEL);
+    const meta = sim.players.get(sim.playerId);
+    if (meta) meta.talents.spec = 'frost';
+    sim.chat('/dev kit fire');
+    expect(sim.player.level).toBe(DEV_KIT_LEVEL);
+    expect(sim.players.get(sim.playerId)?.talents.spec).toBe('frost');
+  });
+
+  // A fresh character already wears starter gear (worn_sword, recruit_tunic, ...), so
+  // "did nothing" means the equipment is UNCHANGED, not that it is empty.
+  function equipmentSnapshot(sim: Sim): string {
+    return JSON.stringify(sim.players.get(sim.playerId)?.equipment ?? {});
+  }
+
+  it('refuses a spec that belongs to another class', () => {
+    const sim = new Sim({ seed: 7, playerClass: 'warrior', devCommands: true });
+    sim.setPlayerLevel(DEV_KIT_LEVEL);
+    const before = equipmentSnapshot(sim);
+    sim.chat('/dev kit restoration');
+    expect(equipmentSnapshot(sim)).toBe(before);
+  });
+
+  it('is inert when dev commands are off', () => {
+    // The whole surface is env-gated server-side; a preset must not be the one cheat
+    // that leaks past it.
+    const sim = new Sim({ seed: 7, playerClass: 'warrior', devCommands: false });
+    sim.setPlayerLevel(DEV_KIT_LEVEL);
+    const before = equipmentSnapshot(sim);
+    const bagsBefore = sim.players.get(sim.playerId)?.bags.filter(Boolean).length ?? 0;
+    sim.chat('/dev kit prot');
+    expect(equipmentSnapshot(sim)).toBe(before);
+    expect(sim.players.get(sim.playerId)?.bags.filter(Boolean).length ?? 0).toBe(bagsBefore);
+  });
+});

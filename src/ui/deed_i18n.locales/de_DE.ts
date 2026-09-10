@@ -1,0 +1,1135 @@
+// Deed name / desc / title locale table for de_DE (data-as-code, size-exempt).
+// One per-base-locale chunk behind DEED_LOCALE_LOADERS in deed_i18n.ts, so a
+// visitor downloads only their own locale's deed strings. Split verbatim from
+// the former deed_i18n.newlocales.ts single chunk; values carry no em or en
+// dashes (repo copy rule). English (en / en_CA) resolves to the authored
+// source before this table is consulted.
+import type { DeedLocaleTable } from '../deed_i18n';
+
+export const table: DeedLocaleTable = {
+  prog_ready_for_an_adventure: {
+    name: 'Bereit für ein Abenteuer',
+    desc: 'Schließe die Bewährungsküste ab: Beende jede Lektion auf der Insel und läute dann die Fährglocke heim nach Eastbrook.',
+  },
+  exp_dawnhold_castle: {
+    name: 'Eine offene Tür im Garten',
+    desc: 'Statte Schloss Dawnhold einen Besuch ab und wandle durch seine sonnigen Gartenhallen.',
+  },
+  exp_the_last_keep: {
+    name: 'Die stillen Hallen',
+    desc: 'Tritt durch die Tore der Letzten Feste und durchschreite ihre stillen Hallen.',
+  },
+  pvp_bg_first_capture: {
+    name: 'Banner in der Hand',
+    desc: 'Erobere eine Flagge in den Thornhollow-Feldern.',
+  },
+  pvp_bg_first_win: {
+    name: 'Die Senke hält',
+    desc: 'Gewinne ein Schlachtfeld in den Thornhollow-Feldern.',
+  },
+  pvp_bg_wins_25: {
+    name: 'Wärter der Senke',
+    desc: 'Gewinne 25 Schlachtfelder in den Thornhollow-Feldern.',
+    title: 'Fahnenträger',
+  },
+  pvp_bg_captures_100: {
+    name: 'Hundert Banner',
+    desc: 'Erobere im Laufe deiner Karriere 100 Flaggen in den Thornhollow-Feldern.',
+  },
+  dgn_rift: {
+    name: 'Risswandler',
+    desc: 'Bereinige einen Riss, indem du seinen Boss besiegst.',
+  },
+  dgn_rift_s_rank: {
+    name: 'Rissherrscher',
+    desc: 'Bereinige einen Riss vom Rang S, der schwersten Stufe, die ein Rissportal erzeugen kann.',
+  },
+  pvp_honor_sergeant: {
+    name: 'Linienbrecher',
+    desc: 'Verdiene im Laufe deines Lebens 10.000 Ehre. Sie auszugeben kostet dich nie den Rang.',
+    title: 'Linienbrecher',
+  },
+  pvp_honor_knight_lieutenant: {
+    name: 'Feldverheerer',
+    desc: 'Verdiene im Laufe deines Lebens 40.000 Ehre, eine Saison echten Krieges hinter dir.',
+    title: 'Feldverheerer',
+  },
+  pvp_honor_field_marshal: {
+    name: 'Kriegsgekrönt',
+    desc: 'Verdiene im Laufe deines Lebens 150.000 Ehre. Selten auf jedem Reich, und das sollte es auch sein.',
+    title: 'Kriegsgekrönt',
+  },
+  chr_drakemaw_broodlord: {
+    name: 'Gelegebrecher',
+    desc: 'Einen Drakenrachen-Brutfürsten inmitten seiner Eier erlegen, durch Schrei, Hieb und Feuer hindurch.',
+  },
+  chr_maw_matriarch: {
+    name: 'Der Himmel verstummt',
+    desc: 'Cindraleth, die Rachen-Matriarchin, in ihrem Kraterhorst über dem Drakenrachen erlegen.',
+  },
+  chr_frostveil_gatherer: {
+    name: 'Ernte auf den Terrassen',
+    desc: 'Ernte eine Erzader, einen Holzbestand und ein Krauterbeet im Frostveil.',
+  },
+  chr_frostveil_first_cast: {
+    name: 'Erstes Eis auf dem Bergsee',
+    desc: 'Fange einen Fisch in den Gewassern des Frostveil.',
+  },
+  chr_amberfall_gatherer: {
+    name: 'Die Ernte von Amberfall',
+    desc: 'Ernte eine Erzader, einen Holzbestand und ein Krauterbeet in Amberfall.',
+  },
+  chr_amberfall_first_cast: {
+    name: 'Ein Fang aus dem Grossen Moor',
+    desc: 'Fange einen Fisch in den Gewassern von Amberfall.',
+  },
+  chr_nightbloom_gatherer: {
+    name: 'Die traumende Ernte',
+    desc: 'Ernte eine Erzader, einen Holzbestand und ein Krauterbeet in Nightbloom.',
+  },
+  chr_nightbloom_first_cast: {
+    desc: 'Fange einen Fisch in den Gewässern von Nightbloom.',
+    name: 'Eine Welle an der Mondquelle',
+  },
+  chr_wraithwood_gatherer: {
+    name: 'Ernte unter dem Blatterdach',
+    desc: 'Ernte eine Erzader, einen Holzbestand und ein Krauterbeet im Wraithwood.',
+  },
+  chr_wraithwood_first_cast: {
+    name: 'Ein Wurf in der Spiegelbucht',
+    desc: 'Fange einen Fisch in den Gewassern des Wraithwood.',
+  },
+  chr_palmreach_gatherer: {
+    name: 'Ernte am Palmenstrand',
+    desc: 'Ernte eine Erzader, einen Holzbestand und ein Krauterbeet in Palmreach.',
+  },
+  chr_palmreach_first_cast: {
+    name: 'Wurf in die Saphirlagune',
+    desc: 'Fange einen Fisch in den Gewassern von Palmreach.',
+  },
+  chr_evergarden_gatherer: {
+    name: 'Die Gabe des Parterres',
+    desc: 'Ernte eine Erzader, einen Holzbestand und ein Krauterbeet in Evergarden.',
+  },
+  chr_evergarden_first_cast: {
+    name: 'Ein Wurf auf dem Blutenteich',
+    desc: 'Fange einen Fisch in den Gewassern von Evergarden.',
+  },
+  pvp_card_duel_first_win: {
+    name: 'Nach eigenen Regeln',
+    desc: 'Gewinne einen Kartenkampf beim Kartenmeister.',
+  },
+  prog_first_steps: {
+    name: 'Erste Schritte',
+    desc: 'Erreiche Stufe 2 und mache den ersten Schritt auf einem langen Weg.',
+  },
+  prog_finding_your_feet: {
+    name: 'Sicherer Tritt',
+    desc: 'Erreiche Stufe 5; die Wildnis wirkt schon ein wenig kleiner.',
+  },
+  prog_double_digits: {
+    name: 'Zweistellig',
+    desc: 'Erreiche Stufe 10 und schalte deine Talente frei.',
+  },
+  prog_the_long_middle: { name: 'Die lange Mitte', desc: 'Erreiche Stufe 15.' },
+  prog_level_cap: { name: 'Der Blick von ganz oben', desc: 'Erreiche Stufe 20, die Höchststufe.' },
+  prog_well_rested: {
+    name: 'Gut ausgeruht',
+    desc: 'Kehre in einem Gasthaus ein, bis du ausgeruhte Erfahrung verdient hast.',
+  },
+  prog_talented: { name: 'Ein gut angelegter Punkt', desc: 'Verteile deinen ersten Talentpunkt.' },
+  prog_specialized: {
+    name: 'Eine klare Ansage',
+    desc: 'Wähle eine Spezialisierung und erlerne ihre Signaturfähigkeit.',
+  },
+  prog_deep_roots: {
+    name: 'Tiefe Wurzeln',
+    desc: 'Verteile einen Talentpunkt auf ein Talent der letzten Reihe.',
+  },
+  prog_full_build: {
+    name: 'Die vollen Sechs',
+    desc: 'Wähle in allen sechs Talentreihen einer einzigen Skillung jeweils eine Option.',
+  },
+  prog_veteran: { name: 'Veteran', desc: 'Sammle insgesamt 250.000 Erfahrung.', title: 'Veteran' },
+  prog_champion: {
+    name: 'Champion',
+    desc: 'Sammle insgesamt 500.000 Erfahrung.',
+    title: 'Champion',
+  },
+  prog_paragon: {
+    name: 'Paragon',
+    desc: 'Sammle insgesamt 1.000.000 Erfahrung.',
+    title: 'Paragon',
+  },
+  prog_mythic: {
+    name: 'Mythisch',
+    desc: 'Sammle insgesamt 2.500.000 Erfahrung.',
+    title: 'Mythisch',
+  },
+  prog_eternal: { name: 'Ewig', desc: 'Sammle insgesamt 5.000.000 Erfahrung.', title: 'Ewig' },
+  prog_prestige: {
+    name: 'Noch einmal von vorn',
+    desc: 'Erreiche die Höchststufe, fülle den Balken noch einmal und beanspruche Prestigerang 1.',
+  },
+  prog_prestige_5: { name: 'Alte Gewohnheiten', desc: 'Erreiche Prestigerang 5.' },
+  prog_prestige_10: { name: 'Perpetuum mobile', desc: 'Erreiche Prestigerang 10.' },
+  prog_first_harvest: { name: 'Früchte des Feldes', desc: 'Ernte dein erstes Sammelvorkommen.' },
+  prog_mining_100: { name: 'Erz im Blut', desc: 'Erreiche eine Fertigkeit von 100 im Bergbau.' },
+  prog_logging_100: {
+    name: 'Kernholzhauer',
+    desc: 'Erreiche eine Fertigkeit von 100 in der Holzfällerei.',
+  },
+  prog_herbalism_100: {
+    name: 'Meister der Wiesen',
+    desc: 'Erreiche eine Fertigkeit von 100 in der Kräuterkunde.',
+  },
+  prog_master_gatherer: {
+    name: 'Meistersammler',
+    desc: 'Erreiche in drei beliebigen Sammelberufen eine Fertigkeit von 100.',
+  },
+  prog_first_craft: {
+    name: 'Handarbeit',
+    desc: 'Schließe deine erste erfolgreiche Herstellung ab.',
+  },
+  prog_craft_specialist: {
+    name: 'Betriebsgeheimnisse',
+    desc: 'Erreiche eine Fertigkeit von 75 in einem beliebigen Handwerk und schalte dessen Spezialisierungsboni frei.',
+  },
+  prog_around_the_ring: {
+    name: 'Einmal um den Ring',
+    desc: 'Erreiche eine Fertigkeit von 25 in fünf verschiedenen Handwerken.',
+  },
+  cmb_first_blood: { name: 'Erstes Blut', desc: 'Besiege deinen ersten Gegner.' },
+  cmb_slayer: { name: 'Schlächter', desc: 'Besiege 1.000 Gegner.' },
+  cmb_legion_of_one: { name: 'Eine Legion für sich', desc: 'Besiege 10.000 Gegner.' },
+  cmb_heavy_hitter: { name: 'Schwergewicht', desc: 'Richte insgesamt 500.000 Schaden an.' },
+  cmb_critical_eye: { name: 'Kritischer Blick', desc: 'Lande 500 kritische Treffer.' },
+  cmb_giantslayer: {
+    name: 'Riesentöter',
+    desc: 'Führe den Todesstoß gegen einen Gegner aus, der mindestens fünf Stufen über dir liegt.',
+  },
+  cmb_first_fall: {
+    name: 'Staub abklopfen',
+    desc: 'Stirb zum ersten Mal; das passiert den Besten von uns.',
+  },
+  dgn_hollow_crypt: {
+    name: 'Gruftbrecher',
+    desc: 'Besiege Morthen den Gravecaller in der Hohlen Gruft.',
+  },
+  dgn_sunken_bastion: {
+    name: 'Der Fogbinder, entfesselt',
+    desc: 'Besiege Vael den Fogbinder in der versunkenen Bastion.',
+  },
+  dgn_drowned_temple: {
+    name: 'Den Mond ertränken',
+    desc: 'Besiege Ysolei, Avatar des Ertränkten Mondes, im Ertränkten Tempel.',
+  },
+  dgn_gravewyrm_sanctum: {
+    name: 'Der Wyrm in der Tiefe',
+    desc: 'Besiege Korzul den Gravewyrm im Gravewyrm-Heiligtum.',
+  },
+  dgn_hollow_crypt_heroic: {
+    name: 'Heroisch: Die Hohle Gruft',
+    desc: 'Besiege Morthen den Gravecaller in der Hohlen Gruft auf heroischem Schwierigkeitsgrad.',
+  },
+  dgn_sunken_bastion_heroic: {
+    name: 'Heroisch: Die versunkene Bastion',
+    desc: 'Besiege Vael den Fogbinder in der versunkenen Bastion auf heroischem Schwierigkeitsgrad.',
+  },
+  dgn_drowned_temple_heroic: {
+    name: 'Heroisch: Der Ertränkte Tempel',
+    desc: 'Besiege Ysolei, Avatar des Ertränkten Mondes, im Ertränkten Tempel auf heroischem Schwierigkeitsgrad.',
+  },
+  dgn_gravewyrm_sanctum_heroic: {
+    name: 'Heroisch: Gravewyrm-Heiligtum',
+    desc: 'Besiege Korzul den Gravewyrm im Gravewyrm-Heiligtum auf heroischem Schwierigkeitsgrad.',
+  },
+  dgn_nythraxis: {
+    name: 'Die Geißel gebrochen',
+    desc: 'Besiege Nythraxis, Geißel von Thornpeak, jenseits der versiegelten königlichen Tür.',
+  },
+  dgn_nythraxis_heroic: {
+    name: 'Heroisch: Die Geißel gebrochen',
+    desc: 'Besiege Nythraxis, Geißel von Thornpeak, auf heroischem Schwierigkeitsgrad.',
+  },
+  dgn_thornpeak_rounds: {
+    name: 'Die Runde gemacht',
+    desc: 'Säubere die Hohle Gruft, die versunkene Bastion, den Ertränkten Tempel und das Gravewyrm-Heiligtum.',
+  },
+  dgn_deepward: {
+    name: 'Tiefenwacht',
+    desc: 'Bezwinge jeden Dungeon, den Schlachtzug und beide Tiefgänge auf heroischem Schwierigkeitsgrad.',
+  },
+  dgn_mark_circuit: {
+    name: 'Der volle Rundgang',
+    desc: 'Verdiene an einem einzigen Tag Heroische Marken aus allen vier heroischen Dungeons.',
+  },
+  dgn_boss_clears_50: { name: 'Fünfzig Türen weiter', desc: 'Besiege 50 Dungeon-Endbosse.' },
+  dgn_morthen_flawless: {
+    name: 'Ohne Wenn und Knochen',
+    desc: 'Besiege Morthen den Gravecaller auf heroischem Schwierigkeitsgrad, ohne dass ein Gruppenmitglied stirbt.',
+  },
+  dgn_morthen_trio: {
+    name: 'Drei gegen das Grab',
+    desc: 'Besiege Morthen den Gravecaller mit höchstens drei Spielern.',
+  },
+  dgn_olen_arc: {
+    name: 'Dem Schnitter ausgewichen',
+    desc: 'Besiege Ritterkommandant Olen, ohne dass sein Sensenschwung jemand anderen als sein aktuelles Ziel trifft.',
+  },
+  dgn_vael_thralls: {
+    name: 'Niemandes Knecht',
+    desc: 'Besiege Vael den Fogbinder, nachdem jeder Ertrunkene Knecht, den er ruft, bereits erschlagen wurde.',
+  },
+  dgn_ysolei_moonspawn: {
+    name: 'Bis zur letzten Mondbrut',
+    desc: 'Besiege Ysolei, nachdem jede Mondbrut, die sie ruft, bereits erschlagen wurde.',
+  },
+  dgn_ysolei_flawless: {
+    name: 'Trockenen Auges',
+    desc: 'Besiege Ysolei, Avatar des Ertränkten Mondes, auf heroischem Schwierigkeitsgrad, ohne dass ein Gruppenmitglied stirbt.',
+  },
+  dgn_velkhar_bonewalkers: {
+    name: 'Bleibt begraben',
+    desc: 'Besiege Großnekromant Velkhar und vernichte jeden Erhobenen Knochenläufer, bevor Velkhar fällt.',
+  },
+  dgn_korzul_flawless: {
+    name: 'Wyrmfäller',
+    desc: 'Besiege Korzul den Gravewyrm auf heroischem Schwierigkeitsgrad, ohne dass ein Gruppenmitglied stirbt.',
+    title: 'Wyrmfäller',
+  },
+  dgn_sanctum_speed: {
+    desc: 'Besiege Korzul den Gravewyrm innerhalb von 15 Minuten, nachdem deine Gruppe das Gravewyrm-Heiligtum beansprucht hat.',
+    name: 'Schnelllauf im Heiligtum',
+  },
+  dgn_nythraxis_gravebreaker: {
+    name: 'Knie vor keinem König',
+    desc: 'Besiege Nythraxis, ohne dass Grabbrecher je jemand anderen als sein aktuelles Ziel trifft.',
+  },
+  dgn_nythraxis_wardens: {
+    name: 'Hüter der Wachsteine',
+    desc: 'Besiege Nythraxis, wobei jeder Todlose Zorn gebrochen wird, bevor er sich entlädt.',
+  },
+  dgn_nythraxis_deathless: {
+    name: 'Niemand ist todloser',
+    desc: 'Besiege Nythraxis, Geißel von Thornpeak, auf heroischem Schwierigkeitsgrad, ohne dass ein einziges Schlachtzugsmitglied stirbt.',
+    title: 'Todlos',
+  },
+  cmb_thunzharr: {
+    name: 'Der Berg fiel',
+    desc: 'Bringe Thunzharr, den Erwachenden Gipfel, bei Stormcrag zu Fall.',
+  },
+  cmb_thunzharr_unbroken: {
+    name: 'Gipfelbrecher',
+    desc: 'Bringe Thunzharr, den Erwachenden Gipfel, zu Fall, ohne von deinem ersten Schlag bis zu seinem letzten Atemzug zu sterben.',
+    title: 'Gipfelbrecher',
+  },
+  cmb_thunzharr_ten: {
+    name: 'Berge aus Gewohnheit',
+    desc: 'Bringe Thunzharr, den Erwachenden Gipfel, zehnmal zu Fall.',
+  },
+  dlv_reliquary: { name: 'Reliquiarläufer', desc: 'Säubere das Eingestürzte Reliquiar.' },
+  dlv_reliquary_heroic: {
+    name: 'Heroisch: Das Eingestürzte Reliquiar',
+    desc: 'Säubere das Eingestürzte Reliquiar auf heroischer Stufe.',
+  },
+  dlv_litany: { name: 'Die Litanei verstummt', desc: 'Säubere die Ertrunkene Litanei.' },
+  dlv_litany_heroic: {
+    name: 'Heroisch: Die Ertrunkene Litanei',
+    desc: 'Säubere die Ertrunkene Litanei auf heroischer Stufe.',
+  },
+  dlv_lore_journal: {
+    name: 'Marginalien',
+    desc: 'Schalte alle fünf Einträge des Tiefgangsjournals frei.',
+  },
+  dlv_companion_max: {
+    name: 'Eine Freundin in der Tiefe',
+    desc: 'Bringe eine Tiefgangsgefährtin auf ihren höchsten Rang.',
+  },
+  dlv_companions_both: {
+    name: 'Beide Laternen entzündet',
+    desc: 'Bringe beide Tiefgangsgefährtinnen, Akolythin Tessa und Edda Reedhand, auf ihren höchsten Rang.',
+  },
+  dlv_clears_50: { name: 'Fünfzig Faden tief', desc: 'Schließe 50 Tiefgangsläufe ab.' },
+  dlv_solo_heroic: {
+    name: 'Zwei sind ein Heer',
+    desc: 'Säubere einen Tiefgang auf heroischer Stufe ohne weitere Spieler, nur du und deine Gefährtin.',
+  },
+  dlv_tumbler_premium: {
+    name: 'Der Pfad der Zuhaltungen, gemeistert',
+    desc: 'Öffne eine bannversiegelte Reliquiartruhe beim höchsten Einsatz, makellos in deinem einzigen Versuch.',
+  },
+  dlv_rite_flawless: {
+    name: 'Textsicher',
+    desc: 'Schließe den Ritus des Ertrunkenen Reliquiars ohne einen einzigen Fehler ab.',
+  },
+  dlv_varric_ringers: {
+    name: 'Das Geläut verklingt',
+    desc: 'Besiege Diakon Vandric, während jeder Begräbnisläuter, den er erweckt, bereits erschlagen ist.',
+  },
+  dlv_nhalia_bells: {
+    name: 'Glockenstiller',
+    desc: 'Besiege Schwester Nhalia, die Ertrunkene Hymne, ohne dass ein Gruppenmitglied von einer Läutenden Glocke getroffen wird.',
+    title: 'Glockenstiller',
+  },
+  chr_vale_chapter_i: {
+    name: 'Talchronik, Kapitel I',
+    desc: 'Schließe das erste Kapitel von Sauls Chronik ab: Eastbrooks erste Botengänge, die Lage des Tals und ein erster Vorgeschmack auf seine Gewerke.',
+  },
+  chr_vale_chapter_ii: {
+    name: 'Talchronik, Kapitel II',
+  },
+  chr_vale_chapter_iii: {
+    name: 'Die Chronik des Tals',
+    desc: 'Führe die ganze Geschichte des Tals zu Ende: der Gravecaller entlarvt, die Hohle Gruft gereinigt und jeder namhafte Schrecken des Tals niedergestreckt.',
+    title: 'vom Tal',
+  },
+  chr_vale_gatherer: {
+    name: 'Was das Land hergibt',
+    desc: 'Ernte im Eastbrook-Tal eine Erzader, ein Gehölz und ein Kräuterbeet.',
+  },
+  chr_vale_first_cast: {
+    name: 'Da ist etwas im Spiegelsee',
+    desc: 'Fange einen Fisch aus den Gewässern des Eastbrook-Tals.',
+  },
+  chr_vale_packbreaker: {
+    name: 'Rudelbrecher',
+    desc: 'Erlege 3 Waldwölfe innerhalb von 10 Sekunden.',
+  },
+  chr_vale_cup_debut: {
+    name: 'Anwärter auf den Kupfereimer',
+  },
+  chr_vale_rares: {
+    name: 'Die Schrecken des Tals',
+    desc: 'Erlege die fünf namhaften Schrecken des Eastbrook-Tals: den Alten Greyjaw, Mogger, Grix den Tunnelkönig, Hauptmann Verlan und Maldrec den Geisterbinder.',
+  },
+  chr_marsh_chapter_i: {
+    name: 'Moorchronik, Kapitel I',
+    desc: 'Schließe das erste Kapitel von Osric Fenns Chronik ab: dem Musterungsruf von Fenbridge gefolgt, der Damm gesichert und die Gestalt des Fenns erkundet.',
+  },
+  chr_marsh_chapter_ii: {
+    name: 'Moorchronik, Kapitel II',
+    desc: 'Schließe das zweite Kapitel von Osric Fenns Chronik ab: die Witwen ausgeräuchert, die Ertrunkenen zur Ruhe gebettet, der Kabeljaupate an Land gezogen und den Abstieg in die Litanei gewagt.',
+  },
+  chr_marsh_chapter_iii: {
+    name: 'Die Chronik des Mirefen',
+    desc: 'Führe die ganze Geschichte des Fenns zu Ende: das Kultlager zerschlagen, der Fogbinder in der versunkenen Bastion zum Schweigen gebracht und jeder namhafte Schrecken des Nebels niedergestreckt.',
+    title: 'vom Mirefen',
+  },
+  chr_marsh_gatherer: {
+    name: 'Furagieren bei Fenbridge',
+    desc: 'Ernte im Mirefen-Moor eine Erzader, ein Gehölz und ein Kräuterbeet.',
+  },
+  chr_marsh_unburst: {
+    name: 'Steh nicht in den Sporen',
+    desc: 'Erlege 8 Moor-Aufgedunsene, ohne vom Ausbruch ihrer Ätzenden Sporen erwischt zu werden.',
+  },
+  chr_marsh_hush_the_mending: {
+    name: 'Die Heilung verstummt',
+    desc: 'Erlege im Gravecaller-Lager einen Gravecaller-Wundheiler, bevor einer der Kultisten fällt, die er versorgt.',
+  },
+  chr_marsh_rares: {
+    name: 'Namen im Nebel',
+    desc: 'Erlege die drei namhaften Schrecken des Mirefen-Moors: Mirejaw den Gefräßigen, Sloomzahn den Ertrunkenen und Schwester Nhalia.',
+  },
+  chr_peaks_chapter_i: {
+    name: 'Gipfelchronik, Kapitel I',
+    desc: 'Schließe das erste Kapitel von Zenzies Chronik ab: die Gratstraße geräumt, die Baue geleert und jeden Pfad kennengelernt, den Highwatch bewacht.',
+  },
+  chr_peaks_chapter_ii: {
+    name: 'Gipfelchronik, Kapitel II',
+    desc: 'Schließe das zweite Kapitel von Zenzies Chronik ab: Drogmars Kriegslager zerschlagen, den erwachenden Sturm gedeutet und dort gestanden, wo der Glimmermere leuchtet.',
+  },
+  chr_peaks_chapter_iii: {
+    name: 'Die Chronik von Thornpeak',
+    desc: 'Erlebe die ganze Geschichte des Berges: Brütler gebrochen, Heiligtum zum Schweigen gebracht, Erwachender Gipfel gefällt und jeder benannte Schrecken der Klippen besiegt.',
+    title: 'von Thornpeak',
+  },
+  chr_peaks_sparring: {
+    name: 'Drill an der Mauer',
+    desc: 'Verursache insgesamt 1.000 Schaden an einer Trainingspuppe.',
+  },
+  chr_peaks_glimmer_cast: {
+    name: 'Kaltes Wasser, kälteres Licht',
+    desc: 'Fange einen Fisch aus dem Glimmermere.',
+  },
+  chr_peaks_moongate: {
+    name: 'Durch das kalte Tor',
+    desc: 'Durchschreite das Mondtor am Ufer des Glimmermere.',
+  },
+  chr_peaks_waking_witness: {
+    name: 'Der Berg, der wandelt',
+    desc: 'Erblicke Thunzharr, den Erwachenden Gipfel, während er über den Berg schreitet.',
+  },
+  chr_peaks_rares: {
+    name: 'In den Fels gemeißelte Namen',
+    desc: 'Erlege die vier namhaften Schrecken der Thornpeak-Höhen: den Eisenader-Vorarbeiter, Brutok Schädelschmetterer, Voskar Glutschwinge und Marklord Varkas.',
+  },
+  col_discovery_25: {
+    name: 'Hamsterer',
+    desc: 'Entdecke 25 verschiedene Gegenstände (ein Gegenstand zählt, wenn er zum ersten Mal in deinen Besitz gelangt).',
+  },
+  col_discovery_75: { name: 'Elster', desc: 'Entdecke 75 verschiedene Gegenstände.' },
+  col_discovery_150: {
+    name: 'Wunderkammer',
+    desc: 'Entdecke 150 verschiedene Gegenstände.',
+    title: 'Kustos',
+  },
+  col_discovery_250: { name: 'Der große Katalog', desc: 'Entdecke 250 verschiedene Gegenstände.' },
+  col_first_rare: {
+    name: 'Etwas Blaues',
+    desc: 'Erhalte deinen ersten Gegenstand von seltener Qualität.',
+  },
+  col_first_epic: {
+    name: 'Purpurgeboren',
+    desc: 'Erhalte deinen ersten Gegenstand von epischer Qualität.',
+  },
+  col_first_legendary: {
+    name: 'Orangenehm überrascht',
+    desc: 'Erhalte deinen ersten Gegenstand von legendärer Qualität.',
+  },
+  col_set_vale_arcanist: {
+    name: 'Ornat des Tal-Arkanisten',
+    desc: 'Entdecke jedes Teil des Ornats des Tal-Arkanisten.',
+  },
+  col_set_boundstone_vanguard: {
+    name: 'Gebundstein-Vorhut',
+    desc: 'Entdecke jedes Teil der Gebundstein-Vorhut.',
+  },
+  col_set_greyjaw_stalker: {
+    name: 'Rüstzeug des Greyjaw-Pirschers',
+    desc: 'Entdecke jedes Teil des Rüstzeugs des Greyjaw-Pirschers.',
+  },
+  col_set_deathlord: {
+    name: 'Barrowlord-Kriegsrüstung',
+    desc: 'Entdecke jedes Teil der Barrowlord-Kriegsrüstung.',
+  },
+  col_set_wyrmshadow: {
+    name: 'Nightfang-Gewänder',
+    desc: 'Entdecke jedes Teil der Nightfang-Gewänder.',
+  },
+  col_set_necromancers: {
+    name: 'Mournweave-Gewandung',
+    desc: 'Entdecke jedes Teil der Mournweave-Gewandung.',
+  },
+  col_set_crownforged: {
+    name: 'Bonewrought-Ornat',
+    desc: 'Entdecke jedes Teil des Bonewrought-Ornats.',
+  },
+  col_set_nighttalon: { name: 'Direfang-Pelz', desc: 'Entdecke jedes Teil des Direfang-Pelzes.' },
+  col_set_soulflame: {
+    name: 'Wraithfire-Ornat',
+    desc: 'Entdecke jedes Teil des Wraithfire-Ornats.',
+  },
+  col_set_stormcallers: {
+    name: 'Galecall-Gewänder',
+    desc: 'Entdecke jedes Teil der Galecall-Gewänder.',
+  },
+  col_seven_regalia: {
+    name: 'Die siebenfache Garderobe',
+    desc: 'Entdecke jedes Teil aller sieben epischen Rüstungsfamilien.',
+    title: 'in voller Pracht',
+  },
+  col_true_colors: {
+    name: 'Farbe bekennen',
+    desc: 'Zeig dich im Feld mit einem anderen Erscheinungsbild als dem Standard deiner Klasse.',
+  },
+  col_all_slots: {
+    name: 'Aufgebrezelt hoch elf',
+    desc: 'Trage gleichzeitig in allen elf Ausrüstungsplätzen einen Gegenstand.',
+  },
+  col_quartermaster_buyout: {
+    name: 'Stammkunde',
+    desc: 'Entdecke alle zehn Ausrüstungsstücke aus dem Vorrat des Heroischen Quartiermeisters.',
+  },
+  col_glimmerfin: {
+    name: 'Ein Schimmer Hoffnung',
+    desc: 'Fange einen Sonnenschimmer-Koi.',
+  },
+  col_full_creel: {
+    name: 'Voller Fangkorb',
+    desc: 'Entdecke alle sechs gewöhnlichen Fänge aus den Gewässern des Tals, des Moors und der Höhen.',
+  },
+  col_junk_drawer: {
+    name: 'Die Krimskramsschublade',
+    desc: 'Entdecke 10 verschiedene Gegenstände von schlechter Qualität.',
+  },
+  pvp_arena_first_match: {
+    name: 'Sand in den Stiefeln',
+    desc: 'Bestreite ein gewertetes Match im Aschenkolosseum, gleich in welchem Modus.',
+  },
+  pvp_arena_first_win: {
+    name: 'Die Menge tobt',
+    desc: 'Gewinne ein gewertetes Arenamatch, gleich in welchem Modus.',
+  },
+  pvp_arena_1v1_1600: {
+    name: 'Anwärter des Kolosseums',
+    desc: 'Erreiche eine Wertung von 1600 im 1v1-Arenamodus.',
+  },
+  pvp_arena_1v1_1750: {
+    name: 'Rivale des Kolosseums',
+    desc: 'Erreiche eine Wertung von 1750 im 1v1-Arenamodus.',
+  },
+  pvp_arena_1v1_1900: {
+    name: 'Gladiator',
+    desc: 'Erreiche eine Wertung von 1900 im 1v1-Arenamodus.',
+    title: 'Gladiator',
+  },
+  pvp_arena_2v2_1600: {
+    name: 'Zu zweit stark',
+    desc: 'Erreiche eine Wertung von 1600 im 2v2-Arenamodus.',
+  },
+  pvp_arena_2v2_1750: {
+    name: 'Gefürchtetes Duo',
+    desc: 'Erreiche eine Wertung von 1750 im 2v2-Arenamodus.',
+  },
+  pvp_arena_2v2_1900: {
+    name: 'Perfektes Gespann',
+    desc: 'Erreiche eine Wertung von 1900 im 2v2-Arenamodus.',
+  },
+  pvp_duel_first_win: { name: 'Das klären wir draußen', desc: 'Gewinne ein Duell.' },
+  pvp_duel_grace: {
+    name: 'Eine Lektion in Demut',
+    desc: 'Verliere ein Duell und bewahre dabei den Großteil deiner Würde.',
+  },
+  pvp_vcup_first_match: {
+    name: 'Stiefel auf dem Rasen',
+  },
+  pvp_vcup_first_win: { name: 'Der erste Pott' },
+  pvp_vcup_wins_10: {
+    name: 'Keilerball-Routinier',
+  },
+  pvp_vcup_wins_25: {
+    name: 'Keilerball-Legende',
+    title: 'Keilerball-Legende',
+  },
+  pvp_vcup_first_goal: {
+    name: 'Der Bann ist gebrochen',
+  },
+  pvp_vcup_hat_trick: {
+    name: 'Hattrick-Held',
+  },
+  pvp_vcup_golden_goal: {
+    name: 'Goldener Moment',
+  },
+  pvp_vcup_first_save: {
+    name: 'Sichere Hände',
+  },
+  pvp_vcup_clean_sheet: {
+    name: 'An mir kommt keiner vorbei',
+  },
+  pvp_vcup_guild_win: {
+    name: 'Für das Banner',
+  },
+  pvp_fiesta_first_bout: {
+    name: 'Partycrasher',
+  },
+  pvp_fiesta_first_win: { name: 'Die Seele der Fiesta' },
+  pvp_fiesta_double: {
+    name: 'Doppelter Ärger',
+  },
+  pvp_fiesta_shutdown: {
+    name: 'Spielverderber',
+  },
+  pvp_fiesta_full_build: {
+    name: 'Passend gekleidet',
+  },
+  pvp_fiesta_powerups: {
+    name: 'Von jedem eins',
+  },
+  pvp_fiesta_five_kills: {
+    name: 'Partyträger',
+  },
+  soc_first_party: {
+    name: 'Gemeinsam stärker',
+    desc: 'Schließe dich mit einem anderen Spieler zu einer Gruppe zusammen.',
+  },
+  soc_full_house: {
+    name: 'Volles Haus',
+    desc: 'Bezwinge einen Dungeon mit einer vollen Fünfergruppe.',
+  },
+  soc_guild_joined: { name: 'Unter einem Banner', desc: 'Werde Mitglied einer Gilde.' },
+  soc_guild_founded: { name: 'Die Feder des Gründers', desc: 'Gründe deine eigene Gilde.' },
+  soc_first_trade: {
+    name: 'Ein fairer Handel',
+    desc: 'Schließe einen Handel mit einem anderen Spieler ab.',
+  },
+  soc_first_sale: {
+    name: 'Offen für Geschäfte',
+    desc: 'Streiche die Münzen aus deinem ersten Verkauf auf dem Weltmarkt ein.',
+  },
+  soc_steady_custom: {
+    name: 'Treue Kundschaft',
+    desc: 'Streiche aus deinen Verkäufen auf dem Weltmarkt insgesamt 10 Gold ein.',
+  },
+  soc_market_magnate: {
+    name: 'Marktmagnat',
+    desc: 'Streiche aus deinen Verkäufen auf dem Weltmarkt insgesamt 100 Gold ein.',
+    title: 'Magnat',
+  },
+  soc_by_ravens_wing: {
+    name: 'Auf Rabenschwingen',
+    desc: 'Verschicke einen Rabenpost-Brief mit Münzen oder einem Paket.',
+  },
+  soc_room_for_more: { name: 'Platz für mehr', desc: 'Kaufe deine erste Bankerweiterung.' },
+  soc_gilded_strongbox: {
+    name: 'Die Vergoldete Schatulle',
+    desc: 'Kaufe jede Bankerweiterung, die die Kämmerer dir verkaufen.',
+  },
+  soc_meet_bursar: {
+    name: 'Auf Fernando ist Verlass',
+    desc: 'Erweise Kämmerer Fernando, dem Hüter der Vergoldeten Schatulle in Eastbrook, deine Ehrerbietung.',
+  },
+  soc_pocket_money: { name: 'Taschengeld', desc: 'Erbeute insgesamt 1 Gold in Münzen.' },
+  soc_heavy_purse: { name: 'Ein schwerer Beutel', desc: 'Erbeute insgesamt 10 Gold in Münzen.' },
+  soc_wyrms_hoard: { name: 'Der Hort eines Wyrms', desc: 'Erbeute insgesamt 100 Gold in Münzen.' },
+  soc_civic_duty: { name: 'Bürgerpflicht', desc: 'Vergib deinen ersten Stadtfokus-Punkt.' },
+  exp_long_road_north: {
+    name: 'Die lange Straße gen Norden',
+    desc: 'Besuche alle drei Hauptorte: Eastbrook, Fenbridge und Highwatch.',
+  },
+  exp_vale_wayfarer: {
+    name: 'Wanderer des Tals',
+    desc: 'Besuche alle elf benannten Orte des Eastbrook-Tals.',
+  },
+  exp_marsh_wayfarer: {
+    name: 'Wanderer des Moors',
+    desc: 'Besuche alle acht benannten Orte des Mirefen-Moors.',
+  },
+  exp_peaks_wayfarer: {
+    name: 'Wanderer der Höhen',
+    desc: 'Besuche alle zehn benannten Orte der Thornpeak-Höhen.',
+  },
+  exp_world_traveler: {
+    name: 'Weltenbummler',
+    desc: 'Erringe die Wanderer-Tat aller drei Zonen.',
+    title: 'der Wanderer',
+  },
+  exp_something_shiny: {
+    name: 'Etwas Glitzerndes',
+    desc: 'Hebe ein funkelndes Objekt vom Boden auf.',
+  },
+  exp_first_ore: {
+    name: 'Pickel trifft Stein',
+    desc: 'Baue dein erstes Erzvorkommen ab.',
+  },
+  exp_first_timber: { name: 'Baum fällt!', desc: 'Ernte dein erstes Holzvorkommen.' },
+  exp_first_herb: { name: 'Ein grüner Daumen', desc: 'Ernte dein erstes Kräutervorkommen.' },
+  feat_era_cap: {
+    name: 'Kind der Ersten Ära',
+    desc: 'Stufe 20 erreicht, als die Erste Ära noch im Gange war.',
+  },
+  feat_book_complete: { name: 'Das ganze Buch', desc: 'Erringe jede Tat im Buch der Taten.' },
+  feat_brightwood_relic: {
+    name: 'Hellholz unvergessen',
+    desc: 'Bewahre ein Relikt des alten Hellholzes: das Dornhaut-Wams oder die Krone des Monarchen.',
+  },
+  hid_saul_footnote: {
+    name: 'Eine Fußnote der Geschichte',
+    desc: 'Saul den Chronisten neunmal ohne Pause belästigt.',
+    title: 'die Fußnote',
+  },
+  hid_gilded_tour: {
+    name: 'Die vergoldete Rundreise',
+    desc: 'Mit allen drei Filialen der Vergoldeten Schatulle Geschäfte gemacht.',
+  },
+  hid_fall_death: {
+    name: 'Die Schwerkraft gewinnt immer',
+    desc: 'An einem langen Zwiegespräch mit dem Boden verstorben.',
+  },
+  hid_keepers_toll_twice: {
+    name: 'Der Hüter kassiert zweimal',
+    desc: 'Gestorben, während der Zoll des Hüters noch auf dir lastete.',
+  },
+  hid_roll_hundred: {
+    name: 'Eine glatte Hundert',
+    desc: 'Bei einem schlichten /roll eine perfekte 100 gewürfelt.',
+  },
+  hid_yumi_cheer: {
+    name: 'Yumis größter Fan',
+    desc: 'Mitten im Kampf für Yumi gejubelt, wo sie dich hören konnte.',
+  },
+  hid_bountiful_coffer: {
+    name: 'Die purpurne Truhe',
+    desc: 'Eine Reiche Truhe geknackt, bevor sie sich verklemmen konnte.',
+  },
+  hid_companion_save: {
+    name: 'Nicht, solange sie wacht',
+    desc: 'Deine Tiefgang-Gefährtin hat ein gefallenes Gruppenmitglied zurück auf die Beine gehievt.',
+  },
+  hid_codfather: {
+    name: 'In die Familie aufgenommen',
+    desc: 'Den Kabeljaupaten aus den Deepfen-Untiefen gezogen.',
+  },
+  prog_crown_below: {
+    name: 'Die Krone in der Tiefe',
+    desc: 'Folge der Krone von den ruhelosen Knochenfeldern bis zum Grab von König Nythraxis und führe „Das Ende der Geißel“ zum Abschluss.',
+  },
+  prog_mere_at_rest: {
+    name: 'Stille über dem See',
+    desc: 'Begleite Ondrel Vanes Wacht bis zu ihrem Ende: der Chor zum Schweigen gebracht, der Bleichwinder erschlagen und der Ertränkte Mond zur Ruhe gebettet.',
+  },
+  prog_callused_hands: {
+    name: 'Schwielige Hände',
+    desc: 'Schließe „Ein Handwerk für jede Hand“ ab und verdiene dir deine erste Schwiele in den Handwerken von Eastbrook.',
+  },
+  prog_tools_of_the_trade: {
+    name: 'Werkzeuge des Handwerks',
+    desc: 'Schließe eine Herstellung an einer Handwerksstation ab.',
+  },
+  dgn_nythraxis_crypt: {
+    name: 'Was die Krypta hütete',
+    desc: 'Trotze der Verlassenen Krypta und birg beide Hälften des Kryptenschlüssels sowie das Alte Tagebuch von ihren Wächtern.',
+  },
+  chr_marsh_first_cast: {
+    name: 'Aale im Schilf',
+    desc: 'Fange einen Fisch aus den Gewässern des Mirefen-Moors.',
+  },
+  prog_guildsworn: {
+    name: 'Handwerksgeschworen',
+    desc: 'Stimme dich auf ein Archetyp-Paar ein und nimm seine Berufe ernsthaft auf.',
+    title: 'Handwerksgeschworen',
+  },
+  prog_masterwright: {
+    name: 'Meisterwerk-Macher',
+    desc: 'Fertige dein erstes Meisterwerk, ein Stück so fein, dass die ganze Zone davon erfährt.',
+    title: 'Meisterwerk-Macher',
+  },
+  prog_fishing_100: {
+    name: 'Alter Salzfisch',
+    desc: 'Erreiche eine Angelfertigkeit von 100.',
+  },
+  prog_master_angler: {
+    name: 'Meisterangler',
+    desc: 'Erreiche eine Angelfertigkeit von 200, den Gipfel der Anglerkunst.',
+    title: 'Meisterangler',
+  },
+  prog_engineering_50: {
+    name: 'Zahnräder und Schrauben',
+    desc: 'Erreiche eine Fertigkeit von 50 im Ingenieurswesen.',
+  },
+  prog_alchemy_50: {
+    name: 'Seltsame Gebräue',
+    desc: 'Erreiche eine Fertigkeit von 50 in der Alchemie.',
+  },
+  prog_cooking_50: {
+    name: 'Erfahrener Koch',
+    desc: 'Erreiche eine Fertigkeit von 50 im Kochen.',
+  },
+  prog_leatherworking_50: {
+    name: 'Gerbers Gewerbe',
+    desc: 'Erreiche eine Fertigkeit von 50 in der Lederverarbeitung.',
+  },
+  prog_tailoring_50: {
+    name: 'Eine feine Naht',
+    desc: 'Erreiche eine Fertigkeit von 50 in der Schneiderei.',
+  },
+  prog_enchanting_50: {
+    name: 'Ein Schimmer des Arkanen',
+    desc: 'Erreiche eine Fertigkeit von 50 in der Verzauberung.',
+  },
+  prog_weaponcrafting_50: {
+    name: 'Schärfe und Härte',
+    desc: 'Erreiche eine Fertigkeit von 50 in der Waffenherstellung.',
+  },
+  prog_armorcrafting_50: {
+    name: 'Hammer und Platte',
+    desc: 'Erreiche eine Fertigkeit von 50 in der Rüstungsherstellung.',
+  },
+  prog_grandmaster_engineering: {
+    name: 'Großmeister des Ingenieurswesens',
+    desc: 'Erreiche eine Fertigkeit von 125 im Ingenieurswesen, den Gipfel des Handwerks.',
+    title: 'Großmeister des Ingenieurswesens',
+  },
+  prog_grandmaster_alchemy: {
+    name: 'Großmeister der Alchemie',
+    desc: 'Erreiche eine Fertigkeit von 125 in der Alchemie, den Gipfel des Handwerks.',
+    title: 'Großmeister der Alchemie',
+  },
+  prog_grandmaster_cooking: {
+    name: 'Großmeister des Kochens',
+    desc: 'Erreiche eine Fertigkeit von 125 im Kochen, den Gipfel des Handwerks.',
+    title: 'Großmeister des Kochens',
+  },
+  prog_grandmaster_leatherworking: {
+    name: 'Großmeister der Lederverarbeitung',
+    desc: 'Erreiche eine Fertigkeit von 125 in der Lederverarbeitung, den Gipfel des Handwerks.',
+    title: 'Großmeister der Lederverarbeitung',
+  },
+  prog_grandmaster_tailoring: {
+    name: 'Großmeister der Schneiderei',
+    desc: 'Erreiche eine Fertigkeit von 125 in der Schneiderei, den Gipfel des Handwerks.',
+    title: 'Großmeister der Schneiderei',
+  },
+  prog_grandmaster_enchanting: {
+    name: 'Großmeister der Verzauberung',
+    desc: 'Erreiche eine Fertigkeit von 125 in der Verzauberung, den Gipfel des Handwerks.',
+    title: 'Großmeister der Verzauberung',
+  },
+  prog_grandmaster_weaponcrafting: {
+    name: 'Großmeister der Waffenherstellung',
+    desc: 'Erreiche eine Fertigkeit von 125 in der Waffenherstellung, den Gipfel des Handwerks.',
+    title: 'Großmeister der Waffenherstellung',
+  },
+  prog_grandmaster_armorcrafting: {
+    name: 'Großmeister der Rüstungsherstellung',
+    desc: 'Erreiche eine Fertigkeit von 125 in der Rüstungsherstellung, den Gipfel des Handwerks.',
+    title: 'Großmeister der Rüstungsherstellung',
+  },
+  col_pristine_vein: {
+    name: 'Makellose Ader',
+    desc: 'Breche eine makellose Ader auf und lass die ganze Zone davon erfahren.',
+  },
+  col_ancient_heartwood: {
+    name: 'Altes Herzholz',
+    desc: 'Gewinne ein Stück altes Herzholz aus einem gefällten Baumbestand.',
+  },
+  col_moonlit_bloom: {
+    name: 'Mondlichtblüte',
+    desc: 'Ernte eine Mondlichtblüte genau in dem Augenblick, da sie sich öffnet.',
+  },
+  col_perfect_specimen: {
+    name: 'Ein Makelloses Exemplar',
+    desc: 'Entnimm einem erlegten Tier ein makelloses Exemplar, ohne Kerbe und ohne Makel.',
+  },
+  soc_first_salvage: {
+    name: 'Kein Rest verschwendet',
+    desc: 'Zerlege ein Ausrüstungsstück zu Rohmaterialien.',
+  },
+  soc_salvage_50: {
+    name: 'Der Schrottplatz',
+    desc: 'Zerlege 50 Ausrüstungsstücke zu Rohmaterialien.',
+  },
+  dgn_wildheart_basin: {
+    name: 'Das Becken beißt zurück',
+    desc: 'Besiege Zulgar, Stimme des Beckens, im Wildherzbecken.',
+  },
+  dgn_wildheart_basin_heroic: {
+    name: 'Heroisch: Das Wildherzbecken',
+    desc: 'Besiege Zulgar, Stimme des Beckens, im Wildherzbecken auf heroischem Schwierigkeitsgrad.',
+  },
+  chr_peaks_gatherer: {
+    name: 'Die Ernte der Höhen',
+    desc: 'Ernte in den Thornpeak-Höhen eine Erzader, ein Gehölz und ein Kräuterbeet.',
+  },
+  chr_marsh_rares_ii: {
+    name: 'Der Vielfraß, nachgetragen',
+    desc: 'Erlege Grubjaw den Vielfraß, einen vierten namhaften Schrecken des Mirefen-Moors, den die erste Zählung ausließ.',
+  },
+  chr_peaks_rares_ii: {
+    name: 'Mehr in den Fels gemeißelte Namen',
+    desc: 'Erlege den Alten Felsmaul und Splitterlord Kazzix, zwei weitere namhafte Schrecken der Thornpeak-Höhen, die die erste Zählung ausließ.',
+  },
+  chr_gleamstag: {
+    name: 'Die Legende, die nie zuerst zuschlug',
+    desc: 'Erlege den Glanzhirsch, einen seltenen, scheuen Elite, der nur angreift, wenn man ihn in die Enge treibt.',
+  },
+  chr_hollow_rares: {
+    name: 'Die Herde vergisst nicht',
+    desc: 'Erlege die Alte Markschale und Aurelhorn, den Ersten der Herde, die beiden wandernden seltenen Bosse der Schleiersenke.',
+  },
+  chr_willowfen_gatherer: {
+    name: 'Gaben des Moorlands',
+    desc: 'Ernte im Weidenmoor eine Erzader, ein Gehölz und ein Kräuterbeet.',
+  },
+  chr_willowfen_first_cast: {
+    name: 'Wellenkreise in den Lilienmooren',
+    desc: 'Fange einen Fisch aus den Gewässern des Weidenmoors.',
+  },
+  chr_galecrest_gatherer: {
+    name: 'Ernte auf der Landzunge',
+    desc: 'Ernte auf dem Windkamm eine Erzader, ein Gehölz und ein Kräuterbeet.',
+  },
+  chr_galecrest_first_cast: {
+    name: 'Eine Schnur im Spiegelweiher',
+    desc: 'Fange einen Fisch aus den Gewässern des Windkamms.',
+  },
+  chr_farshore_gatherer: {
+    name: 'Inselproviant',
+    desc: 'Ernte auf der Fernküste eine Erzader, ein Gehölz und ein Kräuterbeet.',
+  },
+  chr_farshore_first_cast: {
+    name: 'Was die Möwen wissen',
+    desc: 'Fange einen Fisch aus den Gewässern der Fernküste.',
+  },
+  prog_engineering_rare: {
+    name: 'Präzisionsingenieurwesen',
+    desc: 'Fertige dein erstes seltenes Ausrüstungsstück im Ingenieurswesen.',
+  },
+  prog_alchemy_rare: {
+    name: 'Ein seltener Jahrgang',
+    desc: 'Fertige dein erstes seltenes Ausrüstungsstück in der Alchemie.',
+  },
+  prog_cooking_rare: {
+    name: 'Ein unvergessliches Gericht',
+    desc: 'Fertige dein erstes seltenes Ausrüstungsstück im Kochen.',
+  },
+  prog_leatherworking_rare: {
+    name: 'Feine Gerberei',
+    desc: 'Fertige dein erstes seltenes Ausrüstungsstück in der Lederverarbeitung.',
+  },
+  prog_tailoring_rare: {
+    name: 'Ein meisterhafter Stich',
+    desc: 'Fertige dein erstes seltenes Ausrüstungsstück in der Schneiderei.',
+  },
+  prog_weaponcrafting_rare: {
+    name: 'Zu Glanz gehärtet',
+    desc: 'Fertige dein erstes seltenes Ausrüstungsstück in der Waffenherstellung.',
+  },
+  prog_armorcrafting_rare: {
+    name: 'Zur Perfektion gepanzert',
+    desc: 'Fertige dein erstes seltenes Ausrüstungsstück in der Rüstungsherstellung.',
+  },
+  col_reliquary_rank_2: {
+    name: 'Beutewahrer',
+    desc: 'Erreiche Kustos-Rang 2 im Reliquiar (10 einzigartige katalogisierte Reliquien).',
+    title: 'Beutewahrer',
+  },
+  col_reliquary_rank_3: {
+    name: 'Der Katalogisierer',
+    desc: 'Erreiche Kustos-Rang 3 im Reliquiar (25 einzigartige katalogisierte Reliquien).',
+    title: 'der Katalogisierer',
+  },
+  col_reliquary_rank_4: {
+    name: 'Erzkustos',
+    desc: 'Erreiche Kustos-Rang 4 im Reliquiar (50 einzigartige katalogisierte Reliquien).',
+    title: 'Erzkustos',
+  },
+  col_reliquary_rank_5: {
+    name: 'Ewige Beute',
+    desc: 'Erreiche Kustos-Rang 5 im Reliquiar (100 einzigartige katalogisierte Reliquien).',
+  },
+  col_reliquary_complete: {
+    name: 'Das Große Reliquiar',
+    desc: 'Katalogisiere jede Reliquie des Reliquiars, die ein Charakter behalten kann. Ein späteres Wachstum des Katalogs nimmt sie dir nie wieder.',
+    title: 'Kustos des Gewölbes',
+  },
+  col_reliquary_conquerors: {
+    name: 'Regal der Eroberer',
+    desc: 'Katalogisiere jede Reliquie im Regal Eroberer des Reliquiars. Ein späteres Wachstum des Katalogs nimmt sie dir nie wieder.',
+    title: 'Gewölbebrecher',
+  },
+  col_reliquary_illum_nythraxis_heroic: {
+    name: 'Nythraxis illuminiert',
+    desc: 'Illuminiere die Seite Heroisch: Nythraxis-Schlachtzug des Reliquiars.',
+    title: 'Licht von Nythraxis',
+  },
+  col_reliquary_illum_thunzharr: {
+    name: 'Thunzharr illuminiert',
+    desc: 'Illuminiere die Seite Thunzharr, der Erwachende Gipfel des Reliquiars.',
+    title: 'Licht von Thunzharr',
+  },
+  col_reliquary_illum_gravewyrm_heroic: {
+    name: 'Heiligtum illuminiert',
+    desc: 'Illuminiere die Seite Heroisch: Gravewyrm-Heiligtum des Reliquiars.',
+    title: 'Licht des Heiligtums',
+  },
+  soc_strongbox_outfitter: {
+    name: 'Schatullenausstatter',
+    desc: 'Schalte deinen ersten Banktaschen-Steckplatz frei.',
+  },
+  soc_four_bags_deep: {
+    name: 'Alle vier Taschen',
+    desc: 'Schalte alle vier Banktaschen-Steckplätze frei.',
+  },
+  dgn_ignivar: {
+    name: 'Der Herold fällt',
+    desc: 'Besiege Ignivar, Herold der Letzten Flamme, im Schmelztiegel der Letzten Quelle.',
+  },
+  dgn_ignivar_heroic: {
+    name: 'Heroisch: Der Herold fällt',
+    desc: 'Besiege Ignivar, Herold der Letzten Flamme, auf heroischem Schwierigkeitsgrad.',
+  },
+  dgn_varkhul: {
+    name: 'Die Schmiede erkaltet',
+    desc: 'Besiege Varkhul, Schmiedevater der Letzten Flamme, im Inneren Schmelztiegel.',
+  },
+  dgn_varkhul_heroic: {
+    name: 'Heroisch: Die Schmiede erkaltet',
+    desc: 'Besiege Varkhul, Schmiedevater der Letzten Flamme, auf heroischem Schwierigkeitsgrad.',
+  },
+  dgn_varkhul_flawless: {
+    name: 'Keine Glut geht verloren',
+    desc: 'Besiege Varkhul, Schmiedevater der Letzten Flamme, auf heroischem Schwierigkeitsgrad, ohne dass ein einziges Schlachtzugsmitglied stirbt.',
+    title: 'Unversengt',
+  },
+  col_set_bramblehide: {
+    name: "Roots' Dornenhaut",
+    desc: "Entdecke jedes Teil von Roots' Dornenhaut.",
+  },
+  prog_jewelcrafting_rare: {
+    desc: 'Stelle deinen ersten Gegenstand der seltenen Stufe mit Juwelierskunst her.',
+    name: 'Zu Glanz poliert',
+  },
+  prog_jewelcrafting_50: {
+    desc: 'Erreiche eine Fertigkeit von 50 in Juwelierskunst.',
+    name: 'Fassetten und Filigran',
+  },
+  prog_grandmaster_jewelcrafting: {
+    desc: 'Erreiche eine Fertigkeit von 125 in Juwelierskunst, den Gipfel dieses Handwerks.',
+    name: 'Großmeister der Juwelierskunst',
+    title: 'Großmeister der Juwelierskunst',
+  },
+  prog_inscription_rare: {
+    desc: 'Stelle deinen ersten Gegenstand der seltenen Stufe mit Inschriftenkunde her.',
+    name: 'In feiner Tinte geschrieben',
+  },
+  prog_inscription_50: {
+    desc: 'Erreiche eine Fertigkeit von 50 in Inschriftenkunde.',
+    name: 'Feder und Pigment',
+  },
+  prog_grandmaster_inscription: {
+    desc: 'Erreiche eine Fertigkeit von 125 in Inschriftenkunde, den Gipfel dieses Handwerks.',
+    name: 'Großmeister der Inschriftenkunde',
+    title: 'Großmeister der Inschriftenkunde',
+  },
+  col_deepest_cast: {
+    desc: 'Erhalte eine Uhrspulen-Angelrute, die einzige Rute, die die tiefsten Fänge erreicht.',
+    name: 'Der tiefste Wurf',
+  },
+  prog_first_planting: {
+    desc: 'Pflanze deine erste Feldfrucht in einem Gartenbeet.',
+    name: 'Hier beginnt die Saat',
+  },
+  chr_vale_first_harvest: {
+    desc: 'Ernte deine erste gedeihende Feldfrucht aus einem Gartenbeet im Eastbrook-Tal.',
+    name: 'Erstlinge des Tals',
+  },
+  chr_marsh_first_harvest: {
+    desc: 'Ernte deine erste gedeihende Feldfrucht aus einem Gartenbeet im Mirefen-Moor.',
+    name: 'Sprossen im Torf',
+  },
+  chr_peaks_first_harvest: {
+    desc: 'Ernte deine erste gedeihende Feldfrucht aus einem Gartenbeet in den Thornpeak-Höhen.',
+    name: 'Eine Ernte zwischen Klippen',
+  },
+  chr_evergarden_first_harvest: {
+    desc: 'Ernte deine erste gedeihende Feldfrucht aus einem Gartenbeet im Evergarten.',
+    name: 'Ein Beet im Paradies',
+  },
+  prog_farming_100: {
+    desc: 'Erreiche eine Pflanzenfertigkeit von 100.',
+    name: 'Erntemeister',
+    title: 'Erntemeister',
+  },
+  col_farm_roster: {
+    desc: 'Ernte jede Feldfrucht, die die vier Gärten anbauen.',
+    name: 'Jede Furche gefüllt',
+  },
+  prog_field_to_feast: {
+    desc: 'Koche ein Apex-Festmahl, von dessen Tafel ein ganzer Schlachtzug isst.',
+    name: 'Vom Feld zum Festmahl',
+  },
+  col_golden_harvest: {
+    desc: 'Ernte eine goldene Ernte und lass die ganze Zone davon erfahren.',
+    name: 'Goldene Ernte',
+  },
+  prog_legendmaker: {
+    desc: 'Erhebe ein perfektioniertes Werk mit einer Urkunde des Schaffens zur Legende und gib ihm einen einzigartigen Namen.',
+    name: 'Der Legendenmacher',
+  },
+  hid_forgebreaker: {
+    desc: 'Forme Schmiedebrecher selbst und kehre mit dem fertigen Hammer zu Maelin zurück.',
+    name: 'Eine entfesselte Quelle',
+  },
+};

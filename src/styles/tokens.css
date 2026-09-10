@@ -1,0 +1,703 @@
+/* tokens.css: the :root design tokens (palette, typography, spacing, scrollbar,
+   cursors, viewport). Relocated verbatim from the inline <style> of index.html
+   under @layer tokens; every name and resolved value is preserved. The one change
+   is the cursor url()s, rewritten from page-relative './ui/cursors/...' to
+   root-absolute '/ui/cursors/...' so they resolve from a bundled stylesheet exactly
+   as they did inline (a relative url() in a bundled CSS file resolves against
+   src/styles/, not the page root).
+
+   The runtime-written custom properties stay here as :root defaults so the runtime
+   overrides still cascade on top: src/ui/theme.ts writes the --color-* accents and
+   the viewport resizer writes --app-vw / --app-vh, both onto documentElement inline
+   style, which always wins over this stylesheet rule. --range-fill is NOT a token
+   here: it is the slider track's inline var(--range-fill, 0%) fallback in base.css,
+   written per element by the HUD, never on :root. */
+@layer tokens {
+  :root {
+    --gold: #ffd100;
+    --gold-dim: #c8a838;
+    /* The deed-unlock banner plate (#banner.banner-deed). Echoes the Book of
+       Deeds card and renown chip so the earned moment and the window that
+       records it read as one family, and so a deed can never be mistaken for
+       the bare --gold level-up banner they used to share. */
+    --color-deed-banner-text: #ffe27a;
+    --color-deed-banner-border: #b8902a;
+    --color-deed-banner-bg: rgb(26 21 12 / 92%);
+    /* Gathering skill milestone plate (#banner.banner-skill). Warm copper
+       craft language, framed so a Mining 50 plate can never read as a
+       character level-up (the bare --gold celebration). Distinct from the
+       parchment deed plate so both earned moments keep their own identity.
+       The gradient token drops the --color- prefix (the --panel-bg
+       precedent: --color-* names hold plain colors). */
+    --color-skill-banner-text: #f0d078;
+    --color-skill-banner-border: #c49a3c;
+    --skill-banner-bg: linear-gradient(165deg, rgb(42 32 14 / 94%) 0%, rgb(18 14 8 / 96%) 100%);
+    --color-skill-banner-subtext: #e8d8a8;
+    --color-skill-banner-inset: rgb(255 209 0 / 14%);
+    --border: #6f5a2a;
+    /* --panel-base is the single themeable frame colour; --panel-bg derives the
+       shipped gradient from it (overwritten wholesale by the theme system). */
+    --panel-base: #15151f;
+    --panel-bg: linear-gradient(170deg, #15151ff2 0%, #0b0b12f2 60%, #08080df2 100%);
+    /* quest-marker tooltip TAG text: the rare-adjacent blue lifted to the
+       4.5:1 text tier over the default panel stops (the glyph channels keep
+       the #0070dd anchor). The theme system re-emits this per preset via
+       ensureReadable, so the light Parchment panel darkens it to AA. */
+    --color-quest-tag-text: #3d9bff;
+    /* Profession-affinity tooltip line ("Used by Leatherworking, ...", the
+       tt-material-use class): the craft-teal wash over the accent, at the
+       classic-preset value. The theme system re-emits this per preset via
+       ensureReadable (src/ui/theme.ts) so the light Parchment panel darkens
+       it until it clears the contrast floor. Named for the tooltip surface,
+       NOT --color-craft-*: that family below is the crafting-difficulty ramp
+       and this token is unrelated to it. */
+    --color-material-use: #d6ce3b;
+    /* Quest moments (DESIGN.md section 4.3 / principle 4): tracked titles,
+       bag-grid quest purpose marks, map quest markers. Bright saturated
+       yellow reserved for quest, never chrome. Distinct from --gold / --color-accent
+       structural house gold. */
+    --color-quest: #ffd12d;
+    /* Typography, Cinzel (heraldic display/headings), Alegreya Sans (UI + body),
+       Alegreya (serif flavour prose). Legacy token names alias the canonical set
+       so every existing usage resolves to the new system. */
+    --font-display: "Cinzel", "Palatino Linotype", Palatino, Georgia, serif;
+    --font-ui: "Alegreya Sans", "Segoe UI", system-ui, "Helvetica Neue", sans-serif;
+    --font-serif: "Alegreya", "Palatino Linotype", Palatino, Georgia, serif;
+    --title-font: var(--font-display);
+    --font-heading: var(--font-display);
+    --ui-font: var(--font-ui);
+    --font-sans: var(--font-ui);
+    --body-font: var(--font-ui);
+
+    /* --gold is the single source of truth for the primary accent */
+    --color-primary: var(--gold);
+    --color-primary-dim: var(--gold-dim);
+    --color-primary-glow: rgba(255, 209, 0, 0.2);
+    --color-primary-glow-heavy: rgba(255, 209, 0, 0.4);
+
+    /* resource bars / unit-frame states / auras (previously hardcoded across CSS + JS) */
+    --color-hp: #1eb838;
+    --color-mana: #2b7bd4;
+    --color-rage: #c0392b;
+    --color-energy: #e4c531;
+    --color-focus: #d79a2b;
+    --color-devotion: #e7b943;
+    --color-ascension: #fff1a3;
+    /* Extended Dawn (pal_r17_extended_dawn) grants 2 charges beyond the base 5;
+       those bonus charge pips (.paladin-ascension-charges span:nth-child(n+6))
+       glow this color instead of --color-ascension so the empowered bonus reads
+       at a glance, including in peripheral vision. */
+    --color-ascension-bonus: #c88ef5;
+    --color-hostile: #ff6b5e;
+    --color-friendly: #9fdc7f;
+    --color-buff: #3a6ea8;
+    --color-debuff: #c0392b;
+    /* The operator-applied Cheater tag on a name line. Its own token, not
+       --color-hostile: hostility is a reaction the same frame already spends
+       that red on, and a sanction is not a reaction. Kept in lockstep with
+       CHEATER_STYLE in src/render/nameplate_canvas.ts so the overhead plate and
+       the target frame brand a player the same colour. */
+    --color-cheater-tag: #ff6b6b;
+    /* Protect Yumi team identity (blue team A / red team B), driven by the
+       yumi match HUD + arena window; never hardcoded in painter TS. */
+    --color-team-blue: #2f6fe0;
+    --color-team-red: #d8342c;
+    /* Per-school debuff border tints (WoW-style poison/magic/curse reads); physical
+       keeps the base --color-debuff red. Driven by the aura node's data-school. */
+    --color-debuff-fire: #e8722a;
+    --color-ruin-empty-border: #6b2b12;
+    --color-ruin-empty-start: #27100b;
+    --color-ruin-empty-end: #120706;
+    --color-ruin-lit-border: #ffd073;
+    --color-ruin-lit-core: #fff0a0;
+    --color-ruin-lit-mid: #ff6a1f;
+    --color-ruin-lit-edge: #8d1d08;
+    --color-ruin-glow: #ff5a1fcc;
+    --color-ruin-inner-shine: #fff4;
+    --color-ruin-ritual-shadow: #080201e8;
+    --color-ruin-ritual-aura: #ff4c213d;
+    --color-ruin-ring-highlight: #e982365c;
+    --color-ruin-rune-dim: #8d3b1f99;
+    --color-ruin-full-flare: #ffcf737a;
+    --color-debuff-frost: #4aa3df;
+    --color-debuff-arcane: #3f8cff;
+    --color-debuff-shadow: #9b59d0;
+    --color-debuff-nature: #35a835;
+    --color-debuff-holy: #d8b56b;
+    --color-aura-rpg-gold: #ffe14d;
+    --color-aura-rpg-violet: #bd63ff;
+    --color-aura-rpg-electric: #3dc7ff;
+    --aura-glow-core: 5px;
+    --aura-glow-halo: 16px;
+
+    --color-bg-dark: #08080d;
+    --color-bg-input: #0a0a0f;
+    --color-border-default: #4e3d1d;
+    /* The showcase hairline: the gold-brown 1px keyline the char-window stat
+       panels established and the inset-card family repeats (section cards,
+       recipe cards, pill chips, panel dividers). One token for every site so
+       the family cannot drift shade by shade. */
+    --color-border-showcase: #463a1c;
+    /* The showcase inset-card FILL that pairs with the hairline above: the
+       translucent scrim the section cards sit on, so the panel gradient stays
+       visible through them. Named at the phase 14 professions unification
+       (consumers: the professions window's section cards, the crafting
+       identity card, the harvest journal rows); the char-window showcase
+       family still spells the same value and migrates when it is next
+       touched. */
+    --color-card-inset: rgba(0, 0, 0, 0.24);
+    --color-border-focus: #c8a838;
+    --color-border-invalid: #ff8f85;
+    --color-border-valid: #48e060;
+
+    --color-text-light: #f0ebd8;
+    --color-text-muted: #998d6a;
+    /* Accent/gold for text on panel surfaces, and overlay text that floats
+       over the 3D world. The theme system (src/ui/theme.ts) recomputes
+       --color-accent/--color-gold per preset so they stay AA-readable on a
+       light panel, and keeps --color-text-overlay light with a text-shadow. */
+    --color-gold: var(--gold);
+    --color-accent: var(--gold);
+    --color-text-overlay: #f4eede;
+    --text-outline-color: #000000;
+    --panel-edge: #08080d;
+    --color-text-error: #ff8f85;
+    --color-text-success: #7fdc4f;
+    /* Raid boss journal palette. These tokens keep its forged-fire treatment in one
+       themeable source while the component sheets own only layout and composition. */
+    --color-rbg-frame-border-base: #2e180d;
+    --color-rbg-frame-flare: #2a160de8;
+    --color-rbg-frame-start: #15100d;
+    --color-rbg-frame-end: #090807;
+    --color-rbg-divider: #8f6a294f;
+    --color-rbg-nav-start: #0b0908dd;
+    --color-rbg-nav-end: #17100ddd;
+    --color-rbg-nav-grid: #ffffff05;
+    --color-rbg-tab-border: #5d4825;
+    --color-rbg-tab-start: #1a1714;
+    --color-rbg-tab-end: #0d0c0b;
+    --color-rbg-portrait-start: #3b2316;
+    --color-rbg-tab-active-start: #4a2b13;
+    --color-rbg-tab-active-glow: #f18b2822;
+    --color-rbg-hero-border: #75562875;
+    --color-rbg-hero-flare: #d66b192e;
+    --color-rbg-hero-start: #20130e;
+    --color-rbg-hero-end: #0d0b0a;
+    --color-rbg-shadow-soft: #0009;
+    --color-rbg-shadow: #000;
+    --color-rbg-model-border: #8c6b31;
+    --color-rbg-model-start: #4b2814;
+    --color-rbg-model-end: #0d0907;
+    --color-rbg-model-glow: #e36f1824;
+    --color-rbg-model-inset: #d8a84135;
+    --color-rbg-button-border: #b1843b;
+    --color-rbg-button-start: #4f3218;
+    --color-rbg-button-end: #20140c;
+    --color-rbg-button-text: #ffe3a0;
+    --color-rbg-button-text-hover: #fff3ca;
+    --color-rbg-status-text: #efd18a;
+    --color-rbg-heading: #f2d58a;
+    --color-rbg-kicker: #c79745;
+    --color-rbg-segment-border: #5e4828;
+    --color-rbg-control-bg: #080706;
+    --color-rbg-segment-active-start: #66401d;
+    --color-rbg-segment-active-end: #38210f;
+    --color-rbg-segment-active-text: #ffe6a6;
+    --color-rbg-segment-active-border: #b68135;
+    --color-rbg-phase-start: #ffbd50;
+    --color-rbg-phase-end: #6e2b0d;
+    --color-rbg-phase-glow: #f27c2d55;
+    --color-rbg-phase-title: #efc66d;
+    --color-rbg-ability-border: #4d3c25;
+    --color-rbg-ability-start: #17130f;
+    --color-rbg-ability-inset: #ffffff08;
+    --color-rbg-ability-expanded-border: #8d672d;
+    --color-rbg-ability-expanded-start: #20170f;
+    --color-rbg-icon-border: #8b6935;
+    --color-rbg-expand-mark: #d7a949;
+    --color-rbg-badge-border: #56472f;
+    --color-rbg-badge-bg: #0b0a09;
+    --color-rbg-badge-text: #cbb889;
+    --color-rbg-role-icon: #fff;
+    --color-rbg-role-tank-bg: #2878c8;
+    --color-rbg-role-healer-bg: #278a45;
+    --color-rbg-role-damage-bg: #b93b36;
+    --color-rbg-deadly-border: #9f332d;
+    --color-rbg-deadly-text: #ff786d;
+    --color-rbg-important-border: #a97828;
+    --color-rbg-important-text: #ffd15f;
+    --color-rbg-cleansable-border: #3f769b;
+    --color-rbg-cleansable-text: #85d2ff;
+    --color-rbg-detail-border: #a77830;
+    --color-rbg-detail-bg: #080706a8;
+    /* Item-name color for an item with no quality (bags_window.ts uses this token
+       as the fallback when QUALITY_COLOR has no entry, so the painter carries no
+       raw hex). Exact pre-existing value. */
+    --color-quality-default: #fff;
+
+    /* Quality item-NAME text colors (consumers: market_name_color.ts via the
+       Browse-row name, and since Masterwrought phase 14 the Perfecting
+       window's promoted-name and promoted-track tints). Every value is a
+       TEXT variant of its QUALITY_COLOR hue tuned for the panel ground, none
+       aliases the icon palette verbatim: rare, epic, and legendary are LIFTED
+       because the shipped hues fail WCAG AA there (rare #0070dd reads 3.87:1,
+       epic #a335ee 3.82:1, both under the 4.5:1 text floor; legendary
+       #ff8000 lifts to #ffab5e); poor is lifted to a brighter grey for
+       legibility on the same ground, and common and uncommon are softened
+       off the pure white and green so a name reads as text rather than a
+       glare. Scoped to name text and the Perfecting track's promoted fill and
+       label on purpose: the icon border and every other surface stay on the
+       shared palette (icons.ts). */
+    --mkt-name-poor: #b8b8b8;
+    --mkt-name-common: #f2efe6;
+    --mkt-name-uncommon: #7fc98f;
+    --mkt-name-rare: #5aa9f0;
+    --mkt-name-epic: #c88ef5;
+    --mkt-name-legendary: #ffab5e;
+
+    /* Crafting skill-gain difficulty tints (consumer: components.css
+       .crafting-difficulty[data-difficulty], painted by crafting_window.ts as
+       a data attribute, never an inline color). The classic four-color recipe
+       intuition (Professions 2.0): full/minimal/none reuse the item-quality
+       palette literals (icons.ts QUALITY_COLOR legendary/uncommon/poor, a
+       classic-fidelity anchor), reduced is the house gold. The tint is always
+       a redundant hint beside the text label (fairness). */
+    --color-craft-full: #ff8000;
+    --color-craft-reduced: var(--gold);
+    --color-craft-minimal: #1eff00;
+    --color-craft-none: #9d9d9d;
+
+    /* The bonus-stat green the item tooltip's own gain lines speak in
+       (icons.ts QUALITY_COLOR.uncommon, the same value #tooltip .tt-green
+       carries): one token for the surfaces that must agree with those lines,
+       today the Apply Enchant picker's effect line and the enchanted bag glyph. */
+    --color-stat-bonus: #1eff00;
+    /* Bag-grid per-copy corner glyphs (components.css .bag-item .bi-glyph-*,
+       painted by bags_window.ts as a class, never an inline color). Enchanted
+       borrows the bonus-stat green above (the enchant color language); signed
+       rides the house gold like the maker's mark; bound takes a cool steel-blue
+       so the three read apart at 12px even before the shapes resolve. The shape
+       is the primary signal, the tint a redundant one (fairness). */
+    --color-bag-glyph-enchanted: var(--color-stat-bonus);
+    --color-bag-glyph-signed: var(--color-accent);
+    --color-bag-glyph-bound: #7fb0e6;
+    /* Bag-grid quest-purpose treatment (components.css .bag-item.bag-quest /
+       .bi-quest-seal, painted by bags_window.ts as a class, never an inline
+       color). Purpose class, not a rarity tier: thin rim + soft wash + small
+       seal from the --color-quest lineage. Shape is primary, tint is redundant
+       (fairness). Always-on, no --fx-* gate. Ready seal brightens the same
+       lineage (never a second yellow). Tracker bag-hover uses the same gold. */
+    --color-bag-quest-rim: var(--color-quest);
+    --color-bag-quest-wash: color-mix(in srgb, var(--color-quest) 16%, transparent);
+    --color-bag-quest-seal: var(--color-quest);
+    --color-bag-quest-seal-ready: color-mix(in srgb, var(--color-quest) 55%, #fff);
+    --color-quest-tracker-bag-hover: var(--color-quest);
+    /* Fine-grade material treatment for every owned-stack grid (components.css
+       .bag-item.bag-fine / .bank-item.bag-fine / .bi-fine-seal, painted by
+       bags_window.ts, bank_window.ts, and guild_bank_window.ts as a class,
+       never an inline color). Grade class, not a rarity tier and not quest
+       purpose: cool refined teal-silver rim + soft wash + crafting seal so
+       fine ores/logs/herbs never read as plain white reagents. Distinct from
+       --color-quest gold and from green/blue/purple quality borders. Shape is
+       primary, tint is redundant (fairness). Always-on, no --fx-* gate. */
+    --color-bag-fine: #6ec8d4;
+    --color-bag-fine-rim: var(--color-bag-fine);
+    --color-bag-fine-wash: color-mix(in srgb, var(--color-bag-fine) 18%, transparent);
+    --color-bag-fine-seal: var(--color-bag-fine);
+
+    /* Player item lock (issue 3042, components.css .bi-lock-seal, painted by
+       bags_window.ts / bank_window.ts / guild_bank_window.ts as a class, never
+       an inline color). A player-toggled safety mark, orthogonal to the
+       per-copy glyphs above (a locked copy can also be masterwork/enchanted/
+       signed/bound), so it paints in its OWN bottom-left corner rather than
+       competing for the top-left glyph slot. Warm amber, distinct from every
+       other bag-grid tint (enchanted green, signed/quest gold, bound steel-
+       blue, fine teal). Shape (padlock) is primary, tint is redundant
+       (fairness). */
+    --color-bag-lock-seal: #e0a24a;
+
+    /* Empty paperdoll slot greys (char_window.ts uses these so the painter carries
+       no raw hex): the muted "Empty" label and the dimmed placeholder-icon border.
+       Exact pre-existing values. */
+    --color-slot-empty-text: #666;
+    --color-slot-empty-border: #444;
+
+    /* delve minimap / world-map schematic (resolved by delve_map_painter.ts via
+       getComputedStyle: a 2D canvas context cannot read a CSS var directly) */
+    --color-delve-room: #0e0c0a;
+    --color-delve-mob: #e74c3c;
+    --color-delve-mob-aggro: #ff8800;
+    --color-delve-party-dead: #9a9a9a;
+    --color-delve-label: #ffe9a0;
+    --color-delve-outline: #000;
+
+    /* overworld world-map window (resolved by map_window_painter.ts via
+       getComputedStyle: a 2D canvas context cannot read a CSS var directly).
+       Exact pre-existing values from the inline updateMapWindow/drawMapDetail. */
+    /* The zone map's off-plate fill. Matches the deep end of the terrain
+       painter's single sea ramp (map_terrain.ts SEA_DEEP_*), so a plate edge
+       leaves no seam against it. */
+    --color-map-ocean: #1a3a64;
+    --color-map-label: #ffe9a0;
+    --color-map-outline: #000;
+    --color-map-portal-dot: #c084ff;
+    --color-map-portal-label: #e0c0ff;
+    --color-map-ping: #ffd76a;
+    --color-map-npc-quest: #ffd100;
+    /* repeatable turn-in glyph: the rare-item blue (src/ui/icons.ts rare),
+       the classic-fidelity anchor for the blue "!" */
+    --color-map-npc-quest-repeat: #0070dd;
+    /* active-quest objective areas: the classic translucent blue quest-POI blob */
+    --color-map-quest-area-fill: rgba(72, 132, 232, 0.22);
+    --color-map-quest-area-stroke: rgba(120, 170, 255, 0.55);
+    /* the numbered quest badge on each area (gold circle, dark numeral) */
+    --color-map-quest-badge-fill: #ffd100;
+    --color-map-quest-badge-text: #3a2b00;
+    --color-map-player: #fff;
+    --color-map-ally-friend: #4ade80;
+    --color-map-ally-guild: #60a5fa;
+    /* party member dots (issue 2652): class-colored when alive; this token
+       replaces the class color for a dead member, matching
+       --color-minimap-party-dead below. */
+    --color-map-party-dead: #9a9a9a;
+    --color-map-rock: #8c8b86;
+    --color-map-tree: #2f6b34;
+    --color-map-oak: #4f8c3a;
+    --color-map-building-outline: #1a140a;
+    --color-map-building-armoury: #315fa8;
+    --color-map-building-chapel: #9b9080;
+    --color-map-building-inn: #8a6233;
+    --color-map-building-house: #7a5630;
+    --color-map-castle-wall: #9b9080;
+    --color-map-castle-tower: #b3a894;
+    --color-map-castle-court: rgba(120, 150, 96, 0.35);
+    --color-map-well: #5a7fa8;
+    --color-map-stall: #b07a3a;
+    --color-map-tent: #9a8a5a;
+    --color-map-mine: #6a5a4a;
+    --color-map-graveyard: #8a929c;
+    --color-map-mudhut: #7a6a4a;
+    --color-map-campfire: #ff9a3c;
+    /* Zone-map ready nodes follow the painted resources themselves: ore copper,
+       wood amber, herb leaf-green. Every cooldown fallback shares the same
+       neutral gray as the minimap; the cached paintings receive the matching
+       grayscale treatment before paint. Locked references the minimap rust
+       token so both surfaces agree structurally (retune one, both follow).
+       Glow is a soft ready halo (rgba) under the icon. */
+    --color-map-gather-ore-ready: #e8a44a;
+    --color-map-gather-ore-cooldown: #90989a;
+    --color-map-gather-ore-glow: rgba(232, 164, 74, 0.32);
+    --color-map-gather-wood-ready: #e0a142;
+    --color-map-gather-wood-cooldown: #90989a;
+    --color-map-gather-wood-glow: rgba(224, 161, 66, 0.32);
+    --color-map-gather-herb-ready: #69cf72;
+    --color-map-gather-herb-cooldown: #90989a;
+    --color-map-gather-herb-glow: rgba(105, 207, 114, 0.32);
+    --color-map-gather-locked: var(--color-minimap-node-locked);
+    /* Cached map-marker raster treatments. The shared Hud cache resolves these
+       at construction, re-samples them on theme and forced-colors signals, and
+       rebuilds only when a value changed. Keylines, cooldown rings, locks,
+       ranks, and reward-state badges stay outside every painter redraw. */
+    --color-map-marker-keyline: #f5dfad;
+    --color-map-marker-cooldown-arc-dark: #24292a;
+    --color-map-marker-cooldown-arc-light: #c8cdcc;
+    --color-map-marker-lock-dark: #24170f;
+    --color-map-marker-lock-bronze: #d39a45;
+    --color-map-marker-lock-highlight: #f2c46d;
+    --color-map-marker-semantic-dark: #171a1d;
+    --color-map-marker-semantic-bronze: #c28a42;
+    --color-map-marker-semantic-silver: #d7dce1;
+    --color-map-marker-semantic-gold: #f2c357;
+    --color-map-marker-semantic-cyan: #70d8ff;
+    --color-map-marker-semantic-jammed: #e56d45;
+    --color-map-marker-semantic-opened: #d8dddc;
+    --color-map-marker-neutral-fallback: #9ba1a2;
+    /* continent overview: the open water the world_overview plate is letterboxed
+       into (resolved by continent_map_painter.ts). Its own token rather than
+       --color-map-ocean above, because the plate is a tall portrait crop of the
+       world bounds and so leaves a wide band of flat fill down both sides of the
+       square map canvas: that band has to read as the SAME sea the plate paints,
+       not as the per-zone map's dark off-map backdrop. Sampled from the plate's
+       deep-water margin; re-sample it whenever the art is swapped. */
+    --color-map-continent-ocean: #0a4d7b;
+    /* continent overview letterbox: open water beside the plate, deepening toward
+       the window edge. The flat ocean fill alone met the plate's painted sea at a
+       visible seam, so the painter grades it with this darkening (clear where it
+       meets the plate, full at the window edge) and seats the plate on it with the
+       shadow below. Surround treatment, never information. */
+    --color-map-continent-backdrop-dim: rgba(3, 26, 46, 0.85);
+    --color-map-continent-plate-shadow: rgba(0, 0, 0, 0.55);
+    /* continent overview: the zone highlights (resolved by
+       continent_map_painter.ts). No borders: each is a WASH the painter masks to
+       the painted land of the world_overview plate and fades out toward the
+       zone's own bounds, so the alpha here is what decides how strong it reads
+       (the mask contributes coverage only). The hovered wash sits over the
+       quieter permanent one on the zone the player is standing in, whose name is
+       drawn in the current-zone label color. */
+    --color-map-region-hover-fill: rgba(255, 233, 160, 0.36);
+    --color-map-region-current-fill: rgba(255, 209, 0, 0.18);
+    --color-map-region-current-label: #ffd100;
+
+    /* overworld minimap markers (resolved by minimap_painter.ts via getComputedStyle:
+       a 2D canvas context cannot read a CSS var directly). Exact pre-existing values
+       from the inline updateMinimap overworld branch. */
+    --color-minimap-ally-friend: #4ade80;
+    --color-minimap-ally-guild: #60a5fa;
+    --color-minimap-npc-quest: #ffd100;
+    /* repeatable turn-in glyph: the rare-item blue, matching the map token
+       (the two surfaces keep separate token blocks deliberately) */
+    --color-minimap-npc-quest-repeat: #0070dd;
+    --color-minimap-portal: #c084ff;
+    --color-minimap-object-loot: #ffe97a;
+    --color-minimap-mob-aggro: #ff8800;
+    --color-minimap-mob: #e74c3c;
+    --color-minimap-mob-loot: #ffd100;
+    --color-minimap-corpse: #bfe6ff;
+    --color-minimap-party-dead: #9a9a9a;
+    --color-minimap-party-pip: #ffffffcc;
+    --color-minimap-player: #fff;
+    --color-minimap-outline: #000;
+    --color-minimap-gather-ready: #3ef07a;
+    --color-minimap-gather-cooldown: #90989a;
+    --color-minimap-station: #d98e4a;
+    /* Tool-tier locked gather node (Professions 2.0): a dark rust
+       clearly apart from the ready green, neutral cooldown gray, and the
+       bright mob red, so the lock reads at minimap marker size. */
+    --color-minimap-node-locked: #8a4a3a;
+
+    /* Thornhollow Fields M-map chrome (resolved by battleground_map_painter.ts via
+       getComputedStyle, same one-pass resolve as the minimap tokens above). The
+       carry ring shares its orange with the scoreboard's .bg-fstate.carried so the
+       two surfaces can never disagree about the carried-flag color. */
+    --color-bg-carry-ring: #ffb03c;
+    --color-bg-field-edge: #262c38;
+    --color-bg-mid-line: #00000026;
+    --color-bg-map-ink: #00000090;
+
+    /* Talents window: tree arrows + tooltip accents (talents_window.ts references
+       these via var() so the painter carries no raw hex). Exact pre-existing values. */
+    --color-talent-arrow: #f5c843;
+    --color-talent-arrow-dim: #5a4a22;
+    --color-talent-opt-dim: #aaa;
+    --color-talent-hint: #8aa;
+    --color-talent-req: #caa;
+    --color-talent-dormant: #e0635a;
+
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+
+    --radius-sm: 4px;
+    --radius-md: 8px;
+
+    --transition-speed: 0.25s;
+    --transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Custom scrollbar tokens */
+    --scrollbar-thumb: #5c4722;
+    --scrollbar-track: rgba(10, 10, 15, 0.7);
+    --scrollbar-thumb-hover: #7c6233;
+    --scrollbar-border: #7c6233;
+    --app-vw: 100vw;
+    --app-vh: 100vh;
+    /* #bags' own reservation half-width + gap (components.css), hoisted here so
+       any OTHER centred window that must not slide under the bottom-right bags
+       column (the vendor Goods window's width cap is the first consumer) reads
+       the SAME numbers instead of re-deriving a copy that can drift out of sync. */
+    --bags-bar-half: 306px;
+    --bags-gap: 12px;
+    /* effects tier (wired by src/ui/ui_effects_applier.ts from the pure
+       src/game/ui_effects_profile.ts resolver): data-fx-level (low | medium | high
+       | ultra) is stamped on the document root, and these three tokens are written
+       inline from the resolved profile. These :root values are the pre-boot / no-JS
+       fallback (full Ultra behaviour, so calc/var reads below resolve to today's
+       look exactly); the applier overrides them on every settings / reduced-motion
+       change. The effect buckets CONSUME them: --fx-shadow scales decorative glow
+       blur (0 at low), --fx-ambient-anim is the ambient-loop animation-play-state,
+       --motion-scale multiplies ambient durations (near-zero 0.001, never 0, under
+       reduced-motion so animationend still fires). The data-fx-level ATTRIBUTE
+       additionally drops glass whole-rule at the low tier (below). */
+    --fx-shadow: 1;
+    --fx-ambient-anim: running;
+    --motion-scale: 1;
+    /* Shared painted-art shadows. The color is theme-addressable and the blur
+       follows the graphics shadow tier so small decorative raster art stays
+       legible without forcing full-cost shadows on the low preset. */
+    --color-art-shadow: rgb(0 0 0 / 75%);
+    --art-shadow-sm: 0 1px calc(2px * var(--fx-shadow, 1)) var(--color-art-shadow);
+    --art-shadow-lg: 0 2px calc(5px * var(--fx-shadow, 1)) var(--color-art-shadow);
+    /* Shared with src/game/cursors.ts, keep hotspots in sync.
+       --cursor-arrow = default; --cursor-point = interactive/hover (gauntlet finger). */
+    --cursor-arrow: url("/ui/cursors/arrow.png") 7 2, default;
+    --cursor-point: url("/ui/cursors/gauntlet.png") 6 4, pointer;
+    --cursor-grab: url("/ui/cursors/hand-grab.png") 11 16, grabbing;
+    /* Arrange-mode manipulation cursors, matching the painted set's gold
+       blade on a near-black rim so editing never flips between the game
+       cursor and the OS one (PR #3284 review play-testing). Inline SVG (no
+       new raster assets); every declaration keeps its OS keyword fallback
+       for engines without SVG cursor support. Consumers: the unlocked frame
+       bodies (hud.css) and the inline border writes (cursorForFrameEdge in
+       src/ui/target_frame_pos.ts). */
+    --cursor-move:
+      url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%20viewBox='0%200%2032%2032'%3E%3Cpath%20d='M16%202%2021%209H18V14H23V11L30%2016%2023%2021V18H18V23H21L16%2030%2011%2023H14V18H9V21L2%2016%209%2011V14H14V9H11Z'%20fill='%23e3b04b'%20stroke='%23241a06'%20stroke-width='2'%20stroke-linejoin='round'/%3E%3C/svg%3E")
+      16 16,
+      move;
+    --cursor-resize-ns:
+      url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%20viewBox='0%200%2032%2032'%3E%3Cpath%20d='M16%202%2022%2010H19V22H22L16%2030%2010%2022H13V10H10Z'%20fill='%23e3b04b'%20stroke='%23241a06'%20stroke-width='2'%20stroke-linejoin='round'/%3E%3C/svg%3E")
+      16 16,
+      ns-resize;
+    --cursor-resize-ew:
+      url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%20viewBox='0%200%2032%2032'%3E%3Cpath%20d='M2%2016%2010%2010V13H22V10L30%2016%2022%2022V19H10V22Z'%20fill='%23e3b04b'%20stroke='%23241a06'%20stroke-width='2'%20stroke-linejoin='round'/%3E%3C/svg%3E")
+      16 16,
+      ew-resize;
+    --cursor-resize-nwse:
+      url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%20viewBox='0%200%2032%2032'%3E%3Cpath%20d='M4%204H13L9.9%207.1%2024.9%2022.1%2028%2019V28H19L22.1%2024.9%207.1%209.9%204%2013Z'%20fill='%23e3b04b'%20stroke='%23241a06'%20stroke-width='2'%20stroke-linejoin='round'/%3E%3C/svg%3E")
+      16 16,
+      nwse-resize;
+    --cursor-resize-nesw:
+      url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='32'%20height='32'%20viewBox='0%200%2032%2032'%3E%3Cpath%20d='M28%204H19L22.1%207.1%207.1%2022.1%204%2019V28H13L9.9%2024.9%2024.9%209.9%2028%2013Z'%20fill='%23e3b04b'%20stroke='%23241a06'%20stroke-width='2'%20stroke-linejoin='round'/%3E%3C/svg%3E")
+      16 16,
+      nesw-resize;
+    /* Back-compat aliases */
+    --cursor-hand: var(--cursor-arrow);
+    --cursor-sword: var(--cursor-point);
+    --cursor-shield: var(--cursor-point);
+
+    /* Badge halo (the static "stand out" glow), shared by the holder and
+       contributor ladders. The hue is supplied per tier by the nameplate/inspect
+       painter via --holder-glow / --dev-glow; these two tunables set the blur
+       strength only, frozen from in-game nameplate screenshots: subtle for the
+       ordinary rungs, moderately stronger for the apex rungs (holder band IV
+       regalia; the significant-contributor dev tiers). Cosmetic and static (no
+       per-frame cost). */
+    --holder-halo: 2.5px;
+    --holder-halo-strong: 4px;
+
+    /* DESIGN.md section 4.3's gold ramp (adopted 2026-07-15), the exact classic-
+       preset hex values. Purely additive: no existing --gold/--border consumer is
+       retuned. Two readers today: the #options-menu.perf-wide gilded ornament
+       (below, and src/ui/perf_ornament_svg.ts) and the minimap disc's gilded
+       ring (src/ui/minimap_gilded_ornament.ts); a future repo-wide DESIGN.md
+       Phase 1 token pass can reuse these names verbatim. */
+    --color-gold-900: #4a2f10;
+    --color-gold-800: #6b4517;
+    --color-gold-700: #926321;
+    --color-gold-600: #bc8732;
+    --color-gold-500: #d8a645;
+    --color-gold-400: #f0c86d;
+    --color-gold-300: #ffe5a3;
+
+    /* Performance Overlay gilded-ornament shape defaults. perf_ornament_svg.ts
+       overwrites these with the real generated mask-image/gradient values once at
+       boot (applyPerfOrnamentVars, called next to hydrateIcons() in main.ts); an
+       unset custom property makes mask-image compute to `none`, which would show
+       the pseudo-element's `background` as an opaque rectangle over the title/edge
+       instead of just doing nothing, so every one of these needs a real (if inert)
+       fallback rather than being left undefined. */
+    --perf-ornament-corner: linear-gradient(transparent, transparent);
+    --perf-ornament-mid-edge: linear-gradient(transparent, transparent);
+    --perf-ornament-edge-top: linear-gradient(transparent, transparent);
+    --perf-ornament-edge-bottom: linear-gradient(transparent, transparent);
+    --perf-ornament-edge-left: linear-gradient(transparent, transparent);
+    --perf-ornament-edge-right: linear-gradient(transparent, transparent);
+    --perf-ornament-gilt: var(--color-gold-700);
+    /* The Fancy Gold theme's gilded window frame (desktop .window.panel
+       under the .fancy-gold-ui root class; components.css):
+       applyWindowOrnamentVars overwrites this with the
+       12-layer tinted composite at boot. Same fallback contract as the
+       --perf-ornament-* masks above: consumed inside a `background-image`
+       list, so it needs a real (invisible) image value before boot, not an
+       unset property that would invalidate the whole declaration. */
+    --window-ornament-frame: linear-gradient(transparent, transparent);
+    /* Minimap disc's gilded ring (hud.css "minimap" section /
+       minimap_gilded_ornament.ts). Same fallback contract as
+       --perf-ornament-gilt above: consumed as a whole `background`, so it
+       needs a real paintable value before applyMinimapOrnamentVars() runs
+       at boot. */
+    --minimap-gilt: var(--color-gold-700);
+    /* The speckle field is a `background-image`, so an unset value must
+       compute to `none` (no image), not an invalid/empty string, the same
+       reasoning as the --perf-ornament-* mask fallbacks above. */
+    --minimap-speckle: none;
+    /* Bank capacity meter's gilded near-full treatment (Bank Storage phase 08),
+       the third reader of the section 4.3 gold ramp after --perf-ornament-gilt /
+       --minimap-gilt above. Flat colors only (no mask, no animation, no
+       per-frame cost): the track border/glow anchor stays on the same gold-700
+       step the other two gilt aliases use; the general fill steps up from its
+       resting --gold-dim to gold-400 and the meter text warms to gold-300. The
+       glow is a static box-shadow color (components.css "bank footer" section). */
+    --bank-meter-gilt: var(--color-gold-700);
+    --bank-meter-gilt-fill: var(--color-gold-400);
+    --bank-meter-gilt-text: var(--color-gold-300);
+    --bank-meter-gilt-glow: color-mix(in srgb, var(--color-gold-600) 55%, transparent);
+  }
+
+  /* Glass is dropped WHOLE-RULE at the low effect tier: a universal removal
+     mirroring the engine-tier body.fx-reduced / body.fx-minimal cut (the
+     backdrop-filter rules ship a -webkit- twin + a solid translucent fallback, so
+     dropping the blur leaves a clean opaque panel). It is !important so it crosses
+     cascade layers and wins over the opt-in frosted panels; a low-tier player then
+     computes backdrop-filter:none, so the per-pixel composite over the WebGL canvas
+     never runs. Ultra/high/medium are untouched (data-fx-level only matches "low").
+     The SAME removal also fires whenever the touch interface is up (body.mobile-touch),
+     independent of data-fx-level: unlike the decorative --fx-shadow glows, backdrop-filter
+     is a compositor cost, not a 3D-throughput one, so it is not something a device's chosen
+     3D quality tier predicts. The mobile-touch chrome (the always-visible button ring,
+     action ring and extra-controls modal) sits directly over the live-updating WebGL canvas,
+     so blurring it every frame is disproportionately expensive on phone-class compositors at
+     ANY graphics preset. A touch player's 3D preset only auto-floors to low on their FIRST
+     boot (src/render/gfx.ts resolveDefaultGraphicsPreset) and is never re-detected once an
+     explicit choice is recorded, so a returning player, or one who raised their preset before
+     ever seeing this glass chrome, would otherwise keep paying this cost indefinitely. This
+     touches only the glass BLUR (the chrome keeps its translucent background/border look);
+     it never lowers the 3D preset itself, so terrain/shadow/character quality stays exactly
+     what the player chose. */
+  :root[data-fx-level="low"] *,
+  :root[data-fx-level="low"] *::before,
+  :root[data-fx-level="low"] *::after,
+  body.mobile-touch *,
+  body.mobile-touch *::before,
+  body.mobile-touch *::after {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /* Performance Overlay's gilded ornament is purely cosmetic (a mask-image
+     finish, never actionable information), so it is shed at the low effect tier
+     the same way glass is dropped above: one rule resets every --perf-ornament-*
+     custom property back to its no-op fallback, with no per-selector override
+     needed. --perf-ornament-gilt keeps a flat-color fallback (it is consumed as a
+     whole `background`, not a mask, so it must resolve to something paintable).
+     !important: applyPerfOrnamentVars() (perf_ornament_svg.ts) writes these same
+     properties as a plain (non-important) INLINE style on documentElement, which
+     otherwise always beats a normal-priority stylesheet rule regardless of
+     selector specificity; only an important author declaration outranks it. */
+  :root[data-fx-level="low"] {
+    --perf-ornament-corner: linear-gradient(transparent, transparent) !important;
+    --perf-ornament-mid-edge: linear-gradient(transparent, transparent) !important;
+    --perf-ornament-edge-top: linear-gradient(transparent, transparent) !important;
+    --perf-ornament-edge-bottom: linear-gradient(transparent, transparent) !important;
+    --perf-ornament-edge-left: linear-gradient(transparent, transparent) !important;
+    --perf-ornament-edge-right: linear-gradient(transparent, transparent) !important;
+    --perf-ornament-gilt: var(--color-gold-700) !important;
+    /* The Fancy Gold window frame is cosmetic filigree too, shed the same
+       way (the inline value applyWindowOrnamentVars sets is non-important,
+       so this stylesheet !important wins on the low tier). */
+    --window-ornament-frame: linear-gradient(transparent, transparent) !important;
+    /* The minimap ring is purely cosmetic too (never actionable information),
+       so it is shed at the low effect tier the same way. */
+    --minimap-gilt: var(--color-gold-700) !important;
+    --minimap-speckle: none !important;
+    /* The bank meter's gilt aliases are deliberately NOT shed: they are flat
+       colors with no per-frame or mask cost, and the near-full warmth is the
+       same at every tier (cosmetic emphasis with no tier knob, per the
+       graphics-fairness rule). Pinned here at their base values so the low
+       tier provably renders the identical treatment, the way the two gilt
+       aliases above stay paintable. */
+    --bank-meter-gilt: var(--color-gold-700) !important;
+    --bank-meter-gilt-fill: var(--color-gold-400) !important;
+    --bank-meter-gilt-text: var(--color-gold-300) !important;
+    --bank-meter-gilt-glow: color-mix(in srgb, var(--color-gold-600) 55%, transparent) !important;
+  }
+}

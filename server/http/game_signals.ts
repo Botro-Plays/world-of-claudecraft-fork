@@ -1,0 +1,407 @@
+// The game-state counter seam: the throughput counters that live on the /metrics
+// exporter (woc_ws_messages_total, woc_ws_messages_dropped_total,
+// woc_ws_rate_kicks_total, woc_input_frames_missed_total,
+// woc_chat_messages_total, woc_characters_created_total,
+// woc_guild_bank_incidents_total, woc_rift_forge_refused_total,
+// woc_vault_ledger_incidents_total) reach the exporter
+// through this one process-wide slot instead of each emission site (game.ts
+// message dispatch and inbound gate/lanes, chat routing, characters.ts create
+// path) threading a sink through its constructors. main.ts
+// installs the real implementation (registerGameStateMetrics(...), so every
+// counter shares the exporter's one registry) once at boot, exactly like
+// setAttackSignalSink; before that, and in any test that never wires one, the slot
+// holds the no-op and every emission is dropped.
+//
+// This is the counter half of the game-state metrics. The gauges (players online,
+// tick rate, ...) are read live at scrape time and need no slot: they pull from a
+// GameStateSource the exporter registration captures. See server/http/game_metrics.ts.
+//
+// CARDINALITY IS BOUNDED BY DESIGN, same contract as server/http/metrics.ts: the
+// only label values here are the ws-message direction (a fixed two), the
+// inbound drop cause (the closed WS_DROP_CAUSES set), the guild-bank
+// incident kind (the fixed nine-value GUILD_BANK_INCIDENTS set), the vault-ledger
+// incident kind (the fixed VAULT_LEDGER_INCIDENTS set), the copper-flow
+// source, the harvest band and node tier (the fixed sets in
+// server/economy_telemetry.ts), and the fishing band and rod recipe id (the
+// fixed sets in server/fishing_telemetry.ts, whose zone label reuses the same
+// harvest band vocabulary). Nothing per-player and nothing per-GUILD (account
+// id, character id, guild id, name, ip) is ever passed as a label.
+
+import type { BgCompositionLabel, BgEndCauseLabel } from '../battleground_telemetry';
+import type { CopperFlowSource, HarvestBand, HarvestTier } from '../economy_telemetry';
+import type { FishingBandLabel } from '../fishing_telemetry';
+
+/** The two directions a ws frame is counted under: client-to-server or server-to-client. */
+export type WsMessageDirection = 'in' | 'out';
+
+// 'pending' is a refused same-account overlap (a consume already in flight);
+// 'dropped' is an allowed consume whose session went stale before broadcast,
+// so a spent quota unit reached nobody. Labels sum to admission attempts.
+export const GENERAL_CHAT_QUOTA_OUTCOMES = [
+  'allowed',
+  'denied',
+  'pending',
+  'busy',
+  'error',
+  'dropped',
+] as const;
+export type GeneralChatQuotaOutcome = (typeof GENERAL_CHAT_QUOTA_OUTCOMES)[number];
+export const GENERAL_CHAT_QUOTA_DB_OUTCOMES = [
+  'allowed',
+  'denied',
+  'unlimited',
+  'acquire_timeout',
+  'query_timeout',
+  'error',
+] as const;
+export type GeneralChatQuotaDbOutcome = (typeof GENERAL_CHAT_QUOTA_DB_OUTCOMES)[number];
+
+/**
+ * The closed set of causes an inbound ws frame can be dropped for: the two
+ * pre-parse gate causes (server/msg_rate_limit.ts), the three post-parse
+ * lanes (server/msg_lanes.ts), the list-read guard on the ignore/block
+ * readouts (server/list_read_guard.ts), the personal-bank/materials-vault
+ * retained-row guard (server/bank_vault_ledger_guard.ts), the guild-bank op guard
+ * (server/guild_bank_op_guard.ts, each allowed op is a keep-forever ledger
+ * write), and the cosmetic-set guard on the two Book of Deeds pickers
+ * (server/cosmetic_op_guard.ts, each allowed set re-wires a full identity
+ * record to every in-range viewer), and the guild bank HISTORY read guard
+ * (server/guild_bank_log_read_guard.ts, the paged, filtered history reads,
+ * metered apart from the ops so a click storm through the chips can never
+ * drain a member's deposits). This closed set IS the cause label's whole
+ * vocabulary; it never grows per-player or per-message.
+ */
+export const WS_DROP_CAUSES = [
+  'rate',
+  'bytes',
+  'lane_movement',
+  'lane_command',
+  'lane_chat',
+  'list_read',
+  'bank_vault',
+  'guild_bank',
+  'cosmetic',
+  'lane_name_screen',
+  'guild_bank_log',
+] as const;
+
+/** One of the fixed inbound drop causes (the closed set above). */
+export type WsDropCause = (typeof WS_DROP_CAUSES)[number];
+
+/**
+ * The fixed nine guild-bank incident kinds. Every one of these is an abnormal
+ * event on a DUPE-SENSITIVE path (the escrow save, the lease fence-out revert,
+ * the reconcile, the durable-truth read, the keep-forever ledger) that
+ * otherwise reports only through console.error / console.warn, i.e. it is
+ * invisible to production alerting:
+ * - `escrow_save_failed`: a save carrying at least one guild book FAILED, so
+ *   the character half AND the book half rolled back and nothing this session
+ *   did since its last save is durable. Two ways in: the db layer threw (a
+ *   transport fault), or the escrow merge refused a book half and that refusal
+ *   was TERMINAL (see escrow_quarantined). The live sim is ahead of durable
+ *   truth until a later save or a reconcile lands.
+ *   Deliberately NOT counted for a refusal that will be RETRIED: that is
+ *   ordinary concurrency between two officers of one guild, it happens on a
+ *   healthy realm, and folding it in here made `> 0` alerting useless. It is
+ *   `escrow_refused_retry` below instead. This counter being non-zero means
+ *   something actually went wrong.
+ * - `escrow_refused_retry`: the escrow merge refused a book half because
+ *   another session still holds unflushed work for that guild, so the save is
+ *   retried once their commit makes the replay applicable (which the refusal
+ *   immediately flushes for). NORMAL CONCURRENCY, not a failure: nothing was
+ *   consumed, the marks and the log are exactly as they were, and the ordinary
+ *   case clears in a round trip. Counted per GUILD (the unit the retry applies
+ *   to), like `reconcile`. Watch its RATE, not its presence: a sustained climb
+ *   means officers are contending faster than the flush resolves, and the
+ *   terminal arm it precedes is `escrow_quarantined`.
+ * - `save_fenced_out`: that same save matched no row (a same-account takeover
+ *   rotated the character lease), so the carried books need reconciling.
+ * - `escrow_quarantined`: a refusal ran out of retries, or nothing could ever
+ *   make the missing value durable, so the SESSION was abandoned: quarantined
+ *   (it may never persist again), reverted, and disconnected. The terminal arm
+ *   of the escrow design and the one worth paging on. Counted per SESSION; the
+ *   per-guild reverts it triggers count as `reconcile` below.
+ * - `reconcile`: revertOwnGuildBookOps undid one guild's unflushed log, i.e. a
+ *   session that can never commit again held book ops for it (a fence-out, an
+ *   exhausted leave flush, a teardown, or the quarantine above). Counted per
+ *   GUILD, the unit the remedy applies to.
+ * - `book_unloaded`: a book remains unloaded after an oversized / malformed
+ *   durable read, or after the bounded lazy-load recovery budget is exhausted.
+ *   Lazy transient attempts do NOT count. That guild's ops stay inert and its
+ *   disband stays fail-closed until a later lazy trigger succeeds or the
+ *   process restarts, so every sample represents an operator-visible outage.
+ * - `ledger_write_failed`: a bank_ledger insert rejected, so the audit trail
+ *   (scripts/bank_audit.mjs) has a hole the replay cannot see.
+ * - `counterparty_orphan`: a guild bank op moved the acting character's purse
+ *   or bags while the guild book did not move at all
+ *   (server/guild_bank_counterparty.ts). Value crossed the purse/book boundary
+ *   in ONE direction, which is the dupe signature the counterparty ledger
+ *   columns exist to make visible, and no legitimate op can produce it. Paged
+ *   on alongside `escrow_quarantined`: a single sample is a defect, not a
+ *   transient.
+ * - `counterparty_unstamped`: a guild bank_ledger row was written with NO
+ *   counterparty side at all. Its NULL columns are indistinguishable from a
+ *   pre-feature row, so the audit will skip that op forever: the convention
+ *   that "NULL means written before the columns existed" is only a convention,
+ *   and this is what makes a live write site breaking it visible instead of
+ *   silent. A single sample is a defect.
+ * This closed set IS the kind label's whole vocabulary; it never grows
+ * per-guild or per-player (guild id is NEVER a label; the loud log line beside
+ * each increment carries the identifying detail).
+ */
+export const GUILD_BANK_INCIDENTS = [
+  'escrow_save_failed',
+  'escrow_refused_retry',
+  'save_fenced_out',
+  'escrow_quarantined',
+  'reconcile',
+  'book_unloaded',
+  'ledger_write_failed',
+  'counterparty_orphan',
+  'counterparty_unstamped',
+  // The officer-visible activity log's read failed (a cold cache whose query
+  // threw or timed out). Its own kind because the refusal frame the player gets
+  // is byte-identical to "you are not an officer", so without this a total read
+  // outage is indistinguishable from ordinary refusals at the wire.
+  'log_read_failed',
+  // Legacy cardinality retained for mixed-release dashboards. Current paid
+  // creation commits the guild and fee in one transaction, so a new sample is
+  // a single-sample mixed-release or invariant defect and remains page-worthy.
+  'create_fee_unpaid',
+  // The dispatch-time unsettled gate (server/guild_bank_settle_gate.ts)
+  // refused a withdraw, gold withdraw, or rung purchase that would have
+  // consumed another session's not-yet-durable work, and flushed that
+  // session instead. Ordinary two-officer concurrency, like
+  // escrow_refused_retry before it: watch its RATE, never its presence.
+  'unsettled_refused',
+] as const;
+
+/** One of the fixed twelve guild-bank incident kinds. */
+export type GuildBankIncident = (typeof GUILD_BANK_INCIDENTS)[number];
+
+/** The marketplace escrow-queue outcomes (the per-character save FIFO's
+ *  custody entries): one counter with a fixed kind label, the guild-bank
+ *  incident idiom. 'started' is the throughput baseline the refusal kinds
+ *  and the flush failure are read against. 'realm_refused' is the
+ *  realm-global gate at cap (the write-path rider's bound; the per-character
+ *  kinds cannot see realm-wide saturation). 'settled' is the terminal
+ *  sibling: a held listing sequence released its slot, whatever the
+ *  outcome. NOTE the wedge arithmetic: 'started' is a strict SUBSET of the
+ *  sequences that settle (a deadline, depth-passed flush failure, or
+ *  books-dirty refusal settles without starting), so started-minus-settled
+ *  trends negative; (started + flush_failed + books_dirty_refused +
+ *  deadline_refused) - settled APPROXIMATES in-flight (a deadline-cancelled
+ *  sequence whose flush then rejects books two entered kinds, drifting the
+ *  difference by one per occurrence), and the gate's own stats on the ops
+ *  readout are the instantaneous truth.
+ *  'grant_busy' is the delivered-save twin's head-of-line park (the
+ *  bounded grant entry found the buyer's FIFO wedged past the deadline and
+ *  the delivery row parked): the one failure mode the FIFO close
+ *  introduced, counted so it is never silent.
+ *  'permit_refused' is the background-gate starvation arm inside the FIFO
+ *  job (the bounded majorBackgroundDbGate wait returned no permit): realm
+ *  background-DB saturation seen from the escrow chain, counted because a
+ *  saturated gate is otherwise invisible next to its counted siblings. */
+export const WOC_ESCROW_QUEUE_OUTCOMES = [
+  'started',
+  'deadline_refused',
+  'depth_refused',
+  'books_dirty_refused',
+  'flush_failed',
+  'realm_refused',
+  'settled',
+  'grant_busy',
+  'permit_refused',
+] as const;
+export type WocEscrowQueueOutcome = (typeof WOC_ESCROW_QUEUE_OUTCOMES)[number];
+
+/**
+ * The Materials Vault ledger incident kinds (Bank Storage Phase 2). Its own
+ * closed set rather than a member of GUILD_BANK_INCIDENTS above: the vault is
+ * a PERSONAL, per-character store with no guild, no escrow, and no book, so
+ * folding its rows into the guild series would make every guild-bank alert
+ * rule fire on an unrelated container and make the guild numbers unreadable.
+ * - `ledger_write_failed`: a bank_ledger insert for a container='vault' row
+ *   rejected, so the audit trail (scripts/bank_audit.mjs) has a hole its
+ *   replay cannot see: that character's vault will reconcile as a permanent
+ *   ledger_state_mismatch and a real investigation would come up clean.
+ * This closed set IS the kind label's whole vocabulary; it never grows
+ * per-player (character id is NEVER a label; the log line beside each
+ * increment carries the identifying detail).
+ */
+export const VAULT_LEDGER_INCIDENTS = ['ledger_write_failed'] as const;
+
+/** One of the fixed vault-ledger incident kinds. */
+export type VaultLedgerIncident = (typeof VAULT_LEDGER_INCIDENTS)[number];
+
+/**
+ * The game-state throughput emission hooks. Implementations must never
+ * throw: an observability write can never be allowed to break the message,
+ * chat, or character-create path it measures.
+ */
+export interface GameMetricsCounters {
+  /** One ws frame handled, in the given direction. */
+  wsMessage(direction: WsMessageDirection): void;
+  /** One inbound ws frame dropped by the gate, a lane, or the list-read guard. */
+  wsMessageDropped(cause: WsDropCause): void;
+  /** One session kicked by the inbound-flood abuse window (gate or lane driven). */
+  wsRateKick(): void;
+  /**
+   * A parsed input frame proved `missed` earlier input frames were sent and
+   * never processed (the seq gap on the ordered socket, R9): the
+   * input-frame-attributed share of the server's own drops. Client-attested:
+   * seqs are client-sent, so a hostile client can fabricate gaps (each
+   * observation capped by MSG_SEQ_GAP_SANITY); operators correlate the
+   * counter with the drop-cause series instead of reading it as proven
+   * server-side loss on its own (soak-packet-3.md carries the scrape guidance).
+   */
+  wsInputSeqGap(missed: number): void;
+  /**
+   * One Rift forge wire command refused while the gate is closed
+   * (server/rift_forge_gate.ts). The stock client never sends these, so a
+   * non-zero rate means a modified client is probing the closed forge; the
+   * counter is deliberately label-free (nothing per-player, per-account, or
+   * per-token) so a prober cannot drive cardinality.
+   */
+  riftForgeRefused(): void;
+  /** One player chat message routed to other players (any channel). */
+  chatMessage(): void;
+  /** One configured General quota decision, under a fixed six-value label. */
+  generalChatQuota(outcome: GeneralChatQuotaOutcome): void;
+  /** One dedicated quota database call and its end-to-end duration. */
+  generalChatQuotaDbCall(outcome: GeneralChatQuotaDbOutcome, durationSeconds: number): void;
+  /** One character successfully created. */
+  characterCreated(): void;
+  /** One database-wide bank-ledger hard-ceiling refusal. Label-free. */
+  bankLedgerGrowthLimitRefused(): void;
+  /**
+   * One guild-bank incident on a dupe-sensitive path, by kind (see
+   * GUILD_BANK_INCIDENTS). Always emitted BESIDE the existing loud log, never
+   * instead of it: the counter says how often, the log says which guild.
+   */
+  guildBankIncident(kind: GuildBankIncident): void;
+  /** One marketplace escrow-queue outcome (WOC_ESCROW_QUEUE_OUTCOMES): the
+   *  production readout for the listing FIFO coupling, since a refused or
+   *  slow queue is otherwise visible only as a throttled warn line. */
+  wocEscrowQueue(outcome: WocEscrowQueueOutcome): void;
+  /**
+   * One Materials Vault ledger incident, by kind (see VAULT_LEDGER_INCIDENTS).
+   * The vault-container sibling of guildBankIncident above, emitted BESIDE the
+   * existing loud log and never instead of it. The personal-bank container has
+   * no counter of its own yet (a recorded follow-up), so a hole in a personal
+   * bank's trail is still log-only.
+   */
+  vaultLedgerIncident(kind: VaultLedgerIncident): void;
+  /** One realm row-bucket breach (telemetry-only guard admission). */
+  bankVaultRealmRowBreach(): void;
+  /**
+   * `amount` copper (always positive) credited to the acting player during a
+   * command attributed to `source`. Sampled as the player's own copper delta
+   * across one command dispatch, so a credit that lands on a THIRD party (a
+   * party fair-split to a non-acting looter) or outside any command (a tick
+   * driven payout) is not booked here; see server/economy_telemetry.ts.
+   */
+  copperCredited(source: CopperFlowSource, amount: number): void;
+  /** `amount` copper (always positive) debited from the acting player, same sampling. */
+  copperSpent(source: CopperFlowSource, amount: number): void;
+  /** One granted node harvest, counted under its node's zone band (R3) and the
+   *  node's own tool tier (R31: a zone's tier-1 faucet and its tool-gated
+   *  tiers are opposite sides of the same question). */
+  harvest(band: HarvestBand, tier: HarvestTier): void;
+  /**
+   * One fishing cast started, counted under the water's zone and the effective
+   * band the sim resolved for it. The denominator every other fishing rate is
+   * read against, so it counts the CAST, not the session: a recast after a
+   * got-away is a second cast.
+   */
+  fishingCast(zone: HarvestBand, band: FishingBandLabel): void;
+  /**
+   * One landed catch. `koi` additionally books the rare-koi counter, so the koi
+   * series is a strict subset of the catch series and the R4 odds question is
+   * one division, never a subtraction across two independently sampled totals.
+   */
+  fishingCatch(zone: HarvestBand, band: FishingBandLabel, koi: boolean): void;
+  /**
+   * One catch that got away: the reel window closed unpressed, the session
+   * defensively timed out, or the landed catch found no bag room. All three
+   * spent the cast and yielded nothing, which is what the series measures.
+   */
+  fishingGotAway(zone: HarvestBand, band: FishingBandLabel): void;
+  /**
+   * One session ended by a pre-bite re-press (the anti-spam early reel).
+   * Counted apart from the got-aways on purpose: a got-away is the game
+   * costing the player, an early reel is self-inflicted, and this series is
+   * how to tell whether the spam fix burns legitimate anglers.
+   */
+  fishingEarlyReel(zone: HarvestBand, band: FishingBandLabel): void;
+  /** One cast whose single table draw resolved the empty (itemId: null) row. */
+  fishingEmptyHook(zone: HarvestBand, band: FishingBandLabel): void;
+  /**
+   * One rod recipe successfully trained, and therefore one training fee paid.
+   * A COUNT, not an amount: the fee is static content per recipe
+   * (rodFeeForRecipe), published beside the counter, so the copper is one
+   * multiplication and cannot drift from what the trainer actually charges.
+   */
+  rodFeePaid(recipeId: string): void;
+  /**
+   * One RESOLVED RATED Thornhollow Fields match, with the numbers BG_CAPS_TO_WIN
+   * is tuned against: how it ended, whether a premade was seated, how long the
+   * active phase ran, and the two final scores. Called ONCE per match (the sim
+   * writes one drained record per resolve, never one per fighter), and never for
+   * a /dev force-started unrated match, which is deliberately asymmetric.
+   *
+   * `durationSec` is elapsed ACTIVE seconds, so a match forfeited during form-up
+   * contributes a real zero rather than a negative or a countdown value.
+   */
+  battlegroundResolved(
+    cause: BgEndCauseLabel,
+    composition: BgCompositionLabel,
+    durationSec: number,
+    scoreCrimson: number,
+    scoreAzure: number,
+  ): void;
+}
+
+/** A sink that drops every signal; the slot default until boot wires the real one. */
+export const noopGameMetricsCounters: GameMetricsCounters = {
+  wsMessage() {},
+  wsMessageDropped() {},
+  wsRateKick() {},
+  wsInputSeqGap() {},
+  riftForgeRefused() {},
+  chatMessage() {},
+  generalChatQuota() {},
+  generalChatQuotaDbCall() {},
+  characterCreated() {},
+  bankLedgerGrowthLimitRefused() {},
+  guildBankIncident() {},
+  wocEscrowQueue() {},
+  vaultLedgerIncident() {},
+  bankVaultRealmRowBreach() {},
+  copperCredited() {},
+  copperSpent() {},
+  harvest() {},
+  fishingCast() {},
+  fishingCatch() {},
+  fishingGotAway() {},
+  fishingEarlyReel() {},
+  fishingEmptyHook() {},
+  rodFeePaid() {},
+  battlegroundResolved() {},
+};
+
+let activeCounters: GameMetricsCounters = noopGameMetricsCounters;
+
+/**
+ * Install the process-wide game-state counter sink. Called once at boot with the
+ * exporter-backed implementation; tests install a recording fake and restore
+ * noopGameMetricsCounters when done.
+ */
+export function setGameMetricsCounters(sink: GameMetricsCounters): void {
+  activeCounters = sink;
+}
+
+/** The current game-state counter sink. Read at emission time, never captured at import. */
+export function gameMetricsCounters(): GameMetricsCounters {
+  return activeCounters;
+}

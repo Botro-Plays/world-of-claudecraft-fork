@@ -1,0 +1,526 @@
+// Two-tier rate-limit middleware for the API request pipeline onion. Each policy
+// resolves in two ordered tiers:
+//   tier-1: the in-process sliding-window limiter (server/ratelimit.ts), the
+//           SAME per-realm memory buckets the legacy arms used, checked FIRST.
+//   tier-2: a pg-backed GLOBAL fixed-window counter (server/ratelimit_db.ts),
+//           shared across every realm process, checked ONLY when tier-1 allows.
+// On a rejection the adapter increments the rate_limit_hits_total attack-signal
+// counter (labeled by policy name and key class only) and throws HttpError(429,
+// 'rate_limit.exceeded', { retryAfterSeconds }, <draft-11 headers>); the withErrors
+// error boundary serializes it. The effective tier-1 behavior of every policy is bit-identical to
+// its single-tier predecessor (same limiter fn, same named limit, same window), so a single
+// process sees no change: tier-1 records first and the fixed window counts a
+// subset of the sliding window, so tier-2 can never reject when tier-1 allowed.
+//
+// DISCORD_POLICY stays UNMOUNTED (no route attaches it); it exists for the
+// client code-matcher wiring. PUBLIC_READ_POLICY is MOUNTED since the v0.20.0
+// third-slice merge: GET /api/maps/public (maps_routes.ts) and the GET
+// /api/assets/:file byte read (user_assets_routes.ts) attach it, sharing the
+// legacy tier-1 bucket and adding the tier-2 global backstop on the new path.
+
+import {
+  ASSET_UPLOAD_MAX_PER_MINUTE,
+  assetUploadRateLimited,
+  CARD_UPLOAD_MAX_PER_MINUTE,
+  CHARACTER_MUTATION_MAX_PER_MINUTE,
+  type CharacterMutationAction,
+  CLAUDIUM_CONFIRM_MAX_PER_MINUTE,
+  CLAUDIUM_PURCHASE_MAX_PER_MINUTE,
+  CLAUDIUM_QUOTE_MAX_PER_MINUTE,
+  CLAUDIUM_SPEND_MAX_PER_MINUTE,
+  type ClaudiumMutationAction,
+  cardUploadRateLimited,
+  characterMutationRateLimited,
+  claudiumMutationRateLimited,
+  claudiumPreAuthRateLimited,
+  DISCORD_MAX_PER_MINUTE,
+  discordRateLimited,
+  EPIC_LINK_MAX_PER_MINUTE,
+  epicLinkRateLimited,
+  MAP_MUTATION_MAX_PER_MINUTE,
+  mapMutationRateLimited,
+  mergeFusedOutcomes,
+  PUBLIC_READ_MAX_PER_MINUTE,
+  publicReadRateLimited,
+  REPORTS_CREATE_MAX_PER_MINUTE,
+  rateLimitNow,
+  rateLimitTier2Store,
+  reportsCreateRateLimited,
+  SEEKER_SPIN_VERIFY_MAX_PER_MINUTE,
+  STEAM_LINK_MAX_PER_MINUTE,
+  seekerSpinVerifyRateLimited,
+  steamLinkRateLimited,
+  WALLET_HANDOFF_RESULT_MAX_PER_MINUTE,
+  WALLET_LINK_MAX_PER_MINUTE,
+  WINDOW_MS,
+  WOC_BALANCE_MAX_PER_MINUTE,
+  WOC_MARKET_BID_MAX_PER_MINUTE,
+  WOC_MARKET_CONFIRM_MAX_PER_MINUTE,
+  WOC_MARKET_LIST_MAX_PER_MINUTE,
+  WOC_MARKET_QUOTE_MAX_PER_MINUTE,
+  WOC_MARKET_READ_MAX_PER_MINUTE,
+  WOC_MARKET_STEPUP_MAX_PER_MINUTE,
+  type WocMarketMutationAction,
+  walletHandoffResultRateLimited,
+  walletLinkRateLimited,
+  wocBalanceRateLimited,
+  wocMarketMutationRateLimited,
+} from '../../ratelimit';
+import { attackSignalSink } from '../attack_signals';
+import { ctxAccountId } from '../context';
+import { HttpError, rateLimit429Headers } from '../errors';
+import { logger } from '../logger';
+import type { Ctx, Middleware, Next, RateLimitOutcome, RateLimitStore } from '../types';
+
+/** How a policy derives its rate-limit key: per client IP, or per (IP AND account). */
+export type RateLimitKeyClass = 'ip' | 'ip+account';
+
+/**
+ * Whether a policy is backed by the pg-global tier-2 store, or tier-1 only.
+ * It is the deliberate per-policy opt-out the two-tier resolver spec calls
+ * for: tier-2 costs one pg UPSERT per ALLOWED request (two for 'ip+account'),
+ * so a mounted high-volume policy stays tier-1-only with a one-word policy
+ * edit instead of a resolver change. The one 'none' policy today is
+ * WOC_MARKET_READ_POLICY (the marketplace's polled GET surface): paying two
+ * pg writes per ALLOWED poll would have out-costed the very reads its caches
+ * remove, and the tier-1 sliding window still meters the flood per process.
+ * Every other policy is 'global'; the derivation guard test pins the full
+ * table, this one opt-out included, so a silently-added second 'none' fails
+ * there.
+ */
+export type RateLimitTier2 = 'global' | 'none';
+
+/**
+ * A named rate-limit policy. `limit` and `windowSeconds` are the advertised quota
+ * (they MUST equal the limiter's own named constant and shared window, never a
+ * re-typed literal; the derivation guard test enforces this), and drive the
+ * draft-11 RateLimit-Policy header. `tier1` runs the in-process limiter and
+ * returns its RateLimitOutcome; `tier2` selects the pg-global backstop.
+ */
+export interface RateLimitPolicy {
+  readonly name: string;
+  readonly keyClass: RateLimitKeyClass;
+  readonly limit: number;
+  readonly windowSeconds: number;
+  readonly tier1: (ctx: Ctx) => RateLimitOutcome;
+  readonly tier2: RateLimitTier2;
+}
+
+// Every policy's window is the shared sliding-window size, in seconds. Single
+// source of truth so a policy never re-types 60.
+const WINDOW_SECONDS = WINDOW_MS / 1000;
+
+/** Build the 429 for a rejected attempt, carrying the accurate per-request numbers. */
+function rateLimit429(policy: RateLimitPolicy, outcome: RateLimitOutcome): HttpError {
+  return new HttpError(
+    429,
+    'rate_limit.exceeded',
+    { retryAfterSeconds: outcome.resetSeconds },
+    rateLimit429Headers(policy, outcome),
+  );
+}
+
+/**
+ * Record the tier-2 attempt(s) for `policy` and return the merged outcome. The
+ * store key is `${policy.name}:ip:${ctx.ip}` for keyClass 'ip'; for 'ip+account'
+ * BOTH that and `${policy.name}:acct:${accountId}` are recorded and merged via
+ * the SAME mergeFusedOutcomes rule tier-1 uses (allowed = both, remaining = min,
+ * resetSeconds = max). The store splits at the first ':' into its (policy, key)
+ * columns, so an IPv6 address in the remainder is safe.
+ */
+async function tier2Outcome(
+  store: RateLimitStore,
+  policy: RateLimitPolicy,
+  ctx: Ctx,
+): Promise<RateLimitOutcome> {
+  const ip = await store.hit(`${policy.name}:ip:${ctx.ip}`, policy.limit);
+  if (policy.keyClass === 'ip') return ip;
+  const account = await store.hit(`${policy.name}:acct:${ctxAccountId(ctx)}`, policy.limit);
+  return mergeFusedOutcomes(ip, account);
+}
+
+// Log the tier-2 fail-open error at most once per window per process: during a
+// pg outage EVERY tier-1-allowed request lands in the catch below, and one line
+// per request would flood the ops log exactly when it is busiest. Reads the
+// injected limiter clock (rateLimitNow) so tests stay deterministic.
+let lastTier2ErrorLogMs = Number.NEGATIVE_INFINITY;
+
+/** Reset the fail-open log throttle. Test-only: keeps log assertions isolated. */
+export function resetTier2ErrorLogThrottle(): void {
+  lastTier2ErrorLogMs = Number.NEGATIVE_INFINITY;
+}
+
+/**
+ * Build the rate-limit middleware for `policy`. Runs tier-1 first; on a tier-1
+ * rejection it throws the 429 WITHOUT touching tier-2 (a flood must never reach
+ * pg, this ordering is an invariant). Otherwise, if the policy is tier-2 'global'
+ * and a store is wired, it records the global counter and throws the 429 with the
+ * tier-2 numbers on a global rejection. Tier-2 FAILS OPEN: any store error is
+ * logged and treated as allowed, so a pg outage degrades to tier-1-only limiting
+ * and never 500s the route or blocks traffic.
+ */
+export function rateLimit(policy: RateLimitPolicy): Middleware {
+  const middleware = async (ctx: Ctx, next: Next) => {
+    const t1 = policy.tier1(ctx);
+    if (!t1.allowed) {
+      // rate_limit_hits_total attack-signal series (source-spec 4.9): count every
+      // 429 from BOTH tiers, labeled ONLY by the bounded policy name and key class,
+      // never by ip or account. Emitted just before the throw so a flood rejected
+      // here (tier-1) is recorded without ever touching tier-2.
+      attackSignalSink().rateLimitHit(policy.name, policy.keyClass);
+      throw rateLimit429(policy, t1);
+    }
+
+    if (policy.tier2 === 'global') {
+      const store = rateLimitTier2Store();
+      if (store) {
+        let merged: RateLimitOutcome | null = null;
+        try {
+          merged = await tier2Outcome(store, policy, ctx);
+        } catch (err) {
+          // Fail open: a tier-2 (pg) outage degrades to tier-1-only limiting.
+          const nowMs = rateLimitNow();
+          if (nowMs - lastTier2ErrorLogMs >= WINDOW_MS) {
+            lastTier2ErrorLogMs = nowMs;
+            logger.error({ err }, 'ratelimit tier-2 store error, failing open');
+          }
+        }
+        // Throw OUTSIDE the try so a deliberate tier-2 429 is never swallowed by
+        // the fail-open catch.
+        if (merged && !merged.allowed) {
+          attackSignalSink().rateLimitHit(policy.name, policy.keyClass);
+          throw rateLimit429(policy, merged);
+        }
+      }
+    }
+
+    await next();
+  };
+  // The policy name rides the returned closure so route tables are
+  // introspectable: a test can assert WHICH policy a route mounts by
+  // identity instead of scanning source text (closures are otherwise
+  // anonymous). Metadata only; dispatch never reads it.
+  return Object.assign(middleware, { rateLimitPolicyName: policy.name });
+}
+
+// An 'ip+account' policy reads the caller's account id via the shared ctxAccountId
+// (server/http/context.ts) inside tier1, which 500s when ctx.account is unset (the
+// policy was mounted ahead of the auth guard that populates it, a composition bug).
+
+export const PUBLIC_READ_POLICY: RateLimitPolicy = {
+  name: 'public_read',
+  keyClass: 'ip',
+  limit: PUBLIC_READ_MAX_PER_MINUTE,
+  windowSeconds: WINDOW_SECONDS,
+  tier1: (ctx) => publicReadRateLimited(ctx.req),
+  tier2: 'global',
+};
+
+export const WOC_BALANCE_POLICY: RateLimitPolicy = {
+  name: 'woc_balance',
+  keyClass: 'ip',
+  limit: WOC_BALANCE_MAX_PER_MINUTE,
+  windowSeconds: WINDOW_SECONDS,
+  tier1: (ctx) => wocBalanceRateLimited(ctx.req),
+  tier2: 'global',
+};
+
+export const CARD_UPLOAD_POLICY: RateLimitPolicy = {
+  name: 'card_upload',
+  keyClass: 'ip+account',
+  limit: CARD_UPLOAD_MAX_PER_MINUTE,
+  windowSeconds: WINDOW_SECONDS,
+  tier1: (ctx) => cardUploadRateLimited(ctx.req, ctxAccountId(ctx)),
+  tier2: 'global',
+};
+
+// Steam link attempts (POST /api/steam/link). 'ip+account' (mounts BEHIND the
+// route's auth guard) and deliberately tight: every allowed attempt is an
+// upstream AuthenticateUserTicket call against the Steam Web API.
+export const STEAM_LINK_POLICY: RateLimitPolicy = {
+  name: 'steam_link',
+  keyClass: 'ip+account',
+  limit: STEAM_LINK_MAX_PER_MINUTE,
+  windowSeconds: WINDOW_SECONDS,
+  tier1: (ctx) => steamLinkRateLimited(ctx.req, ctxAccountId(ctx)),
+  tier2: 'global',
+};
+
+// Epic link attempts (POST /api/epic/link). Twin of STEAM_LINK_POLICY:
+// 'ip+account' (mounts BEHIND the route's auth guard) and deliberately tight
+// for the Phase 5 upstream verify call.
+export const EPIC_LINK_POLICY: RateLimitPolicy = {
+  name: 'epic_link',
+  keyClass: 'ip+account',
+  limit: EPIC_LINK_MAX_PER_MINUTE,
+  windowSeconds: WINDOW_SECONDS,
+  tier1: (ctx) => epicLinkRateLimited(ctx.req, ctxAccountId(ctx)),
+  tier2: 'global',
+};
+
+export const WALLET_LINK_POLICY: RateLimitPolicy = {
+  name: 'wallet_link',
+  keyClass: 'ip+account',
+  limit: WALLET_LINK_MAX_PER_MINUTE,
+  windowSeconds: WINDOW_SECONDS,
+  tier1: (ctx) => walletLinkRateLimited(ctx.req, ctxAccountId(ctx)),
+  tier2: 'global',
+};
+
+export const WALLET_HANDOFF_RESULT_POLICY: RateLimitPolicy = {
+  name: 'wallet_handoff_result',
+  keyClass: 'ip+account',
+  limit: WALLET_HANDOFF_RESULT_MAX_PER_MINUTE,
+  windowSeconds: WINDOW_SECONDS,
+  tier1: (ctx) => walletHandoffResultRateLimited(ctx.req, ctxAccountId(ctx)),
+  tier2: 'global',
+};
+
+export const SEEKER_SPIN_VERIFY_POLICY: RateLimitPolicy = {
+  name: 'seeker_spin_verify',
+  keyClass: 'ip+account',
+  limit: SEEKER_SPIN_VERIFY_MAX_PER_MINUTE,
+  windowSeconds: WINDOW_SECONDS,
+  tier1: (ctx) => seekerSpinVerifyRateLimited(ctx.req, ctxAccountId(ctx)),
+  tier2: 'global',
+};
+
+function claudiumMutationPolicy(
+  name: string,
+  action: ClaudiumMutationAction,
+  limit: number,
+): RateLimitPolicy {
+  return {
+    name,
+    keyClass: 'ip+account',
+    limit,
+    windowSeconds: WINDOW_SECONDS,
+    tier1: (ctx) => claudiumMutationRateLimited(ctx.req, ctxAccountId(ctx), action),
+    tier2: 'global',
+  };
+}
+
+function claudiumPreAuthPolicy(
+  name: string,
+  action: ClaudiumMutationAction,
+  limit: number,
+): RateLimitPolicy {
+  return {
+    name,
+    keyClass: 'ip',
+    limit,
+    windowSeconds: WINDOW_SECONDS,
+    tier1: (ctx) => claudiumPreAuthRateLimited(ctx.req, action),
+    tier2: 'global',
+  };
+}
+
+export const CLAUDIUM_PURCHASE_PRE_AUTH_POLICY: RateLimitPolicy = claudiumPreAuthPolicy(
+  'claudium_purchase_pre_auth',
+  'purchase',
+  CLAUDIUM_PURCHASE_MAX_PER_MINUTE,
+);
+export const CLAUDIUM_QUOTE_PRE_AUTH_POLICY: RateLimitPolicy = claudiumPreAuthPolicy(
+  'claudium_quote_pre_auth',
+  'quote',
+  CLAUDIUM_QUOTE_MAX_PER_MINUTE,
+);
+export const CLAUDIUM_CONFIRM_PRE_AUTH_POLICY: RateLimitPolicy = claudiumPreAuthPolicy(
+  'claudium_confirm_pre_auth',
+  'confirm',
+  CLAUDIUM_CONFIRM_MAX_PER_MINUTE,
+);
+export const CLAUDIUM_SPEND_PRE_AUTH_POLICY: RateLimitPolicy = claudiumPreAuthPolicy(
+  'claudium_spend_pre_auth',
+  'spend',
+  CLAUDIUM_SPEND_MAX_PER_MINUTE,
+);
+
+export const CLAUDIUM_PURCHASE_POLICY: RateLimitPolicy = claudiumMutationPolicy(
+  'claudium_purchase',
+  'purchase',
+  CLAUDIUM_PURCHASE_MAX_PER_MINUTE,
+);
+export const CLAUDIUM_QUOTE_POLICY: RateLimitPolicy = claudiumMutationPolicy(
+  'claudium_quote',
+  'quote',
+  CLAUDIUM_QUOTE_MAX_PER_MINUTE,
+);
+export const CLAUDIUM_CONFIRM_POLICY: RateLimitPolicy = claudiumMutationPolicy(
+  'claudium_confirm',
+  'confirm',
+  CLAUDIUM_CONFIRM_MAX_PER_MINUTE,
+);
+export const CLAUDIUM_SPEND_POLICY: RateLimitPolicy = claudiumMutationPolicy(
+  'claudium_spend',
+  'spend',
+  CLAUDIUM_SPEND_MAX_PER_MINUTE,
+);
+
+// The $WOC Exchange policies: the Claudium model verbatim (per-action fused
+// ip+account buckets, mounted BEHIND the auth guard). Limits single-sourced
+// from server/ratelimit.ts so the two dispatch arms cannot drift.
+function wocMarketMutationPolicy(
+  name: string,
+  action: WocMarketMutationAction,
+  limit: number,
+): RateLimitPolicy {
+  return {
+    name,
+    keyClass: 'ip+account',
+    limit,
+    windowSeconds: WINDOW_SECONDS,
+    tier1: (ctx) => wocMarketMutationRateLimited(ctx.req, ctxAccountId(ctx), action),
+    tier2: 'global',
+  };
+}
+
+export const WOC_MARKET_LIST_POLICY: RateLimitPolicy = wocMarketMutationPolicy(
+  'woc_market_list',
+  'list',
+  WOC_MARKET_LIST_MAX_PER_MINUTE,
+);
+export const WOC_MARKET_BID_POLICY: RateLimitPolicy = wocMarketMutationPolicy(
+  'woc_market_bid',
+  'bid',
+  WOC_MARKET_BID_MAX_PER_MINUTE,
+);
+export const WOC_MARKET_QUOTE_POLICY: RateLimitPolicy = wocMarketMutationPolicy(
+  'woc_market_quote',
+  'quote',
+  WOC_MARKET_QUOTE_MAX_PER_MINUTE,
+);
+export const WOC_MARKET_CONFIRM_POLICY: RateLimitPolicy = wocMarketMutationPolicy(
+  'woc_market_confirm',
+  'confirm',
+  WOC_MARKET_CONFIRM_MAX_PER_MINUTE,
+);
+// The reads are metered too: browse and the activity fan-out each cost
+// database round trips, and /listings/:id can reach the economy service.
+// TIER-1 ONLY, the documented high-volume opt-out: this bucket now fronts the
+// POLLED surface (the Exchange's 3s awaiting-chain beat and the trade
+// window's 2s offer poll), and tier-2 'global' would spend two rate_limits
+// UPSERTs per ALLOWED poll, adding pg writes to the exact hot path the read
+// caches exist to relieve (and serializing NAT-mates on one hot row). The
+// in-process sliding window still bounds what any (ip, account) pair can
+// send this realm. Tier-1-only is SOUND because one process serves one realm
+// (the deployment shape); a realm ever fronted by multiple concurrent
+// processes must revisit this, since each process would grant a full window.
+// Flood observability is unchanged: the tier-1 429 path feeds the same
+// rate_limit_hits_total attack-signal series either way.
+export const WOC_MARKET_READ_POLICY: RateLimitPolicy = {
+  name: 'woc_market_read',
+  keyClass: 'ip+account',
+  limit: WOC_MARKET_READ_MAX_PER_MINUTE,
+  windowSeconds: WINDOW_SECONDS,
+  tier1: (ctx) => wocMarketMutationRateLimited(ctx.req, ctxAccountId(ctx), 'read'),
+  tier2: 'none',
+};
+// Step-up challenge issuance (B6/R1): its own bucket so the challenge-then-
+// create pair never halves the shared list bucket (rationale at the limit
+// constant in server/ratelimit.ts).
+export const WOC_MARKET_STEPUP_POLICY: RateLimitPolicy = wocMarketMutationPolicy(
+  'woc_market_stepup',
+  'stepup',
+  WOC_MARKET_STEPUP_MAX_PER_MINUTE,
+);
+
+// The character-mutation policies. Each is 'ip+account' (so it must be
+// mounted BEHIND the route's auth guard, which populates ctx.account) and runs the
+// per-action limiter keyed on its OWN bucket, so create/rename/delete/takeover never
+// share a window. These are NEW limiters (character mutations had none before): a 429
+// is now possible where none was, recorded as the newLimiterCharacterMutations known
+// deviation. They reuse the existing 'rate_limit.exceeded' code (no catalog append).
+// The four differ ONLY by name + action (same limiter fn, key class, limit, window,
+// tier2), so one factory builds them; the other policies each call a distinct limiter
+// fn and stay longhand.
+function characterMutationPolicy(name: string, action: CharacterMutationAction): RateLimitPolicy {
+  return {
+    name,
+    keyClass: 'ip+account',
+    limit: CHARACTER_MUTATION_MAX_PER_MINUTE,
+    windowSeconds: WINDOW_SECONDS,
+    tier1: (ctx) => characterMutationRateLimited(ctx.req, ctxAccountId(ctx), action),
+    tier2: 'global',
+  };
+}
+
+export const CHARACTER_CREATE_POLICY: RateLimitPolicy = characterMutationPolicy(
+  'character_create',
+  'create',
+);
+export const CHARACTER_RENAME_POLICY: RateLimitPolicy = characterMutationPolicy(
+  'character_rename',
+  'rename',
+);
+export const CHARACTER_DELETE_POLICY: RateLimitPolicy = characterMutationPolicy(
+  'character_delete',
+  'delete',
+);
+export const CHARACTER_TAKEOVER_POLICY: RateLimitPolicy = characterMutationPolicy(
+  'character_takeover',
+  'takeover',
+);
+export const CHARACTER_REROLL_POLICY: RateLimitPolicy = characterMutationPolicy(
+  'character_reroll',
+  'reroll',
+);
+
+// The report-creation limiter. 'ip+account' (so it mounts BEHIND the
+// route's auth guard, which populates ctx.account), running the fused per-IP AND
+// per-account limiter keyed on the caller. It is a NEW limiter (report creation had
+// none before): a 429 is now possible where none was, recorded as the
+// newLimiterReportsCreate known deviation. It reuses the existing
+// 'rate_limit.exceeded' code (no catalog append).
+// The map editor mutation limiter (v0.20.0 merge migration). 'ip+account' (mounts
+// BEHIND the route's auth guard) running the SAME fused mapMutationRateLimited
+// bucket the legacy /api/maps arms check, so both dispatch paths share one window.
+// The legacy arm answers a prose 429 { error: 'rate_limited' }; this policy's 429
+// is the coded rate_limit.exceeded problem (the wallet-family coded-vs-prose 429
+// deviation class, recorded in known_deviations.ts).
+export const MAP_MUTATION_POLICY: RateLimitPolicy = {
+  name: 'map_mutation',
+  keyClass: 'ip+account',
+  limit: MAP_MUTATION_MAX_PER_MINUTE,
+  windowSeconds: WINDOW_SECONDS,
+  tier1: (ctx) => mapMutationRateLimited(ctx.req, ctxAccountId(ctx)),
+  tier2: 'global',
+};
+
+// The GLB asset mutation limiter (v0.20.0 merge migration). Same posture as
+// MAP_MUTATION_POLICY: ONE fused bucket shared across every /api/assets
+// mutation (the legacy POST /api/assets upload arm AND the legacy DELETE
+// /api/assets/:id arm both check the same assetUploadRateLimited function),
+// coded 429 on the new path recorded as the same deviation class.
+export const ASSET_UPLOAD_POLICY: RateLimitPolicy = {
+  name: 'asset_upload',
+  keyClass: 'ip+account',
+  limit: ASSET_UPLOAD_MAX_PER_MINUTE,
+  windowSeconds: WINDOW_SECONDS,
+  tier1: (ctx) => assetUploadRateLimited(ctx.req, ctxAccountId(ctx)),
+  tier2: 'global',
+};
+
+export const REPORTS_CREATE_POLICY: RateLimitPolicy = {
+  name: 'reports_create',
+  keyClass: 'ip+account',
+  limit: REPORTS_CREATE_MAX_PER_MINUTE,
+  windowSeconds: WINDOW_SECONDS,
+  tier1: (ctx) => reportsCreateRateLimited(ctx.req, ctxAccountId(ctx)),
+  tier2: 'global',
+};
+
+// AUTHENTICATED Discord legs only (link / status / reward). It requires
+// ctx.account (ctxAccountId 500s without it), so it must mount BEHIND requireAccount.
+// UNMOUNTED today (the Discord family migrated parity-first with legacy prose
+// bodies; wiring the coded adapter waits on the client code-matcher). The
+// UNAUTHENTICATED start/callback legs run the same underlying limiter IP-only via
+// discordRateLimited(req, 0).
+export const DISCORD_POLICY: RateLimitPolicy = {
+  name: 'discord',
+  keyClass: 'ip+account',
+  limit: DISCORD_MAX_PER_MINUTE,
+  windowSeconds: WINDOW_SECONDS,
+  tier1: (ctx) => discordRateLimited(ctx.req, ctxAccountId(ctx)),
+  tier2: 'global',
+};

@@ -1,0 +1,314 @@
+// Gathering-implement item tooltip lines (#2343): the pure string-builder
+// composed inside Hud.itemTooltip. English copy asserted directly (the
+// gather_node_tooltip.test.ts idiom); numbers must mirror the sim's own
+// tuning constants (bite 1.5s and reel 0.75s per rod tier above 1, catch
+// band b at rod tier b+1 over the 0/100/200 thresholds), never re-invented.
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { ITEMS } from '../src/sim/data';
+import {
+  FISH_BITE_DELAY_MAX_SEC,
+  FISH_BITE_DELAY_MIN_SEC,
+  FISH_BITE_DELAY_ROD_REDUCTION_SEC,
+  fishingRodBandFor,
+} from '../src/sim/professions/fishing';
+import type { ItemDef } from '../src/sim/types';
+import { gatherToolTooltipLines } from '../src/ui/gather_tool_tooltip';
+
+describe('gatherToolTooltipLines: picks, axes, sickles', () => {
+  it('a tier-1 pick states its kind, requirement, and use, with no speed line', () => {
+    const html = gatherToolTooltipLines(ITEMS.copper_mining_pick);
+    expect(html).toContain('<div class="tt-sub">Mining tool (tier 1)</div>');
+    expect(html).toContain('<div class="tt-desc">Required to mine ore veins up to tier 1.</div>');
+    expect(html).toContain('<div class="tt-desc">Use: Mine a nearby ore vein.</div>');
+    expect(html).not.toContain('Gathers faster');
+  });
+
+  it('a tier-2 pick adds the speed line (0.4s per tier above the node)', () => {
+    const html = gatherToolTooltipLines(ITEMS.iron_mining_pick);
+    expect(html).toContain('<div class="tt-sub">Mining tool (tier 2)</div>');
+    expect(html).toContain('<div class="tt-desc">Required to mine ore veins up to tier 2.</div>');
+    expect(html).toContain('<div class="tt-desc">Gathers faster at nodes below tier 2.</div>');
+  });
+
+  it('land tools above tier 1 carry the wield requirement line; rods and the entry tools never do (R22)', () => {
+    // The same "Requires {craft} {skill}" line the vendor's advisory sub-line
+    // renders, read from the one wield table the harvest gate enforces.
+    expect(gatherToolTooltipLines(ITEMS.iron_mining_pick)).toContain(
+      '<div class="tt-desc">Requires Mining 40</div>',
+    );
+    expect(gatherToolTooltipLines(ITEMS.mithril_mining_pick)).toContain(
+      '<div class="tt-desc">Requires Mining 70</div>',
+    );
+    expect(gatherToolTooltipLines(ITEMS.thorium_mining_pick)).toContain(
+      '<div class="tt-desc">Requires Mining 85</div>',
+    );
+    expect(gatherToolTooltipLines(ITEMS.arcanite_mining_pick)).toContain(
+      '<div class="tt-desc">Requires Mining 100</div>',
+    );
+    expect(gatherToolTooltipLines(ITEMS.ironbark_axe)).toContain(
+      '<div class="tt-desc">Requires Logging 70</div>',
+    );
+    // Tier 1 asks nothing; rods are exempt at every tier.
+    expect(gatherToolTooltipLines(ITEMS.copper_mining_pick)).not.toContain('Requires Mining');
+    expect(gatherToolTooltipLines(ITEMS.tidewrought_fishing_rod)).not.toContain('Requires');
+    expect(gatherToolTooltipLines(ITEMS.simple_fishing_pole)).not.toContain('Requires');
+  });
+
+  it('axes and sickles speak their own trade', () => {
+    const axe = gatherToolTooltipLines(ITEMS.handaxe);
+    expect(axe).toContain('<div class="tt-sub">Logging tool (tier 1)</div>');
+    expect(axe).toContain(
+      '<div class="tt-desc">Required to fell timber stands up to tier 1.</div>',
+    );
+    expect(axe).toContain('<div class="tt-desc">Use: Fell a nearby timber stand.</div>');
+    const sickle = gatherToolTooltipLines(ITEMS.gathering_sickle);
+    expect(sickle).toContain('<div class="tt-sub">Herbalism tool (tier 1)</div>');
+    expect(sickle).toContain(
+      '<div class="tt-desc">Required to gather herb patches up to tier 1.</div>',
+    );
+    expect(sickle).toContain('<div class="tt-desc">Use: Gather from a nearby herb patch.</div>');
+  });
+});
+
+describe('gatherToolTooltipLines: fishing implements', () => {
+  it('the simple pole keeps its use line and gains the required-to-fish line', () => {
+    const html = gatherToolTooltipLines(ITEMS.simple_fishing_pole);
+    expect(html).toContain('<div class="tt-desc">Use: Fish in nearby waters.</div>');
+    expect(html).toContain('<div class="tt-desc">Required to fish.</div>');
+    expect(html).not.toContain('Fishing rod (tier'); // the pole is not a tiered rod
+    expect(html).not.toContain('Fish bite'); // and confers no bite bonus
+  });
+
+  it('the tier-2 rod states its exact bite, reel, and catch-band bonuses', () => {
+    const html = gatherToolTooltipLines(ITEMS.ironreel_fishing_rod);
+    expect(html).toContain('<div class="tt-sub">Fishing rod (tier 2)</div>');
+    expect(html).toContain('<div class="tt-desc">Use: Fish in nearby waters.</div>');
+    expect(html).toContain('<div class="tt-desc">Required to fish.</div>');
+    // The access line, the same statement a pick makes about vein tiers. Its
+    // absence was the reason a player could only learn the water refuses them
+    // by being refused.
+    expect(html).toContain('<div class="tt-desc">Required to fish waters up to tier 2.</div>');
+    expect(html).toContain('<div class="tt-desc">Fish bite up to 1.5s sooner.</div>');
+    // 0.75 is the TIER bonus alone: the ironreel is common, so its rarity rung
+    // adds nothing. That is what makes the rods below decisive, since they are
+    // the same tier ladder with a non-zero rarity term on top.
+    expect(html).toContain('<div class="tt-desc">Extends the reel window by 0.75s.</div>');
+    expect(html).toContain(
+      '<div class="tt-desc">Unlocks richer catch tables at fishing skill 100 and above.</div>',
+    );
+  });
+
+  it('the tier-3 rod scales every bonus (3s bite, 1.75s reel, skill 150)', () => {
+    const html = gatherToolTooltipLines(ITEMS.silverstream_fishing_rod);
+    expect(html).toContain('<div class="tt-sub">Fishing rod (tier 3)</div>');
+    expect(html).toContain('<div class="tt-desc">Required to fish waters up to tier 3.</div>');
+    expect(html).toContain('<div class="tt-desc">Fish bite up to 3s sooner.</div>');
+    // 1.75, not 1.5: two tier rungs at 0.75 plus one UNCOMMON rarity rung at
+    // 0.25. A tooltip reading the tier alone would under-promise the rod its
+    // owner is holding.
+    expect(html).toContain('<div class="tt-desc">Extends the reel window by 1.75s.</div>');
+    // 150, not the 200 this read before masterwrought Phase 11i: band 2's
+    // gate moved down when fishing stopped sharing PROFICIENCY_BAND_THRESHOLDS
+    // and got its own six-rung ladder, which is what filled the barren
+    // 100-to-200 stretch. The number comes from the FISHING ladder now; the
+    // shared one still says 200 and reading it here was the live defect.
+    expect(html).toContain(
+      '<div class="tt-desc">Unlocks richer catch tables at fishing skill 150 and above.</div>',
+    );
+  });
+
+  it('the crafted rods open bands of their own now, and still scale their other bonuses', () => {
+    // THIS ARM INVERTED AT masterwrought Phase 11i, and the inversion is the
+    // whole point of the phase. There used to be three catch bands, so tier 3
+    // already reached the last one and both crafted rods opened nothing: the
+    // file's own items.ts comment said so ("the top two rungs buy no new catch
+    // band"). The ladder is six bands now, riding the SAME
+    // band-b-takes-tier-b-plus-1 gate, so the stormreel opens band 3 and the
+    // tidewrought band 4, and the line they used to be forbidden from making
+    // is now the true one. The bite and reel lines still scale as before.
+    const stormreel = gatherToolTooltipLines(ITEMS.stormreel_fishing_rod);
+    expect(stormreel).toContain('<div class="tt-sub">Fishing rod (tier 4)</div>');
+    expect(stormreel).toContain('<div class="tt-desc">Required to fish waters up to tier 4.</div>');
+    expect(stormreel).toContain('<div class="tt-desc">Fish bite up to 4.5s sooner.</div>');
+    // 2.75: three tier rungs (2.25) plus RARE, two rarity rungs (0.5).
+    expect(stormreel).toContain('<div class="tt-desc">Extends the reel window by 2.75s.</div>');
+    // NAMES THE CATCH, not just the skill. Bands 3, 4 and 5 all gate at fishing
+    // 200, so a skill-only line reads identically on all three crafted rods,
+    // which is the defect the rod block in content/items.ts documents against
+    // itself. The catch is the only thing that differs between these rungs.
+    expect(stormreel).toContain(
+      '<div class="tt-desc">Unlocks Raw Deepbarb Catfish at fishing skill 200 and above.</div>',
+    );
+
+    const tidewrought = gatherToolTooltipLines(ITEMS.tidewrought_fishing_rod);
+    expect(tidewrought).toContain('<div class="tt-sub">Fishing rod (tier 5)</div>');
+    // 5s, not the 6s the raw 1.5-per-tier product gives: the sim floors the
+    // bite window at FISH_BITE_DELAY_MIN_SEC, so the fifth rung's last 1.5
+    // seconds buy nothing and the copy must not sell them.
+    expect(tidewrought).toContain('<div class="tt-desc">Fish bite up to 5s sooner.</div>');
+    expect(tidewrought).not.toContain('Fish bite up to 6s sooner.');
+    // Tier 4 still lands strictly inside the clamp, so the two arms of the
+    // clamp are both live rather than one being dead.
+    expect(FISH_BITE_DELAY_MAX_SEC - FISH_BITE_DELAY_ROD_REDUCTION_SEC * 3).toBeGreaterThan(
+      FISH_BITE_DELAY_MIN_SEC,
+    );
+    expect(FISH_BITE_DELAY_MAX_SEC - FISH_BITE_DELAY_ROD_REDUCTION_SEC * 4).toBeLessThan(
+      FISH_BITE_DELAY_MIN_SEC,
+    );
+    // 3.75: four tier rungs (3) plus EPIC, three rarity rungs (0.75). Unlike
+    // the bite line directly above, the reel window has no clamp, so the top
+    // rung really does buy its full width and the copy may sell it.
+    expect(tidewrought).toContain('<div class="tt-desc">Extends the reel window by 3.75s.</div>');
+    expect(tidewrought).toContain(
+      '<div class="tt-desc">Unlocks Raw Hollowgill Sturgeon at fishing skill 200 and above.</div>',
+    );
+    // The two lines really are DIFFERENT, which is the whole point and is what
+    // a skill-only line could not deliver: same rung threshold, different catch.
+    expect(stormreel).not.toContain('Raw Hollowgill Sturgeon');
+    expect(tidewrought).not.toContain('Raw Deepbarb Catfish');
+    // The rarity term is what separates these two rods' reel lines by more
+    // than the tier step alone, so a regression that dropped `item.quality` at
+    // the call site would land both on the tier-only numbers.
+    expect(stormreel).not.toContain('Extends the reel window by 2.25s.');
+    expect(tidewrought).not.toContain('Extends the reel window by 3s.');
+  });
+
+  it('the band line appears exactly where the sim says a rod raises the ceiling', () => {
+    // The tooltip and the engine read ONE function for where the ladder ends,
+    // so this walks every shipped rod tier and asserts they agree, rather than
+    // trusting two copies of a band count.
+    let sawLine = 0;
+    let sawNone = 0;
+    const gatherToolRodTiers: number[] = [];
+    const quotedSkills: number[] = [];
+    for (const def of Object.values(ITEMS)) {
+      const use = def.use;
+      if (use?.type !== 'gatherTool' || use.professionId !== 'fishing') continue;
+      gatherToolRodTiers.push(use.tier);
+      const raises = fishingRodBandFor(use.tier) > fishingRodBandFor(use.tier - 1);
+      const html = gatherToolTooltipLines(def);
+      // Either shape of the band line counts: the generic one for a band that
+      // introduces no new catch, the named one where it does.
+      const quoted = /Unlocks (?:richer catch tables|.+?) at fishing skill (\d+) and above/.exec(
+        html,
+      );
+      expect(quoted !== null, `${def.id} band line`).toBe(raises);
+      if (quoted) quotedSkills.push(Number(quoted[1]));
+      if (raises) sawLine += 1;
+      else sawNone += 1;
+    }
+    gatherToolRodTiers.sort((a, b) => a - b);
+    quotedSkills.sort((a, b) => a - b);
+    // EVERY shipped rod raises the ceiling now (masterwrought Phase 11i), so
+    // the no-line arm is empty by construction rather than by accident, and
+    // this arm's non-vacuity comes from the count instead. The tier-1 floor is
+    // not an ITEM: the simple pole is `use.type: 'fishing'` and never enters
+    // this walk, so no gatherTool rod sits at the bottom of the ladder.
+    expect(sawNone).toBe(0);
+    expect(sawLine).toBe(gatherToolRodTiers.length);
+    expect(gatherToolRodTiers).toEqual([2, 3, 4, 5, 6]);
+    // The claim each rod makes is DISTINCT, and since masterwrought Phase 11i
+    // it is distinct even where the THRESHOLD repeats: the shipped rods quote
+    // 100, 150, 200 and 200, and the two at 200 name different catches. Both
+    // halves are asserted, because the threshold list alone would have looked
+    // exactly the same under the clamped-index bug this arm was written to
+    // catch.
+    expect(quotedSkills).toEqual([100, 150, 200, 200, 200]);
+    const bandLines = Object.values(ITEMS)
+      .filter((def) => def.use?.type === 'gatherTool' && def.use.professionId === 'fishing')
+      .map((def) => /Unlocks .+? at fishing skill \d+ and above/.exec(gatherToolTooltipLines(def)))
+      .filter((m): m is RegExpExecArray => m !== null)
+      .map((m) => m[0]);
+    expect(bandLines).toHaveLength(5);
+    expect(new Set(bandLines).size, 'every rod makes a claim only it can make').toBe(5);
+  });
+});
+
+describe('gatherToolTooltipLines: farming', () => {
+  // The def stays synthetic even though the four hoe items shipped with the
+  // crops-and-tools phase: a parameterized tier is what lets each arm pick the
+  // exact rung it needs. Two things here are invisible to tsc and worth
+  // pinning anyway: KIND_KEYS is an exhaustive Record, so the compiler forces
+  // a farming ROW but accepts any sibling's key as its VALUE (a mis-map would
+  // silently print "Fishing rod" on a hoe), and the wield line resolves
+  // through a SECOND table, GATHERING_PROFESSION_NAME_KEYS, whose farming row
+  // is what keeps that line from vanishing.
+  const hoe = (tier: number): ItemDef =>
+    ({
+      id: 'test_farming_hoe',
+      name: 'Test Farming Hoe',
+      kind: 'tool',
+      quality: 'common',
+      use: { type: 'gatherTool', professionId: 'farming', tier },
+      sellValue: 4,
+      buyValue: 20,
+    }) as ItemDef;
+
+  it('names farming as its own kind, never a sibling profession', () => {
+    const html = gatherToolTooltipLines(hoe(1));
+    expect(html).toContain('<div class="tt-sub">Farming tool (tier 1)</div>');
+    // The mis-mapped-row guard: an exhaustive Record accepts any of these as
+    // the farming value, and each one reads as a different tool in the hand.
+    for (const sibling of ['Mining tool', 'Logging tool', 'Herbalism tool', 'Fishing rod']) {
+      expect(html, `a farming hoe must not describe itself as a ${sibling}`).not.toContain(sibling);
+    }
+  });
+
+  it('carries the wield requirement, which proves the shared name table covers farming', () => {
+    // Without GATHERING_PROFESSION_NAME_KEYS.farming this line does not render
+    // wrong, it renders NOT AT ALL (the painter drops it rather than print
+    // "Requires Farming tool 40"), so its absence is the silent miss.
+    expect(gatherToolTooltipLines(hoe(2))).toContain(
+      '<div class="tt-desc">Requires Farming 40</div>',
+    );
+    // Tier 1 asks nothing, the same contract the picks and axes above hold to.
+    expect(gatherToolTooltipLines(hoe(1))).not.toContain('Requires Farming');
+  });
+
+  it('renders the unlocks and bags-use lines, and the use line deliberately lacks "Use:"', () => {
+    // The crops-and-tools phase filled the farming UNLOCKS_KEYS and USE_KEYS
+    // rows this test used to pin as deliberately absent, so this is the
+    // flipped truth: the unlocks line names the crop tiers the hoe's tier
+    // opens (the step-12 plant gate), and the use line states the
+    // bags-carried behavior. That use line is the family's one deliberate
+    // exception to the imperative "Use:" prefix (a hoe is a passive gate:
+    // beds are worked by planting directly, clicking the hoe starts
+    // nothing), and the not.toContain arm PINS the exception rather than
+    // leaving it as a comment in the key map.
+    const html = gatherToolTooltipLines(hoe(1));
+    expect(html).toContain('<div class="tt-desc">Required to plant crops up to tier 1.</div>');
+    expect(html).toContain(
+      '<div class="tt-desc">Works from your bags when you plant a crop bed.</div>',
+    );
+    expect(html).not.toContain('Use:');
+    // The tier interpolates: a tier-3 hoe names tier-3 crops, so the line is
+    // the template rendered and never a hardcoded tier-1 sentence.
+    expect(gatherToolTooltipLines(hoe(3))).toContain(
+      '<div class="tt-desc">Required to plant crops up to tier 3.</div>',
+    );
+  });
+});
+
+describe('gatherToolTooltipLines: everything else', () => {
+  it('renders nothing for non-implement items', () => {
+    expect(gatherToolTooltipLines(ITEMS.copper_ore)).toBe('');
+    expect(gatherToolTooltipLines(ITEMS.lesser_healing_potion)).toBe('');
+  });
+});
+
+describe('hud composition source pin', () => {
+  it('Hud.itemTooltip composes the module (one line, never inline logic)', () => {
+    // Whole-line // comments are stripped before scanning so the negative pin
+    // is not tripped by prose (the comment-gameable trap; block comments are
+    // left alone: a /* strip would misfire on string and regex literals).
+    const hudSrc = readFileSync(path.join(__dirname, '../src/ui/hud.ts'), 'utf8').replace(
+      /^\s*\/\/.*$/gm,
+      '',
+    );
+    expect(hudSrc).toContain('gatherToolTooltipLines(item)');
+    // The legacy inline pole arm is gone: the module owns the fishing lines.
+    expect(hudSrc).not.toContain("item.use?.type === 'fishing'");
+  });
+});

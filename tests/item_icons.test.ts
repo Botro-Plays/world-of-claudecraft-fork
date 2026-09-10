@@ -1,0 +1,1071 @@
+import { createHash } from 'node:crypto';
+import { closeSync, existsSync, openSync, readdirSync, readFileSync, readSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import sharp from 'sharp';
+import { describe, expect, it } from 'vitest';
+import { validateAcceptedArtManifest } from '../scripts/lib/icon_asset_audit.mjs';
+import { ITEMS } from '../src/sim/data';
+import type { ItemDef } from '../src/sim/types';
+import {
+  ITEM_ART_PENDING,
+  ITEM_IMAGE_IDS,
+  iconDataUrl,
+  isUnknownIconRecipe,
+  itemIconRecipe,
+  itemImageUrl,
+  UI_ITEM_IMAGE_IDS,
+  WEAPON_IMAGE_IDS,
+} from '../src/ui/icons';
+import { ITEM_WEAPON_VARIANTS } from '../src/ui/weapon_variants';
+
+// Gate for the committed WebP item icons (mirror of tests/skill_icons.test.ts). Art under
+// public/ui/items/<id>.webp is the source of truth (WebP only), served by itemImageUrl or
+// weaponIconUrl for kind 'item' (bags, tooltips, loot, vendor, the /wiki guide). The guard is
+// a bijection plus a scope check:
+//   A) every id in ITEM_IMAGE_IDS resolves to a committed, VALID .webp;
+//   B) only .webp art (+ mapping.json) is committed under public/ui/items;
+//   C) every committed .webp is a WIRED item, weapon, or UI pseudo-item id;
+//   D) every wired ITEM id is a real ITEMS entry that is not a weapon, every weapon-art id is
+//      a directly authored weapon,
+//      and every UI pseudo-item id is deliberately NOT an item (the two sets stay disjoint);
+//   E) the whole bag family (the 5 equippable bags + the implicit backpack) is image-backed,
+//      so the bag bar never mixes painted art with a procedural fallback.
+//   H) every real non-weapon item is image-backed, so the legacy procedural compositor is
+//      reserved for UI fallbacks and future development only.
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const publicDir = path.join(repoRoot, 'public');
+const itemsDir = path.join(publicDir, 'ui/items');
+
+const isDotfile = (p: string): boolean => path.basename(p).startsWith('.');
+const isMapping = (p: string): boolean => path.basename(p) === 'mapping.json';
+
+function walk(dir: string): string[] {
+  const out: string[] = [];
+  for (const ent of readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, ent.name);
+    if (ent.isDirectory()) out.push(...walk(p));
+    else if (ent.isFile()) out.push(p);
+  }
+  return out;
+}
+
+// The 14 equippable bags (the release's 13 plus the Masterwrought
+// sunspun_haversack). Pinned as a literal (guard F walks it for the per-bag license
+// override), so a renamed bag or a drifted `kind` fails loudly instead of dropping out of
+// the coverage. Grew from 6 when phase 05 of the bank-storage packet shipped the bag
+// catalog and its materials-only satchels. Seven phase-05 placeholders were replaced by the
+// bank-storage-painted-bags batch; the literal remains the complete current bag inventory.
+const BAG_IDS = [
+  'burlap_reagent_pouch',
+  'duskweave_bag',
+  'foragers_haversack',
+  'gravewoven_bag',
+  'linen_pouch',
+  'loombound_reagent_satchel',
+  'mistcallers_duffel',
+  'necromancers_reagent_satchel',
+  'resonant_weave_bag',
+  'silkspun_satchel',
+  'sunspun_haversack',
+  'travelers_knapsack',
+  'wayfarers_backpack',
+  'wolfhide_satchel',
+] as const;
+
+const BANK_STORAGE_PAINTED_BAG_IDS = [
+  'burlap_reagent_pouch',
+  'duskweave_bag',
+  'foragers_haversack',
+  'loombound_reagent_satchel',
+  'necromancers_reagent_satchel',
+  'resonant_weave_bag',
+  'wayfarers_backpack',
+] as const;
+
+const RETIRED_BANK_STORAGE_PLACEHOLDER_SHA256: Record<
+  (typeof BANK_STORAGE_PAINTED_BAG_IDS)[number],
+  string
+> = {
+  burlap_reagent_pouch: '8d6e1ba9750e81622402c9fc86ed8900b4d07ba590bb5ac46e28b9eaa727eeaa',
+  duskweave_bag: '75e90a5425b048b71ad4dae1e051fa5c2dac54b8efb26b9be6b71851bc6ea58b',
+  foragers_haversack: 'ade843921aa31c029214ad4f0855b84cd3e3308ed66fea7bf7c94573f777000c',
+  loombound_reagent_satchel: '35d2e9d7b33d7f23c80ee5f23604d1aff29749324944397f878e672ca921405f',
+  necromancers_reagent_satchel: 'c4c790a68df5e0a4cddf6cd8ef10339f3d17e4092d12d781b185d1e279d9880f',
+  resonant_weave_bag: 'd71d93594c087677a39db4e9a80861060f9307e06082265b834c5928ca596af4',
+  wayfarers_backpack: 'b424eb9dc027e8d7d8074752ab0cac2fe369614de7f6a8d3072c70864070119e',
+};
+
+const ACCEPTED_BANK_STORAGE_PAINTING_SHA256: Record<
+  (typeof BANK_STORAGE_PAINTED_BAG_IDS)[number],
+  string
+> = {
+  burlap_reagent_pouch: '1458914f29069f66b4cdcf295aae48d2867850809fa88844ef069e9b48dcfd96',
+  duskweave_bag: 'ceb7d9bba4c420e888e5e0a511fd5e279d5c8bf9d97b9865c29dd184d9667166',
+  foragers_haversack: '2106f6437a0b45e4d21238daca453e5ea67a5cfa40823c7d60a24dd5d04ded07',
+  loombound_reagent_satchel: '002c543130544418fd7022339ace468efcad71909075fdfc3440a84527ff668a',
+  necromancers_reagent_satchel: '3c934789670d42e9ebcae00ce646f6ba3b0559479d78951840e245e6b8e339ae',
+  resonant_weave_bag: '4e8f897412df77417a3df2674819b2ce1b6666846fa9ab7080da7b4835713714',
+  wayfarers_backpack: '90c931f7884ed7807f0bc60756c8b40e34988ee19624f2b84bc2f245ef0427f6',
+};
+
+const BANK_STORAGE_PAINTED_BAG_MANIFEST =
+  'docs/achievements/bank-storage-painted-bags-2026-08-25/accepted-art.json';
+
+// Professions 2.0 materials commissioned as one coherent painted set. This literal pin makes
+// dropping a single prepared material from the registry, public tree, or provenance map fail
+// even though the older generic item-art bijection would remain internally consistent.
+const PROFESSION_MATERIAL_IDS = [
+  'arcane_dust',
+  'arcane_essence',
+  'arcane_shard',
+  'arcanite_bar',
+  'ashwood_log',
+  'cooking_salt',
+  'copper_ore',
+  'elderwood_log',
+  'game_meat',
+  'glass_vial',
+  'goldleaf_herb',
+  'homespun_cloth',
+  'iron_ore',
+  'ironbark_log',
+  'prime_cut',
+  'pristine_hide',
+  'pristine_silk',
+  'pristine_venom_gland',
+  'resonant_hide',
+  'resonant_links',
+  'resonant_steel',
+  'resonant_thread',
+  'resonant_timber',
+  'rough_hide',
+  'silverleaf_herb',
+  'smithing_flux',
+  'spider_leg',
+  'spider_silk',
+  'spool_of_thread',
+  'sunpetal_herb',
+  'tanning_agent',
+  'thorium_ore',
+  'venom_gland',
+] as const;
+
+// These are the final originals replacing the tuning packet's temporary derived
+// material, rod and charm art. Keep both the literal inventory and the former
+// hashes: a later script must not silently put any placeholder back.
+const PROFESSION_TUNING_ICON_IDS = [
+  'fine_copper_ore',
+  'fine_iron_ore',
+  'fine_thorium_ore',
+  'fine_ironbark_log',
+  'fine_ashwood_log',
+  'fine_elderwood_log',
+  'fine_silverleaf_herb',
+  'fine_goldleaf_herb',
+  'fine_sunpetal_herb',
+  'stormreel_fishing_rod',
+  'tidewrought_fishing_rod',
+  'gatherers_cache',
+  'artisans_eye',
+] as const;
+
+const RETIRED_PLACEHOLDER_SHA256: Record<(typeof PROFESSION_TUNING_ICON_IDS)[number], string> = {
+  fine_copper_ore: '0b5ecf01e9fdaa33724ed8862321f55782cac76bf3b97415482da6c49077dd06',
+  fine_iron_ore: '4c8dba4958f35b147097807df4351add19ca9bd01334ca2de103db226d946bc7',
+  fine_thorium_ore: 'a6d24dc7cbada4f757ba18d22a2f02c773b87337683b8aa99503abcf9c62f396',
+  fine_ironbark_log: '92d9987741b0e1ba492e8265facdaab375bda7874a6397a61454721eddadfe40',
+  fine_ashwood_log: 'ca9c2788532740680b366dd2195a6885c36c46482bff6eaa45a807825595c1c2',
+  fine_elderwood_log: '4c24fdfb4305977a9df0498f8ea2e265f1ae618f90de66141862ce7f09f63853',
+  fine_silverleaf_herb: '6400393de74c8e815b35800accad3c48f201506a12b51d2c39eb38bfd5f560dd',
+  fine_goldleaf_herb: '72948f90131e99cce8167796ff6c4144c0fe7b01bd201f48ceefc8b4ca7e1451',
+  fine_sunpetal_herb: '2ae01cc1b8b205f783cc967a4e67f5f56c9492363b25ab59d22b7cda9437fa51',
+  stormreel_fishing_rod: '0a80b88d70e6ad865745cd3d96957abec33f48ddf78b72dfe5c5c57d994bff8a',
+  tidewrought_fishing_rod: '6c5ab95babd52263c0835c69056768c0da1d136ab5e0a9caba2e84524d5222ba',
+  gatherers_cache: 'b1e133d3cd1c259dfd2312ce459bd125d9fe4ffc54e5846313882253f5ac3105',
+  artisans_eye: '74172be10b6ea60d17725e647506d92481e45efed5ac61b2c4a1157687385a77',
+};
+
+// Pin the exact reviewed shipping paintings, not just the retired encodings. That keeps a
+// re-encoded placeholder, shifted crop, or unreviewed generator rerun from evading the old-hash
+// guard while still satisfying the generic WebP dimensions and opacity checks below.
+const ACCEPTED_TUNING_ICON_SHA256: Record<(typeof PROFESSION_TUNING_ICON_IDS)[number], string> = {
+  fine_copper_ore: 'db9c1232ac7bf51d86bd570bba2063f89e48e76c6f0c266b177a3b5c52b1d8d9',
+  fine_iron_ore: '240c74fd913ccdf509a423aa11a0319013ec6c225a9f522c21bdefdcc1dd0817',
+  fine_thorium_ore: '318dc3dc7b41bb9fc868a1221b91b9f53f550566601ea35f8124546c54d62bd9',
+  fine_ironbark_log: 'e45ee2deeff2b8b727ab0003db2b30eadb361f1fc7153ebc9c8f17b5de2eccfd',
+  fine_ashwood_log: '50842add1fba62e21fcf48fdbf9265b527f8d4e9754ea5cd853373575b2e4f5c',
+  fine_elderwood_log: 'c22a2f3e6f80924618a128ef4f4d1810069b36929897220a76b88459cd9d7e69',
+  fine_silverleaf_herb: 'fbf9c46d1f9950a14527358937f11e4f58441fb3728676b508e92cfc460f5c94',
+  fine_goldleaf_herb: '2bb651fc7a3f3cc1ff95eb9353495fc3f666217dbfc51d554c535f351128dd76',
+  fine_sunpetal_herb: 'f87f0bc77eb6533c7ccd4043e929cc2741b643b5a4c5f750082cf15902227372',
+  stormreel_fishing_rod: 'ad40f43616702dba9597cce052ce1d6f206cb5f393a311528cfa5f19860dee3b',
+  tidewrought_fishing_rod: '2557439614fc44ca929b8769ad82e3796f13385b4f3f506ff290174882f199fa',
+  gatherers_cache: 'b99f67cd54bb2a6038703311d8f7576282e13a932b4e174070f3c05112e02c8c',
+  artisans_eye: '19635d3bd0074bcadb4cb7e60ba5cb5fc7eeb8ef6341e95808323a623345f1ea',
+};
+
+// Dimensions straight out of the WebP header (lossy VP8, lossless VP8L, extended VP8X), so the
+// size guard needs no image dependency. Layout: 12-byte RIFF/WEBP preamble, then a 4-char chunk
+// tag at 12 and its 4-byte size at 16, so the chunk payload starts at byte 20.
+function webpSize(file: string): { width: number; height: number } {
+  const fd = openSync(file, 'r');
+  try {
+    const buf = Buffer.alloc(32);
+    readSync(fd, buf, 0, 32, 0);
+    const tag = buf.toString('ascii', 12, 16);
+    if (tag === 'VP8 ')
+      // simple lossy: 14-bit width/height follow the 3-byte start code + 2-byte signature
+      return { width: buf.readUInt16LE(26) & 0x3fff, height: buf.readUInt16LE(28) & 0x3fff };
+    if (tag === 'VP8L') {
+      // lossless: 1-byte signature, then 14-bit width-1 and 14-bit height-1, little-endian
+      const bits = buf.readUInt32LE(21);
+      return { width: (bits & 0x3fff) + 1, height: ((bits >> 14) & 0x3fff) + 1 };
+    }
+    if (tag === 'VP8X')
+      // extended: 24-bit canvas width-1 / height-1 after the 4-byte flags field
+      return {
+        width: (buf.readUIntLE(24, 3) & 0xffffff) + 1,
+        height: (buf.readUIntLE(27, 3) & 0xffffff) + 1,
+      };
+    throw new Error(`unknown webp chunk "${tag}" in ${file}`);
+  } finally {
+    closeSync(fd);
+  }
+}
+
+function isValidWebp(file: string): boolean {
+  const fd = openSync(file, 'r');
+  try {
+    const buf = Buffer.alloc(12);
+    const n = readSync(fd, buf, 0, 12, 0);
+    return (
+      n === 12 && buf.toString('ascii', 0, 4) === 'RIFF' && buf.toString('ascii', 8, 12) === 'WEBP'
+    );
+  } finally {
+    closeSync(fd);
+  }
+}
+
+const webpFiles = (): string[] =>
+  walk(itemsDir).filter((p) => path.extname(p).toLowerCase() === '.webp');
+
+type Mapping = {
+  iconSize: number;
+  styleContract: {
+    id: string;
+    document: string;
+    summary: string;
+    master: {
+      minimumWidth: number;
+      minimumHeight: number;
+      square: boolean;
+      singleFrame: boolean;
+      colorSpace: string;
+      opaque: boolean;
+    };
+    shipping: {
+      width: number;
+      height: number;
+      format: string;
+      maximumBytes: number;
+      opaque: boolean;
+    };
+    reviewSizes: number[];
+    circularCropReviewSize: number;
+    anchors: { itemId: string; sha256: string }[];
+  };
+  entries: {
+    itemId: string;
+    name: string;
+    sourcePack: string;
+    sourceFile?: string;
+    confidence?: string;
+    license?: string;
+  }[];
+  generatedBatches?: {
+    batchId?: string;
+    source: string;
+    owner?: string;
+    license: string;
+    styleReference: string;
+    styleContract?: { id: string; document: string };
+    commonPrompt: string;
+    provenanceRecord?: string;
+    provenanceRecords?: string[];
+    itemIds: string[];
+  }[];
+};
+const mapping = (): Mapping =>
+  JSON.parse(readFileSync(path.join(itemsDir, 'mapping.json'), 'utf8')) as Mapping;
+
+function missingPaintedWaveItemIds(): string[] {
+  const accepted = JSON.parse(
+    readFileSync(
+      path.join(repoRoot, 'docs/achievements/missing-painted-icons-accepted-art.json'),
+      'utf8',
+    ),
+  ) as { targetSets: { items: string[] } };
+  return accepted.targetSets.items;
+}
+
+describe('item webp icons', () => {
+  it('has image-backed item ids wired (guards the fixture)', () => {
+    expect(ITEM_IMAGE_IDS.size).toBeGreaterThan(0);
+    // 123 -> 125 at Masterwrought phase 09: duskforged_warblade + ridgebreaker joined
+    // ITEM_WEAPON_VARIANTS; 125 -> 135 at the release/v0.41.0 merge (2026-08-30), which
+    // brought the ten Ignivar raid weapons. Release's own lineage separately grew the
+    // shared 133-weapon base by three with the Nythraxis gap-fill one-handers
+    // (nythraxis-gap-weapon-renders-2026-09-04) to 136. This merge unions both waves
+    // plus this branch's own Crucible professions weapon additions; re-counted directly
+    // off the merged src/ui/weapon_variants.ts (Object.keys(ITEM_WEAPON_VARIANTS).size).
+    expect(WEAPON_IMAGE_IDS.size).toBe(138);
+  });
+
+  it('A) every image-backed item and weapon resolves to a committed, decodable .webp', async () => {
+    const broken: string[] = [];
+    for (const id of [...ITEM_IMAGE_IDS, ...WEAPON_IMAGE_IDS, ...UI_ITEM_IMAGE_IDS]) {
+      if (ITEM_ART_PENDING.has(id)) continue; // covered by A2/A3 below
+      const url = WEAPON_IMAGE_IDS.has(id) ? iconDataUrl('item', id) : itemImageUrl(id);
+      expect(url, `${id} must resolve to a webp url`).toMatch(/^\/ui\/items\/.+\.webp$/);
+      const file = path.join(publicDir, (url as string).replace(/^\//, ''));
+      if (!existsSync(file)) broken.push(`${id} -> ${url} (missing file)`);
+      else if (!isValidWebp(file)) broken.push(`${id} -> ${url} (not a valid webp)`);
+      else {
+        try {
+          await sharp(file).raw().toBuffer();
+        } catch {
+          broken.push(`${id} -> ${url} (webp payload cannot be decoded)`);
+        }
+      }
+    }
+    expect(broken).toEqual([]);
+  });
+
+  // A2/A3 keep the pending list from becoming a dumping ground. Guard A skips those ids, so
+  // without these two arms an item could be parked here forever, or a NEW artless item could
+  // be added to the list to silence a real failure.
+  it('A2) every art-pending id is a real, non-weapon item that genuinely has no art yet', () => {
+    const stale: string[] = [];
+    for (const id of ITEM_ART_PENDING) {
+      const def = (ITEMS as Record<string, { kind?: string }>)[id];
+      if (!def) stale.push(`${id} (no such item: drop it from ITEM_ART_PENDING)`);
+      else if (def.kind === 'weapon') stale.push(`${id} (weapon: never belongs in the item set)`);
+      else if (existsSync(path.join(itemsDir, `${id}.webp`))) {
+        stale.push(`${id} (art IS committed now: remove it from ITEM_ART_PENDING)`);
+      }
+    }
+    expect(stale, 'ITEM_ART_PENDING must shrink as art lands, and never outlive its items').toEqual(
+      [],
+    );
+  });
+
+  it('A3) a pending id serves the drawn icon instead of a url pointing at a missing file', () => {
+    // The whole point of the pending list: itemImageUrl declines, so iconDataUrl composes the
+    // procedural recipe rather than handing an <img> a 404. Asserted on the real surface the
+    // bag bar, tooltips, loot and the vendor call.
+    for (const id of ITEM_ART_PENDING) {
+      expect(itemImageUrl(id), `${id} must not resolve to uncommitted art`).toBeNull();
+    }
+    // The completion wave, the Crucible wave (crucible-set-icons-2026-08-29), and the
+    // release's Roots' Bramblehide plus Nythraxis gap-fill wave
+    // (roots-bramblehide-icons-2026-09-07) are all fully painted (confirmed on the
+    // merged tree: IGNIVAR_ART_PENDING_ITEM_IDS, BRAMBLEHIDE_ART_PENDING_ITEM_IDS, and
+    // NYTHRAXIS_GAP_ART_PENDING_ITEM_IDS are each declared empty in
+    // src/sim/content/ignivar_loot.ts / zone3.ts), so the ledger is back to the EMPTY
+    // set: no artless item can hide behind an open wave, and the next commissioned wave
+    // re-pins its exact membership here when it stages.
+    expect(
+      [...ITEM_ART_PENDING].sort(),
+      'art debt is enumerated and re-pinned deliberately, never grown quietly',
+    ).toEqual([]);
+    // And the inverse: an id with committed art must still win the static url.
+    expect(itemImageUrl('linen_pouch')).toBe('/ui/items/linen_pouch.webp');
+  });
+
+  it('B) commits only webp art (+ mapping.json) under public/ui/items', () => {
+    const stray = walk(itemsDir)
+      .filter((p) => !isDotfile(p) && !isMapping(p) && path.extname(p).toLowerCase() !== '.webp')
+      .map((p) => path.relative(repoRoot, p));
+    expect(stray, 'run the item icon converter; only .webp + mapping.json may live here').toEqual(
+      [],
+    );
+  });
+
+  it('C) every committed webp is a wired item id', () => {
+    const orphans: string[] = [];
+    for (const file of webpFiles()) {
+      const id = path.basename(file, '.webp');
+      if (!ITEM_IMAGE_IDS.has(id) && !WEAPON_IMAGE_IDS.has(id) && !UI_ITEM_IMAGE_IDS.has(id)) {
+        orphans.push(
+          `${path.relative(repoRoot, file)} (not in an item, weapon, or UI image registry)`,
+        );
+      }
+    }
+    expect(orphans, 'remove dead-weight art or wire the id into ITEM_IMAGE_IDS').toEqual([]);
+  });
+
+  it('D) every general item-art id is a real, non-weapon item', () => {
+    const bad: string[] = [];
+    for (const id of ITEM_IMAGE_IDS) {
+      const def = (ITEMS as Record<string, { kind?: string }>)[id];
+      if (!def) bad.push(`${id} (no such item)`);
+      else if (def.kind === 'weapon') bad.push(`${id} (weapon: belongs in WEAPON_IMAGE_IDS)`);
+    }
+    expect(
+      bad,
+      'ITEM_IMAGE_IDS covers non-weapon items; painted weapons belong in WEAPON_IMAGE_IDS',
+    ).toEqual([]);
+  });
+
+  it('D2) every UI pseudo-item id is not a real item (the two sets stay disjoint)', () => {
+    expect([...UI_ITEM_IMAGE_IDS], 'the backpack is the only UI pseudo-item today').toEqual([
+      'backpack',
+    ]);
+    const leaked: string[] = [];
+    for (const id of UI_ITEM_IMAGE_IDS) {
+      if ((ITEMS as Record<string, unknown>)[id]) leaked.push(`${id} (is a real item)`);
+      if (ITEM_IMAGE_IDS.has(id)) leaked.push(`${id} (also in ITEM_IMAGE_IDS)`);
+    }
+    expect(
+      leaked,
+      'UI_ITEM_IMAGE_IDS is only for icon ids with no ITEMS record (the implicit backpack); ' +
+        'a real item belongs in ITEM_IMAGE_IDS, where guard D checks it',
+    ).toEqual([]);
+  });
+
+  it('D3) every authored weapon has one per-item painted path', () => {
+    expect([...WEAPON_IMAGE_IDS].sort()).toEqual(Object.keys(ITEM_WEAPON_VARIANTS).sort());
+    for (const id of WEAPON_IMAGE_IDS) {
+      expect(ITEMS[id]?.kind, id).toBe('weapon');
+      expect(ITEMS[id]?.heroicOf, `${id} should be an authored base weapon`).toBeUndefined();
+      expect(iconDataUrl('item', id), id).toBe(`/ui/items/${id}.webp`);
+    }
+  });
+
+  it('E) every bag, and the implicit backpack, renders painted art (not a procedural icon)', () => {
+    const bagIds = Object.entries(ITEMS as Record<string, { kind?: string }>)
+      .filter(([, def]) => def.kind === 'bag')
+      .map(([id]) => id)
+      .sort();
+    // Pinned to the literal set, not just a count: a renamed bag (or one whose kind drifts off
+    // 'bag') would otherwise drop silently out of the loop below and take its coverage with it.
+    // A NEW bag belongs here AND in ITEM_IMAGE_IDS: adding it without art fails this test.
+    // Phase 05 of the bank-storage packet added the seven-bag catalog (three materials-only
+    // satchels among them); their tracked generated batch now owns the accepted paintings.
+    expect(bagIds).toEqual([
+      'burlap_reagent_pouch',
+      'duskweave_bag',
+      'foragers_haversack',
+      'gravewoven_bag',
+      'linen_pouch',
+      'loombound_reagent_satchel',
+      'mistcallers_duffel',
+      'necromancers_reagent_satchel',
+      'resonant_weave_bag',
+      'silkspun_satchel',
+      'sunspun_haversack',
+      'travelers_knapsack',
+      'wayfarers_backpack',
+      'wolfhide_satchel',
+    ]);
+    // The backpack is the bag bar's first socket and has no ITEMS record, so it is wired as a
+    // UI pseudo-item; without it the bar would mix one drawn icon in with the painted set.
+    for (const id of [...bagIds, 'backpack']) {
+      // iconDataUrl is the surface the bag bar, tooltips, loot, and the vendor actually call.
+      // In this Node env it can ONLY return an image URL: an unwired id would fall through to
+      // the canvas recipe and throw, so a dropped id fails here rather than silently
+      // regressing to the procedural sack.
+      expect(iconDataUrl('item', id), `${id} must serve committed bag art`).toBe(
+        `/ui/items/${id}.webp`,
+      );
+    }
+  });
+
+  it('F) every committed icon has a provenance entry in mapping.json, and vice versa', () => {
+    const m = mapping();
+    const files = webpFiles().map((f) => path.basename(f, '.webp'));
+    const curated = m.entries.map((e) => e.itemId);
+    const generated = (m.generatedBatches ?? []).flatMap((batch) => batch.itemIds);
+    const listed = [...curated, ...generated];
+    expect(
+      listed.filter((id, index) => listed.indexOf(id) !== index),
+      'an icon must have exactly one provenance owner',
+    ).toEqual([]);
+    expect(
+      files.filter((id) => !listed.includes(id)),
+      'art without provenance: add its entry (source + license) to mapping.json',
+    ).toEqual([]);
+    expect(
+      listed.filter((id) => !files.includes(id)),
+      'mapping.json lists art that is not committed: drop the stale entry',
+    ).toEqual([]);
+    for (const entry of m.entries) {
+      expect(entry.name, `${entry.itemId} must name its source asset`).toBeTruthy();
+      expect(entry.sourcePack, `${entry.itemId} must identify its source pack`).toBeTruthy();
+    }
+    expect(m.generatedBatches, 'generated art must retain its batch provenance').not.toEqual([]);
+    for (const batch of m.generatedBatches ?? []) {
+      expect(batch.source).toBeTruthy();
+      expect(batch.license).toContain('project asset');
+      expect(batch.styleReference).toBeTruthy();
+      expect(batch.commonPrompt).toBeTruthy();
+    }
+    // The remaining legacy bag family is project-owned ordinary art. Silkspun
+    // Satchel, the seven bank-storage replacements, and Masterwrought's
+    // Sunspun Haversack belong only to generatedBatches.
+    const generatedBagIds = new Set<string>([
+      ...BANK_STORAGE_PAINTED_BAG_IDS,
+      'silkspun_satchel',
+      'sunspun_haversack',
+    ]);
+    for (const id of [...BAG_IDS.filter((bagId) => !generatedBagIds.has(bagId)), 'backpack']) {
+      const entry = m.entries.find((e) => e.itemId === id);
+      expect(entry?.license, `${id} must carry its own license override`).toContain(
+        'World of ClaudeCraft original art',
+      );
+    }
+    for (const id of generatedBagIds) {
+      expect(
+        m.entries.some((entry) => entry.itemId === id),
+        `${id} ordinary owner`,
+      ).toBe(false);
+    }
+    const silkspunOwners = (m.generatedBatches ?? []).filter((batch) =>
+      batch.itemIds.includes('silkspun_satchel'),
+    );
+    expect(silkspunOwners, 'silkspun_satchel generated-art owner').toHaveLength(1);
+    expect(silkspunOwners[0].source).toBe('OpenAI built-in image generation');
+    expect(silkspunOwners[0].license).toContain('project asset');
+
+    const replacementBatch = (m.generatedBatches ?? []).filter(
+      ({ batchId }) => batchId === 'bank-storage-painted-bags-2026-08-25',
+    );
+    expect(replacementBatch, 'bank-storage painted bag provenance owner').toHaveLength(1);
+    expect(replacementBatch[0]).toMatchObject({
+      source: 'OpenAI built-in image generation',
+      owner: 'World of ClaudeCraft',
+      license: 'World of ClaudeCraft project-generated art, project asset, rights reserved',
+      styleContract: {
+        id: 'woc-item-icon-v1',
+        document: 'docs/design/item-icon-art-style.md',
+      },
+      provenanceRecord: 'docs/achievements/bank-storage-painted-bags-2026-08-25/',
+      provenanceRecords: [BANK_STORAGE_PAINTED_BAG_MANIFEST],
+    });
+    expect(replacementBatch[0].itemIds).toEqual(BANK_STORAGE_PAINTED_BAG_IDS);
+  });
+
+  it('F0) pins the authored mount-icon sources and Mech Bird render batch', () => {
+    const m = mapping();
+    expect(m.entries.find(({ itemId }) => itemId === 'reins_lanternback_troll')).toEqual({
+      itemId: 'reins_lanternback_troll',
+      name: "Lamplighter's Yoke: Grumbol",
+      sourcePack: 'woc_owner_supplied_art',
+      sourceFile: 'troll icon 2.png (owner-supplied painted master, 624x624)',
+      confidence: 'high',
+      license: 'World of ClaudeCraft original art (project-owned, created for this game)',
+    });
+    expect(m.entries.find(({ itemId }) => itemId === 'reins_chimeglass_tortoise')).toEqual({
+      itemId: 'reins_chimeglass_tortoise',
+      name: "Roadwarden's Bellstrap: Tolliver",
+      sourcePack: 'project-authored',
+      sourceFile:
+        'three-quarter head render of the shipped mount model (public/models/mounts/chimeglass_tortoise.glb) by scripts/render_mount_icons.mjs, background keyed and downscaled to the 128px opaque woc-item-icon-v1 shipping format (re-rendered 2026-08-16 with the lens-glow pass)',
+      confidence: 'high',
+      license: 'World of ClaudeCraft original art (project-owned, created for this game)',
+    });
+
+    expect(
+      (m.generatedBatches ?? []).find(
+        ({ batchId }) => batchId === 'mech-bird-mount-icon-2026-08-17',
+      ),
+    ).toEqual({
+      batchId: 'mech-bird-mount-icon-2026-08-17',
+      source:
+        'Project Blender render of the shipped mount model (Cycles) with painted-treatment post (median brushwork pass, warm and cool grade, vignette multiply)',
+      owner: 'World of ClaudeCraft',
+      license: 'World of ClaudeCraft project-generated art, project asset, rights reserved',
+      styleContract: {
+        id: 'woc-item-icon-v1',
+        document: 'docs/design/item-icon-art-style.md',
+      },
+      styleReference:
+        'Generated under item-icon contract woc-item-icon-v1, Mount collectible family row: three-quarter mount bust with tack. Source model is the shipped public/models/mounts/mech_bird.glb posed on its Idle clip head-turn hold, rendered opaque on a dark umber vignette with a top-left warm key.',
+      commonPrompt:
+        'Three-quarter bust portrait of the Cluckwork Mech Bird mount with saddle and grab handle visible, opaque dark atmospheric vignette ground, top-left warm key light, cool deep shadow, painted brushwork finish, no writing, frame, transparency, or crop.',
+      itemIds: ['reins_mech_bird'],
+    });
+  });
+
+  it('F1) pins the canonical item-art style contract and its approved visual anchors', () => {
+    const contract = mapping().styleContract;
+    expect(contract.id).toBe('woc-item-icon-v1');
+    expect(contract.document).toBe('docs/design/item-icon-art-style.md');
+    expect(contract.summary).toBe(
+      'Classic dark-fantasy MMORPG painted inventory art; tactile material rendering; opaque dark painted ground; top-left key light; centered complete subject; no accidental writing, crop, frame, transparency, or watermark.',
+    );
+    expect(contract.master).toEqual({
+      minimumWidth: 512,
+      minimumHeight: 512,
+      square: true,
+      singleFrame: true,
+      colorSpace: 'srgb',
+      opaque: true,
+    });
+    expect(contract.shipping).toEqual({
+      width: 128,
+      height: 128,
+      format: 'webp',
+      maximumBytes: 15_360,
+      opaque: true,
+    });
+    expect(contract.reviewSizes).toEqual([128, 40, 28, 22]);
+    expect(contract.circularCropReviewSize).toBe(64);
+    expect(contract.anchors).toEqual([
+      {
+        itemId: 'eastbrook_buckler',
+        sha256: '2c4d58c9050f1fdfd88b4e3aacbeeb90e4b859709145bee38be3db380685e156',
+      },
+      {
+        itemId: 'kingsbane_last_oath',
+        sha256: '0435d8e1ec593676ba939150177fb4fa1e439e763fef8e8fe375ba359265ca30',
+      },
+      {
+        itemId: 'cinderweave_raiment',
+        sha256: '345a2760fc15f5b24937878709d24229ca1a13f96eda16c5ad6871213a3f48e4',
+      },
+      {
+        itemId: 'linen_pouch',
+        sha256: 'b526923bf6aa8e9c06395c80fcb97f3bdbe87e0f1f5a55eee4217f7389b08937',
+      },
+      {
+        itemId: 'anglers_feast_platter',
+        sha256: '0ea8b9e92b170e277ab08a7c00daa73d641cb8803b2b8290de251a9a68f5a644',
+      },
+      {
+        itemId: 'firebottle',
+        sha256: 'c3965ddb8daa75ba1b8eb5adb75845ac3220e2eb2af0f5db3ad8d28cebd7b122',
+      },
+      {
+        itemId: 'arcanite_mining_pick',
+        sha256: '1f68e6bfbc521b2eb7c67cf7931bad05d1c68d68b132b7cf328d6c0d135f43b6',
+      },
+    ]);
+    for (const anchor of contract.anchors) {
+      const file = path.join(itemsDir, `${anchor.itemId}.webp`);
+      expect(existsSync(file), `${anchor.itemId} style anchor must exist`).toBe(true);
+      expect(createHash('sha256').update(readFileSync(file)).digest('hex')).toBe(anchor.sha256);
+    }
+
+    const guide = readFileSync(path.join(repoRoot, contract.document), 'utf8');
+    expect(guide).toContain('# Item Icon Art Style');
+    expect(guide).toContain('Contract id: `woc-item-icon-v1`');
+    expect(guide).toContain('## Reusable generation brief');
+    expect(guide).toContain('## Acceptance review');
+    expect(guide).toContain('## Provenance and replacement policy');
+    const normalizedGuide = guide.replace(/\s+/g, ' ');
+    for (const requiredRule of [
+      'The subject normally fills 68 to 76 percent of the square.',
+      'Use a warm key light from the top-left and a cool, deep shadow toward the bottom-right.',
+      'It is a painted vignette with subtle atmosphere and contact shadow, not a flat black product-photo void.',
+      'Do not add letters, numbers, words, labels, pseudo-writing, UI chrome, a frame, a checkerboard,',
+      'Do not duplicate an existing painting for a differently named authored item.',
+      '| One-handed weapon | Full weapon on a strong diagonal, distinct guard or head, grip visible |',
+      '| Helmet | One centered headpiece with no head, face, shoulders, or mannequin |',
+      '| Food | One plated serving or compact ingredient group, warm appetizing light, no table scene |',
+      '| Mount collectible | Recognizable three-quarter mount bust or vehicle portrait with tack and personality; do not show only loose reins |',
+      'Review every icon at the 512 master, 128px, 40px, 28px, and 22px.',
+      'Also inspect 28px grayscale and a 64px circular crop.',
+      'Repainting never rewrites historical evidence.',
+      'Quiet drift inside `woc-item-icon-v1` is not allowed.',
+    ]) {
+      expect(normalizedGuide, `style contract must retain: ${requiredRule}`).toContain(
+        requiredRule,
+      );
+    }
+
+    for (const instructionPath of [
+      'DESIGN.md',
+      'public/CLAUDE.md',
+      'src/sim/content/CLAUDE.md',
+      'src/ui/CLAUDE.md',
+    ]) {
+      const instructions = readFileSync(path.join(repoRoot, instructionPath), 'utf8');
+      expect(
+        instructions,
+        `${instructionPath} must route future item art through the contract`,
+      ).toContain('docs/design/item-icon-art-style.md');
+      expect(
+        instructions,
+        `${instructionPath} must name the versioned item-art contract`,
+      ).toContain('woc-item-icon-v1');
+    }
+  });
+
+  it('F2) ships the complete project-owned professions material art set', () => {
+    const m = mapping();
+    const canonical = [...PROFESSION_MATERIAL_IDS].sort();
+    const files = new Set(webpFiles().map((file) => path.basename(file, '.webp')));
+    const projectOwnedIds = m.entries
+      .filter((entry) => entry.sourcePack === 'woc_professions_art')
+      .map((entry) => entry.itemId)
+      .sort();
+    const manifest = JSON.parse(
+      readFileSync(path.join(repoRoot, 'docs/design/professions-asset-manifest.json'), 'utf8'),
+    ) as {
+      categories: {
+        name: string;
+        assets?: {
+          id: string;
+          batch: string;
+          acceptedVersion: string;
+        }[];
+      }[];
+    };
+    const manifestEntries = manifest.categories.find((category) =>
+      category.name.startsWith('Material item icons'),
+    )?.assets;
+    expect(
+      manifestEntries,
+      'the material manifest category must enumerate its exact assets',
+    ).toBeDefined();
+    const declaredIds = (manifestEntries ?? []).map((entry) => entry.id).sort();
+
+    // Reverse exactness matters here: the generic item-art bijection would accept a 34th file
+    // if it were also wired and mapped. The commissioned professions set is intentionally the
+    // literal 33-id set above, so any added or dropped project-owned material fails this arm.
+    expect(projectOwnedIds).toEqual(canonical);
+    expect(declaredIds).toEqual(canonical);
+    expect(projectOwnedIds.filter((id) => files.has(id)).sort()).toEqual(canonical);
+    expect(projectOwnedIds.filter((id) => ITEM_IMAGE_IDS.has(id)).sort()).toEqual(canonical);
+
+    for (const id of PROFESSION_MATERIAL_IDS) {
+      expect(ITEM_IMAGE_IDS.has(id), `${id} must be wired into ITEM_IMAGE_IDS`).toBe(true);
+      expect(existsSync(path.join(itemsDir, `${id}.webp`)), `${id}.webp must be committed`).toBe(
+        true,
+      );
+      const entry = m.entries.find((candidate) => candidate.itemId === id);
+      expect(entry?.sourcePack, `${id} must retain its professions-art provenance`).toBe(
+        'woc_professions_art',
+      );
+      const declared = manifestEntries?.find((candidate) => candidate.id === id);
+      expect(entry?.sourceFile, `${id} mapping and manifest batch/version must agree`).toBe(
+        `${declared?.batch}/masters/${id}.png (accepted ${declared?.acceptedVersion})`,
+      );
+      expect(entry?.license, `${id} must carry its explicit project license`).toContain(
+        'World of ClaudeCraft original art',
+      );
+    }
+  });
+
+  it('F3) ships the final tuning originals and can never regress to their placeholders', async () => {
+    const m = mapping();
+    expect(PROFESSION_TUNING_ICON_IDS).toHaveLength(13);
+    for (const id of PROFESSION_TUNING_ICON_IDS) {
+      const file = path.join(itemsDir, `${id}.webp`);
+      const bytes = readFileSync(file);
+      expect(
+        bytes.length,
+        `${id} must stay within the item-icon weight budget`,
+      ).toBeLessThanOrEqual(15 * 1024);
+      const hash = createHash('sha256').update(bytes).digest('hex');
+      expect(hash, `${id} must not regress to the retired generated placeholder`).not.toBe(
+        RETIRED_PLACEHOLDER_SHA256[id],
+      );
+      expect(hash, `${id} must remain the accepted, centered shipping painting`).toBe(
+        ACCEPTED_TUNING_ICON_SHA256[id],
+      );
+
+      const decoded = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+      expect(decoded.info.width, `${id} decoded width`).toBe(128);
+      expect(decoded.info.height, `${id} decoded height`).toBe(128);
+      const alpha = decoded.data.filter((_, index) => index % decoded.info.channels === 3);
+      expect(
+        alpha.every((value) => value === 255),
+        `${id} must keep an opaque item backdrop`,
+      ).toBe(true);
+
+      const owners = (m.generatedBatches ?? []).filter((batch) => batch.itemIds.includes(id));
+      expect(owners, `${id} must have exactly one generated-art provenance owner`).toHaveLength(1);
+      expect(owners[0].source).toBe('OpenAI built-in image generation');
+    }
+  });
+
+  it('F4) records every final-wave item once as project-generated art', () => {
+    const ids = missingPaintedWaveItemIds();
+    expect(ids).toHaveLength(101);
+    expect(ids).toEqual([...new Set(ids)].sort());
+    const m = mapping();
+    for (const id of ids) {
+      expect(itemImageUrl(id), `${id} runtime URL`).toBe(`/ui/items/${id}.webp`);
+      expect(
+        m.entries.some((entry) => entry.itemId === id),
+        `${id} must not be an ordinary mapping entry`,
+      ).toBe(false);
+      const owners = (m.generatedBatches ?? []).filter((batch) => batch.itemIds.includes(id));
+      expect(owners, `${id} must have one generated provenance owner`).toHaveLength(1);
+      expect(owners[0].source).toBe('OpenAI built-in image generation');
+      expect(owners[0].license).toContain('project asset');
+    }
+  });
+
+  it('F5) pins the accepted bank-storage bag paintings and retired placeholder lineage', async () => {
+    const value = JSON.parse(
+      readFileSync(path.join(repoRoot, BANK_STORAGE_PAINTED_BAG_MANIFEST), 'utf8'),
+    ) as {
+      batch: {
+        id: string;
+        acceptedDate: string;
+        rasterGenerator: string;
+        owner: string;
+        license: string;
+        styleContractId: string;
+      };
+      targetSets: { items: string[] };
+      assets: Array<{
+        id: string;
+        acceptedSha256: string;
+        acceptedBytes: number;
+        generation: {
+          promptRecord: { verbatimToolCallAvailable: boolean; commonPrompt: string };
+        };
+      }>;
+      supersedes: Array<{
+        itemId: string;
+        previous: {
+          shipping: { commit: string; sha256: string; bytes: number };
+          provenanceClass: string;
+          owner: { ownerType: string; sourcePack: string; license: string };
+        };
+        replacement: { batchId: string; acceptedSha256: string; acceptedBytes: number };
+      }>;
+    };
+    expect(() => validateAcceptedArtManifest(value)).not.toThrow();
+    expect(value.batch).toEqual({
+      id: 'bank-storage-painted-bags-2026-08-25',
+      acceptedDate: '2026-08-25',
+      rasterGenerator: 'OpenAI built-in image generation',
+      owner: 'World of ClaudeCraft',
+      license: 'World of ClaudeCraft project-generated art, project asset, rights reserved',
+      styleContractId: 'woc-item-icon-v1',
+    });
+    expect(value.targetSets.items).toEqual(BANK_STORAGE_PAINTED_BAG_IDS);
+    expect(value.assets.map(({ id }) => id)).toEqual(BANK_STORAGE_PAINTED_BAG_IDS);
+    expect(value.supersedes.map(({ itemId }) => itemId)).toEqual(BANK_STORAGE_PAINTED_BAG_IDS);
+
+    const m = mapping();
+    const assetById = new Map(value.assets.map((asset) => [asset.id, asset]));
+    const supersessionById = new Map(value.supersedes.map((record) => [record.itemId, record]));
+    for (const id of BANK_STORAGE_PAINTED_BAG_IDS) {
+      const file = path.join(itemsDir, `${id}.webp`);
+      const bytes = readFileSync(file);
+      const hash = createHash('sha256').update(bytes).digest('hex');
+      const asset = assetById.get(id);
+      const supersession = supersessionById.get(id);
+
+      expect(bytes.length, `${id} item-icon weight budget`).toBeLessThanOrEqual(15 * 1024);
+      expect(hash, `${id} must not regress to its retired SVG placeholder`).not.toBe(
+        RETIRED_BANK_STORAGE_PLACEHOLDER_SHA256[id],
+      );
+      expect(hash, `${id} accepted painting`).toBe(ACCEPTED_BANK_STORAGE_PAINTING_SHA256[id]);
+      expect(asset, `${id} accepted-art asset`).toMatchObject({
+        acceptedSha256: ACCEPTED_BANK_STORAGE_PAINTING_SHA256[id],
+        acceptedBytes: bytes.length,
+      });
+      expect(asset?.generation.promptRecord.verbatimToolCallAvailable).toBe(true);
+      expect(asset?.generation.promptRecord.commonPrompt).toBe(
+        (m.generatedBatches ?? []).find(
+          ({ batchId }) => batchId === 'bank-storage-painted-bags-2026-08-25',
+        )?.commonPrompt,
+      );
+
+      const decoded = await sharp(file).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+      expect(decoded.info.width, `${id} decoded width`).toBe(128);
+      expect(decoded.info.height, `${id} decoded height`).toBe(128);
+      const alpha = decoded.data.filter((_, index) => index % decoded.info.channels === 3);
+      expect(
+        alpha.every((channel) => channel === 255),
+        `${id} opaque backdrop`,
+      ).toBe(true);
+
+      expect(supersession, `${id} supersession record`).toMatchObject({
+        previous: {
+          shipping: {
+            commit: '62d2cb0c5478c300a305e147b6f807a031c0bf4a',
+            sha256: RETIRED_BANK_STORAGE_PLACEHOLDER_SHA256[id],
+          },
+          provenanceClass: 'projectOwnedProgrammaticPlaceholder',
+          owner: {
+            ownerType: 'ordinaryEntry',
+            sourcePack: 'woc_original_svg',
+            license:
+              'World of ClaudeCraft original art (project-owned, programmatically drawn placeholder pending a commissioned painted icon in the woc_bags style)',
+          },
+        },
+        replacement: {
+          batchId: 'bank-storage-painted-bags-2026-08-25',
+          acceptedSha256: ACCEPTED_BANK_STORAGE_PAINTING_SHA256[id],
+          acceptedBytes: bytes.length,
+        },
+      });
+
+      expect(
+        m.entries.some(({ itemId }) => itemId === id),
+        `${id} retired ordinary owner`,
+      ).toBe(false);
+      expect(
+        (m.generatedBatches ?? []).filter(({ itemIds }) => itemIds.includes(id)),
+        `${id} one current generated owner`,
+      ).toHaveLength(1);
+    }
+  });
+
+  it('G) every committed icon is the square declared by mapping.json (128px)', () => {
+    const m = mapping();
+    expect(
+      m.iconSize,
+      'the served icon square (mirrored by scripts/convert_item_icons_webp.mjs)',
+    ).toBe(128);
+    const wrong: string[] = [];
+    for (const file of webpFiles()) {
+      const { width, height } = webpSize(file);
+      if (width !== m.iconSize || height !== m.iconSize)
+        wrong.push(`${path.basename(file)} (${width}x${height})`);
+    }
+    expect(wrong, 'run `npm run assets:items`; item art is served at one fixed square').toEqual([]);
+  });
+
+  it('H) every non-weapon item resolves to committed painted art', () => {
+    const expected = Object.values(ITEMS)
+      .filter((item) => item.kind !== 'weapon')
+      .map((item) => item.id)
+      .sort();
+    expect(
+      [...ITEM_IMAGE_IDS].sort(),
+      'non-weapon items must never fall back to the legacy procedural compositor',
+    ).toEqual(expected);
+    for (const id of expected) {
+      // Art-pending ids deliberately serve the drawn recipe instead (A2/A3 gate the list, and
+      // iconDataUrl would need a DOM canvas here anyway). Every other item must serve its WebP.
+      if (ITEM_ART_PENDING.has(id)) continue;
+      expect(iconDataUrl('item', id), `${id} must serve its committed WebP`).toBe(
+        `/ui/items/${id}.webp`,
+      );
+    }
+  });
+
+  it('I) every item icon has distinct committed artwork', () => {
+    const byHash = new Map<string, string[]>();
+    for (const file of webpFiles()) {
+      const hash = createHash('sha256').update(readFileSync(file)).digest('hex');
+      const ids = byHash.get(hash) ?? [];
+      ids.push(path.basename(file, '.webp'));
+      byHash.set(hash, ids);
+    }
+    expect(
+      [...byHash.values()].filter((ids) => ids.length > 1),
+      'different item ids must not ship byte-identical placeholder art',
+    ).toEqual([]);
+  });
+
+  it('J) mapped weapons serve per-item paintings independently of their held model', () => {
+    const weaponIds = new Set(
+      Object.values(ITEMS)
+        .filter((item) => item.kind === 'weapon')
+        .map((item) => item.id),
+    );
+    const strayMappings = Object.keys(ITEM_WEAPON_VARIANTS).filter((id) => !weaponIds.has(id));
+    expect(strayMappings, 'thumbnail mappings must only target real weapons').toEqual([]);
+    for (const id of Object.keys(ITEM_WEAPON_VARIANTS)) {
+      expect(iconDataUrl('item', id), `${id} must serve bespoke painted inventory art`).toBe(
+        `/ui/items/${id}.webp`,
+      );
+    }
+  });
+});
+
+describe('unknown item ids resolve to the shared fallback recipe (stale-client premise)', () => {
+  it('lands every unresolvable id on the fallback, prototype keys included, never a throw', () => {
+    // Every stale-client fallback surface funnels unknown server ids into
+    // iconDataUrl; this is the canvas-free pin that the recipe layer under it
+    // tolerates ANY string. ITEMS and ITEM_RECIPES are prototype-bearing
+    // Records, so keys like __proto__ resolve truthy non-defs (and
+    // 'constructor' resolves a function whose .name IS a string): the
+    // OWN-PROPERTY gates in resolveRecipe's item arm and itemFallback are
+    // what send every one of them to the fallback recipe.
+    const unknown = itemIconRecipe('no_such_item_id_v1');
+    expect(isUnknownIconRecipe(unknown)).toBe(true);
+    expect(isUnknownIconRecipe(itemIconRecipe('no_such_item_id_v2'))).toBe(true);
+    for (const hostile of ['__proto__', 'constructor', 'toString', 'hasOwnProperty']) {
+      expect(isUnknownIconRecipe(itemIconRecipe(hostile)), hostile).toBe(true);
+    }
+    // The weapon-art arm shares the gate: without it, a prototype key
+    // stringifies a prototype member into a garbage /ui/items/ URL before
+    // the recipe layer is ever consulted (canvas-bound at runtime, so pinned
+    // at the source).
+    const iconsSource = readFileSync(new URL('../src/ui/icons.ts', import.meta.url), 'utf8');
+    expect(iconsSource).toContain('Object.hasOwn(ITEM_WEAPON_VARIANTS, id)');
+    // A real def without committed art takes its DERIVED recipe, not the
+    // fallback, so this pin cannot pass by everything falling through.
+    const derived = Object.values(ITEMS).find(
+      (item) => !ITEM_WEAPON_VARIANTS[item.id] && itemIconRecipe(item.id) !== unknown,
+    );
+    expect(derived).toBeTruthy();
+  });
+});
+
+describe('recipe patterns take the parchment page, whatever they are named', () => {
+  // The kind:'recipe' arm in itemFallback must sit ABOVE the fish-name arm,
+  // which carries no kind gate and matches on SUBSTRINGS: 'eel' is inside
+  // "Steel", so a pattern for a steel weapon is the shape that catches a
+  // wrong ordering. Every arm above the recipe one is kind-gated and cannot
+  // claim a pattern, so this is the only ordering the fallback can get wrong.
+  //
+  // The def is synthetic and removed in finally: no shipped item carries kind
+  // 'recipe' yet (phase 11 authors the drops), and the art-coverage sweeps
+  // above would fail on an artless one left in the table.
+  function withPatternDef<T>(name: string, run: (id: string) => T): T {
+    const id = 'test_icon_pattern_probe';
+    ITEMS[id] = {
+      id,
+      name,
+      kind: 'recipe',
+      quality: 'uncommon',
+      sellValue: 25,
+      teachesRecipeId: 'recipe_eastbrook_arming_sword',
+    } as ItemDef;
+    try {
+      return run(id);
+    } finally {
+      delete ITEMS[id];
+    }
+  }
+
+  it('inks a pattern whose name embeds a fish token as parchment, not a fish', () => {
+    const recipe = withPatternDef('Pattern: Steel Longsword', (id) => itemIconRecipe(id));
+    expect(recipe.bg).toBe('parchment');
+    expect(recipe.prims.map((prim) => prim.p)).toEqual(['scroll']);
+  });
+
+  it('is the ordering and not the name: the same name on a NON-recipe kind still draws a fish', () => {
+    // Without this half the pin above would also pass on a fallback that had
+    // simply stopped drawing fish at all, which would be a different bug.
+    // The fish result here is the CURRENT substring behavior being controlled
+    // for, not a requirement: if the fish token list ever narrows to word
+    // boundaries (the real root cause), retire this half rather than defend it.
+    const id = 'test_icon_fishy_junk_probe';
+    ITEMS[id] = {
+      id,
+      name: 'Steel Longsword Offcut',
+      kind: 'junk',
+      quality: 'common',
+      sellValue: 1,
+    } as ItemDef;
+    try {
+      expect(itemIconRecipe(id).prims.map((prim) => prim.p)).toEqual(['fish']);
+    } finally {
+      delete ITEMS[id];
+    }
+  });
+});

@@ -1,0 +1,405 @@
+<!-- src/sim only (content/, professions/, physics/, and pvp/ each carry their own
+     CLAUDE.md). The one-sim-three-hosts architecture, the determinism/dependency
+     invariants, and build/test commands live in the root + src CLAUDE.md, don't
+     repeat them here. This file is the practical map of the deterministic core. -->
+
+# src/sim - the deterministic game core
+
+The host-agnostic source of truth: tick loop, combat, abilities/auras, mob AI +
+aggro/leash, parties, duels, arena, trade, market, dungeon instances, terrain,
+and the RL observation surface. Same code runs offline / on the server / headless.
+
+## Shape of the core: a thin coordinator plus system modules behind one seam
+Each self-contained game SYSTEM lives in its own sibling module, and `sim.ts` is a
+thin **coordinator**: it owns the world clock, the tick-phase order, the per-player and
+per-entity loops, the shared entry points, the `IWorld` facade, and persistence, and it
+calls out to the system modules. Those modules never reach into `Sim` internals; they
+talk only to the **`SimContext` seam** (`sim_context.ts`).
+
+- **State stays on `Sim`.** The modules hold FUNCTIONS, not state. Entities, the spatial
+  grids, `delayedEvents`, `groundAoEs`, arena/duel/trade/delve/market/loot collections,
+  and the pet stash are all still `Sim` fields, exposed to the modules as LIVE views on
+  `SimContext` (multi-`Sim` isolation + the server's public seam depend on this).
+- **`Sim` keeps thin same-named delegates** wherever a foreign caller (the `IWorld`
+  surface, `server/`, `headless/`, tests) resolves a method on the `Sim` facade. The
+  delegate forwards into the owning module via `this.ctx`.
+- Relocations are MOVES, not rewrites: behavior stays byte-identical, proven by the
+  golden-trace + rng-draw-order parity gate (`tests/parity`).
+
+## Key files
+- **`sim.ts`**: the **coordinator** (`class Sim`). `tick()` is a registry of system
+  calls (see the coordinator map below). Also holds the `IWorld` facade delegates, the
+  back-compat accessors, the inventory hub (`addItem`/`removeItem`/`countItem`),
+  persistence (`serializeCharacter`/`addPlayer`), the shared combat entry points, and
+  `buildSimContext()` (binds every `SimContext` callback). Large by design, but an ACTIVE
+  extraction target (root Modularity): never grow it with a new method cluster.
+- **`sim_context.ts`**: **the seam.** `SimContext` = live primitive views (`rng`/`time`/
+  `entities`/`players`/grids/the shared collections) + the cross-system callbacks. The
+  file's comments are the authoritative callback registry (signature + which slice owns
+  each). Append-only: add callbacks, never rename or repurpose one.
+- **`types.ts`**: ALL shared types AND the global tuning constants + classic-era formulas (`TICK_RATE`, `DT`, `GCD`, ranges, `XP_TABLE`, hit/armor/rage math, post-cap `virtualLevel`/prestige). Plus the `SimEvent` union and the `Entity` shape.
+- `character_state.ts`: the persisted character-save shapes, a TYPE-ONLY leaf extracted from `sim.ts` (`CharacterState`/`PetState` and the `Saved*` sparse forms; `sim.ts` keeps a public re-export so every importer stands). No runtime code, so a change here is a save-compat decision first.
+- `data.ts`: merges `content/*` into the flat tables (`ABILITIES`, `MOBS`, `NPCS`, `QUESTS`, `ITEMS`, `CAMPS`, `DUNGEONS`) and owns world-layout consts (`WORLD_SIZE`, `instanceOrigin`, `arenaOrigin`, `zoneAt`, `dungeonAt`).
+- `entity.ts`: `createPlayer/createMob/createNpc/createGroundObject` + `recalcPlayerStats` (the ONE place derived stats are computed from class/level/gear/auras/talent `mods`).
+- `player_motion.ts`: the pure player-movement kernel (`stepPlayerMotion`: turn integration, wish vector, slope gates, swept static collision, the vertical pass) plus `moveSpeedMult`/`jumpMult`/`isSwimming` and the locomotion-feel constants, including the parkour arms (air control, coyote time, ledge momentum, and the standable-prop support/mantle pass fed by `colliders.ts` `supportHeightAt`; behavior pinned by `tests/parkour.test.ts`). `Sim.updatePlayerMovement` wraps it behind `PlayerMotionDeps` (fiesta speed, delve-aware `resolveMove`, cast/damage callbacks); the online display-only self extrapolator (`src/render/self_motion.ts`) binds pure/no-op deps so BOTH hosts run the same math, pinned by `tests/player_motion.test.ts` (client-dep-shape vs live-Sim parity, bit for bit). Changing movement here means keeping that parity test green.
+- `entity_roster.ts`: roster ops the coordinator drives: `addEntity`/`dropEntity`/`rebucket`, despawn decay, the delayed-event drain, and the ground-AoE tick. Keeps only the delve release arm (`releaseSpiritInDelve`); the general death/release system is `spirit.ts` (see the module table).
+- `ignivar_raid_ids.ts` / `ignivar_raid_progression.ts`: pure room IDs and linked-room mapping in the leaf module; the progression module owns the SimContext mutation that opens Ignivar's inner gate.
+- `rng.ts`: `class Rng` (mulberry32) + stateless `hash2/noise2/fbm2` for terrain.
+- `world.ts`: `groundHeight`/`terrainHeight` (pure fn of x,z,seed), `WATER_LEVEL`, `generateDecorations`. **Renderer samples the same fns**: keep them identical. The voxel layer below derives from them too. A named unsanctioned monolith (root Modularity): extract, never grow.
+- `voxel.ts` + `voxel_mesh.ts`: the true-3D voxel density field layered over the `world.ts` heightfield, plus its chunked mesher. Tunnels/overhangs come ONLY from hand-authored capsules in `content/tunnels.ts` subtracted from solid terrain; away from a tunnel the field's surface must stay byte-identical to `terrainHeight`, so a heightfield edit is also a voxel edit. Engine-only so far (proven by tests, not yet wired into the renderer; `colliders.ts`/`pathfind.ts` are still heightfield-only).
+- **`physics/`**: the character physics engine (own `CLAUDE.md`): continuous swept collision against the extruded-2D collider set, multi-pass sliding, depenetration, and STEP UP so a walking body climbs low stones and kerbs with no jump. `player_motion.ts` runs it for the OPEN WORLD; instanced interiors stay on `resolveMove`. Pure leaf set (no `SimContext`), pinned by `tests/physics_character.test.ts`.
+- `decoration_dims.ts`: pure leaf, THE source of truth for scatter-decoration size (`rockHeight`/`rockRadius`/`ROCK_SINK_UNITS`) and for whether a decoration is solid at all (`decorationHasCollider`). `colliders.ts` builds rock colliders from it and `src/render/foliage.ts` scales the rock GLBs to it, so a stone's silhouette and its collision top cannot drift; `decorationHasCollider` is the same kind of dual-consumer contract (`colliders.ts` gates on it, `src/render/foliage_decimation_core.ts` reads it too, so a graphics preset can never trim a decoration a player can be blocked by).
+- `colliders.ts`: `resolvePosition` (static collision + slide); reads `PROPS` and the dungeon/arena layouts. Parkour heights live here: low props carry a `moveTopY` movement top (`standable` for crates/rocks and the climbable roofs: stall canopies, the dock hut), the optional `MoverHeight` param lets a mover whose feet clear a top pass over it, and `supportHeightAt` is the standable-surface query the movement kernel maxes against the terrain. Callers passing no height (mobs, pathfinding) collide full-height as before. It also OWNS the world's streetlamps: `gridFor` publishes the lamp-free grid, then `addStreetlampColliders` plans the network (`streetlamp_layout.ts`) and plants a full-height post per site, and `streetlampPlacements(seed)` is the one list `src/render/streetlamps.ts` instances from (the `bankerChestSpots` arrangement). That ordering is load-bearing: planning a post calls `resolvePosition`, so the grid must already be cached or the build recurses. Like `world.ts`, a named monolith under the root ratchet (`tests/monolith_budget.test.ts`): extract, never grow.
+- `streetlamp_layout.ts` + `streetlamp_style.ts`: pure leaves. The first lays the lamp network out along the road polylines through caller-supplied probes (spacing tiers, the roadside clearance band, junction dedupe, the road-facing yaw); the second says which fixture stands in which area and how wide a post it presents (`STREETLAMP_COLLIDER_RADIUS`, MEASURED from the shipped GLBs and pinned by `tests/streetlamp_colliders.test.ts`). Both are read by `colliders.ts` AND `src/render/`, which is why they are sim leaves rather than render cores.
+- `decor_prop_colliders.ts`: `buildDecorPropColliders`, the hand-placed GLB decor collider builder (`PROPS.decorProps`), extracted out of `colliders.ts` to keep that file under its monolith ceiling. A circle or box per entry, walk-through when `r`/`hw`+`hd` are absent; `standableTop` opts an entry into the crate/rock standable family (`moveTopY`/`standable`) instead of a full-height wall, and throws at build time if set with no footprint to land on. Pure leaf (no `SimContext`); `tests/decor_prop_colliders.test.ts` covers it directly, `tests/parkour.test.ts` covers the shipped Dawnhold cannonball piles end to end.
+- `dungeon_layout.ts`: plain-number interior layouts; single source for BOTH render geometry and `colliders.ts` interior sets.
+- `pathfind.ts`: local A* (`findPath`); the player-tuned wrapper `findPlayerPath` (body radius, climb, swim) is what warrior Charge calls via `findChargePath`.
+- `threat.ts`: classic-era hate-table math (`addThreat`, `threatModifier`, taunt, stealth detection). Already pure; modules import it directly.
+- `spatial.ts`: `SpatialGrid` entity hash for radius queries; re-bucketed at end of tick. Pure; imported directly.
+- `format_money.ts`: the sim's plain-English money formatter (`"3g 5s"` fragments for loot/quest/vendor/market emit text). A leaf module so `sim.ts`, `market.ts`, and `loot/loot_roll.ts` share it without a value-cycle. NOT the i18n `formatMoney` (see Player-facing text).
+- `world_seed.ts`: `WORLD_SEED`, the one shipped world seed. Every host that builds THE world and every suite asserting its geometry imports it; never re-declare the literal.
+- `obs.ts`: RL surface: `ACTIONS`/`applyAction`/`encodeObs`/`obsSize`. Consumed by `headless/` + `python/` (see those dirs).
+
+## System modules behind SimContext (who owns what)
+Each module owns the FUNCTIONS for one system; the backing STATE stays on `Sim` as live
+`ctx` views, and `Sim` keeps thin delegates where a foreign caller resolves the method.
+The table maps SYSTEMS, not files: a system's helper siblings ride its row. Discover the
+live importer set with `grep -rl sim_context src/sim --include='*.ts'`; every SYSTEM in
+that set must be findable from a row here (or a Key files entry), and a module no row
+plausibly covers means the table needs a new row in the same change.
+
+| Module | Owns |
+|--------|------|
+| `combat/damage.ts` | `dealDamage`, `handleDeath`, `grantXp` (+ lifetime-XP; milestone unlocks absorbed into `deeds.ts`) |
+| `combat/heal.ts` | `applyHeal`, healing threat/taken-mult, hex/crit-vuln mults, heal-absorb |
+| `combat/threat_modifiers.ts` | aura, talent, and known-passive threat multipliers through `SimContext` |
+| `combat/engaged_combat.ts` | the per-tick player combat flag (`collectEngagedPids`): the classic hate-table rule (anyone a live mob still carries on its table stays in combat, pets flag their owner), the hate-table reach (an attacker beyond `THREAT_DROP_RANGE` is dropped off the table on the same walk), and the boss "zone in combat" rule (an engaged boss holds its attackers' nearby group members); called from the coordinator's engaged pass, draws no rng |
+| `combat/auras.ts` + `combat/cc.ts` | per-tick auras/regen/timers, NPC aura cleanse; CC predicates (stun/root/silence/disarm/lockout/blind/tongues) |
+| `combat/casting_lifecycle.ts` | `updateCasting`, `castAbility(BySlot)`, `cancelCast`, `pushbackCast`, GCD/cost/cooldown |
+| `combat/effect_dispatch.ts` | `runEffects` (the per-effect switch) |
+| `combat/auto_attack.ts` | start/stop/update auto-attack, `meleeSwing`, `rangedSwing` |
+| `combat/equip_procs.ts` + `combat/set_procs.ts` + `combat/crafted_collection_effects.ts` | legendary weapon and per-hand enchant procs; item-set bonus procs; shared crafted-collection damage windows, tank wards, and overheal protection |
+| `combat/empower_next.ts` + `combat/thorns_charge.ts` | next-cast empower/free aura consumption; charge-limited thorns |
+| the per-class combat suites | EVERY class has one: flat `combat/<class>_*.ts` prefixed siblings (the `paladin_*` family, `warrior_stances.ts`, `rogue_engines.ts`, `druid_engines.ts`, the `shaman_*` and `hunter_*` sets, the mage `fire_mage.ts`/`frost_mage.ts`/`chronomancy.ts` modules, the warlock `necromancy*` set beside the shared class-talent state in `warlock_talents.ts`) or a per-class subdirectory once the family earns one (`combat/priest/` is the precedent: the class's suite behind one directory; `ls` it for the module set). A new class mechanic lands as a new sibling in its class's suite, never inside a shared dispatcher |
+| `projectile_travel.ts` | in-flight homing projectiles: `pendingProjectiles` + the prologue `advancePendingProjectiles` phase |
+| `progression/xp.ts` | `prestige`, rested-XP, `isResting` |
+| `progression/talents.ts` | the row-model allocation verbs: `applyTalentAllocation`, `selectTalentRow`, `setTalentSpec`, `respecTalents`, the loadout ops (`saveTalentLoadout`/`switchTalentLoadout`/`deleteTalentLoadout`), and the legacy `spendTalentPoint` shim (node id unused). Module-private `recomputeTalents` is the SOLE re-resolve into the flat `TalentModifiers`; authoring model and content files: `src/sim/content/CLAUDE.md` |
+| `mob/targeting.ts` | `updateMobTarget`, `retargetMob`, highest-threat target, trivial-target check |
+| `mob/combat_profile.ts` | mob combat profile selection, effective melee reach, and the general chase/attack profile runner |
+| `mob/reachability.ts` | the unreachable-target stall detector (`chaseStalledUnreachable` over `Entity.chaseStall`): the classic evade trigger consumed by `mob/combat_profile.ts`'s engaged postludes; draws no rng |
+| `mob/locomotion.ts` | `updateMob` dispatcher, `resetEvadingMob`, flee recovery, spawn-block; `onBossDeath` points-at `encounters/nythraxis` |
+| `mob/` behavior siblings | a new mob behavior is another sibling the dispatcher routes to, never a branch inside `locomotion.ts`: `ambient.ts` (decorative wanderers, e.g. the Highwatch stable horses: never hostile, never combat), `charge.ts` (the heroic anti-kite gap closer, stamped only on HEROIC spawns, zero rng), `healer_channel.ts` (scripted interruptible mob channels), `dragonkin_brood.ts` + `egg_hatchling.ts`, `idle_rng.ts`, `chain_pull_transit.ts` (with `instances/boss_chain_pull.ts`) |
+| `mob/mob_swing.ts` | the mob on-hit affix cascade (`runMobSwingAffixes`); the base hit-table shell stays on `Sim` |
+| `mob/lifecycle.ts` | `respawnMob`, despawn summoned adds, frenzy packmates, death-throes, corpse detonate |
+| `mob/boss_mechanics.ts` | the boss support kit (M5): `updateBossMechanics` (summon-add thresholds, enrage, desperate heal, the Mend/Ward/Rally/War Cadence support pulses, the channeled escalating heal) + `spawnBossAdds` (the add-wave spawner the delve boss scripts also reach via ctx); draws rng at exactly two sites (the mend heal roll, the add level-band roll); thresholds fire once per pull and reset on evade/respawn |
+| `mob/social_aggro.ts` + `mob/yells.ts` | flee-for-help rally pull (`rallyFleeingAllies`) and the same-template social pull on a fresh aggro (`socialPullSameTemplate`, per-family radius table); boss bark broadcast (`MobTemplate.yells`) |
+| `mob/dungeon_pack_aggro.ts` | authored dungeon-pack unit pull (`aggroDungeonPackmates`): mobs sharing a placement-claimed `dungeonPackId` engage together on any player or pet pull, including the non-social taunt path |
+| `encounters/nythraxis.ts` | the whole Nythraxis raid encounter (per-tick driver, reset/wipe/init, dialogue scheduler, adds + boss mechanics, the Aldric transition + wardstones, the relic/grave-vision quest chain, the encounter CC-immunity predicates) |
+| `world_boss.ts` | hourly world bosses: spawn/scale/announce, contributor tracking, personal loot (`rollWorldBossLoot`), per-boss loot lockouts |
+| `spirit.ts` | death/release/resurrection: graveyards + spirit healers, the ghost run, `releasePlayerSpirit`/`resurrectAtCorpse`/`resurrectAtSpiritHealer`, plus the two `/unstuck` outcomes `moveToGraveyardForUnstuck`/`reviveAtGraveyardForUnstuck` (sickness rules live in the `resurrection.ts` leaf). Every resurrection runs through the one shared `reviveAt`, which is also where the pet the death took is handed back (`pet/pet_owner_revive.ts`) |
+| `pet/` | the pet system: `pet_ai.ts` (`updatePet`, follow, ranged attack, target pick), `pet_commands.ts` (the command surface + `petOf`/`summonPet`/tame/despawn/`syncPetLevel`/`serializePet`/`restorePet` and the delve pet-park round-trip), `pet_scaling.ts` (owner-to-pet stat inheritance for hunter beasts + the heel-speed floor), `pet_selection.ts` (pure owner/pet identity shared with the HUD mirrors), `pet_taunt_gate.ts` (the shared force-taunt eligibility gate), `warlock_pet_skills.ts` + `warlock_pet_growth.ts` (signature warlock-pet utility; authored per-level visual scale) |
+| `pet/pet_return.ts` + `pet_match_return.ts` + `pet_owner_revive.ts` + `pet_corpse_hold.ts` | THE shared pet round trip (snapshot / unravel-note / restore) and its two consumers: arena-shaped matches and the owner's own death. Keying doctrine: snapshot LIVING pets only (nothing is owed a pet it did not lose); a hunter beast / mage elemental keeps its corpse and revives IN PLACE by entity id, a warlock demon unravels and is REBUILT keyed on the UNRAVEL, never the death, so a deliberate dismissal or re-summon is never overwritten; return hp is the carried hp, or a FRACTION of the pool it returns to. The match half lives on the `ArenaMatch` beside `preMatchPools` (issue #1600); the owner half on `PlayerMeta.deathPet` (session-only, rewritten on EVERY death, restored at the end of `spirit.ts` `reviveAt` at `PET_REVIVE_HP_FRACTION`). The `pet_corpse_hold.ts` sibling freezes an owed demon corpse's decay window while its dead owner awaits an ACTIVE battleground respawn wave, so the wave takes the revive-in-place arm (same entity id, no per-wave client rebuild); decay resumes the moment the hold lifts. All four draw NO rng |
+| `items.ts` | equip/use/discard + vendor buy/sell/buyback command bodies (W2 move out of `sim.ts`) |
+| `wellfed.ts` | the ONE Well Fed mint (`applyWellFedOnMealComplete` over the carried `Consuming.wellFed` payload, `WELL_FED_AURA_ID`), called from the updateRegen completion site after the slot clears; the pure meal builder is the `consuming.ts` leaf (Masterwrought 11c) |
+| `mech_chroma_ownership.ts` | mech-chroma cosmetic ownership: the worn-chroma readers plus the mutation verbs `unlockMechChromaFromItem`/`unequipWornMechChroma`, extracted from `sim.ts` behind the bespoke structural `MechChromaOwnershipHost` interface (the `player_motion.ts` `PlayerMotionDeps` seam shape, not `SimContext`: the module names only the host members it touches and `sim.ts` forwards the live `Sim` as the host). `ItemUseResult` no longer lives here: it is `useItem`'s result shape, not a chroma one, so masterwrought Phase 18 moved it to `types.ts` with the other shared item types (`sim.ts` keeps the public re-export, so no call site moved) |
+| `item_instance_transfer.ts` | shared instanced-transfer rules for the anonymous exchange pipes (market listings + mail parcels, issue 1165): the transfer-lock predicate (its body is the dependency-free `transfer_lock.ts` leaf, re-exported here; `exchange_eligibility.ts` imports the leaf directly), the public display trim, payload-matching escrow removal, escrow-slot sanitizing; consumed by `market.ts`, `mail/post_office.ts`, and the ui staging gates (the `removePreferFungible` cross-import precedent) |
+| `broker_custody.ts` | the broker-side custody moves for the server's marketplace, both kept as thin `Sim` delegates the server resolves on the facade: `extractTradableCopyImpl` (one exact copy into escrow through the `inventory_extract.ts` leaf, plus the dismount when a seller escrows the mount they are riding) and `grantTradableCopyImpl` (the copy back into the bags through the shared `canGrantCopies` / `grantCopies` pair, in one call); draws NO rng |
+| `interaction.ts` | `lootCorpse`/`pickUpObject`/`interact` + corpse harvest and party auto-loot (W3); `corpse_interaction.ts` is its shared availability predicate (`corpseInteractionAvailability`: loot rights vs harvestability on a dead lootable mob) |
+| `bags.ts` | pooled bag capacity over TWO pools (phase 05): the backpack plus unrestricted bags feed the general pool, `materialsOnly` bags feed a materials-only pool; every fit gate takes the `PoolCapacity` split from `bag_pools.ts` (`bagPools`), while `bagCapacity` stays the summed total for the shrink guards, the grid, and the IWorld readout |
+| `quests/quest_credit.ts` | kill/collect/craft/gather quest credit + turn-in readiness, plus the farm ACTION arm `onCropFarmedForQuests`, a `SimContext` callback since masterwrought Phase 18 (bound in `buildSimContext` beside its sibling crediters) that `professions/farming.ts` calls through `ctx` after every committed plant and harvest (every harvest outcome, withered included; never from a deny arm; it never reads bags); siblings `quests/interact_object_credit.ts` (the per-object credit ledger for multi-count interact objectives, since interact deliberately does not consume the object) and `quests/profession_quest_effects.ts` (the profession-quest effect arms over `professions/archetype.ts`) |
+| `quests/quest_commands.ts` | accept/abandon/turn-in verbs + `queueQuestLetter` (W4; dev arm in `quests/dev_quest_commands.ts`) |
+| `quests/quest_item_presence.ts` | `playerHoldsQuestItem`: the accept-time re-grant predicate over bags/bank/mail/market escrow |
+| `quests/quest_marker_kind.ts` | `QuestMarkerKind` + `questMarkerKind`/`npcQuestMarkerKind`/`strongerQuestMarker`/`questMarkerRank`: the ONE quest-indicator classification rule the four presentation surfaces consume (nameplate, minimap, world map, gossip list); a pure leaf like `quest_targets.ts`, no SimContext, no rng, no clock |
+| `instances/dungeons.ts` | door triggers, enter/leave, instance slots, raid lockouts + raid gates, and the manual instance-reset lifecycle (`resetDungeonInstances` behind `/dungeon reset`, character-keyed cooldowns on the `dungeonResetLocks` primitive, `inheritDungeonResetLocks` on party join) |
+| `instances/instance_combat_hold.ts` | the instance combat hold: inside a claimed slot (a dungeon, or one raid room) hate tables are slot-scoped (an attacker drops only by leaving the slot, never by distance), the soft leash never fires, and a mob that cannot reach its target (geometry stall or hard tether) holds in place immune and aggro'd (`evadeInPlace`) instead of evading home; consumed by `combat/engaged_combat.ts`, `mob/combat_profile.ts`, `mob/reachability.ts`, `combat/damage.ts` |
+| `instances/ignivar_entry.ts` | the Ignivar raid door rules for entrants from outside the raid: the cleared-room checkpoint redirect (`resolveIgnivarEntryRoom` over the group's claims) and the anti-zerg combat entry lockout (`ignivarRaidInCombat`, the Rift rule applied to the four-room family); pure helpers `enterDungeon` consumes |
+| `rift/` | the procedural Rift subsystem: `runs.ts` (run lifecycle: enter/descend/exit, floor gates, level-20 gate, Heroic Mark rewards) + `portals.ts` (the ranked C/B/A/S world-portal scheduler), `rift_gen.ts` (the pure deterministic floor generator every host calls identically) + `authored.ts` (hand-authored room-graph floors; one wall-derivation source for collision and render) + `style.ts` (the theme-to-`InteriorStyle` leaf the generator and the authored floors share), `ranks.ts` (the ONE place baseLevel becomes rank-driven difficulty; every consumer derives the same rank), `progression.ts` (rift gear + deterministic forge ops; per-copy state on `ItemInstancePayload`, static defs stay the combat-safe shell), `persistence.ts` (versioned shared-event projection; runtime instance slots deliberately not saved), `race.ts` (the atomic first-clear claim on a shared `RiftEvent`), `loot_pools.ts` (rank loot pools reuse the tier's existing tables), `upgrade.ts` + `upgrader_draft.ts` (data-only Dungeon Upgrader artifacts, local draft as the AI-service fallback), `entry_clearance.ts` (the interior half of never-aggro-on-entry for GENERATED floors), `rift_lockpick.ts` (the giga-boss cache on the shared `lockpick.ts` engine + the delve lockpick wire). Content side: `content/rift/`; design: `docs/design/rift-portals.md` |
+| `instances/difficulty.ts` + `instances/heroic_vendor.ts` | heroic dungeons: tuning + `dungeonDifficulty`/`setDungeonDifficulty`, `awardHeroicMarks` and kill lockouts; the Heroic Quartermaster marks vendor |
+| `delves/runs.ts` | delve run lifecycle (`updateDelveRuns`, modules, rewards, shop) |
+| `delves/lockpick_controller.ts` | the lockpick session machine |
+| `delves/companion.ts` | `updateDelveCompanion` |
+| `delves/drowned_litany_boss.ts` / `_rite.ts` / `_rooms.ts` | The Drowned Litany delve: room puzzles, the Sister Nhalia boss, the Rite finale (difficulty knobs in `delves/rite_tuning.ts`, shared with the HUD popup) |
+| `mounts.ts` + `mounts_training.ts` + `mount_race.ts` | ground mounts (no flying, nothing touches the vertical axis): collection is ITEM-BORNE (a mount is owned while its reins item sits in bags or bank; reins are not soulbound, so ownership trades away with the item; no persisted selection, you ride the reins you use), live riding state is `Entity.mountKey` on the wire like `skin`; summoning channels (`updateMountTransition`, interruptible, gated on the riding skill then ownership, blocked in combat/death/spirit/Thornhollow) while dismounting is ALWAYS instant, as is a mount-to-mount swap; `mounts_training.ts` is Marla's free riding lesson on a lent training steed, `mount_race.ts` the always-open Highwatch show-jumping race (session state per rider, no shared state). Catalog data: `content/mounts.ts` |
+| `breath.ts` + `fatigue.ts` | the two water clocks, run per live player in the tick and NEVER overlapping: breath is the DEPTH clock (classic mirror-timer lungful; empty lungs drown at a steady fraction of max hp per second), fatigue is the open-sea DISTANCE clock (the Veiled Hollow's borderless sea: warning, short grace, then rising unavoidable damage until the swimmer turns back). Both draw no rng |
+| `climb.ts` | the ledge-climb MOVEMENT MODE (same family as Heroic Leap's flight and warrior Charge): while it runs it owns the body's position outright; the destination was validated BEFORE the climb started by the `physics/ledge.ts` grab query |
+| `social/party.ts` | the party/raid machine + `partyOf` |
+| `social/dungeon_finder.ts` | the Dungeon Finder (`docs/prd/dungeon-finder.md`): the automatic role queue plus the leader-run premade board; only FORMS groups (via `PartyMachine.formDungeonFinderGroup`), draws no rng; pinned by `tests/dungeon_finder.test.ts` |
+| `social/duel.ts` + `social/arena.ts` | duels + ranked arena (Elo, matchmaking) |
+| `social/fiesta.ts` + `social/fiesta_bots.ts` | fiesta match logic + offline bots |
+| `social/yumi.ts` | Protect Yumi 3v3/5v5 maze mode (layout leaf `yumi_maze_layout.ts`) |
+| `social/battleground.ts` | Thornhollow Fields 5v5 capture-the-flag (layout leaf `battleground_layout.ts`; resolved-match records in the `battleground_outcomes.ts` leaf) and its siblings: `battleground_proposal.ts` (the timed queue-pop Accept/Decline between the matchmaker's pick and the seating, so a walked-away player never gets seated), `battleground_party.ts` (each team of five fights as ONE party, formed through the same dungeon-finder formation seam manual groups use and unwound at match end or desertion), `battleground_backfill.ts` (the pure half of "a fighter left, can a queued player take the seat") |
+| `social/ready_check.ts` | `/ready`: the `readyChecks` primitive + the `updateReadyChecks` phase |
+| `unstuck.ts` | `/unstuck` recovery countdown, the graveyard move (alive) or graveyard revive (dead), cancellation, and cooldown. Charges Unstuck Sickness, never a death |
+| `social/card_duel.ts` | the Card Duel minigame (Card Master NPC): queue/match state, the `updateCardDuelQueue` (pairing) and `updateCardDuelDeadlines` (AFK forfeit/void) phases; pure cores behind it are `social/card_duel_queue.ts` (the FIFO pairing core, no SimContext, no rng) and `minigames/card_hand.ts` (the deck/hand engine; shuffles draw only from the `Rng` passed in) |
+| `instances/card_master.ts` | the Card Master NPC proximity gate (`cardMasterInRange`) `social/card_duel.ts` queues against |
+| `social/trade.ts` + `social/chat.ts` | player trade; the `chat()` router, emotes, whispers, channel membership (readout formatters in `social/chat_readouts.ts`). `Sim` keeps only a thin `chat()` delegate for the `IWorld` facade; new slash commands land in `social/chat.ts`, never on `Sim`. `social/away.ts` owns the /afk and /dnd transitions (ONE source of truth for the `PlayerMeta.away` state and its `Entity.afk` wire mirror, so neither can drift) |
+| `escort.ts` | escort runs: a quest NPC walks an authored waypoint path through scripted ambush waves (`EscortDef` data merged into `ESCORTS`); owns the whole idle/walking/ambush/credit/respawn lifecycle |
+| `soulwell.ts` | the Warlock Soulwell: a temporary party-gated interactable refilling eligible players to three stones; the server owns every membership and capacity decision |
+| `portals.ts` | paired overworld portals between zone bands no road connects (pure `PORTALS` data checked per live player right after dungeon door triggers; the teleport recipe mirrors `enterDungeon`); no entities, no rng draws |
+| `interactions/` | quest-scripted world interactables (`firebottle_hut.ts`: the reusable firebottle vs murloc huts, with the per-player reburn cooldown on `QuestProgress`); a new scripted interactable lands here as its own module |
+| `dev_commands.ts` + `dev/` | the `ctx.devCommands` gated `/dev` cheat surface: `handleDevChat` (re-exported by `social/chat.ts` for the chat router), `spawnMobsForDev`/`despawnMobsForDev` (dev-spawned mobs are torn down in `removePlayer`), `resetCombatForDev`; pinned by `tests/dev_commands.test.ts`. `dev/` holds the dev-only playtest harnesses (one production-reachable exception: `bestEpicGearFor` also feeds the practice dummy reference vitals in `mob/practice_dummies.ts`): `bis_gear.ts` (`/dev bis`: applies the selected spec's frozen top-parse loadout from `parse_bis_loadouts.ts`, with the deterministic epic scorer as the spec-less fallback and as the balance probes' frozen reference kit via `equipReferenceEpicKitForDev`, draws no rng) and `cascade_playtest.ts` (ALLOW_DEV_COMMANDS-gated manual-playtest metrics: pure observation, never feeds a gameplay decision or the wire) |
+| `targeting.ts` | player target selection + raid markers |
+| `market.ts` | the World Market (`Market` class) |
+| `mail/post_office.ts` | player mail (send/take/read/delete, the mailbox anchor gate); every read rides the per-recipient `MailIndex` buckets, every observable mutation advances the book revision the server's `mail` snapshot gate polls (`mailRevFor`, null away from a pillar) |
+| `mail/mail_index.ts` | pure derived-state leaf behind the post: per-recipient letter buckets plus the delivered-and-unread counts and the in-flight set, kept in lockstep by track/untrack/rekey/markRead/deliverDue; never persisted, rebuilt from the book on load; pinned by `tests/mail_index.test.ts` |
+| `bank.ts` | the personal pooled bank (The Gilded Strongbox): capacity math + the container-agnostic `moveBetweenContainers`, `bankDeposit`/`bankWithdraw`/`bankBuySlots`, the server-originated `bankGrantStorageSlots` (the ONE admission point for a Claudium slot grant: key dedupe, full-grant fit, next-rung rule, with a `dryRun` arm for the pre-spend check), the bag-socket surface, `bankInfoFor` (boundary-clones, banker-gated), `sanitizeBankState` (the one load path), `nearBanker`, and `applyBankBonusStamp` (the ONE writer of the host-stamped bonus, so the blob's shape is owned here rather than at each sim.ts call site). `bankPurchasedSlotsFor` is the one read here with NO proximity gate, deliberately: the Strongbox store opens anywhere and gates its charter list on it. It takes a narrow structural `BankLadderCtx` rather than `SimContext` so ONE implementation serves both the offline `Sim` getter and `server/bank_wire.ts`'s self-block emitter, and it carries a contract the client depends on: within a session the counter is monotone NON-DECREASING (the identically named counter on the guild BOOK is not). State on `PlayerMeta.bank`, the `bankerIds` anchor list on `Sim`; the owner snapshot is revision-gated (`bankWireRev` bumped by every bank write via `bumpBankWireRev`, read by `bankInfoWireRevFor`, null away from a banker, the vault twin); draws NO rng |
+| `guild_bank.ts` | the shared guild treasury + item store (guild-wide read-only view, officer-plus edits via `GUILD_BANK_EDIT_RANKS`): `sanitizeGuildBankState` is the one load path, the op bodies sit behind `requireOfficerBook` + the anonymous-pipe item policy, and `guildBankInfoFor` boundary-clones with the officer verdict stamped as `canEdit`. Invariants: EVERY book mutation rides the server host's `runGuildBankOp` wrapper (a private method on `server/game.ts`; the sim owns the op bodies, the host owns the wrapping) so its delta replays and reverts, the admin `purgeDormantGuildBankSlot` escape hatch included; the escrow replay pair (`applyGuildBankDeltasTo` forward onto DURABLE truth, `revertGuildBankDeltasTo` backward onto the LIVE book) is ALL-OR-NOTHING, never clamps a shortfall away, never half-writes (a book half that cannot apply must take its paired character half down with it); slot ops are recorded ABSOLUTELY (`purchasedSlotsBefore`/`After`), never as a relative grant; `netGuildBankOpLogForReplay` lives beside the applier it must agree with. Cross-imports `nearBanker`/`moveBetweenContainers` from `bank.ts` and `addStacked` from `bags.ts` (the invited reuse seams); books on `Sim.guildBanks` (empty offline); draws NO rng |
+| `materials_vault.ts` | the Materials Vault: the per-character, per-material stockpile beside the slot bank at the same bursars. State on `PlayerMeta.vault` (persisted inside the character save), capacity math over the five-rung gold ladder whose rung 0 IS the unlock (`vaultCapacityPerMaterial`, `VAULT_UPGRADE_PRICES`), the four command bodies `vaultDeposit`/`vaultWithdraw`/`vaultDepositAll`/`vaultBuyUpgrade` (banker-gated via `bank.ts` `nearBanker`; `vaultDepositAll` is the Phase 03 batched sweep: one command, vaultDeposit's exact per-slot rules, silent skips), `vaultInfoFor` (boundary-clones), `sanitizeVaultState` (the one load path: keeps every row that holds something, floors/clamps counts, and drops only a wrong-SHAPED stock, always with an operator trace via its owner/droppedSink params), and `vaultMaterialIds()` delegating to the shared `material_ids.ts` EAGER registry (NEVER `material_taxonomy.ts`: the sim-side scope rule in both headers); identity-preserving stacks ride `vault.special` (instanced rows kept whole, matched by `specialRefMatches`/`resolveVaultSpecialIndex`, persisted sparsely via `savedVaultState`/`SavedMaterialsVaultState`); the owner snapshot is revision-gated (`vaultWireRev` bumped by every mutation through `consumePlayerVaultStock` and the command bodies, read by `vaultInfoWireRevFor`/`vaultWireRevFor`, null away from a banker); plus the two-pool crafting read/apply pair `drawableVaultCount` (the ONE drawable rule: a row that is not a positive integer inside float precision stays dormant, never counted, never spent, never deleted) / `consumeVaultStock` (applies a PLANNED draw, all-or-nothing, deletes the key at zero, rung-ungated like `vaultWithdraw`) / `craftVaultStockFor` (the boundary-cloning drawable read the batch simulation and any display consumer take, built on `vault_craft_gate.ts` `vaultDrawStock`); draws NO rng |
+| `vault_craft_gate.ts` | the place gate for two-pool crafting: `vaultDrawBlocked` (may this player draw vault reagents from where they stand: the OPEN WORLD is the only allowed context) and `vaultDrawStock` (the live stock a draw may spend, or null). Fail closed in both directions, and NEW INSTANCED CONTENT MUST BE ADDED HERE: per-pid membership arms (`bgMatches`, `arenaMatches`, `delveRunForPlayer`) cover logical presence across the teleport gaps a position read misses, position arms (`instanceInfoAt` for dungeon AND raid, `riftInstanceAtPos`) cover live claims, and one `DUNGEON_X_THRESHOLD` geometry backstop covers every instanced band plus the far-east void (each band predicate in `data.ts` is provably subsumed; the constants are stated in the module); a DERIVED west fast path (computed per call over the live dungeon defs and the rift band bounds, deliberately unmemoized: DUNGEONS is not frozen, so a memo would be hidden sim state) skips the pool scans for open-world positions and disables itself the moment any def's claim footprint or the rift band can sit west of the threshold, so the layout-independence pin stays data-derived. NEVER built on `colliders.ts` `isInstancedRegion` (a physics-solver dispatch predicate that deliberately excludes the battleground band). Draws NO rng, mutates nothing |
+| `loot/loot_roll.ts` + `loot/loot_ffa.ts` | loot rolls, corpse loot, party-loot strategy, `rollLoot`; the tap-lock FFA timeout |
+| `loot/awarded_loot_hold.ts` | the full-bags award hold: `grantAwardedLootItem` (the ONE loot-award grant, BoP party-trade window included) and `grantOrHoldAwardedLoot` (the async award paths, need/greed win, master-loot assign, round-robin: a winner with no bag room gets a winner-only `personalFor` corpse slot and the corpse keeps at least `HELD_LOOT_CORPSE_SECONDS`, never a force-add past capacity; the item decays with the corpse if they never make room, deliberately with NO mailbox fallback); draws NO rng |
+| `loot/loot_difficulty_gate.ts` | `lootEntryRollsOnClaim`: the ONE predicate for `LootEntry.normalOnly` (a Normal-only row, skipped whole on a heroic claim so the boss's `HEROIC_BOSS_LOOT` append can replace the slot); shared by `rollLoot` and the Dungeon Finder preview; draws NO rng |
+| `deeds.ts` | the Book of Deeds evaluator (`updateDeeds`): runs at the very end of the tick tail (grant evaluation over dirty players only via `markDeedsDirty`, plus a 1 Hz proximity sweep for visit marks), draws NO rng, grants into `PlayerMeta.deedsEarned` + maintains `deedStats`/`renown`, emits id-based `deedUnlocked` (retro on join); plus the bespoke `manual`-deed grant sites, the session-only `DeedRuntime` encounter tracking, and the two worn-cosmetic validators `setActiveTitle` / `setActiveBorder` (the ONE earned-plus-reward-KIND check both worlds reach, the server dispatch included; invalid input is a silent no-op, and each stores the DEED ID, never the reward slug or text). Authoring contract: `docs/design/deeds.md` |
+| `reliquary.ts` | Reliquary catalog state: first-find provenance + the capped recent ring (`noteRelicItemFind`/`noteReliquaryMark`), the per-relic obtain tally (`noteRelicObtain`, bumped by the grant hub for WORLD-SOURCED acquisitions only; every `movement: true` grant, trade/mail/market/enchant re-mint/unbind peel/returned commission, is skipped), the sparse blob round-trip (`serializeReliquaryState` plus THREE load entry points, so `server/character_sheet.ts` can restore two public-sheet surfaces without paying a full restore, all sharing one filter implementation), and the pure completion/rank readouts. Its `WeakMap` memos (wire json, catalog index, scoring pages, each with an exported test probe seam) are the sanctioned module-global exemplars: see Adding a mechanic, step 1. Cosmetic only, draws NO rng |
+| `dead_gate.ts` | `refusedWhileDead`: the shared while-dead refusal for the profession-action wrappers on `Sim` (craft/train/salvage/disenchant/enchant-apply/unbind), mobile-station placement, the tool-effect slot/recharge arms, the rift forge, and the Perfecting deny head (belt-and-braces: the two Sim wrappers gate first AND `professions/perfecting.ts` repeats it as arm 1, covering direct headless callers; the header names the three call-site shapes); emits the matcher-covered error line and suppresses any result event, draws NO rng |
+| `mob/rift_escape_window.ts` | the rift boss escape-window seam: `riftEscapeWindowActive` (is a telegraph in flight), the stomp/aoePulse windup constants + `resetRiftMechanicWindups`, and `impairedZoneFuseMult` (impairment-scaled death-zone fuses); consumed by the `mob/locomotion.ts` drivers, the anti-kite snare hold, and the `mob/mob_swing.ts` control-proc suppression; draws NO rng |
+| `professions/` | gathering/crafting/enchanting/salvage/archetypes; governed by its own `CLAUDE.md` (hooks `drainGatheringGrants` into the per-player tick) |
+| `pvp/` | WARFARE honor currency + combat-rating rules (`honor.ts` behind the seam; pure rating math in `power.ts`; the Highwatch quartermaster spawn); governed by its own `CLAUDE.md` |
+
+### Pure leaves (no `SimContext`; a Vitest imports them directly)
+A leaf is any `src/sim` file with no `sim_context` import; `threat.ts`/`spatial.ts`/
+`format_money.ts` above are the pattern. Reuse or imitate one before inlining pure logic
+in a system module; most leaves are self-describing from their module headers, so read
+those rather than a roster here. The ones whose CONTRACT you cannot infer from the name:
+- `stun_dr.ts`: CC diminishing-return categories plus the PvP diminishing-returns
+  ladder constants and the player-sourced crowd-control duration funnel.
+- `launch_paperdoll_slots.ts`: the FROZEN launch-era slot list, for launch-era
+  completeness records ONLY: never validate a slot against it; use `isEquipSlot` from
+  `types.ts`, derived from the live `ALL_EQUIP_SLOTS`.
+- `material_taxonomy.ts` + `material_profession_affinity.ts`: UI-ONLY sim leaves,
+  consumed only by `src/ui`; no `src/sim` file may import them (enforced by their
+  headers).
+- `mob/scan_counters.ts` + `social/battleground_outcomes.ts`: the read-after-tick
+  pattern: a capped, drainable tally the authoritative host reads post-tick
+  (`battleground_outcomes` is written once per match, not once per fighter, because
+  `bgEnd` is a personal event).
+- `vendor_buy_stack.ts`: vendor purchase quantity math shared by `items.ts` `buyItem`
+  AND the vendor window's preview, so no affordance can promise a quantity the buy path
+  refuses; exports `VendorBuyOptions`, the one buyItem request shape.
+- `market_listing_ids.ts`: the World Market id allocator, including the reserved house
+  band and load-time reissue that keeps one row per id.
+- `resurrection.ts`: both sicknesses (The Keeper's Toll and the shorter Unstuck one),
+  shared by every death site, PLUS the two "which auras survive this wipe" predicates
+  every wipe site routes through so the rule cannot drift: `aurasSurvivingDeath` (death
+  and every respawn/resurrect path) and `aurasSurvivingCleanSlate` (the harsher
+  clean-slate wipe, which sheds even the sicknesses: called directly only inside
+  `readyArenaFighter`'s `clearPrep` arm and by a Fiesta down, and reached from every
+  `readyArenaFighter(..., { clearPrep: true })` site and every call of its
+  `resetForArena` wrapper, so every instanced match's seat and end wipes: arena,
+  Fiesta, Protect Yumi, Thornhollow Fields (the Vale Cup's seat and teardown were
+  the fifth until it retired with release/v0.41.0); the three caller sets are
+  pinned in `tests/resurrection.test.ts`).
+- `ride_height.ts`: the waterline ride height slope gating reads for wading and
+  swimming bodies (gating on the RAW lakebed height reads an uneven bed as a wall of
+  cliffs and sticks waders in shore pockets).
+- `mob/mechanic_spacing.ts`: the rift boss shared mechanic spacing lock and its
+  oldest-due drain; stamped per-spawn by `rift/runs.ts`, consumed by the
+  `runMobAttackMechanics` drivers.
+- `stun_dr.ts`: CC diminishing-return categories, PLUS the PvP diminishing-returns
+  ladder: the seven `PVP_*_DR_*` reset/multiplier/duration constants and the
+  player-sourced crowd-control funnel, `crowdControlDurationAfterDr`/
+  `diminishedCrowdControlDuration`.
+- `jail.ts`: moderation-jail cage layout, gate teleport, and visitor spot; the jail
+  SYSTEM logic stays on `Sim`.
+- `professions/proficiency_display_heal.ts`: the one-time gathering-proficiency
+  display-band heal applied at character load.
+- `bag_pools.ts`: the container-agnostic two-pool capacity math: `poolCapacityOf` over
+  a base budget plus a bag list (the materials-first allocation rule its header pins),
+  `freePoolSlots`/`poolOccupancyOf`/`totalPoolCapacity`/`generalOnlyPools`. The material
+  predicate arrives INJECTED (bind `isMaterialItemId` the way `bags.ts` does); phase 06
+  reuses the module for the bank.
+- `vault_material_sources.ts` + `vault_slot_ops.ts`: the Materials Vault's SOURCE-AWARE
+  half, split rules-from-bodies so `materials_vault.ts` stays the state, the capacity math
+  and the four command shells. The first is a pure leaf with everything injected (the
+  compact count record, the identity collection, the material set), shared by
+  `materials_vault.ts` AND `vault_craft_gate.ts` so neither invents a second definition:
+  the deposit ROUTING rule (`needsSourceRow`, re-exported as the vault's
+  `isVaultSpecialSlot`; a count map has nowhere to put a gatherer, so a stack carrying
+  recorded provenance joins the identity collection), the migrate-on-touch fold predicate
+  (`absorbsCompactStock`), the automatic-draw ELIGIBILITY rule (`autoDrawableRow` /
+  `autoDrawableUnits`: unchanged from before per-unit provenance, premium buckets and rows
+  keeping per-copy identity excluded, a mixed row exposing its eligible count rather than
+  refusing whole), and the one per-id drawable total BOTH the read
+  (`drawableVaultProjection`) and the spend (`planVaultDraw`, which refuses anything past
+  it) compute the same way, so they agree by construction. The second holds the three
+  per-slot BODIES as inert decisions `materials_vault.ts` applies (`planVaultDeposit`,
+  `planVaultRowWithdraw` with the bag fit injected, `loadVaultSpecialRow`), which is what
+  keeps every store mutation in one file for the cvault wire's rev-bump enumeration.
+  NEITHER owns a load policy: `material_slot_load.ts` is the shared
+  pre-validate/coerce/normalize triple every container runs, and an unreadable row refuses
+  the whole character load. The vault has NO separation feature: `materialSeparated` is a
+  bank and bags owner flag, stripped on deposit and never persisted here. Both draw NO rng.
+- `material_ids.ts` + `material_derivation.ts`: the ONE material-set derive both sides
+  share. `material_derivation.ts` is runtime-import-free by contract (every content
+  table arrives as a parameter); `material_ids.ts` derives ONE frozen registry EAGERLY
+  at module evaluation from the gathering/salvage table leaves (importable by sim files,
+  so its eval order is pinned by `tests/material_ids_eval_order.test.ts`, data-first
+  arms included); `vaultMaterialIds()` delegates to the registry.
+- `professions/gathering_materials.ts` + `professions/salvage_materials.ts`: the two PURE
+  table leaves the eager `material_ids.ts` registry evaluates against
+  (`NODE_MATERIAL_TABLE`, `SALVAGE_MATERIAL_BY_QUALITY`; type-only imports by contract,
+  so classification reads them without pulling the gathering/salvage command bodies into
+  its module graph), covered by the registry's eval-order pin as its data-first arms.
+- `daily_rewards_stub.ts`: the offline daily-rewards readout constant, and the
+  ONE file on the $WOC token-firewall allowlist (`tests/architecture.test.ts`
+  pins its read-only-projection shape: one exported function, no control flow,
+  type-only imports).
+
+## The SimContext seam (final shape)
+`sim_context.ts` defines `SimContext` = `SimContextPrimitives` (live getters onto the
+running `Sim`) + `SimContextCallbacks` (cross-system functions). `Sim.buildSimContext()`
+binds every member. The seam carries two kinds of callback:
+
+- **Owned by a module** (the binding points at the module; `Sim` keeps a thin delegate for
+  foreign callers): e.g. `dealDamage`/`handleDeath`/`grantXp` (damage), `runEffects`
+  (effect dispatch), `updateMob`/`onBossDeath` (locomotion), `updateNythraxisEncounter`
+  (encounter), `rollLoot` (loot), `updateDelveCompanion` (companion), etc.
+- **Still on `Sim` / shared** (exposed through the seam but the body stays on `Sim`):
+  the shared combat/movement entry points below, plus core helpers like `resolve`,
+  `playerMods`, `enterCombat`, `isHostileTo`/`isFriendlyTo`, `addItem`/`removeItem`/
+  `countItem` (inventory hub), and `isControlAura` (the general CC predicate).
+
+**Shared entry points: never owned by one slice, never deleted** (called from multiple
+foreign hot paths, reachable via `SimContext`):
+- `mobSwing`: base mob hit-table shell on `Sim`; callers in mob combat, profiled mob
+  combat, the melee pet attack, and the delve companion attack.
+- `updateRangedPetAttack`: mob ranged path + hunter pet ranged.
+- `pulseGroundAoE`: the per-tick ground-AoE pulse AND the effect-dispatch on-cast path
+  (two callers; the dispatch caller is the easy-to-miss one).
+- `applyTaunt`: player ability/effect, pet, and pet-attack paths.
+- `meleeSwing`: body lives in `combat/auto_attack.ts`; `Sim` keeps the thin delegate
+  because both the auto-attack driver and the `castAbility` weaponStrike path use it.
+- `moveToward` / `fleeMoveSpeed`: shared movement entries used by mob/pet/companion/NPC.
+
+If you ever find a `SimContext` member with zero consumers, that is dead scaffolding:
+remove the declaration AND its binding in the same change, then re-run the parity gate.
+
+## Determinism as it bites here
+- Randomness: `this.rng` only; `time`/`tickCount` are sim-clock fields advanced by `tick()`, use them, not wall-clock. The banned-API list is enforced mechanically by `tests/architecture.test.ts`.
+- Fixed step: everything scales by `DT` (=1/20). There is no variable delta. The seed is fixed once in the `Sim` ctor.
+- Order matters: one shared `mulberry32` stream feeds every draw site. Changing the
+  tick-phase order, an entity-iteration order, or an early-bail that can draw rng shifts
+  the global draw order and forks the world. Don't reorder `tick()` or a loop casually;
+  the parity gate's draw-order log catches it.
+- The vault consumption admission (`SimConfig.vaultConsumptionAdmission`) is a HOST
+  INPUT the determinism contract is parameterized over, not part of the seeded world.
+  It is consulted at FOUR sites, and a server-side refusal forks each differently: in
+  `resolveCraftForRecipe` the refusal early-returns BEFORE that path's output-side rng
+  draw (two draws for a Jack-attuned crafter), so a realm whose admission refused draws
+  a different stream tail than an offline replay of the same inputs; the three
+  enchant-apply arms in `professions/enchanting.ts` (the worn apply, the bagged
+  replace, the plain bagged apply) sit on paths with ZERO post-admission draws
+  (enchanting's only rng draws are on the disenchant path), so a refusal there never
+  shifts the stream but still forks persisted character state against the inert
+  replay. Offline and headless hosts wire the inert admission (never refuses), so no
+  live parity gate sees the divergence; treat "same seed, same world" as holding PER
+  admission behavior, and if that ever stops being acceptable, move the crafting
+  refusal after the draws rather than teaching replays about the journal. The
+  carve-out is PINNED, not just documented:
+  `tests/vault_admission_determinism.test.ts` runs the same seed twice (inert vs
+  refusing admission) per shape and asserts the divergence is exactly this: the
+  crafting refusal draws nothing, leaves persisted character state byte-identical, and
+  skips exactly one draw (two for a Jack-attuned crafter), with the streams back in
+  lockstep after replaying the skipped draws and staying in lockstep over further
+  ticks; the enchant-apply refusal skips ZERO draws (the streams never diverge) and
+  forks persisted state only. If that pin fails, the divergence widened or narrowed:
+  change this paragraph and the pin together, in the same change.
+  A SECOND host input of the same shape exists since the masterwrought daily gates:
+  `resetDay` (fed by the host calendar seam) gates `craftDailyLimitReached` FIRST in
+  `evaluateCraftAdmission`, so a oncePerDay refusal skips the resolve's one to two
+  output draws exactly like the vault refusal above. Any harness replaying a command
+  stream against a seed must capture `resetDay` beside the seed (recorded at the
+  Phase 12 QA ledger's replay note). The host input is CLAMPED at the seam since
+  masterwrought Phase 18: `Sim.resetDay` is a setter that keeps the highest key
+  ever fed (monotone non-decreasing; `''` never lowers it, closing the
+  `''`-bounce), so a backwards realm-calendar read cannot re-open a spent daily
+  gate and only a Sim that was NEVER fed a day observes `''`. A harness that
+  wants the no-calendar arm builds a fresh Sim rather than assigning `''`.
+  This carve-out is PINNED too:
+  `tests/quickening_catalyst_gate.test.ts` covers both gate crossings,
+  `tests/delves.test.ts` the `''` default, and `tests/reset_day_guard.test.ts`
+  the clamp (a backwards read held, a spent gate staying spent); change this
+  paragraph and those pins together, in the same change, like the vault
+  paragraph above.
+
+## sim.ts coordinator map (what `tick()` does, in order)
+`tick()` reads as a linear registry of system calls routed through `this.ctx`, in phase
+GROUPS: advance the clock; the prologue (respawns, world bosses, ground AoEs, despawn
+decay, in-flight projectiles); the per-player loop (movement/doors/casting/auto-attack/
+regen for live players, the ghost-run arm for released spirits, timers + auras for dead
+players too, intentionally); the per-entity loop (mob update + auras, friendly-NPC aura
+cleanse, object respawn); the `engagedPids` combat-flag pass (reads pet AND mob state
+after both update, and drops out-of-reach attackers off the hate tables: the PHASE stays in
+the coordinator, never moves into a slice; the derivation itself is
+`combat/engaged_combat.ts`'s `collectEngagedPids`); the
+end-of-tick system block in fixed order (duels, Card Duel pairing + AFK deadlines,
+arena, trades/ready-checks, ..., through the delayed-event drain, then the
+deeds evaluator `updateDeeds`: zero rng, after the drain so it sees same-tick results); grid
+re-bucketing LAST, then drain + return the `SimEvent[]`. The authoritative phase list is
+`tick()` itself: most phases carry a self-naming `lap?('...')` marker (a few adjacent
+calls share one, e.g. trades + ready checks), so read those,
+not a doc copy. Phase ORDER is rng-draw-order load-bearing (see Determinism); a
+zero-rng phase (the retired Vale Cup was the precedent) may append, anything
+else must not reorder.
+
+Beyond `tick()`, `sim.ts` legitimately keeps: the `IWorld` facade delegates, the
+back-compat accessors (`player`/`inventory`/`xp`/`equipment`/`questLog`/`talents`/... that
+delegate to the primary player; per-player state lives in `PlayerMeta`, not the `Entity`),
+a thin `chat()` delegate (the router body lives in `social/chat.ts`), the inventory hub,
+persistence (`serializeCharacter`/`addPlayer`), the shared entry points above, and
+`buildSimContext()`. A NEW self-contained system belongs in its own sibling module behind
+`SimContext`, not as another method cluster on `Sim`.
+
+## Tuning constants: change numbers THERE, not inline
+- Global gameplay/formulas: top of **`types.ts`** (`MELEE_RANGE`, `MELEE_ARC`, `LEASH_DISTANCE`, `GCD`, `XP_TABLE`, rage/hit/armor fns, ...).
+- Sim-internal knobs live as a named `const` next to their owning module (`GRAVITY` in `player_motion.ts`, `PARTY_*` in `social/party.ts`, `MARKET_*` in `market.ts`, ...); a few remain atop `sim.ts` (`CHARGE_*`, `PET_*`, `ARENA_LADDER_SIZE`). Edit the named const, don't hardcode magic numbers in methods.
+
+## Talking to the outside
+- Output is the **`SimEvent`** union (`types.ts`). Code calls `this.emit(ev)` (or `ctx.emit` from a module); `tick()` returns the drained `SimEvent[]`. An event with `pid` is personal (delivered only to that player's owner); without `pid` it's world-visible.
+- Stepping: callers run `sim.tick()` per frame (`server/game.ts`; `headless/env_server.ts` loops it `frameSkip` times). The sim never self-schedules.
+
+## Player-facing text is English here (localized at the client)
+- The sim carries **no `t()`/DOM/i18n imports**. Player-visible strings are emitted as
+  English literals/templates on `SimEvent`s via `this.emit`, `this.error(pid, text)`
+  (`type:'error'` toast), `this.notice(pid, text)` (`type:'log'` line), and
+  `stopFollow(p, msg)` (routes `msg` through `this.error`). A module emits the same way
+  through `ctx.emit`/`ctx.error`/`ctx.notice`. Translation happens only at the client
+  boundary, in `src/ui/sim_i18n.ts` (`localizeSimText`): an `EXACT` map of placeholder-free
+  strings plus ordered `RULES` regexes that re-render each emit through `t()`/`tSim()`.
+- **Money is built English here, re-localized client-side.** The sim has its OWN
+  `formatMoney` in **`format_money.ts`** (NOT the `src/ui/i18n.ts` one) that yields plain
+  `"3g 5s"` fragments inside loot/quest/vendor/market emit text; this is intentional (the
+  sim stays language-agnostic). The client re-renders those amounts locale-aware in hud's
+  `localizeLootText` arm: `parseSimMoney` reverses the `"Ng Ns Nc"` fragment back to copper,
+  then the i18n `formatMoney` formats it. Don't reach for the i18n `formatMoney`/`formatNumber`
+  here, and don't hand-format with a separator a locale would change.
+- **Dev-channel text stays English.** The sim's only non-player text is a few
+  `console.warn` diagnostics (no user-surfaced `throw`s); they are never matched. If a
+  string would ever feed both a diagnostic log and a player-visible `SimEvent`, split it
+  so only the player arm (`error`/`notice`) is registered in `sim_i18n.ts`.
+- **Changing or adding a player string is a two-file change:** edit the literal at its
+  emit site (in `sim.ts` OR the owning module) AND add/update the matching `EXACT` value or
+  `RULE` (plus its `BASE_DICT` / EXTRA-table key) in `sim_i18n.ts`, in the same change.
+  Broad multi-capture `RULES` (e.g. `unleashes`) stay LAST, after the specific
+  `{name} {verb}!` rules.
+- The **S3 drift guard** (`tests/localization_fixes.test.ts`) parses the sim files at test
+  time and fails CI on any emit no client matcher recognizes. It only sees string
+  **literals** at the emit site: variable-routed emits (e.g. `helpLines()` looped through
+  `error(id, line)`) and `?? 'English'` fallbacks are invisible. Strings that ship English
+  on purpose (the v0.7 slash-command readouts) are tracked in the status registry
+  (`blockedSource` / `ALLOW_V07_SLASH`); prefer a literal at the emit site so the guard
+  keeps working.
+
+## Adding a mechanic here
+1. Add state to `Entity` (`types.ts`) and/or `PlayerMeta`; init it in `entity.ts` `baseEntity` / `createPlayer`. State stays on `Sim`/`Entity`, not in a module global. The ONE sanctioned module-global shape is a derived-output memo behind an identity-keyed `WeakMap`, and it comes in two forms, both in `reliquary.ts`. Keyed on LIVE STATE (the wire memo, keyed on a `ReliquaryState`): every writer of its inputs must bump its revision. Keyed on an IMMUTABLE CONTENT TABLE (the catalog index, keyed on the pages array): there is no revision, so the table it keys on must be frozen at its content site instead, which is what makes "the contents behind this key cannot change" enforced rather than assumed; keying on identity is also what keeps a caller's own table from answering with the default one's index. Either form: its output must be byte-identical to the uncached expression, it must never feed sim state or the save shape, and a guard test must pin reuse by identity (and, for the content form, cross-table isolation). Anything less is hidden sim state; do not add one casually.
+2. Decide where the BEHAVIOR lives:
+   - Extending an existing system -> its module (e.g. a new ability effect -> `combat/effect_dispatch.ts`).
+   - A NEW self-contained system -> a NEW sibling module that talks only to `SimContext`. Add the callbacks it needs to `sim_context.ts` (append-only) and bind them in `buildSimContext()`; keep a thin `Sim` delegate if a foreign caller resolves the method on the facade.
+   - Pure presentation/domain logic (geometry, formatting, id/state resolution) -> a small host-agnostic leaf module a Vitest imports directly (like `threat.ts`/`spatial.ts`/`format_money.ts`).
+3. New randomness through `this.rng`/`ctx.rng`; new output via `emit` (add a `SimEvent` variant if needed). Keep new `tick()` work in the right phase; don't reorder existing phases.
+4. If render/UI must see it or trigger it: follow the root `IWorld` facet procedure (the matching `src/world_api/<domain>.ts` facet, BOTH worlds, the `tests/world_api_parity.test.ts` pin; detail in `src/world_api/CLAUDE.md`). Presentation never reaches into `Sim` directly.
+5. Add/adjust a Vitest (`tests/`), ideally a determinism/replay assertion; a new mechanic with rng draws wants a `tests/parity` scenario. New conquerable CONTENT carries the root new-content obligations (deeds, reliquary, wiki; see the root CLAUDE.md new-content bullet).
+6. Fix bugs test-first per the root rule (the `extract-and-test` skill has the recipe); a fix touching rng draw sites re-runs `tests/parity`.
+
+## Never here
+- **Never derive player stats outside `recalcPlayerStats`**, and never walk talent state per tick: an allocation is flat-precomputed into `TalentModifiers` (`computeTalentModifiers`) at allocation/respec time, and `recomputeTalents` (`progression/talents.ts`) is the sole re-resolve.

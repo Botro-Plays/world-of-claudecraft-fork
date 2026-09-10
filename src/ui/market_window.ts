@@ -1,0 +1,1377 @@
+// Thin DOM painter for the World Market window.
+//
+// The consumer half of the pure-core + thin-painter split: it paints
+// #market-window from the structured MarketView (market_view.ts) and owns the
+// window's view-state (tab, filters, page, the staged sell item, the search
+// term) plus its lifecycle (open / close / refresh-on-snapshot). The pure core
+// decides WHICH state the snapshot is in and WHAT rows it shows; this module
+// renders that and wires the buy / list / cancel / collect / filter dispatch
+// back through IWorld + injected callbacks. It holds no Sim reference and reaches
+// into Hud only through its deps.
+//
+// Colors live in the extracted stylesheet: the item-quality name tint comes from
+// market_name_color.ts as CSS custom properties (rare/epic lifted to clear WCAG
+// AA on the panel, market-scoped), so no raw hex sits in this painter.
+//
+// The Browse tab's Buy button dispatches through a confirm prompt rather than
+// straight to IWorld: the terms it states and the confirm-time recheck that
+// guards the dispatch are the pure core market_buy_confirm_core.ts, and the
+// prompt itself is Hud's one #confirm-dialog, injected as a dep.
+
+import { audio } from '../game/audio';
+import { ITEMS } from '../sim/data';
+import type { ItemInstancePayload, ItemSlot } from '../sim/types';
+import {
+  type IWorld,
+  type MarketInfo,
+  type MarketListingView,
+  queryDiffersFromEcho,
+  searchDiffersFromEcho,
+} from '../world_api';
+import { markDialogRoot } from './dialog_root';
+import { dropdownKeyNav } from './dropdown_nav';
+import { computeDropdownPlacement } from './dropdown_position';
+import { itemDisplayName } from './entity_i18n';
+import { esc } from './esc';
+import {
+  formatMoney as formatLocalizedMoney,
+  formatNumber,
+  getLanguage,
+  languageTag,
+  t,
+} from './i18n';
+import {
+  marketArmorBadge,
+  marketArmorPips,
+  marketHeroicStar,
+  marketPatternMark,
+} from './market_armor_badge';
+import {
+  type MarketBuyConfirm,
+  marketBuyConfirm,
+  recheckMarketBuy,
+} from './market_buy_confirm_core';
+import {
+  defaultMarketQuery,
+  MARKET_ARMOR_CLASS_FILTERS,
+  MARKET_ITEM_TYPE_FILTERS,
+  MARKET_PRIMARY_STAT_FILTERS,
+  MARKET_RARITY_FILTERS,
+  MARKET_SORT_OPTIONS,
+  type MarketArmorClassFilter,
+  type MarketItemTypeFilter,
+  type MarketPrimaryStatFilter,
+  type MarketQuery,
+  type MarketRarityFilter,
+  type MarketSort,
+  type MarketSubtypeFilter,
+  marketItemMatches,
+} from './market_filters';
+import { marketNameColor } from './market_name_color';
+import { marketPriceHtml } from './market_price_view';
+import { localizedMarketSearch } from './market_search_localized_core';
+import {
+  buildMarketView,
+  COPPER_PER_GOLD,
+  COPPER_PER_SILVER,
+  type MarketBrowseBody,
+  type MarketCollectBody,
+  type MarketCollectSaleRow,
+  type MarketSellBody,
+  type MarketSellMeta,
+  type MarketSubtypeKind,
+  type MarketTab,
+  marketCollectBadgeCount,
+  marketFilterMenus,
+} from './market_view';
+import {
+  appendMaterialSourcesActionAfter,
+  attachMaterialSourcesContextMenu,
+  closeMaterialSourcesDialogForOwner,
+} from './material_sources_dialog';
+import { materialSourcesForDisplay } from './material_sources_view';
+import type { PainterHostPresentation } from './painter_host';
+import { svgIcon } from './ui_icons';
+import { wornItemCellParts } from './worn_item_cell_view';
+
+// The filter dropdown's natural size (mirrors .mkt-select-menu's max-height/gap in
+// components.css). #market-window clips with overflow: hidden on mobile, and a menu
+// that renders past that clip has no scroll path to the rest of it, so every open
+// recomputes placement against the window's actual clip box instead of assuming
+// there is always room below the trigger.
+const MKT_MENU_PREFERRED_HEIGHT = 236;
+const MKT_MENU_GAP = 4;
+const MKT_MENU_MIN_HEIGHT = 80;
+
+/**
+ * Hud-supplied glue. Composes the shared PainterHostPresentation bag
+ * (icon/money/tooltip) and adds the market-specific surface: world reads +
+ * commands, cross-window bag sync (the Sell tab drags from bags), focus capture
+ * for WCAG focus-return, and the localized slot name for the armor subtype menu.
+ */
+export interface MarketWindowDeps extends PainterHostPresentation {
+  root(): HTMLElement;
+  world(): IWorld;
+  closeOthers(): void;
+  hideTooltip(): void;
+  captureFocus(): HTMLElement | null;
+  restoreFocus(target: HTMLElement | null): void;
+  showError(text: string): void;
+  slotName(slot: ItemSlot): string;
+  /** Render the bags window and, when `open`, reveal it alongside the market. */
+  syncBags(open: boolean): void;
+  /** Hud's one modal confirm prompt (the #confirm-dialog family), used to gate a
+   *  buyout: the coin leaves the purse the instant the command lands and no
+   *  buyback records it, so the Browse tab asks before it dispatches. */
+  confirmDialog(
+    title: string,
+    body: string,
+    okText: string,
+    cancelText: string,
+    onOk: () => void,
+  ): void;
+}
+
+export class MarketWindow {
+  private opened = false;
+  private tab: MarketTab = 'browse';
+  private itemTypeFilter: MarketItemTypeFilter = 'all';
+  private subtypeFilter: MarketSubtypeFilter = 'all';
+  private armorClassFilter: MarketArmorClassFilter = 'all';
+  private primaryStatFilter: MarketPrimaryStatFilter = 'all';
+  private rarityFilter: MarketRarityFilter = 'all';
+  private sortFilter: MarketSort = 'name';
+  // Browse toggle: collapse matching plain listings to the cheapest per item
+  // (issue 3103). Server-side, like every other filter axis, so it narrows the
+  // WHOLE market, not just the wired page.
+  private collapseLowest = false;
+  private browsePage = 0;
+  private sellItemId: string | null = null;
+  private sellInstance: ItemInstancePayload | null = null;
+  private searchQuery = '';
+  // Memo for the typed-to-sent search translation (effectiveSearch): the
+  // resolution walks the whole item catalog, and currentQuery() is reachable
+  // from the per-frame reconnect check as well as from a keystroke.
+  //
+  // The LANGUAGE is part of the key, not just the typed text. The resolution
+  // reads localized item names, so the same typed string resolves to a
+  // different search per locale, and a text-only key served the previous
+  // locale's substitution after a switch: not the empty result the untranslated
+  // path gives, but a wrong one, which is the single thing this feature must
+  // never produce. This is the memo half of the language fan-out rule
+  // (src/ui/CLAUDE.md); keying it is what answers it, so no relocalize() arm is
+  // owed and none is registered.
+  private searchEcho: { typed: string; lang: string; sent: string } | null = null;
+  private lastSig = '';
+  // The Sell tab's price-reference echo signature (issue 3043), tracked SEPARATELY
+  // from lastSig: the Sell tab is excluded from the general per-frame rebuild (it
+  // holds typed inputs a rebuild would clobber), but the price reference still
+  // needs to land once the server's async echo catches up, via a narrow
+  // DOM-only patch. See refreshSellPriceRef.
+  private lastSellPriceRefSig = '';
+  private openerFocus: HTMLElement | null = null;
+  // Armed by onReconnected() and cleared by the next refreshIfChanged() that
+  // actually observes a post-reconnect MarketInfo. onReconnected() fires
+  // synchronously inside the client's `hello` handler, before the resent
+  // world's first snapshot has decoded, so at that instant marketInfo (if
+  // any) is still the PRE-drop echo, which by construction matches
+  // currentQuery() (the client pushed it and the server echoed it back
+  // before the socket died): queryDiffersFromEcho would always read false
+  // there and the resync would never fire. Deferring the comparison to the
+  // next snapshot lets it see the real post-reconnect echo instead.
+  private pendingReconnectResync = false;
+
+  constructor(private readonly deps: MarketWindowDeps) {}
+
+  get isOpen(): boolean {
+    return this.opened;
+  }
+
+  /** True while the Sell tab is showing (the bags window stages items into it). */
+  get isSellTab(): boolean {
+    return this.opened && this.tab === 'sell';
+  }
+
+  open(): void {
+    this.deps.closeOthers();
+    this.openerFocus = this.deps.captureFocus();
+    this.opened = true;
+    this.tab = 'browse';
+    this.itemTypeFilter = 'all';
+    this.subtypeFilter = 'all';
+    this.armorClassFilter = 'all';
+    this.primaryStatFilter = 'all';
+    this.rarityFilter = 'all';
+    this.sortFilter = 'name';
+    this.collapseLowest = false;
+    this.browsePage = 0;
+    this.sellItemId = null;
+    this.sellInstance = null;
+    this.searchQuery = '';
+    this.pushQuery();
+    this.pushSellPriceCheck();
+    this.lastSig = '';
+    this.render();
+    this.deps.root().style.display = 'flex';
+    // Bags ride alongside so you can click items straight onto the Sell tab. The
+    // body class drives the desktop docking pair in components.css (the bank-open
+    // pattern): without it, both #market-window (centered) and #bags resolve their
+    // percentages against #ui independently and can overlap on common laptop
+    // widths, covering the Sell-tab drop target (review round 4).
+    document.body.classList.add('market-open');
+    this.deps.syncBags(true);
+    audio.bagOpen();
+  }
+
+  close(): void {
+    if (!this.opened) return;
+    const root = this.deps.root();
+    closeMaterialSourcesDialogForOwner(root);
+    this.opened = false;
+    this.sellItemId = null;
+    this.sellInstance = null;
+    this.pushSellPriceCheck();
+    root.style.display = 'none';
+    this.deps.hideTooltip();
+    document.body.classList.remove('market-open');
+    this.deps.syncBags(false);
+    this.deps.restoreFocus(this.openerFocus);
+    this.openerFocus = null;
+  }
+
+  /** Stage a bag item onto the Sell tab (called by the bags window on click).
+   *  `instance` is the clicked slot's payload (issue 1165): an instanced copy stages
+   *  as ITSELF and lists single-copy through marketListInstance. */
+  stageSell(itemId: string, instance?: ItemInstancePayload): void {
+    this.sellItemId = itemId;
+    this.sellInstance = instance ?? null;
+    this.pushSellPriceCheck();
+    this.render();
+  }
+
+  /** The search string actually SENT, which is the typed text translated at the
+   *  UI boundary when the player is not typing English (see
+   *  market_search_localized_core.ts; the box keeps showing what they typed).
+   *  Memoized on the typed text because currentQuery() is also reached from the
+   *  per-frame reconnect check, while the resolution walks the whole catalog. */
+  private effectiveSearch(): string {
+    const lang = getLanguage();
+    if (this.searchEcho?.typed === this.searchQuery && this.searchEcho.lang === lang) {
+      return this.searchEcho.sent;
+    }
+    const sent = localizedMarketSearch({
+      query: this.searchQuery,
+      localeTag: languageTag(lang),
+      itemIds: Object.keys(ITEMS),
+      localizedNameOf: (id) => itemDisplayName(ITEMS[id]),
+      englishMatches: (id, search) => marketItemMatches(id, { ...defaultMarketQuery(), search }),
+      englishHaystackOf: (id) => `${id} ${ITEMS[id]?.name ?? ''}`,
+    });
+    this.searchEcho = { typed: this.searchQuery, lang, sent };
+    return sent;
+  }
+
+  /** The current browse query (search + filters + page) the UI sends to the server. */
+  private currentQuery(): MarketQuery {
+    return {
+      search: this.effectiveSearch(),
+      itemType: this.itemTypeFilter,
+      subtype: this.subtypeFilter,
+      armorClass: this.armorClassFilter,
+      primaryStat: this.primaryStatFilter,
+      rarity: this.rarityFilter,
+      sort: this.sortFilter,
+      page: this.browsePage,
+      collapseLowest: this.collapseLowest,
+    };
+  }
+
+  // Push the current query to the server, which filters + paginates the whole market
+  // and streams back the matching page. Offline (Sim) this resolves synchronously, so
+  // the snapshot is up to date by the next render; online it round-trips and the
+  // per-frame refreshIfChanged repaints when the new page arrives.
+  private pushQuery(): void {
+    this.deps.world().marketSearch(this.currentQuery());
+  }
+
+  // Push (or clear, when nothing is staged) the Sell tab's current-lowest-price
+  // check (issue 3043), the pushQuery precedent: offline this resolves
+  // synchronously, online it round-trips and refreshSellPriceRef (called from
+  // refreshIfChanged) patches just the reference line once the echo arrives,
+  // without touching the rest of the form (which holds typed inputs).
+  private pushSellPriceCheck(): void {
+    this.deps.world().marketSellPriceCheck(this.sellItemId);
+  }
+
+  // Reconnect resync (issue 2416). A fresh join (the server's linkdead grace
+  // expired before the socket came back) hands the reconnecting character a
+  // brand-new session, whose browse query starts back at default; this window's
+  // own filter controls live in the client and survive the socket drop untouched,
+  // so without this the buttons keep showing a query the server silently stopped
+  // running. An ordinary resume keeps the same session (the echoed query still
+  // matches), so this is a no-op then: only a real drift re-pushes.
+  onReconnected(): void {
+    if (!this.opened) return;
+    // The socket just re-hello'd; the resent world's first snapshot has not
+    // decoded yet, so `marketInfo` here (if present at all) is still the
+    // pre-drop echo. Comparing against it now would always read "no drift"
+    // (it was pushed and echoed back before the socket died). Arm the flag
+    // instead and let refreshIfChanged() run the real comparison once a
+    // post-reconnect MarketInfo actually arrives.
+    this.pendingReconnectResync = true;
+  }
+
+  // Runs the deferred reconnect-drift check armed by onReconnected() above,
+  // once a MarketInfo has actually streamed in since. Checks both the five
+  // dropdown filter axes (queryDiffersFromEcho) and a settled search box
+  // (searchDiffersFromEcho): a fresh join resets `search` to '' same as the
+  // other axes, and by the time this runs no keystroke can be in flight.
+  private resolvePendingReconnectResync(info: MarketInfo | null): void {
+    if (!this.pendingReconnectResync || !info) return;
+    this.pendingReconnectResync = false;
+    const query = this.currentQuery();
+    if (queryDiffersFromEcho(query, info) || searchDiffersFromEcho(query, info)) {
+      this.pushQuery();
+    }
+    // The Sell tab's price-check axis (issue 3043) resets to null server-side on
+    // a fresh join too (PlayerMeta.sellPriceItemId is session-only, same as
+    // marketQuery), independent of whatever item this window still has staged
+    // client-side across the socket drop. Re-push unconditionally: a null or
+    // already-matching value costs nothing extra (the server's gate is a plain
+    // value compare), and without this a staged item's reference could never
+    // resolve again post-reconnect.
+    this.pushSellPriceCheck();
+  }
+
+  // Per-frame (slow divider): refresh the live lists (Browse/Collect) when they
+  // change. The Sell tab holds typed inputs, so the general rebuild below never
+  // touches it; its one async surface, the price reference (issue 3043), gets
+  // its own narrow patch instead (refreshSellPriceRef).
+  refreshIfChanged(): void {
+    if (!this.opened) return;
+    const info = this.deps.world().marketInfo;
+    this.resolvePendingReconnectResync(info);
+    if (this.tab === 'sell') {
+      this.refreshSellPriceRef(info);
+      return;
+    }
+    const sig = JSON.stringify([
+      this.tab,
+      this.itemTypeFilter,
+      this.subtypeFilter,
+      this.armorClassFilter,
+      this.primaryStatFilter,
+      this.rarityFilter,
+      this.sortFilter,
+      this.collapseLowest,
+      this.browsePage,
+      info?.listings,
+      info?.totalCount,
+      info?.filter,
+      info?.page,
+      info?.pageCount,
+      info?.collectionCopper,
+      info?.collectionItems,
+      // The ledger is its own axis, not a shadow of the copper: a sale whose
+      // proceeds floor to 0 moves neither the purse nor the goods, and without
+      // this the open Collect tab would never repaint to show its row.
+      info?.collectionSales,
+      info?.collectionSalesOmitted,
+    ]);
+    if (sig === this.lastSig) return;
+    this.lastSig = sig;
+    // The listings changed (a filter/search narrowed the result set, a listing sold, a
+    // page arrived), so renderContent() below is about to tear down and rebuild the
+    // `.mkt-row` nodes. A row detached this way fires no mouseleave, so a tooltip left
+    // open on a row that no longer matches the query would otherwise linger forever,
+    // still describing an item the list no longer shows (issue 2456). render()'s full rebuild
+    // already hides it for the tab/filter-click path; this is the same guard for the
+    // signature-driven refresh path (typing in search, an async listings update).
+    this.deps.hideTooltip();
+    const collectTab = this.deps.root().querySelector('[data-tab="collect"]');
+    if (collectTab) {
+      const n = marketCollectBadgeCount(info);
+      collectTab.textContent =
+        n > 0
+          ? t('itemUi.market.collectWithCount', {
+              count: formatNumber(n, { maximumFractionDigits: 0 }),
+            })
+          : t('itemUi.market.collect');
+    }
+    this.renderContent();
+  }
+
+  // The Sell tab's price-reference echo (issue 3043), patched independently of
+  // the general per-frame rebuild above: the rest of the Sell tab holds typed
+  // quantity/price inputs a rebuild would clobber, but the server-round-tripped
+  // price check still needs to land without the player taking another action.
+  // Touches only the two nodes renderSell already mints in the 'form' state
+  // (.mkt-sell-price-ref, its visible text, and .mkt-sell-price-status, the
+  // matching off-screen live-region announcement), never the form itself.
+  private refreshSellPriceRef(info: MarketInfo | null): void {
+    if (!this.sellItemId) return; // pick-empty/cannot-market: no ref node exists
+    const priceRef =
+      info && info.sellPriceItemId === this.sellItemId ? info.sellLowestPrice : undefined;
+    const sig = this.sellPriceRefSig(this.sellItemId, priceRef);
+    if (sig === this.lastSellPriceRefSig) return;
+    const body = this.deps.root().querySelector<HTMLElement>('#market-body');
+    const ref = body?.querySelector<HTMLElement>('.mkt-sell-price-ref');
+    const status = body?.querySelector<HTMLElement>('.mkt-sell-price-status');
+    if (!ref || !status) return; // the form isn't showing this frame
+    this.lastSellPriceRefSig = sig;
+    const html = priceRef !== undefined ? this.sellPriceRefHtml(priceRef) : '';
+    ref.innerHTML = html;
+    status.innerHTML = html;
+  }
+
+  // The price-ref signature, shared by renderSell's initial stamp and
+  // refreshSellPriceRef's later compare so the two can never drift apart (the
+  // sellPriceRefHtml split below is the same doctrine for the markup). NOT a
+  // plain JSON.stringify([itemId, priceRef]): JSON.stringify encodes an
+  // array's `undefined` ELEMENT as the literal null (unlike an object
+  // property, where undefined is omitted), so "the echo has not caught up yet"
+  // (undefined) and "the server confirmed no active listings" (null) would
+  // stringify identically and the null-state line could never repaint once an
+  // undefined signature had already been latched. String()-tagging keeps the
+  // three states (a number, null, undefined) distinct.
+  private sellPriceRefSig(itemId: string, priceRef: number | null | undefined): string {
+    return `${itemId}|${priceRef === undefined ? 'pending' : String(priceRef)}`;
+  }
+
+  // The price-ref line's markup for a resolved price (or the no-listings copy),
+  // shared by renderSell's initial build and refreshSellPriceRef's later patch
+  // so the two paths can never drift apart. Label and money sit in separate
+  // spans (the saleProceeds precedent below) rather than a hand-built ":"
+  // separator, since a fixed ASCII colon between two t() outputs would not
+  // match every locale's punctuation (e.g. a fullwidth colon in CJK).
+  private sellPriceRefHtml(priceRef: number | null): string {
+    if (priceRef === null) return esc(t('itemUi.market.lowestPriceNone'));
+    return `<span>${esc(t('itemUi.market.lowestPriceLabel'))}</span><span class="mkt-price">${this.deps.moneyHtml(priceRef)}</span>`;
+  }
+
+  render(): void {
+    const el = this.deps.root();
+    this.deps.hideTooltip();
+    // WCAG 2.2 AA: name the focus-trapped root with a dialog role.
+    markDialogRoot(el, { label: t('itemUi.market.title') });
+    const info = this.deps.world().marketInfo;
+    const tabLabel = (id: MarketTab): string => {
+      if (id === 'browse') return t('itemUi.market.browse');
+      if (id === 'sell') return t('itemUi.market.sell');
+      const n = marketCollectBadgeCount(info);
+      return n > 0
+        ? t('itemUi.market.collectWithCount', {
+            count: formatNumber(n, { maximumFractionDigits: 0 }),
+          })
+        : t('itemUi.market.collect');
+    };
+    const tab = (id: MarketTab) =>
+      `<button type="button" class="mkt-tab${this.tab === id ? ' sel' : ''}" data-tab="${id}" aria-pressed="${this.tab === id ? 'true' : 'false'}">${esc(tabLabel(id))}</button>`;
+    // The search box and the type/subtype/rarity dropdowns are all filter controls for
+    // the Browse tab, so `.mkt-controls` owns their shared accessible group and responsive
+    // grid. The search box lives here (rather than being created inside #market-body by
+    // renderBrowse) so it can align with every filter menu. It is only rebuilt when render()
+    // rebuilds the whole window (tab switch, filter pick), never on every keystroke:
+    // renderBrowse's own reuse-and-sync logic (below) is what preserves focus while typing.
+    const controlsHtml =
+      this.tab === 'browse'
+        ? `<div class="mkt-controls" role="group" aria-label="${esc(t('itemUi.market.filters'))}">` +
+          `<input type="search" class="mkt-search" placeholder="${esc(t('itemUi.market.searchPlaceholder'))}" aria-label="${esc(t('itemUi.market.searchAria'))}" value="${esc(this.searchQuery)}">` +
+          this.renderMarketFilters() +
+          this.renderCollapseLowestToggle() +
+          `</div>`
+        : '';
+    el.innerHTML =
+      `<div class="panel-title"><span>${esc(t('itemUi.market.title'))} <span class="panel-subtitle">${esc(t('itemUi.market.subtitle'))}</span></span><button type="button" class="x-btn" data-close aria-label="${esc(t('itemUi.market.close'))}">${svgIcon('close')}</button></div>` +
+      `<div class="mkt-tabs">` +
+      tab('browse') +
+      tab('sell') +
+      tab('collect') +
+      `</div>` +
+      controlsHtml +
+      `<div id="market-body"></div>`;
+    el.querySelector('[data-close]')?.addEventListener('click', () => this.close());
+    const searchInput = el.querySelector<HTMLInputElement>('.mkt-search');
+    searchInput?.addEventListener('input', () => {
+      this.searchQuery = searchInput.value;
+      this.browsePage = 0;
+      this.pushQuery();
+    });
+    const collapseCheckbox = el.querySelector<HTMLInputElement>('.mkt-collapse-checkbox');
+    collapseCheckbox?.addEventListener('change', () => {
+      this.collapseLowest = collapseCheckbox.checked;
+      this.browsePage = 0;
+      this.pushQuery(); // filtering is server-side now, so the query must round-trip
+      this.lastSig = '';
+      audio.click();
+      this.render();
+      // Return focus to the checkbox after render() rebuilds the controls row, so a
+      // keyboard user is not dropped to <body> (WCAG 2.4.3), the same pattern the
+      // filter dropdowns use below.
+      (this.deps.root().querySelector('.mkt-collapse-checkbox') as HTMLElement | null)?.focus();
+    });
+    el.querySelectorAll('[data-tab]').forEach((node) => {
+      node.addEventListener('click', () => {
+        const next = (node as HTMLElement).dataset.tab as MarketTab;
+        if (next === this.tab) return;
+        this.tab = next;
+        this.browsePage = 0;
+        this.lastSig = '';
+        audio.click();
+        this.render();
+        // Keyboard focus would otherwise fall to <body> when render() rebuilds the
+        // tab strip; land it on the newly selected tab instead (WCAG 2.4.3).
+        (this.deps.root().querySelector(`[data-tab="${next}"]`) as HTMLElement | null)?.focus();
+      });
+    });
+    const closeFilterMenus = () => {
+      el.querySelectorAll<HTMLElement>('.mkt-select.open').forEach((menu) => {
+        menu.classList.remove('open', 'open-up');
+        menu
+          .querySelector<HTMLButtonElement>('.mkt-select-btn')
+          ?.setAttribute('aria-expanded', 'false');
+        const list = menu.querySelector<HTMLElement>('.mkt-select-menu');
+        if (list) {
+          list.hidden = true;
+          list.style.maxHeight = '';
+        }
+      });
+    };
+    const positionFilterMenu = (menu: HTMLElement) => {
+      const trigger = menu.querySelector<HTMLButtonElement>('.mkt-select-btn');
+      const list = menu.querySelector<HTMLElement>('.mkt-select-menu');
+      // `el` (deps.root()) already IS #market-window, so there is no separate
+      // container to look up: querySelector('#market-window') on the window
+      // itself never matches its own root and would always fall back to `el`.
+      if (!trigger || !list) return;
+      const t = trigger.getBoundingClientRect();
+      const c = el.getBoundingClientRect();
+      // #market-window clips at its padding box (overflow: hidden), which sits
+      // inset from the border box measured above by the panel's border width on
+      // each edge; subtract it so the clamp matches the real clip, not the
+      // border-inclusive box.
+      const borderTop = Number.parseFloat(getComputedStyle(el).borderTopWidth) || 0;
+      const borderBottom = Number.parseFloat(getComputedStyle(el).borderBottomWidth) || 0;
+      const placement = computeDropdownPlacement({
+        triggerTop: t.top,
+        triggerBottom: t.bottom,
+        containerTop: c.top + borderTop,
+        containerBottom: c.bottom - borderBottom,
+        preferredMaxHeight: MKT_MENU_PREFERRED_HEIGHT,
+        gap: MKT_MENU_GAP,
+        minHeight: MKT_MENU_MIN_HEIGHT,
+      });
+      menu.classList.toggle('open-up', placement.side === 'above');
+      list.style.maxHeight = `${placement.maxHeight}px`;
+    };
+    el.querySelectorAll<HTMLButtonElement>('.mkt-select-btn').forEach((button) => {
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const menu = button.closest<HTMLElement>('.mkt-select');
+        if (!menu) return;
+        const wantOpen = !menu.classList.contains('open');
+        closeFilterMenus();
+        menu.classList.toggle('open', wantOpen);
+        button.setAttribute('aria-expanded', wantOpen ? 'true' : 'false');
+        const list = menu.querySelector<HTMLElement>('.mkt-select-menu');
+        if (list) list.hidden = !wantOpen;
+        if (wantOpen) positionFilterMenu(menu);
+      });
+    });
+    el.querySelectorAll<HTMLButtonElement>('[data-market-filter-option]').forEach((option) => {
+      option.addEventListener('click', () => {
+        const menu = option.closest<HTMLElement>('[data-market-filter-menu]');
+        const key = menu?.dataset.marketFilterMenu;
+        const value = option.dataset.marketFilterOption ?? 'all';
+        if (key === 'itemType') {
+          const next = value as MarketItemTypeFilter;
+          if (next !== this.itemTypeFilter) {
+            this.itemTypeFilter = next;
+            this.subtypeFilter = 'all';
+            this.armorClassFilter = 'all';
+            this.primaryStatFilter = 'all';
+            this.browsePage = 0;
+          }
+        } else if (key === 'subtype') {
+          this.subtypeFilter = value as MarketSubtypeFilter;
+          this.browsePage = 0;
+        } else if (key === 'armorClass') {
+          this.armorClassFilter = value as MarketArmorClassFilter;
+          this.browsePage = 0;
+        } else if (key === 'primaryStat') {
+          this.primaryStatFilter = value as MarketPrimaryStatFilter;
+          this.browsePage = 0;
+        } else if (key === 'rarity') {
+          this.rarityFilter = value as MarketRarityFilter;
+          this.browsePage = 0;
+        } else if (key === 'sort') {
+          this.sortFilter = value as MarketSort;
+          this.browsePage = 0;
+        } else {
+          return;
+        }
+        this.pushQuery(); // filtering is server-side now, so the query must round-trip
+        this.lastSig = '';
+        audio.click();
+        this.render();
+        // Return focus to the filter's trigger button after render() rebuilds the
+        // menus, so a keyboard user is not dropped to <body> (WCAG 2.4.3).
+        const newMenu = this.deps.root().querySelector(`[data-market-filter-menu="${key}"]`);
+        (
+          newMenu?.closest('.mkt-select')?.querySelector('.mkt-select-btn') as HTMLElement | null
+        )?.focus();
+      });
+    });
+    // Keyboard operation of the filter listboxes via the shared dropdownKeyNav core (the
+    // same WAI-ARIA listbox pattern buildDropdown wires onto its custom listbox): roving
+    // focus through the options, Enter/Space commit, Escape/Tab close returning focus to the
+    // trigger. The options carry tabindex=-1 (out of the Tab order but programmatically
+    // focusable); the mouse toggle, the click-away close, and the option-click commit above
+    // are reused unchanged (select dispatches a real click on the focused option).
+    el.querySelectorAll<HTMLElement>('.mkt-select').forEach((select) => {
+      const trigger = select.querySelector<HTMLButtonElement>('.mkt-select-btn');
+      const options = Array.from(select.querySelectorAll<HTMLElement>('.mkt-select-option'));
+      const focusedIndex = () =>
+        document.activeElement instanceof HTMLElement
+          ? options.indexOf(document.activeElement)
+          : -1;
+      select.addEventListener('keydown', (event) => {
+        const ke = event as KeyboardEvent;
+        const action = dropdownKeyNav(
+          ke.key,
+          select.classList.contains('open'),
+          focusedIndex(),
+          options.length,
+        );
+        if (action.kind === 'none') return;
+        // Tab closes and returns focus to the trigger WITHOUT preventDefault, so native Tab
+        // then advances from a real tab-order element (matches buildDropdown's tab branch).
+        if (action.kind === 'tab') {
+          closeFilterMenus();
+          trigger?.focus();
+          return;
+        }
+        // preventDefault suppresses the native button activation (Enter/Space) so the open
+        // and select paths below are the only ones that fire, exactly as buildDropdown does.
+        ke.preventDefault();
+        switch (action.kind) {
+          case 'open': {
+            closeFilterMenus();
+            select.classList.add('open');
+            trigger?.setAttribute('aria-expanded', 'true');
+            const list = select.querySelector<HTMLElement>('.mkt-select-menu');
+            if (list) list.hidden = false;
+            positionFilterMenu(select);
+            options[action.index]?.focus();
+            break;
+          }
+          case 'move':
+            options[action.index]?.focus();
+            break;
+          case 'select':
+            options[focusedIndex()]?.click();
+            break;
+          case 'close':
+            closeFilterMenus();
+            trigger?.focus();
+            break;
+        }
+      });
+    });
+    el.addEventListener('click', closeFilterMenus);
+    this.renderContent();
+  }
+
+  private renderContent(): void {
+    const body = this.deps.root().querySelector<HTMLElement>('#market-body');
+    if (!body) return;
+    const view = buildMarketView({
+      info: this.deps.world().marketInfo,
+      tab: this.tab,
+      filters: {
+        itemType: this.itemTypeFilter,
+        subtype: this.subtypeFilter,
+        armorClass: this.armorClassFilter,
+        primaryStat: this.primaryStatFilter,
+        rarity: this.rarityFilter,
+      },
+      sellItemId: this.sellItemId,
+      sellHave: this.sellItemId
+        ? this.sellInstance
+          ? 1
+          : this.fungibleBagCount(this.sellItemId)
+        : 0,
+      sellInstance: this.sellInstance,
+    });
+    if (view.kind === 'no-data') {
+      body.innerHTML = `<div class="mkt-empty">${esc(t('itemUi.market.noMerchant'))}</div>`;
+      return;
+    }
+    if (view.kind === 'browse') {
+      this.renderBrowse(body, view.body);
+      return;
+    }
+    if (view.kind === 'sell') {
+      this.renderSell(body, view.body, view.meta);
+      return;
+    }
+    this.renderCollect(body, view.body);
+  }
+
+  private renderBrowse(body: HTMLElement, view: MarketBrowseBody): void {
+    // The search field lives in the `.mkt-controls` row above #market-body (see render()),
+    // not inside body, so it survives untouched across a renderContent()-only refresh
+    // (typing calls pushQuery + renderContent, never the full render() rebuild); reuse the
+    // list container the same way so typing in the box never loses focus when the server
+    // streams back filtered results.
+    const search = this.deps.root().querySelector<HTMLInputElement>('.mkt-search');
+    let list = body.querySelector('.mkt-list') as HTMLElement | null;
+    if (!list) {
+      body.innerHTML = '';
+      list = document.createElement('div');
+      list.className = 'mkt-list';
+      body.appendChild(list);
+    }
+    // lazy-load a11y: the Browse search round-trips through the
+    // server (sync offline, async online) and streams results back into the list. A
+    // persistent off-screen polite status node announces the new result count (or the
+    // empty reason) so a screen-reader user hears that the async results arrived. It
+    // updates only when renderContent re-runs on a real signature change, so it never
+    // floods. visually-hidden mirrors the #combat-live utility class.
+    let status = body.querySelector('.mkt-status') as HTMLElement | null;
+    if (!status) {
+      status = document.createElement('div');
+      status.className = 'mkt-status visually-hidden';
+      status.setAttribute('role', 'status');
+      status.setAttribute('aria-live', 'polite');
+      body.appendChild(status);
+    }
+    // Keep the field in sync on external resets, but never clobber active typing.
+    if (search && document.activeElement !== search && search.value !== this.searchQuery) {
+      search.value = this.searchQuery;
+    }
+    list.innerHTML = '';
+    if (view.state === 'empty') {
+      if (view.reason === 'filtered') this.browsePage = 0;
+      const empty = document.createElement('div');
+      empty.className = 'mkt-empty';
+      empty.textContent =
+        view.reason === 'search'
+          ? t('itemUi.market.emptySearch')
+          : view.reason === 'filtered'
+            ? t('itemUi.market.emptyFiltered')
+            : t('itemUi.market.emptyBrowse');
+      list.appendChild(empty);
+      status.textContent = empty.textContent;
+      return;
+    }
+    const page = view.page;
+    this.browsePage = page.page;
+    // The range note describes the paged OTHER listings; on a page with none (e.g. only
+    // the viewer's own listings match) it is skipped, leaving just the rows.
+    if (page.end > page.start) {
+      const note = document.createElement('div');
+      note.className = 'mkt-note';
+      const shown = `${formatNumber(page.start + 1, { maximumFractionDigits: 0 })}-${formatNumber(page.end, { maximumFractionDigits: 0 })}`;
+      const total = formatNumber(page.total, { maximumFractionDigits: 0 });
+      note.textContent = t('itemUi.market.pageRange', { shown, total });
+      list.appendChild(note);
+      status.textContent = note.textContent;
+    } else {
+      status.textContent = t('itemUi.market.pageRange', {
+        shown: formatNumber(page.items.length, { maximumFractionDigits: 0 }),
+        total: formatNumber(page.total, { maximumFractionDigits: 0 }),
+      });
+    }
+    // Localized short unit letters for the single-unit price, resolved once per
+    // render (not per row) and handed to the i18n-free price builder.
+    const priceUnits = {
+      gold: esc(t('itemUi.money.goldShort')),
+      silver: esc(t('itemUi.money.silverShort')),
+      copper: esc(t('itemUi.money.copperShort')),
+    };
+    for (const { listing: l, item } of page.items) {
+      // The Browse-row NAME uses the market-readable quality color (rare/epic
+      // lifted to clear WCAG AA on the panel; market_name_color.ts). The icon
+      // keeps the shipped hue at full saturation via its q-<quality> class,
+      // driven by the SAME instance-effective quality as the name (the
+      // all-surfaces item-cell rule): the listing's publicInstanceView
+      // carries rolled, so a promoted legendary listing reads legendary on
+      // both the name and the icon rim, not its def tier.
+      const parts = wornItemCellParts(item, l.instance);
+      const effQuality = parts.quality;
+      const qColor = marketNameColor(effQuality);
+      const row = document.createElement('div');
+      row.className = 'mkt-row';
+      const itemName = parts.name;
+      const displayedSources = materialSourcesForDisplay(l);
+      const each =
+        l.count > 1
+          ? `<br><span class="seller">${esc(t('itemUi.market.each', { money: formatLocalizedMoney(Math.ceil(l.price / l.count)) }))}</span>`
+          : '';
+      const stack =
+        l.count > 1
+          ? ` <span class="stack">${esc(t('itemUi.market.stackCount', { count: formatNumber(l.count, { maximumFractionDigits: 0 }) }))}</span>`
+          : '';
+      const armorBadge = marketArmorBadge(item);
+      // Armor class as a weight-pips symbol on the icon corner rather than a text
+      // pill: the pip COUNT (cloth 1, leather 2, mail 3) carries the distinction
+      // with color stripped, so the cue is not color-only (the WCAG 1.4.1
+      // contract from issue 3104), and a symbol needs no per-locale translation
+      // the way a C/L/M letter would. The localized armor-type word still rides
+      // the accessible name (aria-label + title) so screen readers and hover keep it.
+      const badge = armorBadge
+        ? marketArmorPips(armorBadge.armorType, esc(t(armorBadge.labelKey)))
+        : '';
+      // Heroic-tier mark: a gold star on the icon's top-left corner (opposite the
+      // armor pips). Uses the bare "Heroic" label (hudChrome.itemHeroicLabel), not
+      // the bracketed [HEROIC] tooltip tag, so a screen reader reads "Heroic", not
+      // "left-bracket HEROIC right-bracket".
+      const heroicStar = marketHeroicStar(item, esc(t('hudChrome.itemHeroicLabel')));
+      // Pattern mark: the third corner of the same family, bottom-left (the two
+      // above hold top-left and bottom-right). Reuses the type chip's own word,
+      // so the mark and the filter that finds it read the same.
+      const patternMark = marketPatternMark(item, esc(t('itemUi.market.filterTypePattern')));
+      // Gold-dominant, coinless, copper-trimmed price (market-scoped, see
+      // market_price_view). The pure builder is i18n-free: pass the localized
+      // short unit letters and the full localized amount (which rides the block's
+      // aria-label and hover title so the coinless visual never hides the real
+      // value).
+      const priceHtml = marketPriceHtml(
+        l.price,
+        priceUnits,
+        esc(formatLocalizedMoney(l.price, 'long')),
+      );
+      row.innerHTML =
+        `<span class="mkt-ico">${this.deps.itemIcon(item, effQuality)}${badge}${heroicStar}${patternMark}</span>` +
+        `<span class="mkt-name"><span class="nm" style="color:${qColor}">${esc(itemName)}${stack}</span>` +
+        `<span class="seller${l.house ? ' house' : ''}">${esc(l.house ? t('itemUi.market.merchantStock') : l.sellerName)}</span></span>` +
+        `<span class="mkt-price">${priceHtml}${each}</span>`;
+      const btn = document.createElement('button');
+      btn.className = `mkt-btn${l.mine ? ' cancel' : ''}`;
+      btn.textContent = l.mine ? t('itemUi.market.reclaim') : t('itemUi.market.buy');
+      btn.setAttribute(
+        'aria-label',
+        t(l.mine ? 'itemUi.market.reclaimAria' : 'itemUi.market.buyAria', {
+          item: itemName,
+          price: formatLocalizedMoney(l.price),
+        }),
+      );
+      btn.addEventListener('click', () => {
+        audio.click();
+        // Reclaim returns the player's own goods and costs nothing, so it stays one
+        // click; a buyout spends coin outright, so it asks first (the bank
+        // slot-purchase precedent).
+        if (l.mine) this.deps.world().marketCancel(l.id);
+        else this.promptBuy(l, itemName);
+      });
+      row.appendChild(btn);
+      // A bulk material listing states WHOSE units are in it: the buyer is
+      // agreeing to those exact contributors, and the listing carries them
+      // (world_api/market.ts MarketListingView.materialSources).
+      this.deps.attachTooltip(row, () => this.deps.itemTooltip(item, l.instance, displayedSources));
+      attachMaterialSourcesContextMenu(
+        row,
+        itemName,
+        displayedSources,
+        this.deps.openMaterialSources,
+      );
+      list.appendChild(row);
+      appendMaterialSourcesActionAfter(
+        row,
+        itemName,
+        displayedSources,
+        this.deps.openMaterialSources,
+      );
+    }
+    if (page.pageCount > 1) {
+      const pager = document.createElement('div');
+      pager.className = 'mkt-page';
+      const pageNumber = formatNumber(page.page + 1, { maximumFractionDigits: 0 });
+      const pageCount = formatNumber(page.pageCount, { maximumFractionDigits: 0 });
+      pager.innerHTML =
+        `<button type="button" class="mkt-page-btn" data-market-page="prev"${page.page <= 0 ? ' disabled' : ''} aria-label="${esc(t('itemUi.market.pagePrevAria'))}">${esc(t('itemUi.market.pagePrev'))}</button>` +
+        `<span class="mkt-page-info">${esc(t('itemUi.market.pageStatus', { current: pageNumber, total: pageCount }))}</span>` +
+        `<button type="button" class="mkt-page-btn" data-market-page="next"${page.page >= page.pageCount - 1 ? ' disabled' : ''} aria-label="${esc(t('itemUi.market.pageNextAria'))}">${esc(t('itemUi.market.pageNext'))}</button>`;
+      pager.querySelectorAll<HTMLButtonElement>('[data-market-page]').forEach((button) => {
+        button.addEventListener('click', () => {
+          if (button.disabled) return;
+          const dir = button.dataset.marketPage;
+          this.browsePage = Math.max(0, this.browsePage + (dir === 'next' ? 1 : -1));
+          this.pushQuery(); // the server returns the requested page of listings
+          this.lastSig = '';
+          // The page change is about to tear down and rebuild every `.mkt-row` node the
+          // same way refreshIfChanged()'s signature-driven refresh does; hide any tooltip
+          // still claimed by the pre-change rows before renderContent() below discards them
+          // (issue 2456, the pager's own row-teardown path).
+          this.deps.hideTooltip();
+          audio.click();
+          this.renderContent();
+          // #market-body scrolls on desktop; on mobile the sheet base makes
+          // #market-window (deps.root()) the actual scroller instead (see
+          // hud.mobile.css). Reset whichever one is live; the other is a no-op
+          // (overflow: hidden / visible has no scroll position to clear).
+          body.scrollTop = 0;
+          this.deps.root().scrollTop = 0;
+          // The pager is rebuilt by renderContent, so move focus to the matching new
+          // page button (or any enabled pager button if it became disabled at an end),
+          // keeping the keyboard user off <body> (WCAG 2.4.3).
+          const refocus = body.querySelector<HTMLButtonElement>(`[data-market-page="${dir}"]`);
+          if (refocus && !refocus.disabled) refocus.focus();
+          else body.querySelector<HTMLButtonElement>('[data-market-page]:not([disabled])')?.focus();
+        });
+      });
+      list.appendChild(pager);
+    }
+  }
+
+  // The Browse tab's buy gate. It captures the row's terms in the pure core and
+  // states them in Hud's one modal confirm prompt; nothing is sent until OK.
+  private promptBuy(listing: MarketListingView, itemName: string): void {
+    const pending = marketBuyConfirm(listing);
+    // A stack quotes both the total ask and the per-unit ask the row showed, so the
+    // prompt can never read as the price of a single item.
+    const body =
+      pending.unitPrice === null
+        ? t('itemUi.market.buyConfirmBody', {
+            item: itemName,
+            price: formatLocalizedMoney(pending.price),
+          })
+        : t('itemUi.market.buyConfirmBodyStack', {
+            item: itemName,
+            count: formatNumber(pending.count, { maximumFractionDigits: 0 }),
+            price: formatLocalizedMoney(pending.price),
+            each: formatLocalizedMoney(pending.unitPrice),
+          });
+    this.deps.confirmDialog(
+      t('itemUi.market.buyConfirmTitle'),
+      body,
+      t('itemUi.market.buyConfirmAccept'),
+      t('itemUi.market.buyConfirmCancel'),
+      () => this.commitBuy(pending),
+    );
+  }
+
+  // OK pressed: re-resolve the captured listing against the LIVE snapshot before
+  // dispatching. The prompt is modal but the market under it is not frozen (the
+  // refresh band repaints rows, a listing can sell to someone else, expire, or be
+  // replaced at a reused id), so a stale capture must never buy a different stack,
+  // or the same one at a price the player never read. Both refusals send nothing and
+  // say why; the browse list repaints itself on the next snapshot either way.
+  private commitBuy(pending: MarketBuyConfirm): void {
+    const check = recheckMarketBuy(this.deps.world().marketInfo, pending);
+    if (check.state !== 'ok') {
+      this.deps.showError(
+        t(check.state === 'gone' ? 'itemUi.errors.listingUnavailable' : 'itemUi.market.buyChanged'),
+      );
+      return;
+    }
+    this.deps.world().marketBuy(pending.listingId);
+    audio.coin();
+  }
+
+  private renderSell(body: HTMLElement, view: MarketSellBody, meta: MarketSellMeta): void {
+    body.innerHTML = `<div class="mkt-note">${esc(
+      t('itemUi.market.sellNote', {
+        cut: formatNumber(meta.cutPct, { maximumFractionDigits: 0 }),
+        used: formatNumber(meta.myListingCount, { maximumFractionDigits: 0 }),
+        max: formatNumber(meta.maxListings, { maximumFractionDigits: 0 }),
+      }),
+    )}</div>`;
+    if (view.state === 'pick-empty') {
+      const pick = document.createElement('div');
+      pick.className = 'mkt-sell-pick empty';
+      pick.textContent = t('itemUi.market.sellPickEmpty');
+      body.appendChild(pick);
+      return;
+    }
+    if (view.state === 'cannot-market') {
+      this.sellItemId = null;
+      this.sellInstance = null;
+      this.pushSellPriceCheck();
+      const pick = document.createElement('div');
+      pick.className = 'mkt-sell-pick empty';
+      pick.textContent = t('itemUi.tooltip.cannotMarket');
+      body.appendChild(pick);
+      return;
+    }
+    // Keep the release Sell-tab lowest-price fields (priceRef, stagedItemId) AND
+    // the redesign's market-scoped WCAG name color (marketNameColor), not raw QUALITY_COLOR.
+    const { item, have, suggested, priceRef, itemId: stagedItemId } = view.form;
+    // The staged copy's own payload decides the name color AND the icon's
+    // q-<quality> rim (an instanced staging is single-copy, so the color,
+    // the rim, and the tooltip all describe one unit).
+    const staged = wornItemCellParts(item, view.form.instance);
+    const stagedQuality = staged.quality;
+    const qColor = marketNameColor(stagedQuality);
+    const pick = document.createElement('div');
+    pick.className = 'mkt-sell-pick';
+    pick.innerHTML = `${this.deps.itemIcon(item, stagedQuality)}<span class="ps-name" style="color:${qColor}">${esc(staged.name)}</span>`;
+    // The staged copy's tooltip carries its payload, so a player holding plain
+    // AND special copies can see WHICH one is staged (the mail chip precedent).
+    this.deps.attachTooltip(pick, () => this.deps.itemTooltip(item, view.form.instance));
+    body.appendChild(pick);
+
+    // The current-lowest-price reference (issue 3043). Always minted (even
+    // empty) so refreshSellPriceRef can find and patch it later without a DOM
+    // insert: text stays blank until the server's echo has confirmed a value
+    // for THIS staged item (priceRef undefined while a fresh stage or a stale
+    // snapshot has not caught up yet), so the player never sees a price that
+    // might belong to a different item. The paired off-screen status node
+    // announces the same text to a screen reader once it lands (the Browse
+    // tab's .mkt-status precedent above, for the same async-arrival reason).
+    const priceRefHtml = priceRef !== undefined ? this.sellPriceRefHtml(priceRef) : '';
+    const ref = document.createElement('div');
+    ref.className = 'mkt-sell-price-ref';
+    ref.innerHTML = priceRefHtml;
+    body.appendChild(ref);
+    const priceRefStatus = document.createElement('div');
+    priceRefStatus.className = 'mkt-sell-price-status visually-hidden';
+    priceRefStatus.setAttribute('role', 'status');
+    priceRefStatus.setAttribute('aria-live', 'polite');
+    priceRefStatus.innerHTML = priceRefHtml;
+    body.appendChild(priceRefStatus);
+    this.lastSellPriceRefSig = this.sellPriceRefSig(stagedItemId, priceRef);
+
+    const form = document.createElement('div');
+    form.className = 'mkt-price-form';
+    const qtyRow =
+      have > 1
+        ? `<div class="mkt-price-row"><label for="mkt-qty">${esc(t('itemUi.market.quantity'))}</label><input class="coininput" id="mkt-qty" type="number" min="1" max="${have}" value="1"> <span class="mkt-coin-tag">${esc(t('itemUi.market.quantityOf', { count: formatNumber(have, { maximumFractionDigits: 0 }) }))}</span></div>`
+        : '';
+    form.innerHTML =
+      qtyRow +
+      `<div class="mkt-price-row"><label>${esc(t('itemUi.market.priceEach'))}</label>` +
+      `<input class="coininput" id="mkt-g" type="number" min="0" value="${suggested.gold}" aria-label="${esc(t('itemUi.money.gold'))}"><span class="coin g" aria-hidden="true"></span><span class="mkt-coin-tag">${esc(t('itemUi.money.goldShort'))}</span>` +
+      `<input class="coininput" id="mkt-s" type="number" min="0" max="99" value="${suggested.silver}" aria-label="${esc(t('itemUi.money.silver'))}"><span class="coin s" aria-hidden="true"></span><span class="mkt-coin-tag">${esc(t('itemUi.money.silverShort'))}</span>` +
+      `<input class="coininput" id="mkt-c" type="number" min="0" max="99" value="${suggested.copper}" aria-label="${esc(t('itemUi.money.copper'))}"><span class="coin c" aria-hidden="true"></span><span class="mkt-coin-tag">${esc(t('itemUi.money.copperShort'))}</span></div>`;
+    body.appendChild(form);
+
+    const listBtn = document.createElement('button');
+    listBtn.className = 'mkt-list-btn';
+    listBtn.textContent = t('itemUi.market.listButton');
+    listBtn.addEventListener('click', () => {
+      const root = this.deps.root();
+      const qty =
+        have > 1
+          ? Math.max(
+              1,
+              Math.min(
+                have,
+                parseInt((root.querySelector('#mkt-qty') as HTMLInputElement)?.value || '1', 10) ||
+                  1,
+              ),
+            )
+          : 1;
+      const gg = Math.max(
+        0,
+        parseInt((root.querySelector('#mkt-g') as HTMLInputElement)?.value || '0', 10) || 0,
+      );
+      const ss = Math.max(
+        0,
+        parseInt((root.querySelector('#mkt-s') as HTMLInputElement)?.value || '0', 10) || 0,
+      );
+      const cc = Math.max(
+        0,
+        parseInt((root.querySelector('#mkt-c') as HTMLInputElement)?.value || '0', 10) || 0,
+      );
+      const each = gg * COPPER_PER_GOLD + ss * COPPER_PER_SILVER + cc;
+      if (each < 1) {
+        this.deps.showError(t('itemUi.market.minPriceError'));
+        return;
+      }
+      const staged = view.form.instance;
+      if (staged) this.deps.world().marketListInstance(view.form.itemId, each, staged);
+      else this.deps.world().marketList(view.form.itemId, qty, each * qty);
+      this.sellItemId = null;
+      this.sellInstance = null;
+      this.pushSellPriceCheck();
+      audio.coin();
+      this.render(); // the next snapshot echoes the new bags + listings
+    });
+    body.appendChild(listBtn);
+  }
+
+  private renderCollect(body: HTMLElement, view: MarketCollectBody): void {
+    if (view.state === 'empty') {
+      body.innerHTML = `<div class="mkt-empty">${esc(t('itemUi.market.collectEmpty'))}</div>`;
+      return;
+    }
+    body.innerHTML = `<div class="mkt-note">${esc(t('itemUi.market.collectNote'))}</div>`;
+    if (view.proceeds > 0) {
+      const row = document.createElement('div');
+      row.className = 'mkt-collect';
+      row.innerHTML = `<span>${esc(t('itemUi.market.saleProceeds'))}</span><span class="mkt-price">${this.deps.moneyHtml(view.proceeds)}</span>`;
+      body.appendChild(row);
+    }
+    this.renderCollectSales(body, view.sales, view.salesOmitted);
+    for (const { item, count, instance } of view.rows) {
+      // Returned goods keep their copy identity: the name color and the icon
+      // rim both read the instance-effective quality (the all-surfaces rule).
+      const returned = wornItemCellParts(item, instance);
+      const returnedQuality = returned.quality;
+      const qColor = marketNameColor(returnedQuality);
+      const row = document.createElement('div');
+      row.className = 'mkt-collect';
+      const stack =
+        count > 1
+          ? ` ${t('itemUi.market.stackCount', { count: formatNumber(count, { maximumFractionDigits: 0 }) })}`
+          : '';
+      row.innerHTML = `<span class="mkt-collect-item">${this.deps.itemIcon(item, returnedQuality)}<span class="mkt-collect-name" style="color:${qColor}">${esc(returned.name)}${esc(stack)}</span></span>`;
+      this.deps.attachTooltip(row, () => this.deps.itemTooltip(item, instance));
+      body.appendChild(row);
+    }
+    const btn = document.createElement('button');
+    btn.className = 'mkt-list-btn';
+    btn.textContent = t('itemUi.market.collectAll');
+    btn.addEventListener('click', () => {
+      this.deps.world().marketCollect();
+      audio.coin();
+    });
+    body.appendChild(btn);
+  }
+
+  // The itemized ledger under the proceeds line: what sold, to whom, and for how
+  // much, so the single gold figure above is accountable. Sits between the purse
+  // and the returned-goods rows because it explains the purse, not the goods.
+  private renderCollectSales(
+    body: HTMLElement,
+    sales: MarketCollectSaleRow[],
+    omitted: number,
+  ): void {
+    if (sales.length === 0 && omitted === 0) return;
+    const list = document.createElement('div');
+    list.className = 'mkt-sale-list';
+    for (const { item, itemName, count, proceeds, buyerName } of sales) {
+      const qColor = marketNameColor(item.quality);
+      const row = document.createElement('div');
+      row.className = 'mkt-sale';
+      const stack =
+        count > 1
+          ? ` ${t('itemUi.market.stackCount', { count: formatNumber(count, { maximumFractionDigits: 0 }) })}`
+          : '';
+      // esc on BOTH names: a chosen name and a buyer name are player-authored
+      // text, and either reaching innerHTML raw is the exact hole
+      // src/ui/CLAUDE.md names.
+      // The sold copy itself is gone, so the ICON still shows the def (there is
+      // no payload left to shade it by), but the NAME is the one the copy
+      // carried when it sold: the ledger stamped it at the sale, because
+      // nothing afterwards can recover it and two listings of one id otherwise
+      // read as two identical rows.
+      const saleName = itemName ?? itemDisplayName(item);
+      row.innerHTML =
+        `<span class="mkt-collect-item">${this.deps.itemIcon(item, item.quality)}` +
+        `<span class="mkt-sale-name"><span style="color:${qColor}">${esc(saleName)}${esc(stack)}</span>` +
+        `<span class="mkt-sale-buyer">${esc(t('itemUi.market.saleBuyer', { buyer: buyerName }))}</span></span></span>` +
+        `<span class="mkt-price">${this.deps.moneyHtml(proceeds)}</span>`;
+      this.deps.attachTooltip(row, () => this.deps.itemTooltip(item));
+      list.appendChild(row);
+    }
+    if (omitted > 0) {
+      const more = document.createElement('div');
+      more.className = 'mkt-sale-more';
+      more.textContent = t('itemUi.market.saleOlder', {
+        count: formatNumber(omitted, { maximumFractionDigits: 0 }),
+      });
+      list.appendChild(more);
+    }
+    body.appendChild(list);
+  }
+
+  // Fungible stock only: the plain listing form's quantity cap must match what
+  // marketList can actually escrow (an instanced copy is never swept into a
+  // bulk listing), or a qty above the fungible stock just bounces off the
+  // sim's denial. An instanced staging is single-copy and never reads this.
+  private fungibleBagCount(itemId: string): number {
+    return this.deps
+      .world()
+      .inventory.filter((s) => s.itemId === itemId && !s.instance)
+      .reduce((n, s) => n + s.count, 0);
+  }
+
+  // ---- Filter chrome (the browse-tab type/subtype/rarity dropdowns) ----
+
+  private marketItemTypeLabel(filter: MarketItemTypeFilter): string {
+    if (filter === 'weapon') return t('itemUi.market.filterTypeWeapon');
+    if (filter === 'armor') return t('itemUi.market.filterTypeArmor');
+    if (filter === 'bag') return t('itemUi.market.filterTypeBag');
+    if (filter === 'consumable') return t('itemUi.market.filterTypeConsumable');
+    if (filter === 'material') return t('itemUi.market.filterTypeMaterial');
+    if (filter === 'cosmetic') return t('itemUi.market.filterTypeCosmetic');
+    if (filter === 'pattern') return t('itemUi.market.filterTypePattern');
+    if (filter === 'other') return t('itemUi.market.filterTypeOther');
+    return t('itemUi.market.filterTypeAll');
+  }
+
+  private marketRarityLabel(filter: MarketRarityFilter): string {
+    if (filter === 'poor') return t('itemUi.market.rarityPoor');
+    if (filter === 'common') return t('itemUi.market.rarityCommon');
+    if (filter === 'uncommon') return t('itemUi.market.rarityUncommon');
+    if (filter === 'rare') return t('itemUi.market.rarityRare');
+    if (filter === 'epic') return t('itemUi.market.rarityEpic');
+    if (filter === 'legendary') return t('itemUi.market.rarityLegendary');
+    return t('itemUi.market.filterRarityAll');
+  }
+
+  // Reorders the active result set rather than narrowing it, so it has no "all" option:
+  // 'name' (the classic name-then-price default) and 'price' (whole-book cheapest first,
+  // issue 3102) are both always-applicable choices, not filters with an unset state.
+  private marketSortLabel(sort: MarketSort): string {
+    if (sort === 'price') return t('itemUi.market.sortPriceAsc');
+    return t('itemUi.market.sortName');
+  }
+
+  // Both label functions switch on the core's subtypeKind, never on the item type:
+  // the options and their wording are decided together in marketFilterMenus, so a type
+  // that gains a subtype axis cannot get its list from one place and its words from
+  // another (which is how a bag size would have read "Other weapons").
+  private marketSubtypeLabel(kind: MarketSubtypeKind): string {
+    if (kind === 'bagCapacity') return t('itemUi.market.filterBagSize');
+    if (kind === 'armorSlot') return t('itemUi.market.filterArmorSlot');
+    return t('itemUi.market.filterWeaponType');
+  }
+
+  private marketArmorClassLabel(filter: MarketArmorClassFilter): string {
+    if (filter === 'cloth') return t('itemUi.market.armorCloth');
+    if (filter === 'leather') return t('itemUi.market.armorLeather');
+    if (filter === 'mail') return t('itemUi.market.armorMail');
+    return t('itemUi.market.filterArmorClassAll');
+  }
+
+  private marketPrimaryStatLabel(filter: MarketPrimaryStatFilter): string {
+    if (filter === 'str') return t('itemUi.stats.str');
+    if (filter === 'agi') return t('itemUi.stats.agi');
+    if (filter === 'int') return t('itemUi.stats.int');
+    return t('itemUi.market.filterPrimaryStatAll');
+  }
+
+  private marketSubtypeOptionLabel(kind: MarketSubtypeKind, filter: MarketSubtypeFilter): string {
+    // Bags first: their option values are capacities, so they must not fall through to
+    // the weapon-family chain below, whose tail labels anything unmatched "Other weapons".
+    if (kind === 'bagCapacity') {
+      const slots = Number(filter);
+      // A non-numeric value here means a subtype left over from another item type, which
+      // the wire's union allowlist permits even though the chrome resets on every type
+      // change. Label it "All bags" rather than rendering a literal "NaN Slot Bag".
+      return filter === 'all' || !Number.isFinite(slots)
+        ? t('itemUi.market.filterBagAll')
+        : t('itemUi.tooltip.bagSlots', {
+            // useGrouping: false so the label and the option VALUE stay the same digits
+            // at any capacity the catalog might ship ("1000", never "1,000").
+            slots: formatNumber(slots, { maximumFractionDigits: 0, useGrouping: false }),
+          });
+    }
+    if (filter === 'all')
+      return t(
+        kind === 'armorSlot' ? 'itemUi.market.filterArmorAll' : 'itemUi.market.filterWeaponAll',
+      );
+    if (kind === 'armorSlot') return this.deps.slotName(filter as ItemSlot);
+    if (filter === 'sword') return t('itemUi.market.weaponSword');
+    if (filter === 'dagger') return t('itemUi.market.weaponDagger');
+    if (filter === 'staff') return t('itemUi.market.weaponStaff');
+    if (filter === 'mace') return t('itemUi.market.weaponMace');
+    if (filter === 'axe') return t('itemUi.market.weaponAxe');
+    return t('itemUi.market.weaponOther');
+  }
+
+  private renderMarketFilterMenu(
+    menu: 'itemType' | 'subtype' | 'armorClass' | 'primaryStat' | 'rarity' | 'sort',
+    label: string,
+    value: string,
+    options: readonly string[],
+    optionLabel: (option: string) => string,
+  ): string {
+    const current = optionLabel(value);
+    const optionHtml = options
+      .map((option) => {
+        const selected = option === value;
+        // esc() on the value too: every option used to be a source-authored literal, but
+        // the bag capacities are derived from content (ITEMS[*].bagSlots), so the reason
+        // this interpolation was safe by construction no longer holds on its own.
+        return `<button type="button" class="mkt-select-option${selected ? ' sel' : ''}" role="option" tabindex="-1" aria-selected="${selected ? 'true' : 'false'}" data-market-filter-option="${esc(option)}">${esc(optionLabel(option))}</button>`;
+      })
+      .join('');
+    return (
+      `<div class="mkt-filter"><span>${esc(label)}</span><div class="mkt-select" data-market-filter-menu="${menu}">` +
+      `<button type="button" class="mkt-select-btn" aria-haspopup="listbox" aria-expanded="false" aria-label="${esc(t('itemUi.market.filterValueAria', { label, value: current }))}"><span>${esc(current)}</span><span class="mkt-select-chevron" aria-hidden="true"></span></button>` +
+      `<div class="mkt-select-menu" role="listbox" hidden>${optionHtml}</div>` +
+      `</div></div>`
+    );
+  }
+
+  // The "lowest price of each" Browse toggle (issue 3103): collapses matching plain
+  // listings to the cheapest row per item while preserving non-fungible instanced copies.
+  // A real labeled checkbox (the professions "Ask each use" toggle precedent):
+  // keyboard-operable and announced by its own text, not a bare icon button.
+  private renderCollapseLowestToggle(): string {
+    if (this.tab !== 'browse') return '';
+    const checked = this.collapseLowest ? ' checked' : '';
+    return (
+      `<label class="mkt-collapse-toggle">` +
+      `<input type="checkbox" class="mkt-collapse-checkbox"${checked}> ` +
+      `<span>${esc(t('itemUi.market.collapseLowest'))}</span>` +
+      `</label>`
+    );
+  }
+
+  private renderMarketFilters(): string {
+    if (this.tab !== 'browse') return '';
+    // WHICH secondary menus this item type shows is a pure function of the type, so it
+    // is decided in the view core and merely painted here.
+    const menus = marketFilterMenus(this.itemTypeFilter);
+    // Bound to a const so the null check below narrows inside the option-label closure.
+    const subtypeKind = menus.subtypeKind;
+    return (
+      `<div class="mkt-filters">` +
+      this.renderMarketFilterMenu(
+        'itemType',
+        t('itemUi.market.filterType'),
+        this.itemTypeFilter,
+        MARKET_ITEM_TYPE_FILTERS,
+        (filter) => this.marketItemTypeLabel(filter as MarketItemTypeFilter),
+      ) +
+      (menus.subtype && subtypeKind
+        ? this.renderMarketFilterMenu(
+            'subtype',
+            this.marketSubtypeLabel(subtypeKind),
+            this.subtypeFilter,
+            menus.subtype,
+            (filter) => this.marketSubtypeOptionLabel(subtypeKind, filter as MarketSubtypeFilter),
+          )
+        : '') +
+      (menus.armorClass
+        ? this.renderMarketFilterMenu(
+            'armorClass',
+            t('itemUi.market.filterArmorType'),
+            this.armorClassFilter,
+            MARKET_ARMOR_CLASS_FILTERS,
+            (filter) => this.marketArmorClassLabel(filter as MarketArmorClassFilter),
+          )
+        : '') +
+      (menus.primaryStat
+        ? this.renderMarketFilterMenu(
+            'primaryStat',
+            t('itemUi.market.filterPrimaryStat'),
+            this.primaryStatFilter,
+            MARKET_PRIMARY_STAT_FILTERS,
+            (filter) => this.marketPrimaryStatLabel(filter as MarketPrimaryStatFilter),
+          )
+        : '') +
+      this.renderMarketFilterMenu(
+        'rarity',
+        t('itemUi.market.filterRarity'),
+        this.rarityFilter,
+        MARKET_RARITY_FILTERS,
+        (filter) => this.marketRarityLabel(filter as MarketRarityFilter),
+      ) +
+      this.renderMarketFilterMenu(
+        'sort',
+        t('itemUi.market.filterSort'),
+        this.sortFilter,
+        MARKET_SORT_OPTIONS,
+        (sort) => this.marketSortLabel(sort as MarketSort),
+      ) +
+      `</div>`
+    );
+  }
+}

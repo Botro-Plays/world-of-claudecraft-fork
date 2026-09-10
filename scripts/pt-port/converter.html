@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>PT SMD to GLB Converter</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 20px; }
+  h1 { margin-bottom: 16px; font-size: 1.4rem; }
+  .layout { display: flex; gap: 20px; max-width: 1200px; }
+  .panel { background: #16213e; border-radius: 8px; padding: 20px; flex: 1; }
+  .panel h2 { margin-bottom: 12px; font-size: 1.1rem; color: #8ecae6; }
+  label { display: block; margin-bottom: 4px; font-size: 0.85rem; color: #aaa; }
+  input[type="text"], select { width: 100%; padding: 8px 10px; border: 1px solid #333; border-radius: 4px; background: #0f3460; color: #e0e0e0; font-size: 0.9rem; margin-bottom: 12px; }
+  input[type="text"]:focus, select:focus { outline: none; border-color: #8ecae6; }
+  button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600; }
+  .btn-primary { background: #e63946; color: white; width: 100%; margin-top: 8px; }
+  .btn-primary:hover { background: #c92a3a; }
+  .btn-primary:disabled { background: #555; cursor: not-allowed; }
+  .btn-secondary { background: #0f3460; color: #8ecae6; border: 1px solid #8ecae6; }
+  .btn-secondary:hover { background: #1a4a7a; }
+  .log { background: #0d1117; border: 1px solid #333; border-radius: 4px; padding: 12px; height: 400px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 0.82rem; line-height: 1.5; }
+  .log-line { margin-bottom: 2px; }
+  .log-info { color: #8ecae6; }
+  .log-success { color: #4ade80; }
+  .log-error { color: #f87171; }
+  .log-warn { color: #fbbf24; }
+  .status { padding: 8px 14px; border-radius: 4px; display: inline-block; font-size: 0.85rem; margin-bottom: 12px; }
+  .status-idle { background: #333; color: #aaa; }
+  .status-running { background: #1a4a7a; color: #8ecae6; }
+  .status-done { background: #1a4a2e; color: #4ade80; }
+  .status-error { background: #4a1a1a; color: #f87171; }
+  .model-list { margin-top: 12px; }
+  .model-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid #333; border-radius: 4px; margin-bottom: 4px; font-size: 0.85rem; }
+  .model-item a { color: #8ecae6; text-decoration: none; }
+  .model-item a:hover { text-decoration: underline; }
+  .actions { display: flex; gap: 8px; margin-top: 12px; }
+  .hint { font-size: 0.78rem; color: #666; margin-top: 4px; }
+</style>
+</head>
+<body>
+<h1>PT SMD to GLB Converter</h1>
+<div class="layout">
+  <div class="panel">
+    <h2>Convert</h2>
+    <label for="modelDir">PT Model Directory (absolute path)</label>
+    <input type="text" id="modelDir" placeholder="D:\From Luis Cezar Matias - Chinese MagicPT\Client\char\monster\hopy\" value="D:\From Luis Cezar Matias - Chinese MagicPT\Client\char\monster\">
+    <p class="hint">Enter a monster model directory containing .smd, .smb, .inx, .bmp files</p>
+
+    <label for="outputName">Output GLB name (optional)</label>
+    <input type="text" id="outputName" placeholder="hopy.glb">
+
+    <div class="actions">
+      <button class="btn-primary" id="convertBtn" onclick="runConvert()">Convert</button>
+      <button class="btn-secondary" id="scanBtn" onclick="scanDir()">Scan Directory</button>
+    </div>
+
+    <div id="status" class="status status-idle">Idle</div>
+
+    <div id="scanResults" class="model-list"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Output Log</h2>
+    <div class="log" id="log"></div>
+    <div style="margin-top:12px">
+      <button class="btn-secondary" onclick="clearLog()">Clear Log</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:3001';
+
+function log(msg, cls = 'log-info') {
+  const el = document.getElementById('log');
+  const line = document.createElement('div');
+  line.className = 'log-line log-' + cls;
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('log').innerHTML = '';
+}
+
+function setStatus(text, cls) {
+  const el = document.getElementById('status');
+  el.textContent = text;
+  el.className = 'status status-' + cls;
+}
+
+async function scanDir() {
+  const dir = document.getElementById('modelDir').value.replace(/\\/g, '/');
+  const res = document.getElementById('scanResults');
+  res.innerHTML = '';
+  log('Scanning: ' + dir);
+  try {
+    const resp = await fetch(`${API}/scan?dir=${encodeURIComponent(dir)}`);
+    const data = await resp.json();
+    if (data.error) { log(data.error, 'error'); return; }
+    if (data.models.length === 0) { log('No model directories found (no .smd files).', 'warn'); return; }
+    log(`Found ${data.models.length} model directories:`, 'success');
+    data.models.forEach(m => {
+      const item = document.createElement('div');
+      item.className = 'model-item';
+      const hasGlb = m.glbName ? `<a href="./viewer.html?model=${m.glbName}" target="_blank">view ${m.glbName}</a>` : '<span style="color:#666">not converted</span>';
+      item.innerHTML = `<span style="color:#4ade80">[+]</span> <strong>${m.name}</strong> - ${m.smdCount} SMD, ${m.smbCount} SMB, ${m.inxCount} INX, ${m.bmpCount} BMP - ${hasGlb}`;
+      item.style.cursor = 'pointer';
+      item.onclick = () => { document.getElementById('modelDir').value = m.path; };
+      res.appendChild(item);
+      log(`  ${m.name}: ${m.smdCount} SMD, ${m.smbCount} SMB, ${m.inxCount} INX`, 'success');
+    });
+  } catch (e) {
+    log('Scan failed: ' + e.message + ' (is the converter API running on port 3001?)', 'error');
+  }
+}
+
+async function runConvert() {
+  const dir = document.getElementById('modelDir').value.replace(/\\/g, '/');
+  const outputName = document.getElementById('outputName').value.trim() || '';
+  if (!dir) { log('Please enter a model directory.', 'error'); return; }
+
+  const btn = document.getElementById('convertBtn');
+  btn.disabled = true;
+  setStatus('Converting...', 'running');
+  log(`Converting: ${dir}`);
+
+  try {
+    const resp = await fetch(`${API}/convert`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dir, outputName }),
+    });
+    const data = await resp.json();
+    if (data.error) {
+      log(data.error, 'error');
+      setStatus('Error', 'error');
+    } else {
+      data.logs.forEach(l => log(l.text, l.cls || 'info'));
+      if (data.glbPath) log(`[OK] Output: ${data.glbPath}`, 'success');
+      if (data.dieGlbPath) log(`[OK] Die output: ${data.dieGlbPath}`, 'success');
+      setStatus('Done', 'done');
+    }
+  } catch (e) {
+    log('Convert failed: ' + e.message + ' (is the converter API running on port 3001?)', 'error');
+    setStatus('Error', 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>

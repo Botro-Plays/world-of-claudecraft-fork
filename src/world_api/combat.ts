@@ -1,0 +1,130 @@
+import type { ActiveIgnivarMeteorWarning } from '../sim/ignivar_meteors';
+import type { ActiveNythraxisBindingSigil } from '../sim/nythraxis_binding_sigil';
+import type {
+  ActiveNythraxisGraveEruption,
+  ActiveNythraxisGraveFlame,
+} from '../sim/nythraxis_grave_eruption';
+import type { ActiveNythraxisGravefire } from '../sim/nythraxis_gravefire';
+import type { ResolvedAbility } from '../sim/sim';
+import type { ActiveVarkhulAnvilMeteorWarning } from '../sim/varkhul_anvil_meteors';
+import type { ActiveVarkhulAssembly } from '../sim/varkhul_assembly';
+import type {
+  ActiveVarkhulCinderFire,
+  ActiveVarkhulCinderOrbProjectile,
+} from '../sim/varkhul_cinder_orbs';
+import type { ActiveVarkhulForgestormWarning } from '../sim/varkhul_forgestorm';
+import type { WorldInteractionOutcome } from './interaction';
+
+export type { ActiveIgnivarMeteorWarning } from '../sim/ignivar_meteors';
+export type { ActiveNythraxisBindingSigil } from '../sim/nythraxis_binding_sigil';
+export type {
+  ActiveNythraxisGraveEruption,
+  ActiveNythraxisGraveFlame,
+} from '../sim/nythraxis_grave_eruption';
+export type { ActiveNythraxisGravefire } from '../sim/nythraxis_gravefire';
+export type { ActiveVarkhulAnvilMeteorWarning } from '../sim/varkhul_anvil_meteors';
+export type { ActiveVarkhulAssembly } from '../sim/varkhul_assembly';
+export type {
+  ActiveVarkhulCinderFire,
+  ActiveVarkhulCinderOrbProjectile,
+} from '../sim/varkhul_cinder_orbs';
+export type { ActiveVarkhulForgestormWarning } from '../sim/varkhul_forgestorm';
+
+export interface ActiveFrostRing {
+  id: string;
+  x: number;
+  z: number;
+  radius: number;
+  innerRadius: number;
+  duration: number;
+  remaining: number;
+}
+
+export interface ActiveTemporalHourglass {
+  id: string;
+  x: number;
+  z: number;
+  radius: number;
+  duration: number;
+  remaining: number;
+}
+
+export interface ActiveConsecration {
+  id: string;
+  x: number;
+  z: number;
+  radius: number;
+  duration: number;
+  remaining: number;
+}
+
+export interface GroundAimPointXZ {
+  x: number;
+  z: number;
+}
+
+export interface IWorldCombat {
+  known: ResolvedAbility[];
+  /** The local player's own known ability with every presentation-layer
+   *  transform folded in (action-slot replacement, spec-gated resolvers, the
+   *  post-transform talent-mod bake, Ascension/Radiant Resonance, and the
+   *  resource-cost tail: the draining-curse cost_tax read, the Measured Fury
+   *  discount, Aether Surge's per-charge ramp) - the same ResolvedAbility
+   *  Sim.resolvedAbility would produce for this client's own pid
+   *  (docs/design/class-balance-v042.md). Display only: the server stays the
+   *  sole spend authority regardless of who shows this cost. Null when the
+   *  id names nothing this player currently knows. */
+  resolvedAbility(abilityId: string): ResolvedAbility | null;
+  /** Server-authored persistent traps currently visible to this world view. */
+  activeFrostRings: ActiveFrostRing[];
+  activeIgnivarMeteors: ActiveIgnivarMeteorWarning[];
+  /** Nythraxis Grave Eruption warning rings (the meteor-warning shape) and the
+   *  Grave Flame patches they leave behind, reconnect-safe from the snapshot. */
+  activeNythraxisGraveEruptions: ActiveNythraxisGraveEruption[];
+  activeNythraxisGraveFlames: ActiveNythraxisGraveFlame[];
+  activeNythraxisGravefires: ActiveNythraxisGravefire[];
+  activeNythraxisBindingSigils: ActiveNythraxisBindingSigil[];
+  activeVarkhulForgestormWarnings: ActiveVarkhulForgestormWarning[];
+  activeVarkhulAnvilMeteors: ActiveVarkhulAnvilMeteorWarning[];
+  activeVarkhulAssemblies: ActiveVarkhulAssembly[];
+  activeVarkhulCinderFires: ActiveVarkhulCinderFire[];
+  activeVarkhulCinderOrbProjectiles: ActiveVarkhulCinderOrbProjectile[];
+  activeTemporalHourglasses: ActiveTemporalHourglass[];
+  activeConsecrations: ActiveConsecration[];
+  /** Remaining server-authoritative lifetime of a reactive ability window. */
+  reactiveAbilityWindowRemaining(abilityId: string): number;
+  /** Best-effort adjusted landing preview for a ground-aimed placement
+   *  ability (seed-derived terrain arms only; the cast stays the arbiter). */
+  groundAimPlacementPreview(abilityId: string, point: GroundAimPointXZ): GroundAimPointXZ;
+  castAbility(abilityId: string): void;
+  castAbilityBySlot(slot: number): void;
+  // Ground-targeted cast: the ability is aimed at a world point (x, z) the player
+  // chose, instead of the current entity target. Cast by ability id (like
+  // castAbility) so the client never depends on server slot semantics. No-op for
+  // an ability that is not `targetMode: 'position'`.
+  castAbilityAt(abilityId: string, aim: { x: number; z: number }): void;
+  // Mouseover cast (Clique-style): cast a friendly ability on an explicit
+  // target id (e.g. the hovered party frame) without touching the player's
+  // persistent selection. A stale/invalid target falls back to the classic
+  // current-friendly-target-else-self resolution in the sim.
+  castAbilityOn(abilityId: string, targetId: number): void;
+  /** Release the local player's active hold-to-charge spell. */
+  releaseEmpoweredAbility(abilityId: string): void;
+  // Voluntarily cancel one of the local player's own helpful auras (right-click a
+  // buff). No-op if the id names a debuff or an aura the player does not carry.
+  cancelAura(auraId: string): void;
+  startAutoAttack(): void;
+  stopAutoAttack(): void;
+  // Begin the local, server-authoritative geometry recovery countdown. It may
+  // only relocate within the current reachable area and can be cancelled by
+  // movement or combat.
+  unstuck(): void;
+  // Death loop: releaseSpirit leaves the body and rises as a ghost at the nearest
+  // graveyard; resurrectAtCorpse revives at the body (no penalty, must be in range);
+  // resurrectAtSpiritHealer revives at the angel with Resurrection Sickness.
+  releaseSpirit(): void;
+  resurrectAtCorpse(): void;
+  resurrectAtSpiritHealer(): WorldInteractionOutcome;
+  /** Accept or decline the currently pending player-cast resurrection offer. */
+  respondToResurrection(accept: boolean): void;
+}

@@ -1,0 +1,8180 @@
+// i18n source catalog - in-game HUD chrome strings that were previously hard-coded
+// at their call sites (emote wheel/editor, swing timer, rest indicator, mobile
+// controls, minimap/compass/clock widgets, DPS/HPS meters formatting). English
+// values only; the locale translations live in src/ui/i18n.locales/<lang>.ts
+// (the runtime-authoritative overlays), filled by the maintainer at release.
+//
+// Assembled into `en` by ./index.ts under the `hudChrome` namespace. Kept as its
+// own module (no per-locale blocks) so new chrome keys are an English-only add.
+
+import { armoryCollectionStrings, armorySkinStrings } from './armory';
+import { cosmeticsStrings } from './cosmetics';
+
+export const hudChromeStrings = {
+  materialStackSelectionUnavailable: 'That material selection is no longer available.',
+  warlock: {
+    doomLabel: 'Condemnation',
+    fateThreadsLabel: 'Fate Threads',
+    // The doom meter's per-frame move/lock strings retired with its private
+    // mover: the frame rides the shared interfaceUnlock chrome now, and its
+    // name chip reuses doomLabel above (the mechanic's own in-game name).
+    doomEmptyStatus: '{value} of {max} Condemnation.',
+    doomStatus: '{value} of {max} Condemnation; {remaining}.',
+    fateThreadsStatus: '{value} of {max} Fate Threads.',
+    fateThreadsConsumeReady:
+      'Three Fate Threads: Consume can weave them into additional Condemnation.',
+    fateThreadsSentenceReady:
+      'Three Fate Threads: Sentence can consume them for 18% increased damage.',
+  },
+  procOverlay: {
+    soulFragmentsMeter: 'Soul Fragments',
+    ruinMeter: 'Wrack',
+    ruinStatus: '{value} of {max} Wrack',
+  },
+  // Combo Points meter (#combo-row): the 0-5 pip row next to the player frame
+  // for the energy-resource classes. Kept NON-WORDY (no run of four-plus
+  // lowercase after stripping {tokens}) so an English-filled non-Latin locale
+  // does not trip the M16 untranslated-leak guard, the same convention as
+  // unitFrame below. The live "N of max" valuetext reuses the generic
+  // auraEffect.resourceCount status pattern rather than a second wordy key.
+  comboMeter: {
+    label: 'CP',
+  },
+  spectate: {
+    banner: 'Spectating {name}',
+  },
+  // Raid/party ready-check prompt (the leader ran /ready). The buttons answer the
+  // yes/no prompt; the outcome is announced in chat by the sim.
+  readyCheck: {
+    prompt: '{name} has started a ready check. Are you ready?',
+    ready: 'Ready',
+    notReady: 'Not Ready',
+    result: 'Ready check: {ready} ready, {notReady} not ready, {noResponse} no response.',
+    notInPartyError: 'You must be in a party to start a ready check.',
+    inProgressError: 'A ready check is already in progress.',
+  },
+  // WoW-style death loop overlay (release -> ghost run -> resurrect). The release
+  // button and "You have died." title reuse the hud.core.* keys; these are the
+  // ghost-state additions shown once the spirit has been released.
+  death: {
+    resurrectAtCorpse: 'Resurrect at Corpse',
+    resurrectAtHealer: "The Pale Keeper (Keeper's Toll)",
+    spiritHealerAlive: 'The Pale Keeper watches over the dead. You are still among the living.',
+    // Confirm dialog gating the Pale Keeper revive (the corpse run stays one-tap:
+    // it carries no penalty, so a confirm there would only add friction).
+    healerConfirmTitle: "Accept the Keeper's Toll?",
+    healerConfirmBody:
+      "The Pale Keeper will revive you here, but the Keeper's Toll reduces all of your attributes by 75%, for up to 10 minutes at higher levels. Walking your spirit back to your corpse revives you with no penalty.",
+    healerConfirmAccept: 'Revive Me',
+    healerConfirmCancel: 'Cancel',
+  },
+  // Wiki launcher (#mm-wiki, the Esc-menu row, the mobile More tray). The
+  // button label reuses nav.wiki; these are the confirm dialog's strings
+  // (confirm-first so a mid-fight tap never opens the browser by accident).
+  wiki: {
+    confirmTitle: 'Open the Wiki?',
+    confirmBody:
+      'This opens the World of ClaudeCraft wiki in your browser. The game keeps running.',
+    confirmOpen: 'Open Wiki',
+    confirmCancel: 'Cancel',
+  },
+  // Countdown-to-graveyard recovery. Stable event phases/reasons come from the
+  // authoritative sim; new semantics use new keys so stale safe-spot translations
+  // cannot be shown while locale fills catch up.
+  unstuck: {
+    menuButton: 'Unstuck',
+    help: 'Recovery: /unstuck starts a stationary countdown to move you to a nearby reachable safe spot.',
+    helpAtGraveyard:
+      "Recovery: /unstuck starts a stationary countdown, then sends your spirit to the nearest graveyard. Returning through the Pale Keeper requires The Keeper's Toll.",
+    // v0.32.1: Unstuck no longer kills, and charges Unstuck Sickness instead of routing
+    // through the Pale Keeper. New key, because the shipped locale rows for the one above
+    // still promise the old outcome.
+    helpUnstuckSickness:
+      'Recovery: /unstuck starts a stationary countdown, then moves you to the nearest graveyard, reviving you if you had fallen. It leaves you with Unstuck Sickness for up to 5 minutes.',
+    started:
+      'Unstuck in {seconds} seconds. Moving, fighting, taking damage, or starting another action cancels it.',
+    countdown: 'Unstuck: {seconds}',
+    completed: 'Moved to the nearest reachable safe spot.',
+    completedAtGraveyard:
+      "Your spirit has returned to the nearest graveyard. Speak to the Pale Keeper to accept The Keeper's Toll.",
+    revivedAtGraveyard:
+      "You have been returned to the nearest graveyard and revived. The Keeper's Toll weighs on you.",
+    // The two v0.32.1 outcomes. Separate keys from the two above for the same reason as
+    // helpUnstuckSickness: the shipped translations there name The Keeper's Toll.
+    movedToGraveyard:
+      'You have been moved to the nearest graveyard. Unstuck Sickness weighs on you.',
+    revivedAtGraveyardUnstuck:
+      'You have been moved to the nearest graveyard and revived. Unstuck Sickness weighs on you.',
+    cancelledMoved: 'Unstuck cancelled because you moved.',
+    cancelledDamaged: 'Unstuck cancelled because you took damage.',
+    cancelledCombat: 'Unstuck cancelled because you entered combat.',
+    cancelledBusy: 'Unstuck cancelled because you started another action.',
+    cancelledState: 'Unstuck cancelled because your state changed.',
+    cancelledDisconnected: 'Unstuck cancelled because you disconnected.',
+    noSafePosition: 'No reachable safe spot was found nearby. You were not moved.',
+    alreadyActive: 'Unstuck is already counting down.',
+    alreadySafe: 'You are already in a safe, reachable position.',
+    cooldown: 'Unstuck will be ready in {seconds} seconds.',
+    dead: 'You cannot use Unstuck while dead or in spirit form.',
+    combat: 'You cannot use Unstuck during combat.',
+    controlled: 'You cannot use Unstuck while movement is impaired.',
+    standStill: 'Stand still on solid ground before using Unstuck.',
+    standStillAnywhere: 'Stand still before using Unstuck.',
+    busy: 'Finish your current action before using Unstuck.',
+    unavailable: 'Unstuck is unavailable in your current state.',
+  },
+  // Floating combat text self-notes (proc consume labels, absorb readout).
+  fct: {
+    absorbed: 'Absorbed ({amount})',
+    cheap: 'Cheap!',
+  },
+  // Overhead emote display names (wheel tooltips/labels, editor items, overhead
+  // bubble text). Source ids/order mirror OVERHEAD_EMOTES in world_api.ts.
+  emotes: {
+    wave: 'Wave',
+    laugh: 'LOL',
+    question: 'Bro?',
+    cheer: 'Cheer',
+    dance: 'Dance',
+    point: 'Point',
+    flex: 'Flex',
+    salute: 'Salute',
+    cry: 'Cry',
+    bow: 'Bow',
+    clap: 'Clap',
+    roar: 'Roar',
+    kneel: 'Kneel',
+  },
+  emoteWheel: {
+    edit: 'Edit',
+    label: 'Emotes',
+  },
+  emoteEditor: {
+    title: 'Emotes',
+    done: 'Done',
+    close: 'Close emotes',
+  },
+  dailyRewards: {
+    title: 'Daily Rewards',
+    close: 'Close daily rewards',
+    loading: 'Loading daily rewards...',
+    error: 'Could not load daily rewards.',
+    disabled:
+      'Daily Rewards is currently disabled. We will announce updates to this feature in the Discord channel.',
+    intro:
+      'Hold enough WOC in your verified wallet to unlock daily rewards. Earn points with one daily spin and rotating tasks, then climb the daily leaderboard for a share of the prize pool.',
+    disclaimer:
+      'WOC price can move quickly. We recommend holding more than the $20 USD minimum so normal price swings do not lock you out. This is not financial advice.',
+    prize: 'Prize Pool',
+    reset: 'Reset',
+    endsIn: 'Ends in {time}',
+    remainingLessThanMinute: '<1m',
+    remainingMinutes: '{minutes}m',
+    remainingHoursMinutes: '{hours}h {minutes}m',
+    remainingDaysHours: '{days}d {hours}h',
+    score: 'Score',
+    walletValue: 'Wallet Value (WOC)',
+    // Intl already spells the currency; no code appended.
+    usd: '{amount}',
+    sol: '{amount} SOL',
+    unknown: 'Unknown',
+    spinTitle: 'Daily Spin',
+    spinDialogTitle: 'Daily Reward Spin',
+    spinClose: 'Close daily spin',
+    spinReady: 'One spin is ready.',
+    spinClaimed: 'Claimed: +{points} points.',
+    spinResult: '+{points} points',
+    spinButton: 'Spin',
+    tasks: 'Tasks',
+    taskMultiplier: 'x{multiplier} multiplier',
+    oneVsOneExcluded: '1v1 matches do not grant daily reward points.',
+    pointsGained: '{points} daily rewards points gained.',
+    showChestButton: 'Show Chest',
+    hideChestButton: 'Hide Chest',
+    hideChestConfirmTitle: 'Hide Daily Rewards Chest?',
+    hideChestConfirmBody:
+      'This removes the chest shortcut from your HUD. Rewards, eligibility, and this panel stay available; you can bring the shortcut back from Options.',
+    hideChestConfirmOk: 'Hide Chest',
+    hideChestConfirmCancel: 'Cancel',
+    leaderboard: 'Daily Leaderboard',
+    totalPlayer: '{count} player today',
+    totalPlayers: '{count} players today',
+    history: 'Past Winners',
+    noLeaders: 'No points yet.',
+    noHistory: 'No payouts yet.',
+    walletConnectTitle: 'Verify Wallet',
+    walletConnectBody: 'Verify a Solana wallet with WOC to unlock daily rewards.',
+    walletConnectButton: 'Verify Wallet',
+    walletHoldTitle: 'Hold WOC',
+    walletHoldBody: 'Hold at least {amount} USD in WOC to unlock daily rewards.',
+    walletPriceBody: 'WOC pricing is unavailable right now. Check back shortly.',
+    reason: {
+      eligible: 'Rewards unlocked.',
+      no_wallet: 'Connect a wallet with at least $20 USD in WOC.',
+      under_minimum: 'Wallet is below the $20 USD WOC minimum.',
+      price_unavailable: 'WOC price is unavailable, rewards are temporarily locked.',
+      banned: 'You are banned from Daily Rewards. Reason: {reason}',
+      bannedUntil:
+        'You are banned from Daily Rewards for another {remaining}. Access returns {until}. Reason: {reason}',
+    },
+  },
+  // The trade window's $WOC arm (docs/prd/woc/p2p-woc-trade.md): selling a
+  // staged item to the player you are trading with, for $WOC.
+  trade: {
+    // The neutral end of a trade session, for when the business the window
+    // existed for concluded elsewhere. Its sibling (hud.logs.tradeCancelled)
+    // lives in the hud catalog; this one is here because hud_chrome is the
+    // en-only domain, and a completed sale should not wait on twenty locale
+    // blocks to stop calling itself cancelled.
+    windowClosed: 'Trade window closed.',
+    woc: {
+      tabGold: 'Gold',
+      tabWoc: '$WOC',
+      // The currency switch's own accessible name (a group of two toggles),
+      // never one toggle's label for the pair; and why the $WOC toggle is
+      // off on the gold face (true for every cause the model refuses on).
+      modesLabel: 'Payment currency',
+      tabWocHint:
+        'Paying in $WOC is available when your side of the table is empty and no gold is offered.',
+      priceLabel: 'Price in USD',
+      pricePlaceholder: '0.00',
+      equivalent: 'About {tokens} $WOC at the current rate',
+      // The compose face is the BUYER's (offering $WOC buys what the other
+      // side staged), so its lines speak to the buyer; the seller's net rides
+      // netLine on the review and waiting faces, where the seller commits.
+      variableWarning:
+        'The $WOC amount is a preview, not a fixed price. The exact number is set by a fresh quote when you pay.',
+      feeLine: 'Exchange fee {fee}, taken out of the price.',
+      netLine: 'You receive {net}',
+      netLineBuyer: 'The seller receives {net}',
+      sendOffer: 'Offer $WOC',
+      offerSent: 'Offer sent. It expires in 10 minutes unless {name} accepts.',
+      // The real expiry from the wire, when the server sends one.
+      offerSentUntil: 'Offer sent. It expires at {time} unless {name} accepts.',
+      incomingAccept: '{name} offers {price} for your items.',
+      // Role-neutral: it renders on the buyer's compose face and on BOTH
+      // review faces.
+      notInstant:
+        'A $WOC sale is not instant. The item moves into escrow once both sides accept, and reaches the buyer once payment is verified.',
+      blockDisabled: 'The $WOC Exchange is not available on this realm.',
+      blockNoWallet: 'Link and verify a wallet to sell items for $WOC.',
+      blockPartnerUnknown: 'Checking whether that player can accept $WOC...',
+      blockRecipientNoWallet: 'That player must connect a wallet to accept $WOC payments.',
+      // Offering $WOC means you are BUYING: items go one way, $WOC the other.
+      // These say so, rather than leaving a disabled button unexplained.
+      hintClearYourItems: 'Remove your own items: a $WOC offer buys what they are selling.',
+      hintAwaitTheirItems: 'Waiting for them to offer something that can be sold for $WOC.',
+      // Role-neutral: the same key reads on the buyer's compose face (about
+      // the seller's table) and the seller's accept face.
+      hintOneItem:
+        'A $WOC deal covers exactly one item. Only the item being sold can be on the table.',
+      hintEnterPrice: 'Enter a price in USD.',
+      hintAcceptNeedsItem: 'Add the item you are selling before accepting.',
+      // The staged copy is a snapshot: after unlocking in the bags the item
+      // has to be re-staged for the trade to see the change, so the hint names
+      // that step (the R10 dead end).
+      hintAcceptLocked:
+        'That item is locked. Unlock it in your bags, then remove it from the trade and add it again.',
+      hintGoldOffered: 'Remove your gold offer first: a trade is gold or $WOC, not both.',
+      // The count rides the plurals base wocTradeIneligible; this sentence
+      // says WHY (the exchange lock predicate's arms).
+      ineligibleReason:
+        'Soulbound, quest, and locked items, and items outside the Exchange categories, cannot be sold for $WOC.',
+      incomingTitle: '$WOC offer from {name}',
+      incomingBody: '{name} offers to sell you {item} for {price}.',
+      // The formatter already spells the currency in every locale (US$,
+      // USD, $US), so the key adds no code of its own.
+      moneyUsd: '{usd}',
+      // One template for both figures, so a locale orders and spaces them.
+      moneyLine: '{usd} (~ {tokens} $WOC)',
+      waitingOther: 'Offer accepted. Waiting for the other player to accept.',
+      payNow: 'Pay {usd}',
+      awaitingPayment: 'Waiting for payment confirmation...',
+      paying: 'Confirm the payment in your wallet...',
+      // A directed sale hands the copy straight into the online buyer's bags;
+      // Ravenpost mail is the fallback (offline, or bags full).
+      settled: 'Paid. Your item is in your bags, or arrives by Ravenpost mail if they were full.',
+      settledSeller: 'Paid. The item was delivered to the buyer.',
+      accept: 'Accept offer',
+      accepted: 'Offer accepted. Your item is held until payment is verified.',
+      decline: 'Decline',
+      withdraw: 'Withdraw offer',
+      hintInsufficientBalance: 'That is more $WOC than your connected wallet holds.',
+      statusAwaitingBuyer: 'Waiting for the buyer to pay.',
+      statusPayingBuyer: 'Confirming your payment on the network...',
+      statusPayingSeller: "The buyer's payment is confirming on the network...",
+      // A settlement parked under an operator verdict is neither confirming
+      // nor decided: its own sentence per side, and no spinner.
+      statusReviewBuyer: 'Your payment is under review.',
+      statusReviewSeller: "The buyer's payment is under review.",
+      paidSeller: 'You have received a payment of {price} for your {item}.',
+      paidBuyer: 'You have sent a payment of {price} for {item}.',
+      // The honest ends of a deal that DID NOT sell (the H13 fix: a closed
+      // listing used to render as settled and print the paid line).
+      closedCancelled: 'This sale was cancelled. The item returns to the seller by Ravenpost mail.',
+      closedSuspended:
+        'This sale was suspended by a Game Master. The item returns to the seller by Ravenpost mail.',
+      closedUnpaid:
+        'This sale ended without payment. The item returns to the seller by Ravenpost mail.',
+      closedUnpaidBuyer:
+        'This sale ended without your payment. The item returns to the seller by Ravenpost mail; not paying an accepted deal earns a Marketplace strike.',
+      // The seller's way out of an incoming offer and of an unpaid directed
+      // sale (the dead wiring H13 named).
+      cancelSale: 'Cancel sale',
+      // The seller's cancel answered cancel-pending (a buyer holds the
+      // purchase window): the face records it instead of re-offering Cancel.
+      cancelPendingSeller:
+        'Cancel requested. The sale ends on its own unless the buyer pays first.',
+      youDeclined: 'You declined the offer.',
+      youWithdrew: 'You withdrew your offer.',
+      // A resolve that raced the other side (or a double tap): the trade
+      // arm's own words, not the bid-bond copy the shared code maps to.
+      offerNotPending: 'This offer is no longer pending.',
+      // What the OTHER side sees when a standing offer stops standing.
+      offerDeclined: 'The $WOC offer was declined.',
+      offerWithdrawn: 'The $WOC offer was withdrawn.',
+      offerExpired: 'The $WOC offer expired.',
+      // Informed waiting: when the offer lapses, and what closing the window
+      // mid-deal does and does not end.
+      offerExpiresAt: 'Offer expires at {time}.',
+      offerStandsUntil:
+        'Your $WOC offer still stands until {time}. Trade with the seller again to finish the deal if they accept.',
+      dealAwaitsPayment:
+        'Your $WOC purchase is still unpaid. Trade with the seller again to pay; the deal expires on its own if you do not, and not paying earns a Marketplace strike.',
+      // Close-time lines for the states the buyer arms above did not cover:
+      // the seller whose copy stays escrowed, and either side mid-payment.
+      closeSellerHold:
+        "Your item stays held for the buyer's payment. Cancel the sale from the Exchange's Activity tab if you change your mind.",
+      closePaymentContinuesBuyer:
+        'Your payment is still being confirmed. Delivery completes on its own.',
+      closePaymentContinuesSeller:
+        "The buyer's payment is still being confirmed. The sale completes on its own.",
+      // The p2p commitment disclosure (the auction arm's bidBindingNote,
+      // for the buyer whose accept escrows the copy): shown before the
+      // shared Accept and again on the pay face.
+      p2pBindingNote:
+        'Once both sides accept, payment is due within {duration}, or within the shorter window that opens when you press Pay. Not paying earns a Marketplace strike.',
+      p2pBindingNoteUntimed:
+        'Once both sides accept, payment is due shortly after, or within the shorter window that opens when you press Pay. Not paying earns a Marketplace strike.',
+      // The claim's own deadline, once Pay was pressed (Not now keeps it
+      // running): the figure the pay and quote faces show from then on.
+      p2pPaymentDueAt: 'Payment is due by {time}. Not paying earns a Marketplace strike.',
+      // The lapsed staged quote, in this arm's words: there is no request
+      // control here, the way back is Not now, then Pay.
+      quoteExpiredTrade: 'The quote expired. Press Not now, then Pay again for a fresh one.',
+      // Announced (and kept in the log) when the review face appears, so a
+      // screen reader hears the figures the face was built to show.
+      quoteStaged: 'Payment quote ready for {usd}: {tokens} $WOC, valid until {time}.',
+      // Decided money whose delivery has not finished: its own sentence, so
+      // "confirming on the network" never describes a confirmed payment and
+      // "on its way by mail" never predates the delivery.
+      paymentConfirmed:
+        'Payment confirmed. Your item arrives in your bags, or by Ravenpost mail if they are full, once delivery completes.',
+      statusConfirmedBuyer: 'Payment confirmed. Delivery is completing...',
+      statusConfirmedSeller: 'Payment confirmed. The sale is completing...',
+      // The courtesy floor hint (the server's refusal stays the authority).
+      hintBelowMin: 'The Exchange minimum price is {usd}.',
+    },
+  },
+  wocStore: {
+    title: 'WOC Store',
+    close: 'Close WOC Store',
+    tabsLabel: 'WOC Store sections',
+    storeTab: 'Store',
+    rewardsTab: 'Daily Rewards',
+    // The store's Machine Stable strip (content/mount_skins.ts): account-wide
+    // mount skins sold for Claudium; wearing one is the Cosmetics window's job.
+    mountsEyebrow: 'Account Mount Skins',
+    mountsTitle: 'Machine Stable',
+    mountBuyAria: 'Purchase {item}',
+    mountSkinType: 'Mount skin',
+    loading: 'Loading WOC Store...',
+    error: 'The WOC Store is unavailable right now. Please try again shortly.',
+    balance: 'Claudium Balance',
+    buyClaudium: 'Purchase Claudium',
+    owned: 'Owned',
+    needMoreTitle: 'More Claudium Required',
+    needMoreBody: 'You need {shortfall} more Claudium to purchase {item}.',
+    cancel: 'Cancel',
+    confirmTitle: 'Confirm Cosmetic Purchase',
+    confirmBody: 'Purchase {item} for {cost} Claudium?',
+    confirmPurchase: 'Purchase',
+    priceChanged:
+      'The price changed before the purchase completed. Review the refreshed price and confirm again.',
+    // Season 1 Armory (weapon skins). English copy comes from the dedicated
+    // Armory i18n catalog; the sim registry remains mechanical and locale-free.
+    armoryEyebrow: 'Season 1',
+    armoryTitle: 'The Armory',
+    armoryBody:
+      'Limited weapon skins from the Season 1 Armory. Account-wide, purely cosmetic, and shown to everyone around you.',
+    wallet: {
+      title: 'Solana wallet',
+      unlinked:
+        'Connect a wallet app, then sign once to link its public address to your WoC account. We never receive your recovery phrase or private key.',
+      connectedUnlinked:
+        'The wallet app is connected to this browser, but its public address is not linked to your WoC account yet.',
+      linkedDisconnected:
+        'Your public address is linked. Reconnect that wallet app when you want to pay with SOL or WOC.',
+      linkedConnected: 'Your linked wallet app is connected and ready for SOL or WOC purchases.',
+      mismatched:
+        'A different wallet is connected. Verify it to replace the linked address, or reconnect the linked wallet.',
+      connect: 'Connect wallet',
+      verify: 'Verify and link',
+      reconnect: 'Reconnect wallet',
+      manage: 'Manage wallet',
+    },
+    collectionLine: '{collection} Collection',
+    collections: armoryCollectionStrings,
+    skins: armorySkinStrings,
+    seasonOne: 'Season 1',
+    rarity: {
+      uncommon: 'Uncommon',
+      rare: 'Rare',
+      epic: 'Epic',
+      legendary: 'Legendary',
+    },
+    wtype: {
+      sword: 'Sword',
+      axe: 'Axe',
+      mace: 'Mace',
+      dagger: 'Dagger',
+      staff: 'Staff',
+      wand: 'Wand',
+      bow: 'Bow',
+      crossbow: 'Crossbow',
+      polearm: 'Polearm',
+    },
+    badge: {
+      flagship: 'Flagship',
+      hero: 'Hero',
+    },
+    inspectAria: 'Inspect {item}',
+    viewModeLabel: 'Preview mode',
+    tryOn: 'Try it on',
+    weaponOnly: 'Weapon only',
+    sceneLabel: 'Scene lighting',
+    scene: {
+      day: 'Day',
+      dusk: 'Dusk',
+      night: 'Night',
+    },
+    lore: 'Lore',
+    buySkin: 'Purchase Skin',
+    unavailable: 'Unavailable',
+    applied: 'Applied',
+    apply: 'Apply Skin',
+    detach: 'Detach Skin',
+    equipHint: 'Equip a {type} to apply this skin.',
+    // Strongbox Charters: the Claudium path to bank slots. Per CHARACTER, never
+    // account-wide, and never a capacity gold cannot also reach: the bursar
+    // sells the same slots. Display names live here because the sim registry
+    // (src/sim/content/storage_charters.ts) is deliberately name-free.
+    charter: {
+      eyebrow: 'Strongbox',
+      title: 'Strongbox Charters',
+      scope:
+        'A charter expands the bank of this character only. The bursar sells the same slots for gold.',
+      grant: 'Adds {slots} bank slots',
+      buy: 'Purchase Charter',
+      buyAria: 'Purchase {item}',
+      confirmTitle: 'Confirm Charter Purchase',
+      confirmBody: 'Purchase {item} for {cost} Claudium?',
+      resultContext: '{item} ({sku}): {message}',
+      granted: 'The charter was applied. The bank of this character is larger now.',
+      alreadyGranted: 'This charter is already on this character. You were not charged again.',
+      applyDeferred:
+        'Payment complete. The slots apply automatically the next time this character logs in.',
+      grantUnresolved:
+        'Payment complete, but the slots could not be applied yet. The purchase is recorded and support can finish it for you.',
+      inProgress: 'A purchase for this character is still being completed. Try again in a moment.',
+      doesNotFit: 'The bank of this character cannot fit the full grant of this charter.',
+      notPurchasable: 'This charter cannot be purchased right now.',
+      noRoom: 'The bank of this character has no room left for a charter.',
+      noCharterFits: 'No charter fits the room left in the bank of this character.',
+      // The hidden-charter silence-breaker: the fit gates drop charters one
+      // by one, so a list can render some rungs while hiding others, and even
+      // the fit-unknown arm renders it when the refusal prune hid rows. (Wordy
+      // value, M16: the five non-Latin fills land in this same change.)
+      someHiddenByFit:
+        'Charters too large for the room left in the bank of this character are not shown.',
+      outage:
+        'The purchase could not be confirmed. Try again with this button and you will not be charged twice. Reloading the game first can lose that protection.',
+      outageStale:
+        'Return to the Store and use the same Purchase Charter action again. You will not be charged twice. Reloading the game first can lose that protection.',
+      failed: 'The purchase could not be completed.',
+      names: {
+        strongbox_charter_1: 'Lesser Strongbox Charter',
+        strongbox_charter_2: 'Greater Strongbox Charter',
+        strongbox_charter_3: 'Grand Strongbox Charter',
+        strongbox_charter_complete: 'Complete Strongbox Charter',
+      },
+    },
+  },
+  // CLAUDIUM: a server-authoritative soft currency. The game renders only what the
+  // economy service returns (balance, SKU credits, prices, store costs); it
+  // computes nothing. One-way: buy with money, spend on cosmetics, never cashes out.
+  claudium: {
+    title: 'Claudium',
+    open: 'Open Claudium',
+    close: 'Close Claudium',
+    loading: 'Loading Claudium...',
+    balanceLabel: 'Balance',
+    balanceUnit: '{amount} Claudium',
+    solBalance: 'SOL: {amount}',
+    usdcBalance: 'USDC: {amount}',
+    wocBalance: 'WOC: {amount}',
+    unavailable:
+      'The Claudium store is unavailable right now. Your balance and purchases are unaffected; please check back shortly.',
+    disclosure:
+      'Claudium is a one-way soft currency: buy it with money and spend it on cosmetics. It cannot be redeemed, transferred, or cashed out.',
+    buyTitle: 'Buy Claudium',
+    railLabel: 'Payment method',
+    railStripe: 'Card',
+    railSol: 'SOL',
+    railUsdc: 'USDC',
+    railWoc: 'WOC',
+    railWocDiscount: '{percent}% off',
+    railWocUnavailable: 'WOC pricing is unavailable right now.',
+    railNativeUnavailable: 'Crypto off.',
+    amountLabel: 'Amount',
+    showAmounts: 'Show all Claudium amounts',
+    hideAmounts: 'Hide extra Claudium amounts',
+    skuRow: '{usd} for {claudium} Claudium',
+    // The pack price in the chosen crypto rail: the amount is a localized
+    // number and the ticker is a template token, never a glued suffix (the
+    // usd_text.ts rule for the USD arm, applied to the token arms).
+    priceSol: '{amount} SOL',
+    priceUsdc: '{amount} USDC',
+    priceWoc: '{amount} WOC',
+    buyButton: 'Buy',
+    buyUnavailable: 'Purchasing is unavailable right now.',
+    storeTitle: 'Cosmetic Store',
+    storeEmpty: 'No cosmetics are available right now.',
+    storeCost: '{amount} Claudium',
+    spendButton: 'Redeem',
+    kindCosmetic: 'Cosmetic',
+    kindSkin: 'Skin',
+    kindItem: 'Item',
+    checkoutTitle: 'Complete purchase',
+    checkoutClose: 'Close checkout',
+    checkoutLoading: 'Loading checkout...',
+    checkoutPending: 'Transaction in progress. Confirm in your wallet and keep this panel open.',
+    checkoutPendingButton: 'Processing',
+    checkoutFailed: 'Checkout could not be loaded. Please try again.',
+    checkoutUnavailable: 'That Claudium purchase is not available right now.',
+    checkoutWalletRequired: 'Connect a Solana wallet before buying Claudium with crypto.',
+    checkoutWalletUnsupported: 'This wallet cannot sign and send Solana transactions.',
+    checkoutNotSettled:
+      'The transaction was sent but Claudium was not credited yet. Please try again shortly.',
+  },
+  theme: {
+    preset: 'UI Theme',
+    customColors: 'Custom Colors',
+    reset: 'Reset',
+    presets: {
+      classic: 'Classic Gold',
+      fancyGold: 'Fancy Gold (WIP)',
+      midnight: 'Midnight',
+      parchment: 'Parchment',
+      highContrast: 'High Contrast',
+    },
+    knob: {
+      accent: 'Accent',
+      border: 'Border',
+      panel: 'Frame',
+      text: 'Text',
+      textMuted: 'Muted Text',
+      hp: 'Health',
+      mana: 'Mana',
+      rage: 'Rage',
+      energy: 'Energy',
+    },
+  },
+  // On-screen quest tracker. The "(N)" count shown beside the header while the
+  // tracker is collapsed (the number is spliced in via formatNumber), plus the
+  // header button's state-aware hover/title hint (Collapse while expanded,
+  // Expand while collapsed).
+  questTracker: {
+    count: '({count})',
+    collapseHint: 'Collapse quest tracker',
+    expandHint: 'Expand quest tracker',
+  },
+  interfaceTabs: {
+    general: 'General',
+    frames: 'Frames',
+    chat: 'Chat',
+    combat: 'Combat',
+  },
+  chatTimestamps: {
+    show: 'Show Chat Timestamps',
+    format: 'Timestamp Format',
+    clock12h: '12-hour',
+    clock24h: '24-hour',
+    note: 'Prefixes each new chat line with the time it arrived, e.g. [14:32]. Only affects messages received while the option is on.',
+  },
+  chatWindow: {
+    move: 'Drag to move the chat window',
+    resize: 'Drag to resize the chat window',
+    reset: 'Reset Chat Window',
+    resetAction: 'Reset',
+    note: 'Drag the chat tab strip to move the window, or the corner grip to resize it. Reset returns it to the default position and size.',
+  },
+  chatQuota: {
+    // {seconds} is an already-localized duration phrase, for example "3 seconds".
+    limitReached: 'General chat limit reached. Try again in {seconds}.',
+    pending: 'Your previous General chat message is still sending. Try again in a moment.',
+    unavailable: 'General chat is temporarily unavailable. Try again shortly.',
+  },
+  swing: {
+    ready: 'Swing',
+    seconds: '{seconds}s',
+  },
+  // WoW-style underwater breath mirror bar (src/ui/breath_bar.ts).
+  breath: {
+    label: 'Breath',
+    drowning: 'Drowning!',
+  },
+  rest: {
+    resting: 'Resting',
+  },
+  paladin: {
+    devotion: 'Devotion',
+    devotionValue: 'Devotion {value} of {max}',
+    devotionAscensionCharges: 'Devotion {value} of {max}. Ascension {charges} charges.',
+    devotionAscensionLast: 'Devotion {value} of {max}. Ascension final charge.',
+    ascensionLastAnnouncement: 'Ascension final charge',
+    ascensionSpenderAria: 'Action slot {slot}: {ability}. Consumes one Ascension charge.',
+  },
+  // The Spell Power / Attack Power contribution appended to an ability tooltip's
+  // base damage, e.g. "66 to 74 (+29)". Punctuation + a formatted number only (no
+  // words), so it is locale-neutral and an English-only add.
+  abilityScaling: {
+    bonus: '(+{value})',
+  },
+  // Accessible group names for the unit frames (#player-frame and #target-frame are
+  // role="group" wrappers over a portrait, name, level, and health/resource bars).
+  // Kept short, non-prose labels so they read cleanly as screen-reader group names
+  // (and stay non-wordy so an English-filled non-Latin locale does not trip the
+  // untranslated-leak guard); the maintainer translates them per locale at release.
+  // targetLabel reads as the unit you have marked as your current target (faction
+  // neutral: it labels friendly and hostile targets alike).
+  unitFrame: {
+    playerLabel: 'Your Hero',
+    targetLabel: 'Your Mark',
+    // targetAnnounce is the polite #target-live announcement spoken once when the player's
+    // target CHANGES; {name} is the new target's display name. Kept NON-WORDY
+    // (no run of four-plus lowercase after stripping {name}) so an English-filled non-Latin
+    // locale does not trip the M16 untranslated-leak guard: "Target" would FAIL it ("arget"
+    // is a five-letter run), so this reuses the frame's own term for the target ("Mark", from
+    // targetLabel above), which a screen-reader user already hears as the target frame's name.
+    targetAnnounce: 'Mark {name}',
+    // targetOfTargetLabel names the optional #totarget-frame region (the classic
+    // "target of target": who your current target is targeting). Kept NON-WORDY (no
+    // run of four+ lowercase after stripping tokens) so an English-filled non-Latin
+    // locale does not trip the M16 untranslated-leak guard, reusing the frame's own
+    // term for the target ("Mark", from targetLabel): your mark's mark.
+    targetOfTargetLabel: "Mark's Mark",
+    // partyLabel names the #party-frames region (a group of tappable / focusable
+    // party member buttons, each named by its visible member name). Kept short and
+    // non-wordy (no run of four+ lowercase) so an English-filled non-Latin locale
+    // does not trip the untranslated-leak guard; "Band" reads as your group of
+    // companions, parallel to playerLabel / targetLabel.
+    partyLabel: 'Your Band',
+    // petLabel names the #pet-frame region (the hunter/warlock/mage pet's health
+    // strip under the player frame, which doubles as a button that selects the
+    // pet). Kept NON-WORDY (no run of four+ lowercase) so an English-filled
+    // non-Latin locale does not trip the M16 untranslated-leak guard, parallel to
+    // playerLabel / targetLabel / partyLabel above.
+    petLabel: 'Your Pet',
+    // partyChip is the caption on the mobile-only collapse chip that stands in for the
+    // expanded party stack (the member frames) on the touch HUD: tap it
+    // to reveal the stack, tap again to collapse. A distinct key from the chat channel
+    // "Party" (a different render sink: a disclosure header, not a channel tab), so a
+    // locale can name the two independently. WORDY by M16 ("Party" to "arty", a four-
+    // plus consecutive-lowercase run survives), so the five non-Latin overlays
+    // (zh_CN/zh_TW/ja_JP/ko_KR/ru_RU) carry real fills and the Latin overlays stay
+    // pending, exactly like partyGroup below.
+    partyChip: 'Party',
+    // partyGroup is the visually-hidden raid-group cue appended to a raid party row's
+    // accessible name (e.g. "Group 1"), so a screen reader conveys which raid group a
+    // member sits in. {n} is the group number (formatNumber). UNLIKE the labels above
+    // this one is WORDY by the M16 rule (a four-plus consecutive-lowercase run survives
+    // stripping {n}: "Group" to "roup"), so an English-filled non-Latin locale WOULD trip
+    // the untranslated-leak guard: the five non-Latin overlays (zh_CN/zh_TW/ja_JP/ko_KR/
+    // ru_RU) carry real fills, the Latin overlays stay pending. Title Case does not help
+    // (M16 is per-word consecutive-lowercase, not word count).
+    partyGroup: 'Group {n}',
+    // The unit suffixes appended to an aura's compact remaining-duration label on the
+    // buff/debuff strips (e.g. "20s", "5m", "1h", "2d"). The auras core (auras_view.ts)
+    // renders them via the injected durationUnits() dep so an in-game language switch
+    // lands next tick. Single chars (non-wordy: no four-plus consecutive-lowercase run),
+    // so an English-filled non-Latin overlay does not trip the M16 untranslated-leak
+    // guard; the maintainer localizes at release.
+    durationUnitSeconds: 's',
+    durationUnitMinutes: 'm',
+    durationUnitHours: 'h',
+    durationUnitDays: 'd',
+    // The badge label on the player's own buff row (#buff-bar) when the LOW graphics
+    // preset's aura cap (auraVisibleCap, src/game/ui_tier_knobs.ts) has shed {n} cosmetic
+    // buff icons past the cap (docs/design/graphics-settings-fairness.md: hiding a buff
+    // ICON removes no actionable information, the aura stays active either way). {n} is
+    // the shed count (formatNumber). Kept NON-WORDY (a bare "+" plus a number, no
+    // four-plus consecutive-lowercase run) so an English-filled non-Latin locale does not
+    // trip the M16 untranslated-leak guard.
+    buffOverflowLabel: '+{n}',
+  },
+  // Character sheet (#char-window) accessible names. modelPreview names the role=img 3D
+  // turntable HOST distinctly from the title's level/class subtitle (the canvas pixels
+  // stay OUT of a11y scope). Like partyGroup this label is WORDY by M16
+  // ("Character"/"Model"/"Preview" each carry a four-plus consecutive-lowercase run), so
+  // the same five non-Latin overlays carry real fills and the Latin overlays stay
+  // pending; Title Case does not make it non-wordy.
+  character: {
+    modelPreview: 'Character Model Preview',
+  },
+  // Skip links: the first focusable elements on both game entries, a keyboard /
+  // screen-reader shortcut to the main HUD and the chat log (mirrors the src/guide
+  // .guide-skip precedent). English-only control labels (the hud_chrome exception);
+  // Title Case keeps them non-wordy (no run of four+ lowercase) so an English-filled
+  // non-Latin locale does not trip the untranslated-leak guard, like the labels above.
+  skipLinks: {
+    mainHud: 'Skip to Main HUD',
+    chat: 'Skip to Chat',
+  },
+  // On-screen / mobile control labels and their accessible names. char/bags/music
+  // reuse existing keys (hud.keybinds.actions.*, hud.options.music) at the call site.
+  mobile: {
+    jump: 'Jump',
+    leaderboard: 'Ranks',
+    dailyRewards: 'Store',
+    // The Exchange launcher's own short label (it borrowed the Browse tab's).
+    wocMarket: 'Exchange',
+    deeds: 'Deeds',
+    mounts: 'Mounts',
+    professions: 'Professions',
+    reliquary: 'Reliquary',
+    lootExplorer: 'Loot Explorer',
+    nameplates: 'Names',
+    haptics: 'Haptics',
+    hapticsOff: 'Haptics Off',
+    toggleHaptics: 'Toggle haptics',
+    // The v0.22.0 base's touch-hotbar paging button ("Skills", #mobile-hotbar-page):
+    // superseded by the paged action ring below, whose page toggle owns ability
+    // paging on touch. The keys stay (already filled in all 20 locales) per the
+    // hud.core.mobileTarget precedent for retired-but-translated chrome keys.
+    hotbarPage: 'Skills',
+    hotbarPageAria: 'Show next set of skills',
+    // Paged mobile action ring (Phase 1 of the mobile combat HUD rework): the
+    // ring container's accessible name, the page-cycle toggle's accessible name,
+    // and the page indicator text painted on the toggle. The per-button
+    // aria labels reuse abilityUi.actionBar.slotAria/emptySlotAria/attackName via
+    // the shared action_bar_view core, so no per-slot key lives here.
+    actionRing: 'Combat actions',
+    actionPageToggle: 'Switch action page',
+    // The bare page number ("1"/"2", painted big and gold over the swap-arrows
+    // glyph) rather than "Page 1 of 2": the toggle button already carries the
+    // full "Switch action page" accessible name via actionPageToggle above, so
+    // the indicator span only needs to be legible at a glance, not restate the
+    // count in words. "{page}" is token-only, so it is exempt from the M16
+    // non-Latin-fill requirement.
+    actionPageIndicator: '{page}',
+    // The radial action gesture (Phase 2): each ring button carries a centre tap
+    // plus four flick directions, and a hold reveals the four petals. The petal
+    // overlay's accessible name, the centre cancel target's name, and the four
+    // direction names the petals' slot aria is built from ("Action slot Up:
+    // Fireball"). The direction words are the accessible label a screen reader
+    // reads for a control the player picks by direction, not by index, so they
+    // are real user-facing strings rather than dev text.
+    actionRadial: 'Action directions',
+    actionRadialCancel: 'Cancel action',
+    radialCenter: 'Centre',
+    radialUp: 'Up',
+    radialRight: 'Right',
+    radialDown: 'Down',
+    radialLeft: 'Left',
+    // The consumables seat (Phase 3): the ring's 5th arc position, showing the
+    // first carried consumable. A tap uses it; a hold or a leftward swipe opens
+    // the row of everything else being carried. One key names three things that
+    // must agree: the row overlay's accessible name, the seat's own slot label
+    // (so a screen reader reads "Consumables: Healing Potion" rather than a slot
+    // number the player never sees), and the group a sticky-mode menu belongs to.
+    // WORDY by M16, so the five non-Latin overlays carry real fills.
+    consumableSeat: 'Consumables',
+    // RETIRED in place: the same control's copy while it was named "Menus" and a
+    // bare tap opened chat. Both facts changed, so the four keys below were
+    // SUPERSEDED by the quickActions* set rather than reworded (the
+    // corpseHarvest.harvestTooltip precedent: an in-place reword leaves every
+    // locale's reviewed fill answering the old sentence). The keys stay, already
+    // filled, per the hud.core.mobileTarget retired-but-translated precedent.
+    menuControl: 'Menus',
+    menuControlAria:
+      'Menus. Tap to open chat, or hold and swipe right for mounts, map, bags and more.',
+    menuControlAriaTap:
+      'Menus. Tap to open the menu row: mounts, map, bags and more. Tap again for chat.',
+    menuLabel: 'Menu',
+    // Quick Actions: ONE seat replacing the five-button row (Chat, Social,
+    // Quests, Settings, More) that sat at top-left, further from either thumb
+    // than anything else in the HUD. quickActions names both the control and the
+    // strip it opens; quickActionsAria is the control's own accessible name,
+    // which has to TEACH the gesture because a touch device has no hover to
+    // discover it with. The ten strip items reuse the accessible names their own
+    // buttons already carry, and the live caption reuses those buttons' label
+    // keys, so no per-item key lives here. All four are WORDY by M16, so the five
+    // non-Latin overlays carry real fills.
+    quickActions: 'Quick Actions',
+    quickActionsAria:
+      'Quick Actions. Tap to open the row of mount, chat, map, bags and more, or hold and swipe right to pick one.',
+    // The SAME control under settings.touchTapMenus, where the row is opened and
+    // chosen from with separate taps rather than one gesture, so the swipe
+    // sentence above would teach something the control does not do;
+    // menu_control_controller.ts swaps the name when the setting flips.
+    quickActionsAriaTap:
+      'Quick Actions. Tap to open the row of mount, chat, map, bags and more, then tap an item. Tap the control again to close.',
+    quickActionsLabel: 'Actions',
+    // The touch stance control: ONE circle on the button row wearing the stance
+    // (or paladin devotion aura) the player is in, with every other known stance
+    // on the radial's four directions. stanceRadial names the petal overlay;
+    // the two anchor names are the control's OWN accessible name and have to
+    // teach the gesture, because a touch device has no hover to discover it
+    // with. {stance} is the worn stance's own ability name, already localized by
+    // its own key, so no stance name lives here. Both anchor names are WORDY by
+    // M16, so the five non-Latin overlays carry real fills.
+    stanceRadial: 'Stances',
+    stanceAnchorAria: 'Stance: {stance}. Tap to open the stance ring, then pick another stance.',
+    stanceAnchorEmptyAria: 'No stance. Tap to open the stance ring, then pick a stance.',
+    // The top-band quest strip (Phase 5): the touch replacement for the
+    // right-anchored quest tracker, showing ONE quest with all of its objectives
+    // instead of a list that grew into the action ring. questStripAria is the
+    // strip's accessible name and has to say what activating it DOES, because
+    // the visible chevrons are a hint rather than buttons; questStripAriaSingle
+    // drops the position when there is nothing to cycle to. The objective lines
+    // reuse questUi.detail.objectiveProgress and the "(Complete)" marker reuses
+    // questUi.tracker.complete, so no key for either lives here.
+    // questStripCounter is token-only and so exempt from the M16 non-Latin fill
+    // requirement; the two aria strings and questStripMore are WORDY, so the
+    // five non-Latin overlays carry real fills.
+    questStripAria: 'Tracked quest {position} of {total}: {title}. Activate for the next quest.',
+    questStripAriaSingle: 'Tracked quest: {title}',
+    questStripCounter: '{position}/{total}',
+    questStripMore: '+{count} more',
+    // Target swap (#mobile-target-cycle, replacing the old Target Closest
+    // button): a crosshair-icon secondary button that cycles the hostile
+    // target via the Tab-target path (acquire-nearest now lives on the ring's
+    // attack toggle itself), kept visually distinct from the ring's primary
+    // attack toggle. targetCycle is the accessible name/title;
+    // targetCycleShort is the tiny on-button caption (space is tight at the
+    // button's 44-60px width, so it stays one word).
+    targetCycle: 'Swap target',
+    targetCycleShort: 'Target',
+    // Phase 4: a small touch-only label on each bar-assigned spellbook row,
+    // naming which mobile action-ring page (Phase 1) the ability's bar slot
+    // falls on. "Page {page}" is not wordy (one word plus a token), so it is
+    // exempt from the M16 non-Latin-fill requirement.
+    spellbookPageLabel: 'Page {page}',
+    // The mobile chat composer's keyboard-dismiss chevron (#chat-dismiss): a
+    // down-chevron button that blurs the chat input so the on-screen keyboard drops
+    // WITHOUT closing chat (the log + composer stay at their resting seat). Its
+    // accessible name; WORDY by M16 ("Hide" plus "keyboard", each a four-plus
+    // consecutive-lowercase run), so the five non-Latin overlays carry real fills and
+    // the Latin overlays stay pending, exactly like the other wordy chrome labels.
+    hideKeyboard: 'Hide keyboard',
+    // The mobile chat composer's placeholder. The desktop hud.core.chatPlaceholder
+    // packs the full slash-command legend (/s, /w, /r, ...), which overflows the
+    // compact touch composer strip, so the touch HUD shows this short prompt instead
+    // (activeChatPlaceholder branches on the mobile layout). Carries the same "!"
+    // community-commands hint as the desktop placeholder (issue #1230): mobile has
+    // no hover for a tooltip, so the always-visible placeholder is the one surface
+    // both platforms share. WORDY by M16 ("something" is a four-plus
+    // consecutive-lowercase run), so the five non-Latin overlays carry real fills
+    // and the Latin overlays stay pending.
+    chatPlaceholder: 'Say something... (! for community commands)',
+    // The More tray's Edit control (#mobile-bar-editor), which opens the bar
+    // editor. Touch-only: desktop binds by dragging onto the visible bars, so the
+    // control never appears there. barEditor is the tiny on-button caption (the
+    // tray's buttons are narrow, so it stays two short words); barEditorAria is
+    // the spoken name. Both WORDY by M16, so the five non-Latin overlays carry
+    // real fills.
+    barEditor: 'Edit Bars',
+    barEditorAria: 'Edit the action bar layout',
+  },
+  // The touch bar editor overlay (Phase 4.5): one action-ring page exploded into
+  // a grid of 4 buttons by 5 directions, with page tabs. It is the ONLY way to
+  // bind a slot on touch, so its copy has to TEACH the two-tap language (place,
+  // then swap) that replaces the long-press drag it retires. Every value here is
+  // WORDY by M16 except pageTab (one short word plus a token), so the rest
+  // carry the five non-Latin fills.
+  barEditor: {
+    title: 'Edit Action Bar',
+    close: 'Close bar editor',
+    // The tab strip's own group name, distinct from the per-tab names below.
+    pages: 'Action bar pages',
+    pageTab: 'Page {page}',
+    buttonHeader: 'Button {button}',
+    // A cell is named by the control it belongs to and the direction the player
+    // flicks to reach it, never by a slot number touch never shows.
+    cellAria: 'Button {button}, {direction}: {action}',
+    emptyCellAria: 'Button {button}, {direction}: empty',
+    hint: 'Tap a slot, then another, to swap them.',
+    armed: 'Tap a slot to place {name}.',
+    picked: 'Tap another slot to swap with {name}.',
+    locked: 'Action bars are locked in Interface options.',
+    // The Clear toggle: touch's only way to EMPTY a slot, since the desktop
+    // clear is shift plus right-click.
+    clear: 'Clear',
+    clearAria: 'Clear a slot',
+    clearArmed: 'Tap a slot to clear it.',
+  },
+  // The live ferry notes (tutorial_greeting_view.ts /
+  // tutorial_greeting_window.ts): the town-bell homecoming, the island
+  // welcome from Ferryman Odo, and the close button they share.
+  tutorialGreeting: {
+    // The first bell homecoming: the ride may have been a misclick, so the
+    // town's twin bell is pointed out once.
+    bellHomeNote:
+      'Back from the shore already? That was the ferry bell you rang. Its twin hangs just there by the Ravenpost mailbox: ring it any time and the crossing will carry you back to the Proving Shore. No harm done either way.',
+    // Ferryman Odo's island welcome, shown once for a character's first
+    // arrival: the greeting ferry lands beside his pier.
+    // Deliberately short (CX: the old note was a wall of text at the exact
+    // moment a new player wants to look at the world). It says where they
+    // are and who to talk to; the coach card, the golden trail and the
+    // floating bubble carry the rest, in place, as they need it.
+    islandArrivalNote:
+      'Welcome to the Proving Shore. Warden Tam is waiting just up the strand: go and see him. When you would rather be off, ring the bell beside my pier and it will carry you across to the vale at any time.',
+    noteClose: 'Understood',
+  },
+  // New-adventurer tutorial copy for the touch interface. The default tutorial
+  // bodies (hud.tutorial.*Body) reference keyboard/mouse ("W/A/S/D", "press F"),
+  // which is wrong on a phone whose only controls are the on-screen sticks and
+  // the Use / More action buttons. These touch variants are swapped in when the
+  // mobile-touch interface is active (see tutorial_copy.ts). English-only add, so
+  // they live here in the hud_chrome domain rather than the constrained `hud` one.
+  tutorial: {
+    // "movement stick", not "left stick": left-handed mode swaps the two thumb
+    // sticks (and the stick can float to wherever you touch), so a fixed side is
+    // wrong for that layout.
+    moveBodyTouch:
+      'Use the movement stick to move and drag the screen to look around. Take a few steps to begin.',
+    talkBodyTouch:
+      'Stand close to Marshal Redbrook and tap the Use button to speak, then accept his task.',
+    returnBodyTouch:
+      'Your task is done. Return to Marshal Redbrook and tap the Use button to turn it in.',
+    doneBodyTouch:
+      'You have the basics, {name}. The Vale is yours to explore. Tap More, then Quests, to review your quest log anytime. Good hunting.',
+    // Appended to the slay-step body (hud.tutorial.slayBody) so first-time players
+    // learn HOW to fight, not just what to fight: playtesters reported the wolf
+    // step never explains targeting. Keyboard/mouse points at the actual bound
+    // target key (Tab by default, see src/game/keybinds.ts) and a click; the
+    // touch variant taps instead, matching the other *Touch keys in this block.
+    // English-only add, WORDY by M16, so the five non-Latin overlays carry real
+    // fills below.
+    slayTargetHint:
+      'New to combat? Press {targetKey} or click a wolf to target it, then use an action bar ability to attack it.',
+    slayTargetHintTouch:
+      'New to combat? Tap a wolf to target it, then tap an action bar ability to attack it.',
+    // Shown as a short bulleted list under the closing "done" card so a brand-new
+    // player has somewhere to go right after the last tutorial step, instead of
+    // being dropped into the open world with no pointer (see tutorial.ts).
+    nextTipsTitle: 'Where to next',
+    nextTipQuestLog: 'Open your Quest Log ({key}) to find your next task nearby.',
+    nextTipMap: 'Check the World Map ({key}) to see where quests are waiting.',
+    nextTipSocial: 'Open Social ({key}) to find a group for tougher fights.',
+  },
+  // The Proving Shore movement bootcamp (src/ui/bootcamp.ts): the coachmark
+  // that meets a fresh arrival at the Gauntlet and walks them through it in
+  // running order: talk to Warden Tam, hold forward down lane 1, turn with
+  // the turn key and walk the south lane, swing the view with the mouse and
+  // strafe the last lane, then hand the run to Overseer Pell. Three copy
+  // arms per step: keyboard/mouse (default), touch, and gamepad, chosen by
+  // the live input-hint mode (src/game/input_hint_mode.ts). WORDY by M16, so
+  // the five non-Latin overlays carry real fills.
+  bootcamp: {
+    title: 'First Steps',
+    talkTitle: 'Speak to Warden Tam',
+    talkBody:
+      'Warden Tam keeps the Gauntlet gate just ahead. Walk up to him until his name shows, then press {interactKey}, or left-click him, to talk: he will set you the run.',
+    talkBodyTouch:
+      'Warden Tam keeps the Gauntlet gate just ahead. Walk up to him until his name shows, then tap him, or tap the Use button, to talk: he will set you the run.',
+    talkBodyPad:
+      'Warden Tam keeps the Gauntlet gate just ahead. Walk up to him until his name shows, then press your interact button to talk: he will set you the run.',
+    forwardTitle: 'Walk the first lane',
+    forwardBody: 'Step into the lane beside Tam and hold {forwardKey} to walk it west to its flag.',
+    forwardBodyTouch:
+      'Step into the lane beside Tam and push the movement stick up to walk it west to its flag.',
+    forwardBodyPad:
+      'Step into the lane beside Tam and push the left stick up to walk it west to its flag.',
+    turnwalkTitle: 'Turn, then walk',
+    turnwalkBody:
+      'Flag one down. Hold {turnKey} to rotate on the spot until you face down the walled lane heading south, then hold {forwardKey} again and walk it to the second flag.',
+    turnwalkBodyTouch:
+      'Flag one down. Drag a finger across the world (not the movement stick) to turn until you face down the walled lane heading south, then push the stick up and walk it to the second flag.',
+    turnwalkBodyPad:
+      'Flag one down. Push the right stick to turn until you face down the walled lane heading south, then push the left stick up and walk it to the second flag.',
+    // Lane 3's corner, taught with the SAME shape as lane 2's: turn to face
+    // the lane, THEN walk it. One idiom for both corners, and the same
+    // sentence on keyboard, touch and pad, so nobody has to learn the course
+    // twice (the playtest ruling). Only the hand differs: left here, right
+    // there.
+    strafeTitle: 'Turn, then walk',
+    strafeBody:
+      'One corner left. Hold {turnLeftKey} to rotate on the spot until you face down the last lane, then hold {forwardKey} again and walk it until the red flag is behind you.',
+    strafeBodyTouch:
+      'One corner left. Drag a finger across the world (not the movement stick) to turn until you face down the last lane, then push the stick up and walk it until the red flag is behind you.',
+    strafeBodyPad:
+      'One corner left. Push the right stick to turn until you face down the last lane, then push the left stick up and walk it until the red flag is behind you.',
+    cameraTitle: 'Swing the camera',
+    cameraBody:
+      'One last lesson before you hand the run in: hold the right mouse button and drag to swing the camera all the way around you. Knowing what stands behind you wins fights.',
+    cameraBodyTouch:
+      'One last lesson before you hand the run in: drag a finger across the world to swing the camera all the way around you. Knowing what stands behind you wins fights.',
+    cameraBodyPad:
+      'One last lesson before you hand the run in: push the right stick to swing the camera all the way around you. Knowing what stands behind you wins fights.',
+    courseProgress: 'Flag {current} of {total}',
+    doneTitle: 'Run complete',
+    doneBody:
+      'That is everything your legs need to know. Overseer Pell stands beside the red flag: press {interactKey} on him, or left-click him, to hand your run in and take your first reward.',
+    doneBodyTouch:
+      'That is everything your legs need to know. Overseer Pell stands beside the red flag: tap him to hand your run in and take your first reward.',
+    doneBodyPad:
+      'That is everything your legs need to know. Overseer Pell stands beside the red flag: press your interact button on him to hand your run in and take your first reward.',
+    // The rail coach: the same card, generic three-state copy for every
+    // island quest after the Gauntlet (walk to the giver, do the task,
+    // return to the turn-in), so the helper persists the whole relay. {npc}
+    // splices the localized NPC name; the active card is titled with the
+    // quest's own localized name by the overlay. WORDY by M16, so the five
+    // non-Latin overlays carry real fills.
+    coachNextTitle: 'Next: {npc}',
+    coachNextBody:
+      'Follow the golden trail to {npc}. Walk up until the name shows, then press {interactKey}, or left-click them, to take your next task.',
+    coachNextBodyTouch:
+      'Follow the golden trail to {npc}. Walk up until the name shows, then tap them, or tap the Use button, to take your next task.',
+    coachNextBodyPad:
+      'Follow the golden trail to {npc}. Walk up until the name shows, then press your interact button to take your next task.',
+    coachTaskBody:
+      'Follow the golden trail to your task. The tracker on the right keeps the tally, and {mapKey} opens the map if you lose the way.',
+    coachTaskBodyTouch:
+      'Follow the golden trail to your task. The tracker on the right keeps the tally, and the map button shows the way if you lose it.',
+    coachTaskBodyPad:
+      'Follow the golden trail to your task. The tracker on the right keeps the tally, and your map button shows the way if you lose it.',
+    coachReadyTitle: 'Task complete',
+    // "Head to", never "Return to": on the rail every hand-in NPC is the NEXT
+    // station, someone the player has not met yet, so "return" reads as a
+    // place they have already been and sends new players backward.
+    coachReadyBody:
+      'Head to {npc} and press {interactKey}, or left-click them, to hand it in and take your reward.',
+    coachReadyBodyTouch: 'Head to {npc} and tap them to hand it in and take your reward.',
+    coachReadyBodyPad:
+      'Head to {npc} and press your interact button to hand it in and take your reward.',
+    // Per-quest mechanic lessons replacing the generic task/ready bodies
+    // (bootcamp_view.ts COACH_ACTIVE_OVERRIDES / COACH_READY_OVERRIDES):
+    // targeting and the swing for Strike True, the pickup press for the
+    // Wreck Line, and the buckle-on for the pouch before Maren's hand-in.
+    // WORDY by M16, so the five non-Latin overlays carry real fills.
+    taskStrikeTrueBody:
+      'Walk up to a straw effigy and left-click it to make it your target: its name appears at the top of your screen. Then press {attackKey} to start swinging. That first button is your plain attack, not a spell. Keep striking until one gives out.',
+    taskStrikeTrueBodyTouch:
+      'Walk up to a straw effigy and tap it to make it your target. Then tap the first button on the action bar to swing. Keep striking until one gives out.',
+    taskStrikeTrueBodyPad:
+      'Walk up to a straw effigy and press your target button to make it your target. Then press your first action button to swing. Keep striking until one gives out.',
+    // The ability drill (q_ps_hone_the_edge): the yard's second lesson, and
+    // the one that stops a graduate leaving the island auto-attacking.
+    // {ability} is the localized name of THIS class's own attack and
+    // {abilityKey} the key it sits on, both derived from the live kit, so
+    // the card never tells a mage to press 1.
+    taskHoneBody:
+      'Left-click an effigy to target it, then press {abilityKey} to use {ability}. That is your own, not a plain swing. Land it three times.',
+    taskHoneBodyTouch:
+      'Tap an effigy to target it, then tap {ability} on the action bar. That is your own, not a plain swing. Land it three times.',
+    taskHoneBodyPad:
+      'Target an effigy, then press the action button holding {ability}. That is your own, not a plain swing. Land it three times.',
+    // The death lesson (q_ps_the_long_walk). Three bodies, because the
+    // lesson has three moments and a single static card would be wrong for
+    // two of them: walk to the stone, release the spirit, walk back. The
+    // copy names the literal buttons the death screen shows.
+    taskLongWalkBody:
+      'Press {bagsKey} to open your bags, then left-click the Passing Stone. It lays you down where you stand. Nothing here can hurt you, and this costs you nothing.',
+    taskLongWalkBodyTouch:
+      'Open your bags and tap the Passing Stone. It lays you down where you stand. Nothing here can hurt you, and this costs you nothing.',
+    taskLongWalkBodyPad:
+      'Open your bags and choose the Passing Stone. It lays you down where you stand. Nothing here can hurt you, and this costs you nothing.',
+    // Dead, spirit not yet released.
+    taskLongWalkDeadBody:
+      'You have died, and you have lost nothing: no items, no coin, no experience. Step 1 of 2: click the Release Spirit button in the middle of your screen. You will rise as a ghost at the graveyard behind the camp.',
+    taskLongWalkDeadBodyTouch:
+      'You have died, and you have lost nothing: no items, no coin, no experience. Step 1 of 2: tap the Release Spirit button in the middle of your screen. You will rise as a ghost at the graveyard behind the camp.',
+    taskLongWalkDeadBodyPad:
+      'You have died, and you have lost nothing: no items, no coin, no experience. Step 1 of 2: choose Release Spirit in the middle of your screen. You will rise as a ghost at the graveyard behind the camp.',
+    // A ghost walking back to the body.
+    taskLongWalkGhostBody:
+      'Step 2 of 2: you are a spirit, and nothing can touch you. Your body is the marker on your minimap. Walk to it. When you get close, a Resurrect at Corpse button appears: click it and you are alive again, with no penalty at all. That walk is ALWAYS free, and it is how you come back every time you die.',
+    taskLongWalkGhostBodyTouch:
+      'Step 2 of 2: you are a spirit, and nothing can touch you. Your body is the marker on your minimap. Walk to it. When you get close, a Resurrect at Corpse button appears: tap it and you are alive again, with no penalty at all. That walk is ALWAYS free, and it is how you come back every time you die.',
+    taskLongWalkGhostBodyPad:
+      'Step 2 of 2: you are a spirit, and nothing can touch you. Your body is the marker on your minimap. Walk to it. When you get close, a Resurrect at Corpse button appears: choose it and you are alive again, with no penalty at all. That walk is ALWAYS free, and it is how you come back every time you die.',
+    taskShellBody:
+      'The scuttlers pinch back. Left-click one to make it your target, then press {abilityKey} for {ability}, and keep attacking. If too many attack you at once, retreat back up the path: they give up the chase quickly, and your health returns while you rest.',
+    taskShellBodyTouch:
+      'The scuttlers pinch back. Tap one to target it, then tap {ability} on the action bar. If too many attack you at once, retreat back up the path: they give up the chase quickly, and your health returns while you rest.',
+    taskShellBodyPad:
+      'The scuttlers pinch back. Target one, then press the action button holding {ability}. If too many attack you at once, retreat back up the path: they give up the chase quickly, and your health returns while you rest.',
+    // Caster arms (mage, warlock, priest, druid): their first real button is
+    // the slot-2 spell, so the combat lessons teach the second button and
+    // speak of casting. WORDY by M16, so the five non-Latin overlays carry
+    // fills.
+    taskStrikeTrueBodyCaster:
+      'Walk up to a straw effigy and left-click it to make it your target: its name appears at the top of your screen. Then press {attackKey}, or click the second button on the action bar, to cast your spell. Keep casting until one gives out.',
+    taskStrikeTrueBodyCasterTouch:
+      'Walk up to a straw effigy and tap it to make it your target. Then tap the second button on the action bar to cast your spell. Keep casting until one gives out.',
+    taskStrikeTrueBodyCasterPad:
+      'Walk up to a straw effigy and press your target button to make it your target. Then press your second action button to cast your spell. Keep casting until one gives out.',
+    taskShellBodyCaster:
+      'The scuttlers pinch back. Left-click one to make it your target, then press {abilityKey} for {ability}, and keep casting from range. If too many attack you at once, retreat back up the path: they give up the chase quickly, and your health returns while you rest.',
+    taskShellBodyCasterTouch:
+      'The scuttlers pinch back. Tap one to target it, then tap {ability} on the action bar, and keep casting from range. If too many attack you at once, retreat back up the path: they give up the chase quickly, and your health returns while you rest.',
+    taskShellBodyCasterPad:
+      'The scuttlers pinch back. Target one, then press the action button holding {ability}, and keep casting from range. If too many attack you at once, retreat back up the path: they give up the chase quickly, and your health returns while you rest.',
+    // The pearl detour (q_ps_mother_of_pearl): using a bag item at a marked
+    // spot, a real fight, and looting a quest prize off the corpse. WORDY by
+    // M16, so the five non-Latin overlays carry fills.
+    taskPearlBody:
+      "Follow the golden trail to the tide pool at the strand's west end. Standing at the water's edge, press {bagsKey} to open your bags and left-click the Briny Lure to call him up. Fight him as you fought the scuttlers, and when he falls, press {interactKey} on his shell to claim the Lustrous Pearl.",
+    taskPearlBodyTouch:
+      "Follow the golden trail to the tide pool at the strand's west end. Standing at the water's edge, open your bags and tap the Briny Lure to call him up. Fight him as you fought the scuttlers, and when he falls, tap his shell to claim the Lustrous Pearl.",
+    taskPearlBodyPad:
+      "Follow the golden trail to the tide pool at the strand's west end. Standing at the water's edge, open your bags and choose the Briny Lure to call him up. Fight him as you fought the scuttlers, and when he falls, press your interact button on his shell to claim the Lustrous Pearl.",
+    taskWreckLineBody:
+      'The castaway crates line the path toward Dawnrest Camp. Walk up to one until its name shows, then press {interactKey}, or left-click the crate, to pick it up. Six fill the haul.',
+    taskWreckLineBodyTouch:
+      'The castaway crates line the path toward Dawnrest Camp. Walk up to one until its name shows, then tap the crate, or tap the Use button, to pick it up. Six fill the haul.',
+    taskWreckLineBodyPad:
+      'The castaway crates line the path toward Dawnrest Camp. Walk up to one until its name shows, then press your interact button to pick it up. Six fill the haul.',
+    taskPouchBody:
+      'Press {interactKey} on {npc}, or left-click them, to open the stall, then left-click the Linen Pouch to buy it.',
+    taskPouchBodyTouch: 'Tap {npc} to open the stall, then tap the Linen Pouch to buy it.',
+    taskPouchBodyPad:
+      'Press your interact button on {npc} to open the stall, then choose the Linen Pouch to buy it.',
+    readyPouchBody:
+      'Pouch bought. Press {bagsKey} to open your bags and left-click the Linen Pouch to buckle it into a free bag loop. Then head to {npc} and press {interactKey} to show it off.',
+    readyPouchBodyTouch:
+      'Pouch bought. Open your bags and tap the Linen Pouch to buckle it into a free bag loop. Then head to {npc} and tap them to show it off.',
+    readyPouchBodyPad:
+      'Pouch bought. Open your bags and choose the Linen Pouch to buckle it into a free bag loop. Then head to {npc} and press your interact button to show it off.',
+    // The floating interact bubble over the coach's current target
+    // (bootcamp.ts + coach_prompt_view.ts): one keycap chip plus one short
+    // verb, readable without reading the card. Deliberately terse.
+    promptTalk: 'Talk',
+    promptTurnIn: 'Turn in quest',
+    promptPickUp: 'Pick up',
+    // The pearl on Mister Crabs' shell: name the prize, so a new player knows
+    // the corpse still owes them something (CX).
+    promptLootPearl: 'Loot the pearl',
+    promptRead: 'Read',
+    promptRing: 'Ring',
+    promptHold: 'Hold',
+    // The kill lessons' first half: click or tap the quarry, or use the pad's
+    // target cycle, to make it your target.
+    promptSelect: 'Select',
+    promptAttack: 'Attack',
+    // The ability drill's second half: the press it wants is the class's own
+    // button, not the swing the previous lesson taught.
+    promptUseAbility: 'Use ability',
+    // The death lesson's rite: kneeling at the Passing Stone.
+    promptKneel: 'Kneel',
+    // Screen-anchored asks: the lessons whose answer is a press on the
+    // interface rather than a place in the world. With the coach card gone
+    // these ARE the instruction, so each names its own press.
+    promptAccessInterface: 'Access interface',
+    promptMoveToTarget: 'Move to {target}',
+    promptSelectItem: 'Select {item}',
+    promptOpenBags: 'Open your bags',
+    promptCharacterSheet: 'Open your character sheet',
+    promptLookAround: 'Hold right-click and drag to look around',
+    promptJump: 'Jump',
+    promptSummon: 'Summon',
+    // The ring equip lesson (bootcamp_view.ts ringCardPlan): the pearl
+    // quest's reward sits in the bags, and these two cards walk wearing it
+    // and admiring it. WORDY by M16, so the five non-Latin overlays carry
+    // fills.
+    ringEquipTitle: 'Wear your prize',
+    ringEquipBody:
+      'You have been given the Mother of Pearl, and a reward does nothing sitting in a bag. Step 1 of 2: press {bagsKey} to open your bags, then left-click the ring to put it on.',
+    ringEquipBodyTouch:
+      'You have been given the Mother of Pearl, and a reward does nothing sitting in a bag. Step 1 of 2: open your bags and tap the ring to put it on.',
+    ringEquipBodyPad:
+      'You have been given the Mother of Pearl, and a reward does nothing sitting in a bag. Step 1 of 2: open your bags and choose the ring to put it on.',
+    ringAdmireTitle: 'Look at you',
+    ringAdmireBody:
+      'Step 2 of 2: press {charKey} to open your character sheet. That screen shows everything you are wearing and the stats it gives you, and the ring is now on your hand. Check it whenever you pick up new gear.',
+    ringAdmireBodyTouch:
+      'Step 2 of 2: open your character sheet from the menu. That screen shows everything you are wearing and the stats it gives you, and the ring is now on your hand. Check it whenever you pick up new gear.',
+    ringAdmireBodyPad:
+      'Step 2 of 2: open your character sheet from the menu. That screen shows everything you are wearing and the stats it gives you, and the ring is now on your hand. Check it whenever you pick up new gear.',
+    // The word between sequenced keycap chips ("D then W"): press order made
+    // explicit, the playtest ask.
+    keycapThen: 'then',
+    // Ferryman Odo's guiding voice: the CAPTION rows the coach card shows
+    // while the (English) VO clip plays. Each row mirrors one
+    // scripts/voices/extra_lines.mjs guide__odo__* line; reword the two
+    // together. WORDY by M16, so the five non-Latin overlays carry fills.
+    voiceArrival:
+      'Easy ashore, friend. See the golden path at your feet? It knows the way better than I do. Follow it.',
+    voiceFirstFlag: 'That is one flag down. Keep those legs moving, only two to go.',
+    voiceRunDone: 'A clean run, that. Overseer Pell holds your reward, go claim it.',
+    voiceStationDoneA: 'Fine work. On to the next, the path is already lit for you.',
+    voiceStationDoneB: 'You are getting the hang of this, no mistake.',
+    voiceVeerOff: 'Hold up, friend, that is the wrong way. The golden path is behind you.',
+    voiceGraduate:
+      'The bell is rung for you. Eastbrook waits across the water, and you are ready for it.',
+    // The closing card once Ferryman Odo has the last hand-in: ring home.
+    bellTitle: 'Ring the bell',
+    bellBody:
+      'Your crossing is earned. Walk to the ferry bell beside the pier and press {interactKey}, or left-click it, to sail for Eastbrook.',
+    bellBodyTouch:
+      'Your crossing is earned. Walk to the ferry bell beside the pier and tap it to sail for Eastbrook.',
+    bellBodyPad:
+      'Your crossing is earned. Walk to the ferry bell beside the pier and press your interact button on it to sail for Eastbrook.',
+  },
+  // Minimap / compass / clock / coordinate widget tooltips and accessible names.
+  widgets: {
+    clockTitle: 'Local time - click to toggle 12/24-hour',
+    worldCoordinates: 'World coordinates',
+    coordinates: 'Coordinates',
+    heading: 'Heading',
+    minimapZoom: 'Minimap zoom',
+  },
+  nativeUpdate: {
+    title: 'Update Available',
+    body: 'A new version of World of ClaudeCraft is available. Update now for the latest fixes and improvements.',
+    bodyWithVersion:
+      'Version {version} of World of ClaudeCraft is available. Update now for the latest fixes and improvements.',
+    notNow: 'Not now',
+    update: 'Update',
+  },
+  // The visible OTA gate (src/ui/ota_update_overlay.ts + net/ota_update_gate):
+  // in-app bundle downloads, distinct from the store-update prompt above.
+  otaUpdate: {
+    title: 'Game Update',
+    downloading: 'Downloading update: {percent}',
+    applying: 'Update downloaded. Restarting the game to apply it.',
+    incompatible:
+      'An update is required to play. It will be applied as soon as it finishes downloading.',
+    // RETIRED from the overlay (the OTA dialog is deliberately
+    // non-dismissable) but kept on purpose: deleting an English leaf whose
+    // translations are already filled would force edits across every
+    // i18n.locales overlay, which contributors must never touch. Do not
+    // "clean this up"; the maintainer prunes retired keys at release.
+    continueAnyway: 'Continue without updating',
+    progressLabel: 'Update download progress',
+  },
+  // First-run camera-mode prompt (issue #1727): a one-shot modal on the first world
+  // entry in a browser, offering Classic vs Mouse Camera. The mouse option title
+  // reuses hud.options.mouseCamera; these are the surrounding strings. The setting
+  // stays changeable later under Esc, Key Bindings.
+  cameraPrompt: {
+    title: 'Choose Your Camera',
+    intro: 'Pick how the camera follows your character.',
+    mouseDesc: 'Move the mouse to turn the camera without holding a button.',
+    classicTitle: 'Classic Camera',
+    classicDesc: 'Hold right-click and move the mouse to turn the camera.',
+    changeLater: 'You can change this later under Esc, Key Bindings.',
+    confirm: 'Confirm',
+  },
+  // Cast-bar progressbar accessible names (the visible spell name + seconds-left
+  // text are the live status; these name which bar is which). One for the player's
+  // own cast (#castbar) and one for the target/boss cast (#tf-castbar).
+  castBar: {
+    playerAria: 'Your Cast Bar',
+    targetAria: 'Unit Cast Bar',
+  },
+  // Leaderboard window chrome: the close-control accessible label only. The board's
+  // title / subtitle / column / loading / empty / retry strings live in the game.ts
+  // catalog (game.leaderboard.*); this is the one control label the inline window
+  // lacked an accessible name for.
+  leaderboard: {
+    close: 'Close',
+    // High-score board tabs: the per-character board and the per-guild board.
+    tabsLabel: 'High-score boards',
+    tabPlayers: 'Players',
+    tabGuilds: 'Guilds',
+    tabDevs: 'Developers',
+    // Guild-board column headers + the guild-tab empty state.
+    guildName: 'Guild',
+    members: 'Members',
+    topLevel: 'Top',
+    guildXp: 'Total XP',
+    guildEmpty: 'No ranked guilds yet.',
+    // Developer-board column headers + the dev-tab empty state. Contributors are
+    // ranked by how many pull requests they have had merged into the open-source
+    // repo (not raw commits: see hudChrome.devBadge.flavors.* for why).
+    devName: 'Contributor',
+    devTierCol: 'Badge',
+    mergedPrs: 'Merged PRs',
+    devEmpty: 'No ranked contributors yet.',
+  },
+  // Guild pledge board (docs/prd/guild-pledge-board.md): shared strings for the
+  // guild high-score tab's pledge affordances AND the social window's Pledges
+  // tab, so the two surfaces can never word the same state differently. Wordy
+  // values (M16) ship their five non-Latin fills in the same change.
+  pledge: {
+    // The per-guild recruiting status on the board: set by the Guild Master
+    // (setGuildPledgeSettings), defaults to accepting.
+    open: 'Accepting pledges',
+    closed: 'Not accepting pledges',
+    // Level floor chip beside the status when the guild set one (> 1).
+    minLevel: 'Level {level}+',
+    // The board row's action button, and the chip shown once the viewer's own
+    // pledge stands with this guild.
+    action: 'Pledge',
+    actionTitle: 'Pledge to {guild}',
+    pledged: 'Pledged',
+    yourGuild: 'Your guild',
+    // The social window's officer tab: title, empty state, decision buttons.
+    tab: 'Pledges',
+    // The tab label while pledges are waiting ({count} pre-formatted).
+    tabWithCount: 'Pledges ({count})',
+    empty: 'No one has pledged to your guild yet.',
+    accept: 'Accept',
+    acceptTitle: "Accept {name}'s pledge",
+    reject: 'Decline',
+    rejectTitle: "Decline {name}'s pledge",
+    // The recruiting settings editor (Guild Master + officers): the accepting
+    // toggle, the level floor, and the free-text note shown on the board.
+    settings: 'Recruitment',
+    acceptingLabel: 'Accept pledges',
+    minLevelLabel: 'Minimum level',
+    noteLabel: 'Board note',
+    notePlaceholder: 'Tell aspiring members what your guild is looking for',
+    save: 'Save',
+    // The unguilded viewer's own standing pledge (social window guild tab).
+    yourPledge: 'Your pledge: {guild}',
+    since: 'Pledged {date}',
+    withdraw: 'Withdraw pledge',
+  },
+  // Raid-lockout badge on the minimap rim + its hover/tap panel: the title, the
+  // accessible label, the "all ready" line, and the unlock-countdown templates
+  // (digits run through formatNumber; the units reorder per locale).
+  raidLockout: {
+    title: 'Raid Lockouts',
+    allReady: 'All raids ready',
+    daysHours: '{d}d {h}h',
+    hoursMinutes: '{h}h {m}m',
+    minutes: '{m}m',
+    lessThanMinute: '<1m',
+    // Entry-denied toast, enriched client-side with the live unlock countdown
+    // ({raid} = the localized raid name, {time} = the formatted countdown).
+    lockedToast: 'You are locked to {raid}. Unlocks in {time}.',
+    // Display name for a heroic-difficulty lockout row ({name} = dungeon name).
+    heroicName: 'Heroic {name}',
+    // Entry-denied toast for a heroic daily lockout when no live countdown is
+    // mirrored yet ({name} = dungeon name).
+    heroicLocked: 'You are locked to Heroic {name}.',
+  },
+  // The practice DPS tracker (src/ui/hud/practice/): the compact readout that
+  // appears while the player targets or hits a training dummy. It reads the
+  // Damage Meters' own encounter ledger, so its numbers are the meters' numbers
+  // for the local player; the per-second unit reuses hudChrome.meters.perSecond.
+  practiceDps: {
+    // Fallback header when no dummy name is known; normally the header is the
+    // localized dummy name (entities.mobs.<id>.name).
+    title: 'Practice Dummy',
+    // The big live number. {value} is a compacted damage-per-second figure.
+    liveDps: '{value} DPS',
+    liveLabel: 'This run',
+    // Shown while the player targets a dummy with no run in progress.
+    prompt: 'Attack the dummy to start a run',
+    // Sub-header above the finished-run list (newest first).
+    previous: 'Previous runs',
+    // {index} is 1-based, newest first ("Run 1" is the most recent).
+    runLabel: 'Run {index}',
+    // {total} is compacted total damage, {time} a pre-built "Xm Ys" duration.
+    runSummary: '{total} in {time}',
+  },
+  // Drillmaster Hale's guided practice coaching (src/ui/hud/practice/
+  // hub_lesson_controller.ts): the hub's own damage-meters lesson, plus the
+  // optional healing one for druid/shaman/paladin/priest. One line at a
+  // time, beside a real control (a keybind, a tab, a row, the history
+  // arrow), never a wall of text. Wordy (M16): the five non-Latin fills
+  // land in this same change.
+  hubLesson: {
+    target: 'Target the dummy to begin.',
+    openWindow: 'Open {meters}.',
+    // Touch has no keyboard shortcut: the real path is the labels the actual
+    // touch controls carry (hudChrome.mobile.quickActionsLabel "Actions",
+    // hud.core.mobileMore "More", hud.keybinds.actions.meters "Damage
+    // Meters"), not a guessed "Menu" name for the anchor.
+    openWindowTouch: 'Open {menu} → {more} → {meters}.',
+    // Neutral fallback for a track this file forgets to override (never
+    // shown in practice: every real step below resolves through the
+    // track-specific pair instead).
+    openTab: 'Switch to the right tab.',
+    openTabDamage: 'Switch to the Damage tab.',
+    openTabHealing: 'Switch to the Healing tab.',
+    act: 'Land a hit to start the measurement.',
+    actDamage: 'Attack the dummy to start the measurement.',
+    actHealing: 'Cast a heal on the dummy to start the measurement.',
+    // Shown only when the resolved heal exists but sits on no action-bar
+    // slot: names the real fix (the Spellbook), never glows an unrelated
+    // slot (see hub_lesson_controller.ts healChip()).
+    addToBar: 'Add your heal to your action bar from your Spellbook, then cast it on the dummy.',
+    readRow: 'Read your row, then press Continue.',
+    readRowDamage:
+      'Total is all your damage this run. DPS is damage per second over the run. Watch your row, then Continue.',
+    readRowHealing:
+      'Total counts health restored; healing past full health adds zero. HPS is health restored per second over the run. Read your row, then Continue.',
+    findRun: 'Use the meter arrows to return to your practice run.',
+    addAttackToBar:
+      'Add your attack from your Spellbook to the action bar, then use it on the dummy.',
+    ackContinue: 'Continue',
+    viewBreakdown: 'Hover, focus, or hold your row for the per-ability split.',
+    endRun: 'Turn off Attack and stop casting. After 5 seconds without a hit, this run ends.',
+    endHealingRun: 'Stop healing for 5 seconds to finish this run, then you can replay the lesson.',
+    inspectHistory: 'Use the history arrow to look back at that finished run.',
+    compareAgain:
+      'Return to Current with the right arrow, then attack the same dummy for about the same time.',
+    reviewComparison:
+      'Use the arrows to compare Total, DPS, and duration with your first run. Return to this run, then Done.',
+    ackDone: 'Done',
+    replay: 'Lesson complete. Practice freely, or replay these instructions.',
+    replayAction: 'Practice again',
+    // The world-anchored bubble over the dummy while the ask is to target
+    // it (no keycap: a click or a target-cycle press has no single fixed
+    // key worth naming, like the Proving Shore coach's own "select" ask).
+    replayTarget: 'Target it again',
+  },
+  // In-rift HUD tracker (issue #2655): floor position + a live "closes in"
+  // countdown on the rift's backing world event. Digits run through
+  // formatNumber; the clock templates are pre-built mm:ss / h:mm:ss so the
+  // separator stays a plain colon, like every other HUD clock (vcup, finder).
+  riftTracker: {
+    title: 'Rift',
+    // {current}/{total} are 1-based floor numbers (e.g. "Floor 2 of 5").
+    floor: 'Floor {current} of {total}',
+    // {time} is a pre-built clock string (see clockMs/clockHms below). This is
+    // about the overworld ENTRANCE closing to new parties, not the run ending:
+    // an in-progress group keeps playing out past this deadline.
+    closesIn: 'Closes in {time}',
+    clockMs: '{minutes}:{seconds}',
+    clockHms: '{hours}:{minutes}:{seconds}',
+  },
+  // The Last Keep interior map (the castle floor plan the minimap / world map
+  // show inside the instance). The title composes the localized dungeon name
+  // (entities.dungeons.the_last_keep.name, via dungeonDisplayName) with the
+  // story the player currently stands on.
+  lastkeepMap: {
+    title: '{keep}: {story}',
+    story: {
+      undercroft: 'The Undercroft',
+      state: 'The State Floor',
+      residence: 'The Residence',
+      tower: 'The Watch Tower',
+    },
+  },
+  // Dawnhold Castle interior map (the Evergarden garden palace), same shape:
+  // the title composes the localized dungeon name
+  // (entities.dungeons.dawnhold_castle.name) with the current story.
+  dawnholdMap: {
+    title: '{keep}: {story}',
+    story: {
+      ground: 'The Garden Floor',
+      solar: 'The Solar',
+    },
+  },
+  // Eight-point compass abbreviations as drawn on the heading strip. Each locale
+  // overrides with its own established compass abbreviations (e.g. West = "O" in
+  // Spanish, "O" in French/Italian/Portuguese, "З" in Russian).
+  compass: {
+    N: 'N',
+    NE: 'NE',
+    E: 'E',
+    SE: 'SE',
+    S: 'S',
+    SW: 'SW',
+    W: 'W',
+    NW: 'NW',
+  },
+  // DPS/HPS/threat meter number + unit formatting (the digits themselves go
+  // through formatNumber; these carry the localizable unit/parenthesization).
+  meters: {
+    perSecond: '{value}/s',
+    // Compact number units for the meters and the practice tracker: 12.3k, 1.2m.
+    thousands: '{value}k',
+    millions: '{value}m',
+    perSecondRow: '{total} ({rate})',
+    minutesSeconds: '{m}m {s}s',
+    seconds: '{s}s',
+    // Shown alongside the empty state so a first-time viewer understands the
+    // panel is not broken: rows populate once party combat starts, and the
+    // segment closes itself a few seconds after the fight ends.
+    autoShowHint:
+      'Rows appear automatically once your party deals damage or healing, and this segment closes a few seconds after combat ends.',
+    // Threat tab subtitle when no engaged mob has a live hate table left (the
+    // fight is over). The bars are damage dealt to {name}, not hate, and saying
+    // so is the point: a frozen damage readout under a "Threat" heading is what
+    // players read as the meter having stopped updating.
+    threatFallback: 'No live threat: showing damage to {name}',
+    // Threat tab subtitle when the engaged mob died or left mid-segment but DID
+    // have a live hate table on this segment: these are still real threat
+    // numbers, just latched at the last moment they were readable, not
+    // recalculated from damage. Distinct from threatFallback above (which has
+    // no threat numbers to show at all) so a tank who watched their threat
+    // climb past a boss's health does not read the kill as having erased it.
+    threatFrozen: 'Final threat vs {name}',
+    // Hover breakdown for one bar: a header line, then one row per ability. On
+    // the threat tab each contributor (member or pet) has its own bar, so the
+    // panel is narrowed to that contributor's abilities.
+    breakdownSummary: '{tab}: {value}',
+    breakdownRow: '{value} ({percent})',
+    breakdownOther: 'Other ({count})',
+    percent: '{value}%',
+    petAbility: '{pet}: {ability}',
+    melee: 'Melee',
+    // Each meter panel is movable (drag its title bar) and resizable (drag the
+    // corner grip), and the Healing / Threat meters can leave the tabbed window
+    // for one of their own.
+    move: 'Drag to move this meter',
+    resize: 'Drag to resize this meter',
+    dock: 'Dock this meter back into the meters window',
+    // Right-click menu on a meter tab's name. {meter} is the meter's own label
+    // ("Healing", "Threat"), so the row reads as the action on that meter.
+    separate: 'Separate {meter}',
+    regroup: 'Regroup {meter}',
+  },
+  // The six aura tracks (src/ui/hud/aura_tracks/): bars of the auras YOU have
+  // out, one frame per question. All wordy (M16): the five non-Latin fills land
+  // in this same change.
+  auraTracks: {
+    defensives: 'Defensive Cooldowns',
+    self: 'My Buffs',
+    power: 'Offensive Cooldowns',
+    utility: 'Movement and Stealth',
+    friendly: 'My Buffs on Allies',
+    shields: 'My Shields',
+    // One row. {aura} is the ability, {unit} the ally carrying it; a row on
+    // yourself uses selfRow instead and spends no width on your own name.
+    row: '{aura} on {unit}',
+    selfRow: '{aura}',
+    // Shown instead of a countdown on a MODE row (stealth, travel form): the
+    // sim's long duration there is anti-expiry, not a timer.
+    mode: 'on',
+    overflow: '{count} more not shown',
+  },
+  // The Target dots frame (#target-dots): the multi-target tracker for every
+  // debuff the local player has out, one bar row each. All wordy (M16): the five
+  // non-Latin fills land in this same change.
+  targetDots: {
+    // Accessible name of the frame itself (role="group").
+    title: 'Target Dots',
+    // One row: {aura} is the debuff you cast, {target} the enemy carrying it.
+    // The order puts the ability first because that is what a player scans for;
+    // a locale that needs the reverse order swaps the placeholders here.
+    row: '{aura} on {target}',
+    // Shown when more of your dots are running than the row cap can list. The
+    // target frame strip remains the complete list, which the note names.
+    overflow: '{count} more not shown',
+  },
+  targetAuras: {
+    title: 'Target Auras',
+    keybindLabel: 'Target Buffs and Debuffs',
+    all: 'All',
+    debuffs: 'Debuffs',
+    buffs: 'Buffs',
+    unlock: 'Move target aura window',
+    lock: 'Lock target aura window',
+    configureRows: 'Configure target auras',
+    fewerRows: 'Prefer fewer aura rows',
+    moreRows: 'Prefer more aura rows',
+    visibleRows: 'Preferred aura rows: {count}',
+    showSources: 'Show aura sources',
+    hideSources: 'Hide aura sources',
+    ownAura: 'Your aura',
+    opacity: 'Aura opacity: {percent}',
+  },
+  // Pet action bar disabled-state tooltips: the feed/heal-pet button stays
+  // visible (never hidden) while it cannot currently be used, so a hunter
+  // sees WHY instead of a button that looks broken.
+  petFeed: {
+    disabledFullHp: 'Pet is at full health',
+    disabledNoFood: 'No food in your bags will heal your pet',
+  },
+  // Key Bindings panel action labels that the in-file BIND_ACTION_LABEL_KEYS map
+  // (hud.ts) routes through t(). Kept here (not the constrained `hud` catalog
+  // domain) so they are an English-only add.
+  keybinds: {
+    emoteWheel: 'Emote Wheel',
+    targetFriendly: 'Target Nearest Friendly',
+    targetFriendlyNext: 'Cycle Friendly Target',
+    // The backward half of the Tab cycle (Shift+Tab by default); the forward
+    // half is the `hud` catalog's existing `target` row. Worded as a CYCLE, not
+    // as "previous enemy", so it cannot read as a classic last-target memory:
+    // this bind walks the same ordered list backwards, it remembers nothing.
+    targetPrev: 'Cycle Target Backward',
+    // Discord is a brand name; it stays identical across locales.
+    discord: 'Discord',
+    bgFlag: 'Battleground Flag Action',
+    sheathe: 'Sheathe/Unsheathe Weapon',
+    // Swimming: Jump swims up, this swims down.
+    dive: 'Swim Down',
+    // Pet bar (Ctrl+1..5 by default) key-binding rows + category header.
+    categoryPet: 'Pet',
+    petAttack: 'Pet: Attack',
+    petStop: 'Pet: Stop',
+    petTaunt: 'Pet: Taunt',
+    petDefensive: 'Pet: Defensive',
+    petAggressive: 'Pet: Aggressive',
+    // Selects your own pet as your current target (the pet frame's click, on a key).
+    // "Mark" is this catalog's own term for the target (unitFrame.targetLabel,
+    // targetAnnounce), which also keeps the value NON-WORDY for the M16 guard.
+    targetPet: 'Pet: Mark',
+    // Rideable mounts: the Z toggle (opens the stable while nothing is picked).
+    mount: 'Mount / Dismount',
+    // Mouse buttons are bindable pseudo-keys (src/game/mouse_binds.ts). The note
+    // sits under the Key Bindings header so the capture prompt does not have to
+    // spell it out. M3, M4, and M5 are the on-screen keycap labels, so they stay
+    // identical across locales. Wordy (M16): the five non-Latin fills land in
+    // this same change.
+    mouseHint:
+      'Mouse buttons work too: press the middle button (M3) or a thumb button (M4, M5) while binding. Left and right stay reserved for the camera, click to move, and clicking things in the world.',
+  },
+  // On-bar action-bar key-binding mode (issue #1238): the Key Bindings menu's
+  // single "Edit action bar keys" entry (replacing the wall of per-slot rebind
+  // rows) plus the on-bar banner it opens. Wordy (M16): the five non-Latin
+  // fills land in this same change, except `done`, which is short enough to
+  // stay pending like an ordinary contributor add.
+  actionBar: {
+    editKeys: 'Edit action bar keys',
+    editKeysHint: 'Click a slot on the action bar, then press a key to bind it.',
+    bannerHint: 'Click a slot, then press a key to bind it. Click Done when finished.',
+    bannerCapturing: 'Press a key to bind this slot...',
+    boundToKey: 'Bound to {key}.',
+    reset: 'Reset',
+    done: 'Done',
+    cancel: 'Cancel',
+    // The small plus/minus buttons at the end of the primary bar: plus reveals
+    // the next optional row (secondary, then third), minus hides the topmost
+    // visible one. Same settings as the Interface options checkboxes.
+    showExtraBar: 'Show Another Action Bar',
+    hideExtraBar: 'Hide an Action Bar',
+    // The are-you-sure prompt shown when a captured key is already bound
+    // elsewhere: a key lives on one action at a time, so accepting UNBINDS the
+    // other one. {key} is the key label, {other} the action losing it, and
+    // {action} the one gaining it.
+    conflictTitle: 'Key Already Bound',
+    conflictBody: '{key} is already bound to {other}. Binding it to {action} will unbind {other}.',
+    conflictAccept: 'Rebind Anyway',
+    resetConfirmTitle: 'Reset action bar keys?',
+    resetConfirmBody:
+      'The first bar returns to its default keys. The second and third bars become unbound. This cannot be undone.',
+  },
+  // The character sheet's mount picker (mount_picker.ts; the old Mounts window
+  // is retired, its keys stay per the retired-but-translated chrome precedent).
+  // Names and descriptions come from the reference cards
+  // (src/sim/content/mounts.ts carries the canonical English names for the sim
+  // side); clickManage is the bag tooltip hint on a collected reins item.
+  mounts: {
+    title: 'Mounts',
+    close: 'Close',
+    select: 'Select',
+    selected: 'Selected',
+    riding: 'Riding',
+    mount: 'Mount',
+    dismount: 'Dismount',
+    // Reins are usable items: the bag tooltip tells the player to use them. There
+    // is no per-mount level gate and no picker, so the old requiresLevel /
+    // pickFirst / keybindHint lines went with them.
+    useToRide: 'Use to summon this mount.',
+    // The empty state, shown when the player owns no mount yet: a heading plus
+    // how to earn a first one (the stablemaster's riding lessons) and the rarer
+    // boss-drop mounts.
+    emptyTitle: 'No mounts collected',
+    emptyStableHint:
+      'Reach level 20 and take riding lessons with Stablemaster Marla at the Highwatch Stables, west of Highwatch.',
+    emptyDropHint: 'Rarer mounts drop from heroic dungeon bosses and Rift completions.',
+    clickManage: 'Click to choose your mount',
+    rarity_common: 'Common',
+    rarity_rare: 'Rare',
+    rarity_epic: 'Epic',
+    spec_speed: '+{pct}% extra mobility',
+    name_valorsteed: 'Valorsteed',
+    name_grag_bear: 'Goliath Grag-Bear',
+    name_stalkglider_snail: 'Moss-Shell Stalk-Glider',
+    name_aether_hover_cycle: 'Aether-Jouster Hover-Cycle',
+    name_shadowjump_toad: 'Kama-Kage the Shadow-Jump Toad',
+    name_stormfeather_griffin: 'Sky-Reach Stormfeather',
+    name_thunderstrut_gobbler: 'Thunderstrut the Grand Gobbler',
+    name_goblin_rocket_sled: 'Goblin Rocket Sled',
+    name_rallycart_rxt: 'Rallycart RXT',
+    name_terrorspark_groundshaker: 'Dreadspark Groundshaker',
+    name_drakemaw_raptor: 'Drakemaw Raptor',
+    name_mech_bird: 'Cluckwork Mech Bird',
+    name_lanternback_troll: 'Grumbol the Lanternback',
+    name_chimeglass_tortoise: 'Tolliver the Chimeglass',
+    name_rickshaw_mount: 'Bonebound Rickshaw',
+    desc_valorsteed: 'A hardy, sure-footed steed that provides enhanced travel speed.',
+    desc_grag_bear: 'A hardy, sure-footed bear that provides enhanced travel speed.',
+    desc_stalkglider_snail: 'A hearty, slow-burning snail that provides enhanced travel speed.',
+    desc_aether_hover_cycle:
+      'A powerful magitech bike designed for swift, low-hovering combat traversal.',
+    desc_shadowjump_toad:
+      'A massive, sure-footed giant toad, trained in lightning-fast shadowed bounds that cover any terrain.',
+    desc_stormfeather_griffin:
+      'A regal storm griffin that stalks the ground on rune-shod talons, wings furled.',
+    desc_thunderstrut_gobbler:
+      'A colossal storm-hatched gobbler that struts down from the Waking Peak, tail fanned like a thunderhead.',
+    desc_goblin_rocket_sled:
+      'A dangerously overbuilt goblin sled propelled by twin rockets and excellent bad judgment.',
+    desc_rallycart_rxt: 'A pint-sized rally machine that provides enhanced travel speed.',
+    desc_rallycart_skin: 'A tiny rally car with a mighty roar.',
+    desc_terrorspark_groundshaker:
+      'A compact armored engine with heavy tracks, a deep-bore cannon, and a saddle built for fearless pilots.',
+    desc_drakemaw_raptor:
+      'A saddle-broken brood raptor from the Drakemaw Caldera, all sinew and sprint, still smelling faintly of ash.',
+    desc_mech_bird:
+      'A hand-built clockwork war chicken that sprints on snapping servos, wind-up key still turning.',
+    desc_lanternback_troll:
+      'A hill troll broken to the yoke by lamplighters, carrying an iron throne across his shoulders with a storm lantern burning on either arm.',
+    desc_chimeglass_tortoise:
+      'A salt-flat tortoise who has outwalked three generations of caravans. Tinkers ground him spectacles from storm-glass and hung a bronze bell at his throat, so the road hears him long before it sees him.',
+    desc_rickshaw_mount:
+      'A rattling bone-cart with a bony grunt harnessed to the shafts, hauling you along at a dead run.',
+  },
+  // The riding lesson at the Highwatch stables (q_riding_lessons): Stablemaster
+  // Marla lends the player a training Valorsteed for the paddock race. Finishing
+  // the course succeeds the lesson. Sim-side gameplay lives in
+  // src/sim/mounts_training.ts. mountPrompt is retained for the legacy command;
+  // the current flow starts on the glowing race platform.
+  mountTraining: {
+    mountPrompt: 'Press {key} to mount the training Valorsteed.',
+    // Shown once the riding lesson is turned in and the reward reins land in the
+    // bags. It must teach the ITEM, not a keybind: summoning your own mount is a
+    // bag / action-bar click now.
+    ownedMountPrompt: 'Your reins are in your bags. Use them to ride.',
+    ridePrompt: 'Follow the glowing marker to the start line, then press Start Race.',
+    begin: 'Begin Lesson',
+    success: 'You have tamed the Valorsteed.',
+    returnToMarla: 'Return to Marla at the stables to buy your Valorsteed reins for 10g.',
+  },
+  // The show-jumping race in the stables paddock (src/sim/mount_race.ts): ride to
+  // the glowing platform and press Start Race, watch the countdown, then clear
+  // every jump (in any order) and ride back through the arch in time. countdown/
+  // go are the center-screen count; startButton is the button; start/finished/
+  // timeout are the banners; timeLeft is the bottom strip's only text.
+  // {seconds} is a formatNumber-rendered count.
+  mountRace: {
+    startButton: 'Start Race',
+    cancelButton: 'Cancel Race',
+    go: 'GO!',
+    start: 'Go! Clear every jump, then ride back through the arch.',
+    toFinish: 'Ride back through the arch!',
+    finished: 'Finished in {seconds}s!',
+    timeout: 'Race Failed',
+    progress: 'Gates {n} of {total}',
+    timeLeft: '{seconds}s',
+  },
+  // The Vale Cup boarball minigame (docs/prd/vale-cup.md): the queue window,
+  // the persistent indicator button, the in-match score strip, and the event
+  // banners / log lines. Nation names are SHORT proper names; sport ability
+  // names/descriptions localize through the entity catalog
+  // (i18n.catalog/abilities.ts), not here.
+  // Thornhollow Fields, the 5v5 capture-the-flag battleground: the queue window, the
+  // in-match scoreboard strip, and the event banners/log lines.
+  // The merged PvP window's chrome: the launcher (one button for Thornhollow Fields and
+  // the arenas) and the tab-strip bracket labels.
+  pvp: {
+    // Icon-button hover: the initialism alone (the window names its own tabs;
+    // the long form overflowed the tooltip).
+    launcherTitle: 'PvP',
+    mobileLabel: 'PvP',
+    bracket1v1: '1v1',
+    bracket2v2: '2v2',
+  },
+  bg: {
+    title: 'Thornhollow Fields',
+    // The one-paragraph pitch above the queue button: what the place is, then
+    // what the match is. Kept to two sentences so the panel never scrolls.
+    blurb:
+      'Two ruined keeps face each other across a walled hollow in the shadow of Thornpeak: Crimson to the south, Azure to the north, and the older Ruin Courtyard between them that neither has ever held. Five a side, one banner each, and the first to carry three of theirs home takes the field.',
+    modeTag: '5v5 Capture the Flag',
+    offlineNote: 'Thornhollow Fields is syncing. The queue opens once the realm answers.',
+    ratingSummary: 'Rating. {wins} wins / {losses} losses / {draws} draws',
+    careerCaptures: 'Career captures: {count}',
+    enterQueue: 'Enter the Queue',
+    enterQueueParty: 'Enter the Queue (party of {count})',
+    leaveQueue: 'Leave Queue',
+    searching: 'Searching. {count}/{size} in queue.',
+    queuedParty: 'Party of {count}.',
+    queueNote:
+      'Two teams of five. Steal the enemy banner and run it to your keep. First to 3 captures wins. Group up to 5 and queue together; grab Sprint Runes and weave the cover to lose your pursuers.',
+    matchInProgress: 'Battle in progress. {crimson}:{azure}.',
+    ladderAllTime: 'Ladder. All-Time',
+    noRanked: 'No champions ranked yet. Be the first.',
+    // The live section above the all-time board: rated champions connected
+    // right now, best first (the arena tabs' hud.arena.ladderOnline twin).
+    ladderOnline: 'Ladder. Online Now',
+    noChallengers: 'No champions online right now. Be the first.',
+    playerLevelClassTitle: '{name}. Level {level} {className}',
+    // The live rows carry no level (they are drawn from the connected roster,
+    // not the stored board), so they get their own name + class title.
+    playerClassTitle: '{name}. {className}',
+    // the in-match scoreboard strip
+    crimson: 'Crimson',
+    azure: 'Azure',
+    yourTeamTitle: 'Your team',
+    clock: '{minutes}:{seconds}',
+    formUp: 'Form up: {seconds}',
+    firstTo: 'First to {caps} captures',
+    flagState: {
+      home: 'Flag at the keep',
+      carried: 'Flag stolen!',
+      dropped: 'Flag on the ground',
+    },
+    respawnIn: 'Next wave: respawning in {seconds}',
+    // the frozen post-match result screen (state 'ended')
+    resultVictory: 'Victory!',
+    resultDefeat: 'Defeat',
+    resultDraw: 'Draw',
+    leavingIn: 'Leaving the battleground in {seconds}',
+    // the top-right kill feed (and its combat-log twin lines)
+    killFeed: '{killer} felled {victim}',
+    killFeedFallen: '{victim} has fallen',
+    // event banners + combat-log lines (hud.handleEvents)
+    foundBanner: 'Battle found. You fight for the {team}!',
+    countdownBanner: 'Thornhollow Fields begins in {seconds}',
+    startBanner: 'Capture the flag!',
+    flagTakenLog: '{name} has taken the {team} flag!',
+    flagDroppedLog: 'The {team} flag was dropped.',
+    flagReturnedLog: 'The {team} flag was returned.',
+    // The touch-host confirm for the voluntary flag drop (a long press is also the
+    // tooltip-peek gesture, so this cancel is the one that must not fire by accident).
+    dropFlagConfirmTitle: 'Drop the flag?',
+    dropFlagConfirmBody:
+      'You are carrying the enemy flag. Dropping it leaves it on the ground, where either team can reach it.',
+    dropFlagConfirmAccept: 'Drop the flag',
+    // Across-screen banner variants (separate sink, separate length budget)
+    boardToggleLabel: 'Match scoreboard. Press Enter to pin the full board open.',
+    levelRequirement: 'You must reach level {level} to unlock queueing for this battleground.',
+    board: {
+      kills: 'Kills',
+      assists: 'Assists',
+      deaths: 'Deaths',
+      captures: 'Captures',
+    },
+    flagTakenBanner: 'The {takers} have taken the {team} flag!',
+    flagReturnedBanner: 'The {team} flag was returned!',
+    capturedTeamBanner: 'The {takers} have captured the {team} flag! {crimson}:{azure}',
+    capturedLog: '{name} captured the {team} flag. Score {crimson}:{azure}.',
+    // SUPERSEDED, retained: the end moment used to be one long banner sentence.
+    // It now rides the same across-screen banner family as the flag calls above
+    // but as a big one-word verdict (resultVictory / resultDefeat / resultDraw,
+    // reused from the scoreboard) over the secondary lines below. These three
+    // keys stay in `en` because their translations are already shipped in the
+    // maintainer-owned overlays, which a contributor never edits to delete a row.
+    victoryBanner: 'Victory! Thornhollow Fields {crimson}:{azure}. Rating {rating} ({delta})',
+    defeatBanner: 'Defeat. Thornhollow Fields {crimson}:{azure}. Rating {rating} ({delta})',
+    drawBanner: 'Thornhollow Fields draw {crimson}:{azure}. Rating {rating} ({delta})',
+    // The verdict banner's first secondary line: the score and the rating swing.
+    endBannerDetail: 'Thornhollow Fields {crimson}:{azure}. Rating {rating} ({delta})',
+    endLog: 'Thornhollow Fields ended {crimson}:{azure}. Rating {rating} ({delta}).',
+    // Why the match ended, when it was not simply played to the capture target.
+    // A timer ending used to read exactly like a played-out one.
+    endedTimer: 'Time expired',
+    endedForfeit: 'The match was forfeited',
+    endedTimerLog: 'The match clock ran out; the higher score took the field.',
+    endedForfeitLog: 'The match was forfeited.',
+    // The first Thornhollow Fields win of each UTC day pays bonus Honor. ONE key
+    // for both sinks (the standing invitation chip on the queue panel and the
+    // verdict banner's bonus line): the sentence is identical, and a second key
+    // would make every locale translate the same string twice. The log line is
+    // its own key because it is past tense.
+    firstWinBonusLine: 'First win of the day: +{honor} Honor',
+    firstWinBonusLog: 'First win of the day: you gain {honor} bonus Honor.',
+    // The weekly Double Honor event chip ({mult} is the event multiplier,
+    // formatted). One key for the one surface; the calendar row below carries
+    // its own longer copy. Scoped copy on purpose: the event doubles
+    // Thornhollow Fields honor only, never arena or Fiesta honor.
+    doubleHonorLine:
+      'Double Honor Weekend: Thornhollow Fields Honor pays {mult}x today, and a played-out loss pays like a win',
+    // Remaining-time calls, announced to the whole field (BG_TIME_WARNINGS).
+    timeWarningMinutes: '{minutes} minutes remain',
+    timeWarningOneMinute: 'One minute remains',
+    timeWarningMinutesLog: '{minutes} minutes remain in the battle.',
+    timeWarningOneMinuteLog: 'One minute remains in the battle.',
+    // Landmark names written onto the M-key map's atlas plate. Each names a
+    // rectangle the authored field itself declares, so they are the place names
+    // a player calls out, not decoration: short proper nouns, painted on canvas
+    // at plate-build time (battleground_map_painter). Each keep name titles its
+    // whole END of the field (the keep plus the chamber in front of it), which
+    // is the one name a player calls that ground by.
+    map: {
+      crimsonKeep: 'Crimson Keep',
+      azureKeep: 'Azure Keep',
+      ruinCourtyard: 'The Ruin Courtyard',
+      graveyard: 'Graveyard',
+    },
+  },
+  options: {
+    clickMoveLeft: 'Left Click',
+    clickMoveRight: 'Right Click',
+    // Running client version + build id, shown as small secondary text at the foot
+    // of the settings menu so players can confirm their build without closing it.
+    version: 'v{version} ({build})',
+    // Adaptive browser-effects tier control (Graphics panel). Auto detects the
+    // browser engine/version + device; the rest pin the CSS-effects tier.
+    browserEffects: 'Browser Effects',
+    browserEffectsAuto: 'Auto',
+    browserEffectsFull: 'Full',
+    browserEffectsReduced: 'Reduced',
+    browserEffectsMinimal: 'Minimal',
+    browserEffectsNote:
+      'Auto tones down heavy CSS effects (blur, glow, background motion) based on your browser and device. Lower it manually if the interface feels sluggish.',
+    // Renderer-bound graphics draft and its single apply/recovery action.
+    graphicsApply: 'Apply Graphics',
+    graphicsApplying: 'Applying graphics settings...',
+    graphicsApplied: 'Graphics settings applied.',
+    graphicsSaved: 'Graphics settings saved. The active renderer already matches them.',
+    graphicsFailed: 'Graphics could not be applied. Your previous settings are still active.',
+    graphicsRetry: 'Retry Graphics',
+    graphicsFatal: 'Graphics recovery failed. Reload the game to continue.',
+    graphicsReload: 'Reload Game',
+    graphicsDraftChanged: 'Graphics changes are ready to apply.',
+    // Graphics panel card titles (the wide two-column card form), the
+    // per-system dial labels the hud.options block does not already carry,
+    // and the notes under the dials.
+    gfxSectionQuality: 'Quality',
+    gfxSectionWorld: 'World Detail',
+    gfxSectionLighting: 'Lighting & Effects',
+    gfxSectionCamera: 'Camera',
+    gfxSectionDisplay: 'Display',
+    gfxSectionSystem: 'System',
+    gfxSectionTouch: 'Touch Controls',
+    gfxViewDistance: 'View Distance',
+    gfxWaterQuality: 'Water Quality',
+    gfxCharacterDetail: 'Character Detail',
+    gfxAmbientOcclusion: 'Ambient Occlusion',
+    gfxBloom: 'Bloom',
+    gfxAntiAliasing: 'Anti-Aliasing',
+    gfxDynamicLights: 'Dynamic Lights',
+    gfxParticleEffects: 'Particle Effects',
+    gfxHalf: 'Half',
+    gfxCustomNote:
+      'Changing a dial switches the quality preset to Advanced: a custom mix built on the High-quality base, starting from the levels shown for your current preset.',
+    gfxEffectsNote:
+      'Ambient Occlusion and Bloom ride the post-processing chain: with Effects & Lighting on Low the chain is off and they have no effect. Anti-Aliasing keeps working there, on a cheaper edge filter built into the final image pass.',
+    // Interface Mode control (Graphics panel): desktop keyboard/mouse vs the
+    // on-screen touch controls. Auto detects the device; the rest force one.
+    interfaceMode: 'Interface Mode',
+    interfaceModeAuto: 'Auto',
+    interfaceModeDesktop: 'Desktop',
+    interfaceModeTouch: 'Touch',
+    interfaceModeNote:
+      'Auto picks desktop or touch controls from your device. Choose Desktop to force keyboard and mouse (useful on a tablet with a keyboard), or Touch for the on-screen controls.',
+    // Audio panel toggle for the per-footfall step clips (off by default).
+    footstepSounds: 'Footstep Sounds',
+    // Audio panel toggle for the discrete interface and feedback cues (loot, level,
+    // quest, whisper, and the combat miss/dodge/parry beeps; on by default). Off
+    // silences just those without touching the SFX volume or the world sounds.
+    interfaceSounds: 'Interface and Feedback Sounds',
+    // Toggle for the OSRS-style click-feedback marker: entity targets and
+    // click-to-move destinations (on by default).
+    clickFeedback: 'Click Marker',
+    // Keybind panel toggle: pointer-lock the canvas during a camera drag so the
+    // cursor cannot leave the window (hit the screen edge or slip to a second
+    // monitor) while rotating. On by default.
+    lockCursorOnRotate: 'Lock Cursor While Rotating',
+    keybindHelpLockCursorOnRotate:
+      'Keeps the mouse cursor inside the window while you drag to rotate the camera, so it cannot reach the screen edge or move to another monitor. Turn off if you prefer a free cursor.',
+    showWalletOnCharacterScreen: 'Show Wallet on Character Screen',
+    showWalletOnPlayerCard: 'Show Wallet on Player Card',
+    // Interface panel twin of the character sheet's privacy eye: the same
+    // per-device settings.showPlaytime preference, discoverable from Options.
+    showPlaytime: 'Show Time Played on Character Screen',
+    // Desktop-app only Interface row (the row renders only when the installed
+    // shell exposes the GPU preference over the bridge). The stored shell field
+    // is the inverse opt-out; the note carries the next-launch caveat, because
+    // the shell picks its adapter at startup and cannot switch a live session
+    // (both values are wordy, M16: the five non-Latin fills land in this same
+    // change).
+    forceHighPerfGpu: 'Use the Dedicated Gaming GPU',
+    forceHighPerfGpuNote:
+      'On by default: the desktop app asks this computer for its dedicated gaming GPU. Turn this off if the game will not start, opens to a black screen, or the laptop display goes blank. Takes effect the next time the game starts.',
+    // Graphics System card, two rows: the shader warm-up worker (auto follows
+    // the GPU backend) and, right under it, the Linux graphics backend row
+    // (desktop app, Linux only; the shell applies it at the next launch).
+    // Wordy values, M16: the five non-Latin fills land in this same change.
+    shaderWarm: 'Shader Warm-up Worker',
+    shaderWarmAuto: 'Auto',
+    shaderWarmOff: 'Off',
+    shaderWarmOn: 'On',
+    shaderWarmNote:
+      'Pre-warm shader cache in the background to prevent in-game stuttering. Auto: Enabled only when supported by your graphics system. (Recommended). On: Forced everywhere. May worsen performance on some setups. Off: Disabled.',
+    gpuBackend: 'Graphics Backend',
+    gpuBackendAuto: 'Auto',
+    gpuBackendVulkan: 'Vulkan',
+    gpuBackendOpenGL: 'OpenGL (slow)',
+    gpuBackendNote:
+      "Auto picks the best option for you. Vulkan is faster and recommended for most players. OpenGL is slower, but can help if Vulkan doesn't work properly. Takes effect the next time the game starts.",
+    // The status line under the buttons: what this launch is ACTUALLY running.
+    // Two whole sentences rather than one plus an appended parenthesis, so a
+    // translator can move the aside where their language wants it. The backend
+    // name is a placeholder, never concatenated.
+    gpuBackendActive: 'Currently using {backend}.',
+    gpuBackendActiveUnavailable: 'Currently using {backend} (unable to enable Vulkan).',
+    // Auto held at OpenGL by the shell's GPU policy (electron/gpu_backend_policy.cjs):
+    // the player is told why they are not on Vulkan, and that it is theirs to pick.
+    gpuBackendActiveAutoCapped:
+      'Currently using {backend}. Auto does not try Vulkan on this graphics card yet; pick Vulkan to try it.',
+    // The shell refused the write (its own prefs write failed, or it rejected
+    // the value): the stored choice never moved, so the sentence says what the
+    // NEXT start will use rather than what was just clicked. Wordy value, M16:
+    // the five non-Latin fills land in this same change.
+    gpuBackendSaveFailed: 'The choice could not be saved. The next start keeps {backend}.',
+    // What the player calls each backend in that line. Kept apart from the
+    // picker labels on purpose: the OpenGL button reads "OpenGL (slow)", and
+    // "Currently using OpenGL (slow) (unable to enable Vulkan)" would not do.
+    gpuBackendActiveNameVulkan: 'Vulkan',
+    gpuBackendActiveNameOpenGL: 'OpenGL',
+    // The restart strip (src/ui/restart_strip_painter.ts): a setting that only applies at
+    // the next launch of the desktop shell changed, so the panel offers the restart
+    // Apply cannot stand in for. Wordy values, M16: the five non-Latin fills land in
+    // this same change.
+    restartPending: 'Some changes take effect after a restart.',
+    restartGame: 'Restart Game',
+    restartInProgress: 'Restarting the game...',
+    restartFailed: 'The game could not restart itself. Quit and start it again.',
+    // Interface panel toggle: publish the current zone to Discord as an
+    // activity (desktop app only, on by default).
+    discordPresence: 'Discord Rich Presence',
+    discordPresenceNote:
+      'Shows the zone you are in and how long you have been playing this session as your Discord activity, and anyone who can see your Discord profile can see both. Only the zone name, your session time, and the game are shared, never your character, your account, or who you are playing with. Needs the Discord app running on this computer.',
+    // Interface panel toggle: nameplate glyph/outline, inspect block, player
+    // card, and the Developers leaderboard tab (on by default).
+    showDevBadges: 'Show Developer Badges',
+    // Interface panel toggle: render your own overhead nameplate the way other
+    // players see it (on by default).
+    showOwnNameplate: 'Show My Nameplate',
+    // Interface panel toggle: render other players' overhead nameplates (on by
+    // default); off declutters crowded hubs, the current target stays visible.
+    showPlayerNameplates: 'Show Player Nameplates',
+    // Interface panel: global HUD zoom slider, and the mirror of the landing
+    // page's high-contrast backdrop toggle.
+    uiScale: 'UI Scale',
+    // Interface panel sliders: scale just the player / target unit frame
+    // (wordy, M16: the five non-Latin fills land in the same change as each).
+    playerFrameScale: 'Player Frame Scale',
+    targetFrameScale: 'Target Frame Scale',
+    // Interface panel toggle: anchor the player's own buff row to the movable
+    // player frame (the debuff row then slides up beside the minimap) instead
+    // of the classic two-row top-right corner (wordy, M16: the five non-Latin
+    // fills land in this same change).
+    // Interface panel choice rows: the health text mode printed on your own unit
+    // frame and on the target (plus target-of-target) frame, the same table the
+    // party frames use (wordy, M16: the five non-Latin fills land in this same
+    // change).
+    playerHealthText: 'Player Health Text',
+    targetHealthText: 'Target Health Text',
+    aurasOnPlayerFrame: 'Buffs on the Player Frame',
+    // Interface panel toggle, disabled unless aurasOnPlayerFrame is on: flips
+    // the anchored buff row to the other side of the player frame (wordy, M16:
+    // the five non-Latin fills land in this same change).
+    auraBarBelowFrame: 'Buffs Below the Player Frame',
+    // Interface panel toggle: bypass the Low graphics preset's buff-icon cap so
+    // every active buff always renders, at the cap's per-frame cost (wordy,
+    // M16: the five non-Latin fills land in this same change).
+    alwaysShowAllBuffs: 'Always Show All Buffs',
+    highContrastBackground: 'High-Contrast Background',
+    // Interface panel toggle: also engage auto-attack when using an offensive
+    // ability, so white swings start without a separate Attack press (on by default).
+    startAttackOnAbility: 'Auto-Attack on Ability Use',
+    // Interface panel toggle: disengage auto-attack whenever the target
+    // switches, instead of the classic default of carrying the swing over to
+    // the new target (off by default; issue #1358).
+    stopAutoAttackOnTargetSwitch: 'Stop Auto-Attack on Target Switch',
+    // Interface panel toggle: loot corpses by walking past them (off by default).
+    walkByAutoloot: 'Walk-by Autoloot',
+    groundReticle: 'Ground-Targeting Reticle',
+    // Interface panel toggle: Clique-style mouseover casting of friendly abilities
+    // on the hovered party frame (on by default).
+    mouseoverCast: 'Mouseover Cast on Party Frames',
+    // Combat-tab toggle (off by default: ground left-clicks clear the target,
+    // the classic behavior). On keeps the target on a ground left-click so
+    // click-to-move repositioning does not deselect.
+    stickyTarget: 'Keep Target on Ground Click',
+    // Interface panel toggle + the item-tooltip lines it reveals (off by default).
+    showItemLevel: 'Show Item Level',
+    // Interface panel toggle for the on-screen Reliquary tracker (on by
+    // default); shares the persisted switch with the eye toggle inside The
+    // Reliquary window.
+    showReliquaryTracker: 'Show Reliquary Tracker',
+    // Interface panel toggle (on by default): confirm before a vendor sale of
+    // anything beyond true junk. Off restores the classic one-click instant
+    // sale for every item (wordy, M16: the five non-Latin fills land in the
+    // same change).
+    confirmVendorSell: 'Confirm Before Selling',
+    confirmVendorSellNote:
+      'Turning this off sells items with a single click and no confirmation, so a shifted bag slot could vendor the wrong item.',
+    itemLevelLine: 'Item Level {level}',
+    itemScoreLine: 'Score {score}',
+    // Interface panel toggle that reveals the optional second action bar row (off
+    // by default). The abilities bound to its slots stay castable via their keybinds.
+    showSecondaryActionBar: 'Show Secondary Action Bar',
+    // Enabled only while the secondary row is visible. Slots remain reachable
+    // through keybinds and the mobile action-ring pages while this row is hidden.
+    showThirdActionBar: 'Show Third Action Bar',
+    combineActionBars: 'Combine Action Bars',
+    // Interface panel toggle (off by default): strips the black background,
+    // border, and keybind label from action-bar slots with no ability or item
+    // bound, so an unlearned class's bar reads clean instead of a wall of empty
+    // squares. Bound slots (and the fixed Attack button) are unaffected, so the
+    // slot layout used to arrange buffs/consumables on the extra rows holds.
+    hideUnusedActionSlots: 'Hide Unused Action Slots',
+    // Interface panel toggle (off by default) that locks the action bar slots
+    // against drag-to-move, drag-to-replace, and clear so an accidental
+    // click-and-drag mid-fight can't disturb a slot. Abilities still fire from
+    // keybinds and clicks while locked.
+    lockActionBars: 'Lock Action Bars',
+    // Interface panel toggle for the classic "target of target" mini-frame (off by
+    // default): a small unit frame under the target frame showing who your target
+    // is targeting.
+    showTargetOfTarget: 'Show Target of Target',
+    // Interface panel toggle (off by default) for the current target's (and
+    // target-of-target's) own melee/ranged swing timer, under the target
+    // frame. Independent of showTargetOfTarget (the portrait mini-frame).
+    showTargetSwingTimer: 'Show Target Swing Timer',
+    // Interface panel toggle for the pet health strip under the player frame (on by
+    // default; it only appears while you actually have a pet). Phrased from the
+    // frame's own accessible name (unitFrame.petLabel) so the value stays NON-WORDY
+    // for the M16 guard.
+    showPetFrame: 'Show Your Pet',
+    // Interface > Combat toggles (both on by default) for the two dot-tracking
+    // surfaces. Both show only the LOCAL player's OWN debuffs, on every class:
+    // the icon row on an enemy's nameplate, and the standalone Target dots frame
+    // that tracks them across every enemy at once. Wordy (M16): the five
+    // non-Latin fills land in this same change.
+    showNameplateDots: 'Show My Dots on Nameplates',
+    // The slider under that toggle: how large the nameplate dot row draws, 100%
+    // (plate-native) to 300%. Wordy (M16): the five non-Latin fills land in this
+    // same change.
+    nameplateDotScale: 'Nameplate Dot Size',
+    showTargetDots: 'Show Target Dots',
+    // Interface > Combat rows for the six aura tracks. All wordy (M16): the five
+    // non-Latin fills land in this same change.
+    showDefensivesTrack: 'Show Defensive Cooldowns',
+    showSelfBuffTrack: 'Show My Buffs',
+    showOffensiveTrack: 'Show Offensive Cooldowns',
+    showUtilityTrack: 'Show Movement and Stealth',
+    showUtilityModes: 'Include Stealth and Travel Modes',
+    showFriendlyTrack: 'Show My Buffs on Allies',
+    showShieldTrack: 'Show My Shields',
+    // Graphics-panel opt-in (default off) for the interactive wake/ripple
+    // simulation on water surfaces; bubbles and splash particles do not key
+    // off it. It sits in the Display card beside Weather because it costs
+    // GPU passes, not because it is a comfort toggle.
+    waterRipples: 'Water Ripples (Wakes)',
+    // Interface panel toggle for the fixed Attack button in the first action-bar
+    // slot (on by default). Off frees that slot for a normal action (drag one in;
+    // its key then casts it). Right-clicking the Attack button flips this off too.
+    showAttackButton: 'Show Attack Button',
+    showDailyRewardsChest: 'Show Daily Rewards Chest',
+    // Touch-only Graphics panel toggles (mobile combat HUD rework, phase 2).
+    // Camera joystick: hidden and off by default, swipe-look on open gameplay
+    // space is the primary camera path; this opts into the dedicated stick.
+    mobileCameraJoystick: 'Camera joystick',
+    // Mirrors the touch layout (movement joystick right, camera joystick left)
+    // for left-thumb-dominant players; the same setting as the Key Bindings
+    // panel's leftHandedTouch row, surfaced again here alongside the joystick.
+    mobileLeftHanded: 'Left-handed layout',
+    touchPreciseAim: 'Precise Ground Targeting',
+    touchPreciseAimNote:
+      'Aim before casting ground spells. Turn off to cast instantly at the suggested point.',
+    // Touch accessibility toggle (off by default): every gesture menu opens on a
+    // tap instead of a swipe or a hold. The note below is the row's description.
+    touchTapMenus: 'Tap menus',
+    touchTapMenusNote:
+      'Open the action, consumable and menu controls with a tap instead of a swipe. Tap an item to use it, tap the control again for its usual action, or tap outside to close.',
+  },
+  // Choice-row talents (the rows tab in the talents window). The row OPTION
+  // names/descriptions are sim content (English source, localized with the
+  // talent-copy batch); only the chrome lives here. defaultLoadout is the
+  // loadout dropdown button's label while no saved build is active.
+  talentRows: {
+    tab: 'Choices',
+    defaultLoadout: 'Default Loadout',
+    // Badge on a row option whose mechanic is not implemented yet (empty
+    // effect): the pill renders disabled so nobody picks a no-op talent.
+    // Wordy (M16): filled in the five non-Latin locales in this change.
+    comingSoon: 'Coming soon',
+    readoutSummary: 'Talents: {head}, {spent}/{total} rows selected.',
+  },
+  abilityError: {
+    shieldRequired: 'You must have a shield equipped.',
+  },
+  // Specialization screen: the detail rows shown under the selected spec's card
+  // (role/description come from the spec itself; these label the extra facts).
+  // Wordy leaves (M16): filled in the five non-Latin locales in this change.
+  specPanel: {
+    primaryAttr: 'Primary attribute',
+    complexity: 'Complexity',
+    complexityLow: 'Low',
+    complexityMedium: 'Medium',
+    complexityHigh: 'High',
+    exampleAbilities: 'Example abilities',
+    viewTalents: 'View talents',
+    selectSpec: 'Select specialization',
+    specUnlockBanner: 'Specialization Unlocked!',
+    specUnlockHint: 'Press N to choose your specialization.',
+  },
+  // Controller / gamepad options panel (Options > Controller). Player-facing
+  // chrome, so every label is a key here; the live numbers run through
+  // formatNumber. The button names themselves (A / LB / D-pad, etc.) stay as
+  // hardware glyphs in gamepad_map and need no translation.
+  controller: {
+    title: 'Controller',
+    glyphStyle: 'Button Labels',
+    glyphStyleAuto: 'Auto',
+    glyphStyleXbox: 'Xbox',
+    glyphStylePlayStation: 'PlayStation',
+    glyphStyleNintendo: 'Nintendo',
+    enable: 'Enable Controller',
+    invertY: 'Invert Camera (Y)',
+    deadzone: 'Stick Deadzone',
+    cameraSpeed: 'Camera Speed',
+    reticleSpeed: 'Reticle Speed',
+    vibration: 'Vibration',
+    buttons: 'Button Layout',
+    resetButtons: 'Reset Button Layout',
+    menuAction: 'Game Menu',
+    confirmAction: 'Confirm / Select',
+    zoomIn: 'Zoom In',
+    zoomOut: 'Zoom Out',
+    help: 'Left stick moves, right stick looks. Open a window to use the on-screen pointer.',
+    // Cross hotbar: the trigger-modifier hotbar. The trigger and button names
+    // shown beside each row are hardware glyphs from gamepad_map, so only the
+    // chrome around them is keyed here.
+    crossHotbar: 'Cross Hotbar',
+    crossHotbarEnable: 'Enable Cross Hotbar',
+    crossHotbarExpand: 'Double Cross Hotbar',
+    crossHotbarHelp:
+      'Hold a trigger to light eight action-bar slots on the d-pad and face buttons. Tap the other trigger to swap to the second set.',
+    crossHotbarResetLayout: 'Reset Cross Hotbar',
+    crossHotbarPosition: '{trigger} + {button}',
+    crossHotbarOwnsButtons:
+      'The triggers and the d-pad belong to the cross hotbar while it is on, so they are set up below rather than here.',
+    cancelAction: 'Cancel / Back',
+    subcommandsAction: 'Subcommands / Map',
+    cycleHudAction: 'Cycle Interface',
+    cycleSetAction: 'Change Hotbar Set',
+    crossHotbarDisplay: 'Bar Display',
+    crossHotbarDisplayFull: 'Full',
+    crossHotbarDisplayCompact: 'Compact',
+    crossHotbarDisplayMinimal: 'Only While Held',
+    crossHotbarArrangeChord: '{bumper} + {button}',
+    crossHotbarCarrying: 'Carrying {action}: confirm on a cell to place it, cancel to put it back.',
+    crossHotbarEditHint:
+      'Arranging: confirm picks up from a cell or the spellbook and drops on a cell, cancel clears one.',
+    crossHotbarEditHelp:
+      'Hold the left bumper and press the top face button to arrange the bar with the controller.',
+  },
+  // Performance overlay (the customizable in-game stats panel + its Options
+  // sub-view). Player-facing, so every label is a key here; the live numbers in
+  // the overlay run through formatNumber and these unit strings. Distinct from
+  // the older dev `?perf` trace output, which stays English like console.*. The real-DOM
+  // `?diagnostics=1` panel below is localized because its chrome is user-visible.
+  perf: {
+    title: 'Performance Overlay',
+    enable: 'Show Performance Overlay',
+    description: 'Choose which stats to show, where the overlay sits, and how it looks.',
+    sectionPosition: 'Position',
+    sectionAppearance: 'Appearance',
+    sectionStats: 'Stats',
+    positionX: 'Horizontal',
+    positionY: 'Vertical',
+    resetPosition: 'Reset Position',
+    dragHint: 'Drag the overlay to move it, or use the sliders below.',
+    opacity: 'Background Opacity',
+    solidBg: 'Solid Background',
+    fontScale: 'Text Size',
+    textColor: 'Text Color',
+    bgColor: 'Background Color',
+    colorTheme: 'Color Theme',
+    graph: 'Frame-Time Graph',
+    thresholds: 'Color-Coded Warnings',
+    presetsLabel: 'Quick Presets',
+    presetMinimal: 'Minimal',
+    presetStandard: 'Standard',
+    presetEverything: 'Everything',
+    // Category subheads the Stats toggles are grouped under (mirrors the metric
+    // registry's groups: frame/timing, network, renderer, system).
+    groups: {
+      frame: 'Frame & Timing',
+      network: 'Network',
+      renderer: 'Renderer',
+      system: 'System',
+      input: 'Input',
+    },
+    // Short metric labels shown in the overlay's left column and the Stats toggles.
+    labels: {
+      fps: 'FPS',
+      frameTime: 'Frame Time',
+      fps1Low: '1% Low',
+      fps01Low: '0.1% Low',
+      ping: 'Ping',
+      jitter: 'Jitter',
+      predLead: 'Prediction Lead',
+      snapshot: 'Snapshot Rate',
+      serverTick: 'Server Tick Rate',
+      connection: 'Connection',
+      drawCalls: 'Draw Calls',
+      triangles: 'Triangles',
+      geometries: 'Geometries',
+      textures: 'Textures',
+      programs: 'Shaders',
+      renderScale: 'Render Scale',
+      gpu: 'GPU',
+      memory: 'Memory',
+      hitches: 'Hitches',
+      entities: 'Entities',
+      apm: 'APM',
+    },
+    // Color-theme preset names (also the swatches' accessible names).
+    themes: {
+      gold: 'Gold',
+      frost: 'Frost',
+      ember: 'Ember',
+      jade: 'Jade',
+      crimson: 'Crimson',
+      mono: 'Mono',
+    },
+    // Value units, the digits are spliced in via formatNumber at the call site.
+    units: {
+      ms: '{value} ms',
+      mb: '{value} MB',
+      memPair: '{used} / {limit} MB',
+      hz: '{value} Hz',
+    },
+    // Inline status badges shown when the relevant condition is active.
+    badges: {
+      backgrounded: 'Backgrounded',
+      offline: 'Offline',
+    },
+    diagnostics: {
+      panelAria: 'World of ClaudeCraft performance diagnostics',
+      title: 'ClaudeCraft Performance Doctor',
+      subtitle: 'A game-specific scan with evidence and code-level fixes.',
+      aria: {
+        liveMeasurements: 'Live performance measurements',
+        scanProgress: 'Diagnostic scan progress',
+        findings: 'Ranked diagnostic findings',
+      },
+      controls: {
+        minimize: 'Minimize',
+        expand: 'Expand',
+        start: 'Start 15-second scan',
+        refreshCensus: 'Refresh scene census',
+        copyReport: 'Copy clear report',
+        downloadReport: 'Download report',
+        scanning: 'Scanning...',
+        scanAnother: 'Scan another area',
+        reportLogged: 'Report logged to console',
+        copied: 'Copied',
+        copyBlocked: 'Copy blocked: report logged',
+        retestLowGraphics: 'Retest on Low graphics',
+      },
+      instruction:
+        'For the best signal, enter Play Offline, move through the slow area, rotate the camera, and trigger the effect that stutters while the scan is running.',
+      status: {
+        pausedHiddenRestart:
+          'Scan paused while this tab is hidden. It will restart when you return.',
+        restoredRestart: 'Tab restored. Restarting a clean 15-second active-gameplay capture.',
+        worldLoaded: 'World loaded. Waiting for the first playable frame.',
+        pausedHiddenContinue:
+          'Scan paused while this tab is hidden. Return to the game to continue.',
+        collectingRemaining: {
+          one: 'Collecting active gameplay: {seconds} second remaining',
+          other: 'Collecting active gameplay: {seconds} seconds remaining',
+        },
+        waitingFrames: 'Waiting for representative gameplay frames: {current}/{minimum}',
+        collectingNow: 'Collecting active gameplay: move through the problem area now.',
+        ready: 'Ready to scan. Press Start and reproduce the slowdown.',
+        waitingWorld:
+          'Waiting for the game world. Choose Play Offline or enter an online character.',
+      },
+      metrics: {
+        waitingRenderer: 'renderer: waiting',
+        waitingCensus: 'scene census: waiting',
+        waitingHitch: 'hitch attribution: armed on world entry',
+        recent: 'recent  {fps} FPS | p95 {p95} ms | >50 ms {longFrames}',
+        render: 'render  submit {submit} ms | world {world} ms | entities {entities} ms',
+        scene: 'scene   {calls} calls | {triangles} tris | {views} views',
+        hitches: 'hitches {hitches} | shaders {shaders} | uploads {uploads} | views {views}',
+        hitchesBuild: 'zone builds {zoneBuilds} | off-frame {offFrame} | gc {gc}',
+        gpu: 'GPU     {renderer}',
+        waitingValue: 'waiting',
+      },
+      scoreHeadline: '{score}/100: {headline}',
+      healthyNoFindings:
+        'No actionable threshold fired. If a short hitch still bothers you, rerun the scan along the exact movement path that triggers it.',
+      findingMeta: '{severity} | {confidence} confidence',
+      sections: {
+        evidence: 'Evidence',
+        tryNow: 'Try now',
+        codeFix: 'Code fix',
+        source: 'Relevant source',
+      },
+      severity: {
+        critical: 'CRITICAL',
+        warning: 'WARNING',
+        info: 'INFO',
+      },
+      confidence: {
+        high: 'high',
+        medium: 'medium',
+        low: 'low',
+      },
+      diagnosis: {
+        noProblemTitle: 'No material performance problem detected',
+        summary: {
+          findings: {
+            one: '{findings} actionable finding from the last 10 seconds at {fps} FPS and {p95} frame p95.',
+            other:
+              '{findings} actionable findings from the last 10 seconds at {fps} FPS and {p95} frame p95.',
+          },
+          healthy:
+            'The last 10 seconds held {fps} FPS with a {p95} frame p95. No game, browser, GPU, memory, asset, or network threshold fired.',
+        },
+        titles: {
+          hardwareAcceleration: 'Software rendering is active',
+          integratedGpu: 'The game is using the integrated GPU',
+          highDpi: 'High resolution rendering is expensive here',
+          forcedHighGraphics: 'Forced high graphics is reducing performance',
+          lowMemory: 'Available device memory is low',
+          browserStalls: 'Browser or extension stalls were detected',
+          heapPressure: 'Browser memory pressure was detected',
+          contextLoss: 'The graphics context was reset',
+          gpuSubmit: 'GPU submission is the main frame bottleneck',
+          sceneDraw: 'Scene draw cost exceeds the active graphics budget',
+          shadowPass: 'The shadow pass uses a large share of draw calls',
+          rendererWorld: 'World renderer updates are CPU-bound',
+          rendererEntities: 'Entity view updates are CPU-bound',
+          rendererNameplates: 'Nameplate painting is expensive',
+          simCpu: 'Simulation work is consuming the frame',
+          hudCpu: 'HUD updates are consuming the frame',
+          eventCpu: 'Event processing is consuming the frame',
+          shaderCompile: 'Shaders are compiling during gameplay',
+          textureUpload: 'Texture uploads are causing gameplay hitches',
+          zoneBuild: 'Zone streaming builds are causing hitches',
+          viewCreate: 'Entity view creation is causing hitches',
+          gcHitch: 'Garbage collections are running inside long frames',
+          offFrameHitch: 'Long frames come from work outside the render callback',
+          otherHitch: 'Unattributed long frames remain',
+          assetStartup: 'Game startup is delayed by asset work',
+          longTasks: 'Long browser tasks are blocking frames',
+          networkLatency: 'Network delivery is delaying visible response',
+          snapshotApply: 'Snapshot processing is blocking the client',
+          generic: 'Performance rule {rule} needs attention',
+        },
+        causes: {
+          environment:
+            'A detected browser, GPU, memory, or device setting can limit performance before the game renders a frame.',
+          graphics:
+            'Measured graphics work is above the active frame or scene budget for this capture.',
+          cpu: 'A measured CPU phase is taking enough main-thread time to miss the frame budget.',
+          loading:
+            'Resource preparation or first-use work happened on a visible gameplay or startup path.',
+          network:
+            'Network delivery or client snapshot processing is delaying the latest playable state.',
+        },
+        evidence: {
+          environment: 'The environment rule {rule} matched this device and browser.',
+          gpuSubmit: 'WebGL submission p95 is {submit}, or {share} of renderer p95.',
+          frame: 'The recent window measured {fps} FPS with a {p95} frame p95.',
+          sceneCalls: 'The scene uses {calls} draw calls against a target of {target}.',
+          sceneTriangles: 'The scene submits {triangles} triangles against a target of {target}.',
+          sceneCategory:
+            'Scene category {category} contributes {calls} calls and {triangles} measured triangles.',
+          censusNeeded: 'Refresh the scene census to identify the leading render category.',
+          shadow:
+            'The shadow pass submits {calls} calls, {share} of the baseline, and {triangles} triangles.',
+          cpuPhase: 'Measured phase {phase} has a p95 of {p95}.',
+          hitch: '{count} of {total} recorded hitches matched cause {cause}.',
+          assets: 'The preload gate waited {wait} for {tasks} registered tasks.',
+          failedAssets: 'Failed asset groups: {groups}.',
+          longTasks: '{count} long tasks were measured, with p95 {p95} and maximum {max}.',
+          network:
+            'Snapshot interval is {interval}, latest age is {age}, and input echo p95 is {echo}.',
+          snapshot: 'Snapshot parse and apply p95 is {work}; network gap p95 is {gap}.',
+          generic: 'Diagnostic rule {rule} matched this capture.',
+        },
+        tryNow: {
+          environment:
+            'Correct the detected environment setting, restart, and repeat the same scan.',
+          graphics: 'Retest the same camera path on Low graphics to confirm graphics pressure.',
+          cpu: 'Repeat the scan while idle and while moving to isolate the CPU phase.',
+          loading: 'Repeat the same route or first-use action to confirm when the hitch occurs.',
+          network: 'Compare Play Offline with the same movement and camera path.',
+        },
+        codeFix: {
+          environment:
+            'Keep the detected fallback path within the shared graphics and memory budgets.',
+          graphics:
+            'Use the existing render budget, instancing, material sharing, LOD, and hidden-work skips.',
+          cpu: 'Profile the named phase, remove repeated work and allocations, and preserve gameplay behavior.',
+          loading:
+            'Preload, pool, or spread the identified first-use work through the existing startup and streaming budgets.',
+          network:
+            'Reduce delivery or snapshot processing cost without weakening the authoritative server model.',
+        },
+      },
+      report: {
+        title: 'World of ClaudeCraft performance diagnosis',
+        statusLine: 'Status: {status} ({score}/100)',
+        capturedLine: 'Captured: {captured}',
+        topFindingLine: 'Top finding: {finding}',
+        summaryLine: 'Summary: {summary}',
+        gpuLine: 'GPU: {gpu}',
+        graphicsLine: 'Graphics: {tier}, render scale {scale}',
+        recentLine:
+          'Recent: {fps} FPS, p95 {p95}, {longFrames} frames over 50 ms, {frames} measured frames',
+        resultHeading: 'Result',
+        noThreshold: 'No actionable threshold fired in this capture.',
+        findingHeading: '{index}. {title}',
+        findingMeta: 'Severity: {severity}. Confidence: {confidence}.',
+        rawSnapshotHeading: 'Raw snapshot',
+        notAvailable: 'not available',
+        status: {
+          critical: 'critical',
+          needsAttention: 'needs attention',
+          healthy: 'healthy',
+        },
+      },
+    },
+  },
+  auraOverlay: {
+    title: 'Auras',
+    currentClass: 'Current class: {class}',
+    previewHint: 'Use Setup Positions to move an aura without covering the menu.',
+    noProcs: 'No supported proc is available for this character.',
+    enabled: 'Show Aura',
+    icon: 'Spell Icon',
+    arcs: 'Side Crescents',
+    groundRing: 'Ground Ring',
+    groundRingSpellOrder: 'Ground Ring: Spell Order',
+    crescentsSpellOrder: 'Side Crescents: Spell Order',
+    size: 'Size',
+    iconSize: 'Icon Size',
+    crescentBlockSize: 'Crescent Block Size',
+    groundRingBlockSize: 'Ground Ring Block Size',
+    opacity: 'Opacity',
+    color: 'Color',
+    allOn: 'All On',
+    allOff: 'All Off',
+    reposition: 'Setup Positions',
+    positioning: 'Positioning: {aura}',
+    selectAura: 'Aura',
+    done: 'Done',
+    moveLeft: 'Move Left',
+    moveUp: 'Move Up',
+    moveDown: 'Move Down',
+    moveRight: 'Move Right',
+    moveEarlier: 'Move spell inward',
+    moveLater: 'Move spell outward',
+    screenPosition: 'Screen Position',
+    spellOrder: 'Spell Order',
+    reset: 'Reset Position',
+    spellPosition: 'Spell order {position} / {count}',
+    procs: {
+      revenge: 'Revenge!',
+      battleTrance: 'Battle Trance',
+      overpowerCharge: 'Redhand Empowerment',
+      suddenDeath: 'Sudden Death',
+      victoryRush: "Victor's Surge",
+      enrage: 'Mayhem: Enraged',
+      heatingUp: 'Heating Up',
+      arcaneCharge: 'Arcane Charges',
+      aetherRush: 'Aether Rush',
+    },
+  },
+  playerCard: {
+    showWalletBadge: 'Show wallet badge',
+  },
+  // Landing-page (start screen) accessibility controls.
+  landing: {
+    // Footer toggle: swap the moving trailer for a static high-contrast backdrop.
+    highContrast: 'High Contrast',
+    highContrastAria:
+      'Toggle high-contrast background: disables the moving trailer so start-screen text stays legible',
+    // Dismissible advisory shown at boot to a player on a browser outside the
+    // supported set (Chrome, Firefox, Safari); never shown in the desktop app or
+    // a native mobile shell (issue #2266). Purely advisory: it never blocks play.
+    browserSupport: {
+      title: 'Heads up: unsupported browser',
+      body: 'You may see reduced performance in this browser. For the best experience, get the desktop app for Windows, macOS, or Linux. Prefer playing in a browser? Chrome performs best, and Firefox and Safari are also supported.',
+      getDesktopApp: 'Get the desktop app',
+      continueInBrowser: 'Continue in browser',
+      dismissAria: 'Dismiss the unsupported browser notice',
+    },
+  },
+  warfare: {
+    honorAmount: '{amount} Honor',
+    dualPrice: '{money} + {honor}',
+    balance: 'Honor: {amount}',
+    honorFloat: '+{amount} Honor',
+    // The reason-naming variant of the float above (src/ui/honor_float_view.ts):
+    // the per-kill / per-assist drip says which one just paid.
+    honorFloatReason: '+{amount} Honor ({reason})',
+    honorGain: 'You gain {amount} Honor ({reason}).',
+    notEnoughHonor: 'Not enough Honor.',
+    reasons: {
+      arenaWin: 'Arena victory',
+      // Paid for a ranked loss and for a draw alike, so the line names the bout
+      // rather than the result (the same reading as battlegroundComplete below).
+      arenaComplete: 'Arena bout fought',
+      fiestaKill: 'Fiesta takedown',
+      fiestaComplete: 'Fiesta completed',
+      fiestaWin: 'Fiesta victory',
+      battlegroundWin: 'Thornhollow Fields victory',
+      battlegroundFirstWin: 'first Thornhollow Fields win today',
+      battlegroundComplete: 'Thornhollow Fields battle fought',
+      battlegroundKill: 'honorable kill',
+      battlegroundAssist: 'killing blow assisted',
+    },
+    // Short labels for the floating text over your own character. Kept apart from
+    // `reasons` above, which are mid-sentence fragments for the chat line.
+    floatReasons: {
+      kill: 'Kill',
+      assist: 'Assist',
+      firstWin: 'First Win',
+    },
+  },
+  // The WARFARE quartermaster's sectioned honor shop (#warfare-window,
+  // src/ui/hud/vendor/warfare_vendor_window.ts). Only the SECTIONING strings
+  // live here: the honor price, the honor balance, the panel title, the close
+  // label and the confirm dialog's title/accept/cancel are all reused from
+  // hudChrome.warfare, itemUi.vendor and heroicShop rather than duplicated.
+  warfareShop: {
+    // The gossip row that opens this window. A flagged NPC keeps its ordinary
+    // goods row too (selling and buyback still have to be reachable), so this
+    // row carries its OWN label and accessible name rather than a second
+    // "Browse Goods" the player cannot tell apart.
+    gossipOption: 'Browse Warfare Sets',
+    gossipOptionAria: 'Browse the Warfare set shop offered by {name}',
+    jewelry: 'Jewelry',
+    weapons: 'Weapons',
+    // Marks a piece the viewer already wears or carries. The tile still sells.
+    owned: 'Owned',
+    // The buy tile's accessible name, as ONE key per arm rather than a base name
+    // with an "owned" fragment concatenated on: an aria-label REPLACES the
+    // button's content, so the marker has to sit inside a sentence a translator
+    // can reorder.
+    buyAria: 'Buy {item} for {honor}',
+    buyOwnedAria: 'Buy {item} for {honor}, already owned',
+    // Honor purchases record no buyback, so a mis-tap is unrefundable: the
+    // confirm gate matches the Heroic Marks shop's, whose title, accept and
+    // cancel labels are currency-neutral and reused verbatim.
+    buyConfirmBody: 'Buy {item} for {honor}? Honor purchases cannot be refunded.',
+  },
+  // Character sheet showcase layout: the two titled stat-panel headings under the
+  // primary attribute tiles. Stat NAMES themselves reuse itemUi.stats.* / the
+  // statInfo.names.* labels below; only these two group headings are new here.
+  charSheet: {
+    offense: 'Offense',
+    defense: 'Defense',
+    // The lifetime "Time Played" line at the foot of the sheet (the same
+    // running total the /playtime chat command reports). The value composes
+    // the two coarsest units from the plurals.playtime* fragments through
+    // playtimeParts ({major}/{minor} arrive pre-localized), so a locale can
+    // reorder or drop the separator.
+    playtimeLabel: 'Time Played',
+    playtimeParts: '{major}, {minor}',
+    playtimeUnderMinute: 'Less than a minute',
+    // Shown in place of the value while the eye toggle conceals it
+    // (screenshot/stream privacy; the total keeps accruing).
+    playtimeHidden: 'Hidden',
+    showPlaytimeAria: 'Show time played',
+    hidePlaytimeAria: 'Hide time played',
+  },
+  // Character-screen stat tooltips (hover a stat on the C panel). The stat NAMES
+  // reuse itemUi.stats.*; only these descriptions / effect lines / notes are new.
+  // The breakdown numbers are recomputed live from the player's current stats
+  // (src/ui/stat_tooltip.ts) and spliced in via formatNumber at the call site, so
+  // the {value}/{level} placeholders carry no baked formatting.
+  statInfo: {
+    // Header above a primary stat's live breakdown, e.g. "From your 22 Agility:".
+    fromYour: 'From your {value} {stat}:',
+    // Stat NAMES otherwise reuse itemUi.stats.*; Spell Power is a character-sheet
+    // only stat (no item carries a labeled Spell Power line), so its label lives
+    // here in the English-only HUD-chrome domain rather than the fully-translated
+    // item-stats catalog.
+    names: {
+      spellPower: 'Spell Power',
+      healPower: 'Healing Power',
+      critRating: 'Crit Rating',
+      hasteRating: 'Haste Rating',
+      parry: 'Parry',
+      hitRating: 'Hit Rating',
+      warfare: 'Warfare',
+    },
+    warfareValue: '+{increase}% dealt / -{reduction}% taken',
+    desc: {
+      str: 'Increases your attack power, so your weapon strikes land harder.',
+      agi: 'Sharpens your reflexes and aim, improving several of your combat stats.',
+      sta: 'Toughens your body, raising your maximum health and how quickly you recover health while resting.',
+      int: "Expands a spellcaster's mana pool and improves their chance to land a spell critical strike.",
+      spi: "Quickens how fast a spellcaster's mana returns. Most of it flows while resting, out of combat, and a portion keeps returning even in combat.",
+      armor:
+        'Softens incoming physical blows. The reduction is greater against lower-level attackers and is capped at 75%.',
+      attackPower: 'Powers your weapon attacks. Every 14 attack power adds 1 damage per second.',
+      spellPower:
+        'Increases the damage of your spells and the strength of your heals. Each point of Intellect grants a little Spell Power, on top of any from gear or buffs.',
+      dps: "Your estimated weapon damage per second, combining your weapon's damage and speed with your attack power.",
+      critChance: 'Your chance for an attack to strike critically, dealing double damage.',
+      dodge: 'Your chance to completely avoid an incoming melee attack, taking no damage.',
+      critRating:
+        'Crit rating from your gear and set bonuses, raising the critical strike chance of both your attacks and your spells. Every 20 rating grants exactly 1% crit.',
+      hasteRating:
+        'Haste rating from your gear and set bonuses, speeding up your attacks and spellcasting. Every 20 rating grants exactly 1% haste.',
+      parry:
+        'Your chance to fully parry a frontal melee attack, taking no damage. A blow from behind cannot be parried.',
+      hitRating:
+        'Hit rating from your gear and set bonuses, reducing how often your attacks miss and your spells are resisted, especially against higher-level enemies. Every 10 rating grants exactly 1% hit.',
+      warfare:
+        'Increases damage dealt to players by {increase}% and reduces damage taken from players by {reduction}%.',
+    },
+    // One line per derived effect a stat contributes. {value} is a live number.
+    effects: {
+      attackPower: '+{value} Attack Power',
+      rangedAttackPower: '+{value} Ranged Attack Power',
+      critPct: '+{value}% Critical Strike',
+      dodgePct: '+{value}% Dodge',
+      armor: '+{value} Armor',
+      maxHealth: '+{value} Maximum Health',
+      maxMana: '+{value} Maximum Mana',
+      spellCritPct: '+{value}% Spell Critical Strike',
+      healthRegen: 'About {value} health every 5 sec while resting',
+      manaRegen: 'About {value} mana every 5 sec while resting',
+      manaRegenCombat: 'About {value} mana every 5 sec in combat',
+      damageReduction: 'Damage reduction against a level {level} attacker: {value}%',
+      dpsFromAp: 'Adds {value} damage per second to your attacks',
+    },
+    notes: {
+      minorForClass: 'Of little benefit to your class.',
+      baseChance: 'Includes a 5% base chance shared by all adventurers.',
+      dpsApprox: 'An estimate, it excludes critical strikes and ability damage.',
+    },
+    // The upstream "where this stat comes from" breakdown: a header plus one line
+    // per origin. Every {value} is a live number; buff lines splice in the active
+    // aura's localized name. The talents line gathers everything not itemized
+    // above (talent bonuses, item-set bonuses, druid form bonuses) so the lines
+    // always add up to the stat shown on the sheet.
+    sources: {
+      header: 'Made up of:',
+      base: 'Base: {value}',
+      attributes: 'From your attributes: {value}',
+      fromAttribute: 'From {stat}: {value}',
+      gear: 'Equipped gear: {value}',
+      buff: '{name}: {value}',
+      talents: 'Talents and effects: {value}',
+    },
+  },
+  // Default name pre-filled into the Save-Build-As dialog, e.g. "Build 3".
+  talents: {
+    defaultBuildName: 'Build {n}',
+    // The gear-capturing save entry, beside the plain one in the loadout menu.
+    newBuildWithGear: 'New Build (save gear too)',
+    // Applying a loadout that captured gear. Counts come from the text-free
+    // loadoutGearResult event, so the sim carries none of this copy.
+    gearRestored: 'Restored {n} gear pieces from this build.',
+    gearNotHeld: "You no longer have {n} of this build's saved pieces.",
+    gearCopyGone: '{n} saved pieces were not the copy this build pinned.',
+    gearTakenByOtherSlot: '{n} saved pieces need another copy you do not have.',
+  },
+  // One-off chat-log tips shown at HUD bootstrap. The /join command tokens stay
+  // literal (they are commands); the surrounding prose localizes.
+  tips: {
+    joinChannels: 'Tip: type /join world or /join lfg to chat with players across the world.',
+  },
+  // Item-set (tier set) tooltip block. The set name and per-tier bonus text come
+  // from content/item_sets.ts via entity_i18n; these two are the surrounding
+  // chrome, with `name`/`bonus` spliced in already-localized.
+  // Tooltip tag appended to the quality/kind line of a Heroic upgraded drop variant
+  // (content/heroic_variants.ts), e.g. "Epic Armor [HEROIC]". The variant shares the
+  // base item's name; this tag is the only heroic marker, shown in gold.
+  itemHeroicTag: '[HEROIC]',
+  // The bare "Heroic" word as a STANDALONE accessible name (no brackets): the
+  // market Browse row's heroic star uses it for its aria-label, where the
+  // bracketed tag above is tooltip-line chrome, not a label a screen reader
+  // should read as "left-bracket HEROIC right-bracket".
+  itemHeroicLabel: 'Heroic',
+  // Tooltip marker for a soulbound item (bound to its owner: cannot be traded, mailed,
+  // listed, sold, or destroyed). Currency-like reward tokens (Heroic Marks) carry this.
+  itemSoulbound: 'Soulbound',
+  // Tooltip marker for a unique-equipped item (every legendary): a character can wear
+  // at most one copy of it at a time (src/sim/equipment_rules.ts isUniqueEquipped).
+  itemUniqueEquipped: 'Unique-Equipped',
+  // Tooltip marker for a Masterwrought piece (the crafted-apex tier): unlike the
+  // one-copy rule above this is a COUNTED family, so the tag names the budget the
+  // whole family shares. {count} is the sim's own MASTERWROUGHT_EQUIP_CAP, passed
+  // in rather than written into the copy so the number cannot drift from the rule
+  // (src/sim/equipment_rules.ts masterwroughtConflictSlot).
+  itemMasterwrought: 'Unique-Equipped: Masterwrought ({count})',
+  // The Masterwrought cap-visibility family (phase 14): the character sheet's
+  // slots readout and worn-piece mark, plus the tooltip cap-state lines. Every
+  // number ({used}/{cap}) interpolates from the sim's own cap walk
+  // (src/ui/masterwrought_cap_view.ts over MASTERWROUGHT_EQUIP_CAP), never a
+  // literal in copy, the itemMasterwrought rule above.
+  masterwrought: {
+    slotsLabel: 'Masterwrought slots:',
+    slotsValue: '{used} / {cap}',
+    pieceMark: 'Masterwrought',
+    tooltipWorn: 'Occupies a Masterwrought slot ({used} of {cap} in use).',
+    // The legendary SUB-cap, shown only on a legendary-effective Masterwrought
+    // copy (the promotion's own output), because that is the only copy the
+    // rule can refuse. {cap} interpolates MASTERWROUGHT_LEGENDARY_CAP, so the
+    // number cannot drift from src/sim/equipment_rules.ts; the refusal line it
+    // pre-empts is error.masterwroughtLegendary in src/ui/sim_i18n.ts.
+    tooltipLegendaryLimit: 'Only {cap} legendary Masterwrought piece can be worn.',
+    // "your": this line renders on bag/vendor/market hovers AND on the
+    // inspect window's peer items, where an unowned reading ("all 2 slots"
+    // = the inspected character's) was the natural parse. The count is
+    // always the VIEWER's (masterwroughtTooltipLines reads this.sim
+    // .equipment), so the copy says so.
+    tooltipAtCap: 'All {cap} of your Masterwrought slots are in use.',
+  },
+  itemSet: {
+    header: '{name} ({have}/{total})',
+    bonusLine: '({pieces}) {bonus}',
+  },
+  // Legendary weapon "chance on action" procs, rendered in the item tooltip from
+  // the ItemDef.weaponProcs data (see src/ui/weapon_proc_view.ts). One trigger
+  // line wraps the joined effect fragments below it.
+  itemProc: {
+    onMeleeHit: 'Chance on hit ({chance}%): {effect}',
+    onSpellDamage: 'Chance on your damaging spells ({chance}%): {effect}',
+    onHeal: 'Chance on your heals ({chance}%): {effect}',
+    chainArc:
+      'blasts the target with a {school} {name} ({damage}) that leaps to {jumps} nearby foes for decaying damage',
+    attackSlow: 'and slows the target attack speed by {pct}% for {duration} sec',
+    dot: 'festers {name}, a {school} damage-over-time dealing {total} over {duration} sec',
+    hot: 'blooms {name}, a heal-over-time restoring {total} over {duration} sec',
+  },
+  // Quest-link sharing: the chat-link affordance and its sim-emitted notices
+  // (re-localized through the hud-local localizeErrorText/localizeSystemText arms).
+  questShare: {
+    notShareable: "This quest can't be shared.",
+    notInSharerParty: "You must be in {name}'s party to accept that quest.",
+    accepted: '{name} accepted your shared quest.',
+    dialogTitle: 'Shared Quest',
+    viewOnlyHint: "Join the sharer's party to accept this quest.",
+    alreadyOn: "You're already on this quest.",
+    alreadyDone: "You've already completed this quest.",
+    ineligible: "You don't meet the requirements for this quest.",
+    noQuestSelected: 'Select a quest in your log to share.',
+    linkTitle: 'Shift-click to link this quest in chat.',
+  },
+  itemShare: {
+    linkHint: 'Shift-click to link this item in chat.',
+  },
+  // CLDR-categorized count strings resolved through tPlural(base, count) in
+  // src/ui/i18n.ts: it selects the active locale's cardinal category (one / few /
+  // many / other) via Intl.PluralRules and looks up the matching leaf, so e.g.
+  // Russian renders the correct 1 / 2-4 / 5+ form instead of a binary one/other.
+  // English only ever selects `one`/`other`; `few`/`many` mirror `other` here and
+  // carry the real distinct forms only in the locales that need them (ru_RU). The
+  // count is auto-supplied as {count}. Keep all four categories present per base.
+  plurals: {
+    // The commission board's crafter's-record counts (Masterwrought phase
+    // 14): lifetime masterworks crafted and legendaries forged, off the
+    // accepter's deed stat counters.
+    commissionMasterworks: {
+      one: '{count} masterwork',
+      few: '{count} masterworks',
+      many: '{count} masterworks',
+      other: '{count} masterworks',
+    },
+    commissionLegendaries: {
+      one: '{count} legendary',
+      few: '{count} legendaries',
+      many: '{count} legendaries',
+      other: '{count} legendaries',
+    },
+    guildMembers: {
+      one: 'your guild rank is {rank}; {count} member',
+      few: 'your guild rank is {rank}; {count} members',
+      many: 'your guild rank is {rank}; {count} members',
+      other: 'your guild rank is {rank}; {count} members',
+    },
+    wocMarketSellChoose: {
+      one: 'Choose from {count} item',
+      few: 'Choose from {count} items',
+      many: 'Choose from {count} items',
+      other: 'Choose from {count} items',
+    },
+    wocTradeIneligible: {
+      one: '{count} staged item cannot be sold for $WOC.',
+      few: '{count} staged items cannot be sold for $WOC.',
+      many: '{count} staged items cannot be sold for $WOC.',
+      other: '{count} staged items cannot be sold for $WOC.',
+    },
+    finderPartySize: {
+      one: '{count} player',
+      few: '{count} players',
+      many: '{count} players',
+      other: '{count} players',
+    },
+    characterCount: {
+      one: '{count} character',
+      few: '{count} characters',
+      many: '{count} characters',
+      other: '{count} characters',
+    },
+    secondsRemaining: {
+      one: '{count} second remaining',
+      few: '{count} seconds remaining',
+      many: '{count} seconds remaining',
+      other: '{count} seconds remaining',
+    },
+    // The native-tooltip text on the buff-bar overflow badge (hudChrome.unitFrame.
+    // buffOverflowLabel): {count} buffs are active but past the low-tier cap, so their
+    // icon is hidden. Read tPlural('hudChrome.plurals.buffsHidden', count).
+    buffsHidden: {
+      one: '{count} more buff is active but hidden on this graphics preset',
+      few: '{count} more buffs are active but hidden on this graphics preset',
+      many: '{count} more buffs are active but hidden on this graphics preset',
+      other: '{count} more buffs are active but hidden on this graphics preset',
+    },
+    // Unit fragments for the character sheet's Time Played line ({count} is
+    // pre-formatted through formatNumber at the call site).
+    playtimeDays: {
+      one: '{count} day',
+      few: '{count} days',
+      many: '{count} days',
+      other: '{count} days',
+    },
+    playtimeHours: {
+      one: '{count} hour',
+      few: '{count} hours',
+      many: '{count} hours',
+      other: '{count} hours',
+    },
+    playtimeMinutes: {
+      one: '{count} minute',
+      few: '{count} minutes',
+      many: '{count} minutes',
+      other: '{count} minutes',
+    },
+    playersOnline: {
+      one: 'Who: {count} player online on {realm}.',
+      few: 'Who: {count} players online on {realm}.',
+      many: 'Who: {count} players online on {realm}.',
+      other: 'Who: {count} players online on {realm}.',
+    },
+    playersMatching: {
+      one: 'Who: {count} player matching "{query}" on {realm}.',
+      few: 'Who: {count} players matching "{query}" on {realm}.',
+      many: 'Who: {count} players matching "{query}" on {realm}.',
+      other: 'Who: {count} players matching "{query}" on {realm}.',
+    },
+    // The on-join back-credit pass, one line for the whole seed rather than a
+    // toast per relic or per deed. The reliquary and deeds summaries are
+    // siblings and always move together; both went CLDR here so count 1 reads
+    // "1 relic" / "1 deed" instead of the old hardcoded plural.
+    reliquaryRetroSummary: {
+      one: 'Your reliquary catches up: {count} relic catalogued.',
+      few: 'Your reliquary catches up: {count} relics catalogued.',
+      many: 'Your reliquary catches up: {count} relics catalogued.',
+      other: 'Your reliquary catches up: {count} relics catalogued.',
+    },
+    // Reliquary search / filter result count, announced through the window's
+    // SR-only live region (the narrowed list itself is a silent paragraph swap).
+    // Count-neutral on purpose: this one line serves the page grid (relics), the
+    // shelf list (pages), and Overview (recent finds plus nearly-complete rows),
+    // so naming any single noun would be wrong on two of the three surfaces.
+    reliquarySearchResults: {
+      one: '{count} result.',
+      few: '{count} results.',
+      many: '{count} results.',
+      other: '{count} results.',
+    },
+    // How many relics a nearly-complete page still wants. Count-neutral in
+    // English (the row already names the page and shows the pair), but CLDR so
+    // a locale that inflects the noun can say it properly.
+    reliquaryToGo: {
+      one: '{count} to go',
+      few: '{count} to go',
+      many: '{count} to go',
+      other: '{count} to go',
+    },
+    // How many times an owned relic has been taken from the world, on its own
+    // tooltip line and folded into the cell's aria label. English really does
+    // inflect here ("1 time" / "2 times"), unlike the count-neutral pair above.
+    // The two aria bases spell the WHOLE sentence rather than stitching the
+    // tooltip line onto a label fragment: clause order and the punctuation
+    // between clauses are the translator's to choose. Their clear number rides
+    // a separate {clears} slot because tPlural owns {count} and selects on it,
+    // and the number whose noun inflects is the obtain count, not the clear.
+    reliquaryObtainedTimes: {
+      one: 'Obtained {count} time',
+      few: 'Obtained {count} times',
+      many: 'Obtained {count} times',
+      other: 'Obtained {count} times',
+    },
+    reliquaryCellOwnedObtainedAria: {
+      one: '{name}, catalogued, obtained {count} time',
+      few: '{name}, catalogued, obtained {count} times',
+      many: '{name}, catalogued, obtained {count} times',
+      other: '{name}, catalogued, obtained {count} times',
+    },
+    reliquaryCellOwnedClearsObtainedAria: {
+      one: '{name}, catalogued, first found on clear {clears}, obtained {count} time',
+      few: '{name}, catalogued, first found on clear {clears}, obtained {count} times',
+      many: '{name}, catalogued, first found on clear {clears}, obtained {count} times',
+      other: '{name}, catalogued, first found on clear {clears}, obtained {count} times',
+    },
+    deedsRetroSummary: {
+      one: 'Your chronicle catches up: {count} deed recorded.',
+      few: 'Your chronicle catches up: {count} deeds recorded.',
+      many: 'Your chronicle catches up: {count} deeds recorded.',
+      other: 'Your chronicle catches up: {count} deeds recorded.',
+    },
+  },
+  // "Report a Bug" options sub-view (online only). Captures realm/character/
+  // position/screenshot plus a free-text description and posts to the server.
+  bugReport: {
+    menuButton: 'Report a Bug',
+    realm: 'World',
+    character: 'Character',
+    position: 'Position',
+    unknown: 'Unknown',
+    description: 'What went wrong?',
+    descriptionPlaceholder: 'Describe the bug: what you did, what you expected, and what happened.',
+    includeScreenshot: 'Include Screenshot',
+    screenshotAlt: 'Screenshot of the current view attached to this bug report',
+    submit: 'Send Report',
+    submitted: 'Bug report sent. Thank you!',
+    submittedNoShot: 'Bug report sent, but the screenshot was too large to include.',
+    describeFirst: 'Please describe the bug before sending.',
+    tooLarge: 'That report is too large to send. Try again without the screenshot.',
+    rateLimited: "You've sent several reports recently. Please wait a bit before sending another.",
+    failed: 'Could not send the bug report. Please try again.',
+  },
+  // Character window (paperdoll) controls.
+  paperdoll: {
+    unequipAria: 'Unequip {item}',
+    unequipHint: 'Click ×, right-click, or drag to bags to unequip',
+    // The helmet-visibility eye on the head socket: each string is the action
+    // the press performs (so the shown-state button says "Hide helmet").
+    hideHelmAria: 'Hide helmet',
+    showHelmAria: 'Show helmet',
+  },
+  // Home-page account portal (the logged-in "Account" nav tab). Lives here in the
+  // English-only hud_chrome domain so an English-only PR compiles; translations
+  // live in the overlays like any other hudChrome.* key.
+  account: {
+    title: 'Account',
+    loggedOutPrompt: 'Log in to manage your account.',
+    memberSince: 'Member since {date}',
+    sectionSettings: 'Account Settings',
+    sectionWallet: '$WOC Wallet',
+    sectionCharacters: 'Characters',
+    sectionDanger: 'Danger Zone',
+    // Change password
+    changePassword: 'Change Password',
+    currentPassword: 'Current password',
+    newPassword: 'New password',
+    confirmNewPassword: 'Confirm new password',
+    savePassword: 'Update Password',
+    passwordChanged: 'Password updated. Other devices have been signed out.',
+    errCurrentRequired: 'Enter your current password.',
+    errPasswordShort: 'New password must be at least 6 characters.',
+    errPasswordLong: 'New password must be at most 128 characters.',
+    errPasswordUnchanged: 'New password must be different from the current one.',
+    errPasswordConfirm: 'New passwords do not match.',
+    // Set a Password (Apple/Discord-provisioned accounts with no password yet)
+    setPasswordTitle: 'Set a Password',
+    setPasswordHint:
+      'This account was created with Sign in with Apple or Discord and has no password yet. Set one to sign in on other devices, such as the Mac and Windows desktop apps, or the web, and to link additional sign-in methods.',
+    setPasswordSubmit: 'Set Password',
+    passwordSet: 'Password set. You can now sign in with your username and password anywhere.',
+    // Email
+    emailLabel: 'Email (optional)',
+    emailHint: 'Used only for account recovery. Use Change Email below to update it.',
+    saveEmail: 'Save Email',
+    emailSaved: 'Email saved.',
+    errEmailInvalid: 'Enter a valid email address.',
+    // Server-side (REST) failures, re-localized via main.ts userFacingApiError.
+    errCurrentPassword: 'Your current password is incorrect.',
+    errUsernameMatch: 'That username does not match your account.',
+    errPasswordIncorrect: 'Your password is incorrect.',
+    errCharactersOnline: 'Log out all of your characters before deactivating.',
+    deactivatedLocked: 'This account has been deactivated. Contact an admin to restore it.',
+    // Characters
+    charactersSummary: 'Manage your characters and enter the world.',
+    charactersCount: 'Characters: {count}',
+    goToCharacters: 'View Characters',
+    // Wallet
+    walletSummary: 'Verify a Solana wallet to show holder flair on your player card.',
+    manageWallet: 'Manage Wallet',
+    // Deactivate
+    deactivate: 'Deactivate Account',
+    deactivateWarning:
+      'Deactivation locks your account and signs you out everywhere. Contact an admin to restore it. Confirm by re-entering your username and password.',
+    confirmUsername: 'Type your username to confirm',
+    confirmPassword: 'Password',
+    deactivateConfirm: 'Deactivate My Account',
+    deactivated: 'Your account has been deactivated.',
+    // Log out
+    logOut: 'Log Out',
+    logOutSummary: 'Sign out of this device.',
+    // Security section (two-factor, verified email change, data export).
+    sectionSecurity: 'Security',
+    // Change email (verified, two-step)
+    changeEmailTitle: 'Change Email',
+    changeEmailHint:
+      'We email a confirmation link to the new address and a notice to the old one. Your email only changes once you open the link.',
+    changeEmailNew: 'New email',
+    changeEmailSubmit: 'Send Confirmation Link',
+    changeEmailSent: 'Check your inbox: open the link we sent to confirm your new email.',
+    errEmailUnchanged: 'That is already your email address.',
+    // Two-factor (TOTP)
+    twoFactorTitle: 'Two-Factor Authentication',
+    twoFactorStatusOn: 'Two-factor authentication is ON for your account.',
+    twoFactorStatusOff: 'Add an authenticator app for stronger account security.',
+    twoFactorSetupBtn: 'Set Up Two-Factor',
+    twoFactorBeginHint: 'Enter your password to begin setup.',
+    twoFactorBegin: 'Begin Setup',
+    twoFactorScanHint:
+      'Add this key to your authenticator app (Google Authenticator, Authy, 1Password, and similar), then enter the 6-digit code it shows.',
+    twoFactorSecretLabel: 'Setup key',
+    twoFactorOpenApp: 'Open in authenticator app',
+    twoFactorCodeLabel: '6-digit code',
+    twoFactorVerifyBtn: 'Verify and Enable',
+    twoFactorEnabledMsg: 'Two-factor authentication is now on.',
+    twoFactorRecoveryTitle: 'Save your recovery codes',
+    twoFactorRecoveryHint:
+      'Each code works once. Store them somewhere safe: they are the only way back in if you lose your authenticator app.',
+    twoFactorDownloadCodes: 'Download Codes',
+    // Recovery-codes download file (plain text): formatRecoveryCodesFile in
+    // src/ui/two_factor_setup.ts builds the downloadable file from these.
+    recoveryCodesFileHeader: '{brand} recovery codes',
+    recoveryCodesFileAccount: 'Account: {username}',
+    recoveryCodesFileHint:
+      'Each code can be used once if you lose access to your authenticator app.',
+    recoveryCodesFileWarn: 'Keep this file somewhere safe and private.',
+    twoFactorDone: 'Done',
+    twoFactorDisableHint:
+      'Enter your password to turn two-factor off. Your recovery codes will be discarded.',
+    twoFactorDisableBtn: 'Turn Off Two-Factor',
+    twoFactorDisabledMsg: 'Two-factor authentication is off.',
+    errTwoFactorCode: 'That code is not valid, try again.',
+    errTwoFactorState: 'Two-factor setup is not in the expected state. Reload and try again.',
+    // Data export (GDPR)
+    exportTitle: 'Export My Data',
+    exportHint:
+      'Download a copy of your account and characters as a JSON file. We also email you a confirmation.',
+    exportBtn: 'Download My Data',
+    exportDone: 'Your data was downloaded. We emailed you a confirmation.',
+    exportFailed: 'Could not export your data. Try again in a moment.',
+  },
+  // Master loot: the leader-only loot-method control in the party panel, the
+  // assignment prompt shown to the master looter, and the sim-emitted log lines
+  // re-localized through the hud matchers (localizeLootText/System/Error).
+  masterLoot: {
+    title: 'Master Loot',
+    enableLabel: 'Master loot',
+    enableAria: 'Enable master loot',
+    looterLabel: 'Master looter',
+    leaderOption: 'Party leader',
+    thresholdLabel: 'Threshold',
+    thresholdUncommon: 'Uncommon and up',
+    thresholdRare: 'Rare and up',
+    thresholdEpic: 'Epic and up',
+    assignPrompt: 'Assign {item}',
+    assignAria: 'Assign {item} to {name}',
+    rollButton: 'Roll',
+    selectAll: 'Select all',
+    methodMaster: 'Loot method set to Master Loot. Master Looter: {name}.',
+    methodGroup: 'Loot method set to Group Loot.',
+    assigned: '{looter} assigned {item} to {target}.',
+    unassigned: '{item} was not assigned and is free for all.',
+    leaderOnly: 'Only the party leader can change the loot method.',
+    rollingFor: 'Rolling for {item}.',
+    looterChanged: 'Master Looter is now {name}.',
+    thresholdSet: 'Loot threshold set to {threshold}.',
+    summaryMaster: 'Loot Settings: Master Loot, Master Looter {name}, threshold {threshold}.',
+    summaryGroup: 'Loot Settings: Group Loot.',
+  },
+  // Per-corpse focus picker (#1142): the checkbox list of tagged components on a
+  // harvestable corpse, shown alongside loot. Concentrating on fewer checked
+  // components yields a higher tier per component than spreading across all of
+  // them (professions/gathering.ts resolveCorpseFocusHarvest).
+  corpseHarvest: {
+    title: 'Harvest',
+    harvestButton: 'Harvest',
+    // Loot-window legibility reword: states the once-per-corpse,
+    // first-come claim rule and that harvesting leaves the loot untouched.
+    // Successor to the retired harvestButtonTooltip; a new key because the old
+    // one carried reviewed fills in every locale (in-place rewords go stale).
+    harvestTooltip:
+      'Gathers the checked components. Each corpse can be harvested once, first come. Does not take the loot.',
+    // #2514 reword. The retired concentrateHint said "Fewer CHOSEN components
+    // yield a higher tier each", which the new rule makes false in both
+    // directions: checking one more unmapped row lowers nothing, and checking
+    // one fewer of them raises nothing. The tier tracks what the harvest TAKES,
+    // which is the rows that can pay, so the sentence says that instead. A new
+    // key rather than an in-place edit, the harvestTooltip precedent above:
+    // rewording a key in place leaves every locale's reviewed fill silently
+    // answering the old sentence.
+    yieldTierHint: 'The fewer components a harvest takes, the higher the tier of each.',
+    // #2509: a selection naming nothing but carried-but-unmapped families
+    // (tags with no harvest item wired to them) would spend the single-use
+    // corpse for nothing, so the command refuses it and the picker says why,
+    // in place: a disabled button's tooltip is unreachable. Claw, tusk,
+    // gills and horn shipped that way when this key landed; #2905 mapped the
+    // first two and Masterwrought Phase 11m the last two, so no shipped
+    // template can surface this line today. The key stays live as the
+    // defensive arm for any future unmapped tag, exercised through the
+    // retagged fixtures of tests/helpers/unmapped_family.ts.
+    nothingSelectedYields: 'Nothing you selected can be harvested from this corpse.',
+    alreadyHarvested: 'This corpse has already been harvested.',
+    componentAria: 'Harvest {component}',
+    // #2514: the same carried-but-unmapped shape, on a corpse that ALSO
+    // carries a family that pays. The row stays offered (the corpse does
+    // carry it) and checking it is free, so this marks it rather than
+    // explaining a refusal. The four families #2509 names above wore this
+    // mark until #2905 and Phase 11m mapped them; no shipped row wears it
+    // today, and the key stays live for any future unmapped tag.
+    //
+    // Two keys, and the aria one takes the visible mark as a SECOND
+    // placeholder rather than restating it. Never concatenated, and it also
+    // makes WCAG 2.2 SC 2.5.3 (Label in Name) structural: the accessible name
+    // contains the text the row shows, in every locale, instead of depending on
+    // each translator happening to reuse their own phrasing across two
+    // independent strings. Keep {note} as a placeholder if this is reworded.
+    componentNoYield: 'nothing yet',
+    componentAriaNoYield: 'Harvest {component}: {note}',
+    components: {
+      hide: 'Hide',
+      fang: 'Fang',
+      silk: 'Silk',
+      venomSac: 'Venom Sac',
+      gills: 'Gills',
+      claw: 'Claw',
+      horn: 'Horn',
+      tusk: 'Tusk',
+      meat: 'Meat',
+      cloth: 'Cloth',
+    },
+    // Intentional Gathering PR3, corpse-status-contract.md: the corpse
+    // popup's harvest section now shows the ONE remembered global preference
+    // plus its live status against THIS body (denial, reservation,
+    // concentration benefit) and a Change entry into the shared preference
+    // picker, replacing the per-tag checkbox section above. The keys above
+    // stay live for Town Focus (which reuses the components map) and for the
+    // retired-picker's own defensive arms; nothing above is removed.
+    preferenceLabel: 'Harvest preference: {preference}',
+    changeButton: 'Change',
+    // Live placeholders off the real admission constants
+    // (sim/professions/harvest_admission.ts HARVEST_CAST_SECONDS/
+    // HARVEST_PRIORITY_SECONDS), never a hardcoded duration; the painter
+    // resolves both through formatNumber. States the real rules (a timed
+    // cast, the kit requirement, the once-per-corpse claim, the kill-credit
+    // priority window, and that ordinary loot is untouched) rather than
+    // promising a specific material: All is a real preference choice too.
+    harvestActionTooltip:
+      'Harvests with your current preference over {seconds} seconds. Requires a Field Kit. Each body can be harvested once. The killer and their party have priority for {prioritySeconds} seconds. Dropped loot stays available.',
+    checkingStatus: 'Checking harvest status...',
+    statusUnavailable: 'Harvest status is not available right now.',
+    harvestStarting: 'Starting harvest...',
+    // Never a quantity/specimen promise: gathers what the body carries, not a
+    // guaranteed amount of it.
+    allBenefit: 'Gathers every available material from this body.',
+    focusBenefit: 'Focuses the harvest on {material}.',
+    tierBonusHint: 'Focuses the harvest on {material}: +{tierBonus} tier over All materials.',
+    denial: {
+      actorDead: 'You must be alive to harvest.',
+      actorInCombat: 'You cannot harvest while in combat.',
+      actorBusy: 'You are already busy.',
+      corpseInvalid: 'This corpse can no longer be harvested.',
+      wrongWorld: 'This corpse is not in your world.',
+      outOfRange: 'Move closer to harvest this body.',
+      noFieldKit: 'You need a Field Kit to harvest.',
+      reservedSelf: 'You are already harvesting this body.',
+      reservedOther: '{name} is harvesting this body.',
+      // A reservation the query cannot yet name (missing/blank name): the
+      // honest generic line rather than a sentence with a blank subject.
+      reservedOtherUnknown: 'Another player is harvesting this body.',
+      priorityProtected: 'Another player has priority on this body right now.',
+      corpseExpiring: 'This body will not last long enough to harvest.',
+      preferenceMalformed: 'Your harvest preference is invalid. Choose one to continue.',
+      nothingToHarvest: 'This body has nothing your Field Kit can harvest.',
+      materialUnavailable: '{material} is not on this body.',
+      materialUnavailableWithList: '{material} is not on this body. Available: {materials}.',
+      bagsFull: 'Your bags are too full to harvest.',
+      malformedInput: 'Something went wrong. Try again.',
+    },
+  },
+  // #1143: persistent town focus allocation panel. Reuses the corpseHarvest
+  // component-name map above for consistency; only town-focus-specific copy
+  // lives here.
+  townFocus: {
+    title: 'Town Focus',
+    hint: "Focus points add a bonus on top of every component's baseline yield. Unfocused components stay at baseline.",
+    // Tier legibility: the tier-shift rule ({points} = POINTS_PER_TIER_BONUS,
+    // {steps} = MAX_FOCUS_TIER_BONUS) and the town-only rule, always visible.
+    tierHint:
+      'Every {points} points on a component raise its harvest tier one step, up to {steps} steps; fewer than {points} points still boost the yield.',
+    townOnlyHint: 'Focus can only be changed while you are in town.',
+    budgetLabel: 'Points remaining: {remaining} / {budget}',
+    saveButton: 'Save Focus',
+    notInTownHint: 'You must be in town to set your focus.',
+    increaseAria: 'Increase focus on {component}',
+    decreaseAria: 'Decrease focus on {component}',
+    // #1144 re-spec cost model: the payment-tier picker and its cost preview,
+    // shown above Save. {coin}/{materials} are pre-formatted (formatMoney /
+    // formatNumber + the material item's localized name), matching the
+    // pre-formatted-placeholder idiom budgetLabel/tierHint already use above.
+    respecTierLabel: 'Re-spec speed',
+    respecTierTimeOption: 'Free (take your time)',
+    respecTierPartialOption: 'Faster (small cost)',
+    respecTierInstantOption: 'Instant (full cost)',
+    respecCostFree: 'Free',
+    respecCostLine: 'Costs {coin} and {materials}',
+  },
+  // The shared corpse-harvest preference picker (Intentional Gathering PR3):
+  // one radio choice of All or a single material, reused unmodified by the
+  // Field Kit use, Professions, and corpse Change entrances. A setting only:
+  // no cost, kit requirement, or harvest-outcome text lives here.
+  harvestPreference: {
+    title: 'Harvest Preference',
+    allLabel: 'All materials',
+    applyButton: 'Apply',
+    cancelButton: 'Cancel',
+    // Shown whenever nothing is currently selected: a malformed saved
+    // preference or one naming a material this list does not offer, both of
+    // which ask for an explicit new choice rather than defaulting to All.
+    pickHint: 'Choose what to harvest before applying.',
+    // {material} is either the stored material's localized name or, when it
+    // no longer resolves to a real material, unknownMaterial below.
+    currentUnavailable: 'Your current choice, {material}, is not offered here.',
+    unknownMaterial: 'Unavailable material',
+    // The Professions entry button's remembered-choice subtitle (#2510-shaped
+    // shared picker): {choice} is allLabel, a real material's localized name,
+    // or unknownMaterial, never a raw internal id.
+    currentChoiceLabel: 'Current: {choice}',
+  },
+  // Source-info detail shown under the GENERAL harvest-preference picker
+  // (Field Kit use, Professions) beside the currently drafted material row
+  // only, never on the corpse Change picker: Intentional Gathering PR5.
+  // Every {creature}/{zone}/{material} value is a pre-resolved display name,
+  // never a raw internal id.
+  gatheringSource: {
+    title: 'Where to find {material}',
+    corpseExample: '{creature} ({zone})',
+    corpseExampleTagged: '{creature} ({zone}, {tag})',
+    rareTag: 'rare',
+    eliteTag: 'elite',
+    gatedTag: 'quest-gated',
+    moreSources: 'and {count} more',
+    moreZones: 'and {count} more zones',
+    // {material} and {specimen} are both resolved item display names (the
+    // wording concept: "Rare or better Rough Hide harvests also yield
+    // Pristine Hide when there is room in your bags"). Named by the actual
+    // materials, never by the internal component tag, and stated as a
+    // chance on the roll itself, never a prediction about one corpse.
+    premiumChance:
+      'Rare or better {material} harvests also yield {specimen} when there is room in your bags.',
+    // Shown on a SPECIMEN's own source detail (viewing the specimen item
+    // directly, not the base material it rides on): {material} is the
+    // specimen's own display name, {base} the base material's. States the
+    // condition and the underlying material honestly: never implies the
+    // specimen is a separate guaranteed harvest or promises a specific body.
+    specimenOfBase:
+      '{material} is a rare or better harvest bonus from {base}, from the same creatures shown above, never a separate guaranteed find.',
+    // {zone} and {tier} name the CHEAPEST real vein this zone actually
+    // ships (the lowest GatherNodeDef.tier that yields this material there),
+    // never a blanket "any tool" claim.
+    nodeZone: '{zone} (tier {tier}+ tool)',
+    nodeFineNote:
+      'A gathering tool of tier {tier}+ upgrades this to its fine grade at a matching vein.',
+    farmNote:
+      'Grown from a planted seed, ready after about {duration}. Needs farming skill {skill}+ and a tier {tier}+ hoe.',
+    // {skill} is the fishing proficiency effectiveFishingBand needs to reach
+    // this catch's band; {tier} is the rod tier that band, or the zone's own
+    // access gate, actually demands (whichever is stricter).
+    fishingZoneProven: '{zone} waters (proficiency {skill}+, rod tier {tier}+)',
+    fishingZoneUnproven:
+      'Some waters need proficiency {skill}+ and rod tier {tier}+; no specific spot is confirmed yet.',
+  },
+  // The persistent gathering goal panel (Intentional Gathering PR4): a
+  // compact "what am I collecting for" readout, tracked from the crafting
+  // window's own Track control or the commission board's Track control, and
+  // cleared explicitly. It never selects or applies a harvest preference on
+  // its own; setPreferenceButton is the one explicit shortcut to that other
+  // setting.
+  gatheringGoal: {
+    title: 'Gathering Goal',
+    // The Clear button's full accessible name (aria-label). The visible
+    // label is the short clearButton below: the panel is rail-width, and a
+    // header row wide enough for the whole sentence pushed the title down to
+    // a few illegible characters.
+    close: 'Clear gathering goal',
+    clearButton: 'Clear',
+    empty: 'No gathering goal set.',
+    // {name} the localized result item name, {count} the TOTAL OUTPUT units
+    // (craftCount * recipe.resultCount), never the raw craft count alone.
+    recipeGoalLabel: '{name} x{count}',
+    commissionGoalLabel: 'Commission: {name} x{count}',
+    // Shown beside the label ONLY when the recipe's own resultCount makes the
+    // craft count and the total output diverge (a stack recipe), so the
+    // output figure above is never mistaken for how many crafts are queued.
+    craftCountLine: '{count} crafts tracked',
+    unknownRecipeLabel: 'Unknown recipe',
+    // The header title when a PERSISTED goal selection is invalid (goal null,
+    // but a reason is present): distinct from true no-selection, which hides
+    // the panel entirely (see renderGatheringGoalPanel's own contract).
+    invalidGoalLabel: 'No longer tracked',
+    statusCollecting: 'Collecting',
+    statusReady: 'Ready',
+    statusUnavailable: 'Unavailable',
+    statusDelivered: 'Delivered',
+    statusCancelled: 'Cancelled',
+    statusExpired: 'Expired',
+    // Ready means the listed materials are on hand; it promises nothing about
+    // gold, a station, or bag space (root CLAUDE.md's gameplay-neutral
+    // wording rule applies to this text too: state the fact, not the promise
+    // the fact does not make).
+    readyHint: 'Materials on hand. Crafting still needs gold, a station, and bag space.',
+    reasonInvalidGoal: 'This goal is no longer valid.',
+    reasonUnknownRecipe: 'That recipe no longer exists.',
+    reasonRecipeUnavailable: 'That recipe is no longer available to you.',
+    // A full reload always drops the client's tracking link even when the
+    // accepted commission order itself still exists server-side, so this
+    // must not claim the order is gone: it tells the player where to look.
+    reasonCommissionUnavailable:
+      'That commission is no longer tracked. Track it again from the board if it is still listed.',
+    reasonDailyLimit: 'That recipe has already been crafted today.',
+    reasonBatchLimit: 'That batch size is no longer valid.',
+    materialLine: '{name}: {reachable} of {required}',
+    // Carried and in-storage are ALWAYS rendered (they are the row's own
+    // allocation breakdown, not a warning that only appears on shortfall,
+    // which is what missing/inaccessible below are).
+    materialCarried: '{count} carried',
+    materialStored: '{count} in storage',
+    materialMissing: '{count} missing',
+    // Covers BOTH a stored unit outside this container's reach AND a locked
+    // carried slot: never claim every unit counted here is in storage.
+    materialInaccessible: '{count} unavailable for crafting',
+    storageRestrictedNote: 'Some materials are in storage you cannot reach from here.',
+    payableCraftsLine: 'Enough on hand for {count} more.',
+    setPreferenceButton: 'Set as harvest preference',
+    setPreferenceButtonAria: 'Set {name} as your harvest preference',
+    // Shown INSTEAD of setPreferenceButton/setPreferenceButtonAria when the
+    // row's target is already the active preference (row.isCurrentHarvestPreference,
+    // read from the authoritative world mirror): a disabled, read-only state,
+    // never a second Set action for the same target.
+    currentPreferenceLabel: 'Current harvest preference',
+    currentPreferenceAria: '{name} is your current harvest preference',
+    // The per-material "Sources" disclosure (Intentional Gathering PR5): a
+    // native <details>/<summary> label, so no separate aria-expanded copy is
+    // needed (the browser announces the disclosure state on its own).
+    sourcesToggle: 'Sources',
+    // The disclosure's accessible name: every row shares the visible label
+    // "Sources" (rail-width), so a screen reader hears "Sources for {name}"
+    // per row instead of an unhelpful repeated "Sources, Sources, Sources".
+    sourcesToggleAria: 'Sources for {name}',
+  },
+  // Party leadership: the right-click "Promote to Leader" handoff action shown on a
+  // party member's context menu to the current leader. Lives in the English-only
+  // hud_chrome domain so an English-only PR compiles; the new-leader announcement
+  // itself is a sim emit re-localized through localizeSystemText (hud.logs.partyLeader).
+  party: {
+    promoteLeader: 'Promote to Leader',
+    // The global "/invite <name>" usage hint shown when the command is typed
+    // without a name (the invite itself has no proximity gate).
+    inviteUsage: 'Invite whom? Usage: /invite <name>.',
+  },
+  // The player context menu (click a name in chat, or right-click a unit frame).
+  // Ignore is the chat-only tier: it hides their public chat from you (its
+  // Ignore/Unignore labels are the existing hud.chat.context.* keys). Block is the
+  // heavy tier: it also drops invites, whispers, mail and /who visibility.
+  // Neither is the ADMIN "mute", which is a staff silence, not a player action.
+  playerMenu: {
+    info: 'Player Info',
+    block: 'Block',
+    unblock: 'Unblock',
+    // Accessible name on a clickable chat sender name.
+    openFor: 'Open player menu for {name}',
+    // Shown when a profile lookup for an out-of-range player finds nothing.
+    profileUnavailable: 'No profile found for {name}.',
+    // Operator-set account flair. The tag itself is the bracketed literal every
+    // classic client shows beside a name; the title is its hover explanation.
+    aiTag: '[AI]',
+    aiTagTitle: 'AI-operated account',
+    // Player-menu rows linking out to an official streamer's own channel.
+    watchTwitch: 'Watch on Twitch',
+    watchX: 'View on X',
+    watchKick: 'Watch on Kick',
+    watchYouTube: 'Watch on YouTube',
+    // The chat-line badge marking a verified streamer's name; opens the same
+    // player menu the name itself opens, with the channel link(s) up top.
+    streamerBadgeTitle: 'Verified streamer',
+  },
+  lootSettings: {
+    title: 'Loot Settings',
+    close: 'Close loot settings',
+    menuItem: 'Loot Settings',
+    method: 'Loot Method',
+    rollThreshold: 'Roll Threshold',
+    groupLoot: 'Group Loot',
+    valueMaster: 'Master Loot',
+    leaderOption: 'Master Looter: Leader (You)',
+    masterOption: 'Master Looter: {name}',
+  },
+  // Self-portrait context menu: the dungeon-difficulty toggle (classic
+  // portrait-menu placement). The labels are ACTION labels (what clicking
+  // does); shown only to solo players and party leaders, since the sim
+  // rejects the change from anyone else.
+  dungeonDifficulty: {
+    setHeroic: 'Set Dungeon Difficulty: Heroic',
+    setNormal: 'Set Dungeon Difficulty: Normal',
+    resetAll: 'Reset All Instances',
+    resetDone: 'All instances have been reset.',
+    resetNone: 'You have no instances to reset.',
+    resetOccupied: 'You cannot reset instances while someone is still inside.',
+    resetSameDifficulty:
+      'Change dungeon difficulty before resetting these instances. Empty instances reset on their own after 5 minutes.',
+    resetLoot: 'You cannot reset instances while loot remains inside.',
+    resetConfirmTitle: 'Reset All Instances?',
+    resetConfirmBody:
+      'This abandons empty instances from your previously selected difficulty. Unclaimed loot will prevent the reset.',
+    resetConfirm: 'Reset Instances',
+    resetCooldown: 'Instances can only be reset once every 5 minutes.',
+    resetUsage: 'Use /dungeon reset to abandon your empty instances after changing difficulty.',
+    entryMismatchNormal:
+      'This instance is set to Normal difficulty. Use Reset All Instances to start a fresh Heroic run.',
+    entryMismatchHeroic:
+      'This instance is set to Heroic difficulty. Use Reset All Instances to start a fresh Normal run.',
+  },
+  // Modular bag filtering controls: the category chips, sort dropdown, and live
+  // search above the bag grid, plus the "no items match" empty state.
+  bags: {
+    // Right-click destroy affordance: rejected when the item is flagged noDiscard
+    // (soulbound quest keys, etc.), which the sim's discardItem also refuses.
+    cannotDestroy: 'This item cannot be destroyed.',
+    // Tooltip sub-line advertising the right-click destroy affordance, shown only
+    // for a destroyable item so junk is removable without hunting for a menu.
+    // DEAD: right-click now uses/equips (the classic binding) and destroying is the
+    // drag-out gesture below. Kept so the locale overlays keep resolving; drop it
+    // (and its overlay rows) at the next locale fill.
+    rightClickDestroy: 'Right-click to destroy',
+    // Tooltip sub-lines for the two drag gestures that replaced right-click-destroy:
+    // drag a gear piece onto the character sheet to equip it, drag any destroyable
+    // stack out onto the world to throw it away (which opens the destroy prompt).
+    dragEquipHint: 'Drag onto your character to equip',
+    dragDestroyHint: 'Drag out into the world to destroy',
+    // Refusal when a stack is dropped on a square of a FILTERED / SEARCHED / SORTED grid:
+    // that grid is a derived list, its squares hold no bag position, so honoring the drop
+    // would move a stack the player never aimed at. Say so instead of doing nothing.
+    reorderNeedsRecent: 'Clear the filter and sort by Recent to rearrange your bags',
+    // Accessible-name arm of the instanced-slot corner marker: the
+    // visual tab is aria-hidden, so the per-copy flag rides the cell's label
+    // (the tooltip on focus stays the detail surface).
+    itemAriaInstanced: '{item}, quantity {count}, maker-marked copy',
+    // Per-kind accessible names for the bag corner glyphs
+    // (src/ui/bag_instance_glyph_view.ts decides the kind). The glyph itself is
+    // aria-hidden, so the CELL's name is what carries the fact: without these
+    // an enchanted or bound copy announced as "maker-marked copy", which is
+    // both a mislabel and less than the three distinguishable glyphs a sighted
+    // player gets. A signed copy keeps itemAriaInstanced above (that wording is
+    // accurate for it), as does an instanced copy of no recognized kind.
+    itemAriaEnchanted: '{item}, quantity {count}, enchanted copy',
+    itemAriaBound: '{item}, quantity {count}, bound copy',
+    // Accessible-name sibling for the authored masterwork seal. Keep the whole
+    // phrase in one key so punctuation and status placement remain localizable.
+    itemAriaMasterwork: '{item}, quantity {count}, masterwork',
+    // Accessible-name arm of the quest-purpose bag mark (bag_quest_mark_view.ts):
+    // the corner seal is aria-hidden, so the CELL's name carries the quest fact
+    // that the rim/wash/seal show sighted players. Purpose class, not a quality
+    // tier; whole sentence in one key so punctuation stays localizable.
+    itemAriaQuest: '{item}, quantity {count}, quest item',
+    // Accessible-name arm of the player item lock (issue #3042,
+    // src/sim/item_lock.ts): outranks every other per-copy announcement, since
+    // the locked fact is the most actionable one for a bag/bank cell.
+    itemAriaLocked: '{item}, quantity {count}, locked',
+    // The tooltip line for a locked copy (item_instance_tooltip.ts instanceLockLine).
+    itemLockedLine: 'Locked',
+    // Context-menu row labels for the lock toggle (bag_item_context_menu.ts).
+    lockItem: 'Lock Item',
+    unlockItem: 'Unlock Item',
+    filterGroupAria: 'Filter bags by category',
+    filterAll: 'All',
+    filterWeapon: 'Weapons',
+    filterArmor: 'Armor',
+    filterConsumable: 'Consumables',
+    filterMaterial: 'Materials',
+    filterTool: 'Tools',
+    filterQuest: 'Quest',
+    // Accessible name for the Quest chip when the bag holds quest pieces: the
+    // visible count badge is aria-hidden, so this whole phrase carries the
+    // number for assistive tech. {count} is already formatNumber'd by the host.
+    filterQuestCountAria: 'Quest, {count} items',
+    filterMount: 'Mounts',
+    sortAria: 'Sort bag items',
+    sortRecent: 'Recent',
+    sortQuality: 'Quality',
+    sortName: 'Name',
+    // The one-shot clean-up button beside the view controls: combines partial
+    // stacks and rearranges the real cells server-side (IWorldInventory
+    // sortInventory), unlike the view-only dropdown above it.
+    sortButton: 'Sort',
+    sortButtonAria: 'Sort your bags',
+    sortButtonHint: 'Combine stacks and group items by type',
+    searchPlaceholder: 'Search items',
+    searchAria: 'Search bag items by name',
+    noMatch: 'No items match your filters.',
+    // Warm empty copy when the Quest category chip matches nothing. Purpose
+    // class, not a broken filter: the bag simply holds no quest pieces.
+    noQuestItems: 'No quest items in your bags.',
+    // The bag bar (backpack + 4 equip sockets) and the used/capacity counter.
+    capacity: '{used}/{total}',
+    capacityAria: 'Bag slots used: {used} of {total}',
+    backpack: 'Backpack',
+    // Accessible name for a bag-bar socket: '{name}: {slots}' where {slots} is
+    // the already-localized 'N Slot Bag' phrase, so no code-side concatenation.
+    bagSocketAria: '{name}: {slots}',
+    socketEmpty: 'Empty bag slot',
+    unequipHint: 'Click to remove this bag',
+    // Per-pool truth for the carried counter (Bank Storage phase 08): the
+    // counter's tooltip and split aria name both pools, because the summed
+    // {used}/{total} can read past its denominator in the tolerated-overflow
+    // state while one pool refuses pickups. Values are resolved pool numbers.
+    // (Wordy values, M16: the five non-Latin fills land in this same change.)
+    poolGeneral: 'General: {used} of {total}',
+    poolMaterials: 'Materials: {used} of {total}',
+    capacityPoolsAria:
+      'Bag slots used: {used} of {total}. General items: {generalUsed} of {generalTotal}. Materials: {materialsUsed} of {materialsTotal}.',
+    // Issue #3795: with a satchel equipped the counter names both pools INLINE
+    // (an item pickup can be refused while the summed pair reads roomy), and
+    // the empty squares only a material may take say so on hover.
+    // (Wordy values, M16: the five non-Latin fills land in this same change.)
+    capacityPools: 'Items {generalUsed}/{generalTotal}, Materials {materialsUsed}/{materialsTotal}',
+    emptyMaterialsOnly: 'Materials only',
+  },
+  // Raid -> party demotion (Social panel raid tab). The sim emits these in English;
+  // src/ui/sim_i18n.ts re-localizes them through these keys. Mirrors the existing
+  // convert-to-raid messages (which live in sim_i18n's RAID_EXTRA table). Lives here
+  // in the English-only hud_chrome domain so an English-only PR compiles.
+  raidConvert: {
+    toPartyDone: 'Your raid has converted back to a party.',
+    notRaid: 'Your group is not a raid.',
+    leaderOnly: 'Only the raid leader may convert to a party.',
+    tooLarge: 'A raid with more than five members cannot convert back to a party.',
+  },
+  // Armor subtype shown on an armor item's slot line (classic shows the slot on the
+  // left, the armor class on the right). Resolved from src/ui/item_armor_type.ts via
+  // the sim's armorTypeForItem; tells the player which classes the gear is meant for.
+  itemArmorType: {
+    cloth: 'Cloth',
+    leather: 'Leather',
+    mail: 'Mail',
+  },
+  // Buff/debuff hover tooltip effect line: a one-line summary of what the active
+  // aura does, shown under its name and remaining time. Numbers are spliced in via
+  // formatNumber as {value}/{pct}/{interval}/{stacks}/{min}/{max}; {school} is the
+  // localized damage-school name (see schools below). Keys are produced by the pure
+  // aura_effect.ts descriptor; render via t('hudChrome.auraEffect.<key>', values).
+  varkhulCallout: {
+    leftPillarCharging: 'The left forge pillar is charging. It will ignite in 3 sec!',
+    rightPillarCharging: 'The right forge pillar is charging. It will ignite in 3 sec!',
+    bothPillarsCharging: 'The forge pillars are charging. They will ignite in 3 sec!',
+    artificerApproaches: 'A Cinder Artificer is approaching the forge!',
+    leftPillar: 'The left forge pillar ignites!',
+    rightPillar: 'The right forge pillar ignites!',
+    bothPillars: 'The forge pillars ignite!',
+    portalsOpening: 'The forge portals are opening!',
+    heat75: 'The forge is at 75% heat!',
+    heat90: 'Forge Meltdown is imminent!',
+    addsDefeated: 'The forge legion is defeated: Varkhul is exposed!',
+    worldfireBegins:
+      'Worldfire ignites at the edge of the room. The crucible will be consumed in 42 sec!',
+    worldfireClosing: 'Worldfire closes in. Move toward the center!',
+    worldfireConsumed: 'The entire crucible is burning!',
+  },
+  // Nythraxis raid callouts (the structured nythraxisCallout SimEvent, keyed by
+  // src/ui/nythraxis_callout.ts): the room-wide spike call, the victim's own
+  // line, the freed-spike resolution, and the encounter's targeted warnings.
+  nythraxisCallout: {
+    impaled: 'Bone Spikes! Free the impaled!',
+    youAreImpaled: 'You are impaled! Hold on!',
+    spikeBroken: 'Spike shattered!',
+    dreadCurseSwap: 'Dread Curse: swap tanks!',
+    sigilAppears: 'A Binding Sigil flares! Drag Nythraxis onto it!',
+    sigilBound: 'Nythraxis is bound! Burn him!',
+    sigilUnbound: 'The sigil fades unbound! Nythraxis grows stronger!',
+    gravefireTarget: 'Gravefire races toward you! Sidestep!',
+    kingsWrath: 'The King rises in wrath! Everything hits harder now!',
+    boneStormBegins: 'Bone Storm! Spread out and run!',
+    boneStormCharge: 'Nythraxis is charging YOU! Run!',
+    boneStormEnds: 'Bone Storm over. Tanks, pick him up!',
+    crownEndures60: 'One minute until The Crown Endures!',
+    crownEndures30: 'Thirty seconds until The Crown Endures!',
+    crownEndures10: 'Ten seconds! Burn him!',
+    crownEndures: 'The Crown Endures! Nythraxis is enraged!',
+  },
+  varkhulWaveStatus: 'Wave {wave}/{waves} | Enemies: {remaining}',
+  raidBossGuide: {
+    title: 'Boss Guide',
+    button: 'Boss Guide: {boss}',
+    subtitle: '{boss} | {difficulty}',
+    close: 'Close boss guide',
+    bossesLabel: 'Raid bosses',
+    difficultyLabel: 'Difficulty',
+    normal: 'Normal',
+    heroic: 'Heroic',
+    portraitAlt: '{boss} encounter portrait',
+    overviewHeading: 'Overview',
+    abilitiesHeading: 'Abilities',
+    whatToDo: 'What to do',
+    whatToDoResponse: 'What to do: {response}',
+    rolesLabel: 'Role responsibilities',
+    flagsLabel: 'Mechanic warnings',
+    roleTank: 'Tank',
+    roleHealer: 'Healer',
+    roleDamage: 'Damage',
+    roleAll: 'All roles',
+    flagDeadly: 'Deadly',
+    flagInterruptible: 'Interruptible',
+    flagImportant: 'Important',
+    flagCleansable: 'Cleansable',
+    browseBoss: 'View {boss}',
+    chooseDifficulty: 'View {difficulty} mechanics',
+    expandAbility: 'Expand {ability}',
+    collapseAbility: 'Collapse {ability}',
+    abilityControlLabel: '{action}. {details}',
+    tooltipMeta: '{phase} | {difficulty}',
+    ignivar: {
+      overview:
+        'Varkhul forged Ignivar as a herald, a living seal, and the key to the Inner Crucible. The encounter tests water-conduit control, precise movement, and fast priority damage.',
+      phaseOpeningName: 'The Herald Awakens',
+      phaseOpeningSummary:
+        "Control Brand of the Pyre with the water conduits while handling Ignivar's repeating frontal, skyfire, rotating rays, and expanding Forge Wave.",
+      phaseApocalypseName: 'Intermission: Apocalypse',
+      phaseApocalypseSummary:
+        'At {health} health, Ignivar calls an Ashcaller that attempts to end the encounter.',
+      phaseJudgmentName: 'Judgment of the Forge',
+      phaseJudgmentSummary:
+        'At {health} health, Ignivar ignites the arena and reveals one safe refuge among three shelters.',
+      phaseJudgmentHeroicSummary:
+        'At {health} health, Ignivar ignites the arena while active Brands continue to threaten nearby players inside the refuge.',
+      phaseFinaleName: 'Finale: Last Inferno',
+      phaseFinaleSummary:
+        'At {health} health, Ignivar begins a final burn phase with a hard deadline and faster repeating mechanics.',
+      forgeStrikeName: 'Forge Strike',
+      forgeStrikeSummary:
+        'Ignivar strikes his current tank and applies Molten Armor, increasing damage taken from Ignivar.',
+      forgeStrikeResponse:
+        "Tanks swap at {stacks} stacks. Healers prepare for the strike and the new tank's first melee swings.",
+      brandName: 'Brand of the Pyre',
+      brandSummary:
+        'Ignivar marks non-tank players with persistent fire damage. Branded players also burn nearby allies.',
+      brandResponse:
+        'Spread out. Aim Searing Torrent into a ready water conduit, then have each marked player cross the activated water alone to cleanse.',
+      brandHeroicResponse:
+        'Spread out. Open a conduit with Searing Torrent and cleanse one marked player at a time. Every cleanse triggers raid-wide Cleansing Backlash.',
+      searingTorrentName: 'Searing Torrent',
+      searingTorrentSummary:
+        'Ignivar tracks a player, then releases a wide frontal blast. A ready water conduit struck by the blast becomes active for a short time.',
+      searingTorrentHeroicSummary:
+        'Ignivar tracks a player, then releases a nearly lethal frontal blast. A ready water conduit struck by the blast becomes active for a short time.',
+      searingTorrentResponse:
+        'Aim the warning through exactly one ready conduit. Everyone else leaves the frontal before the cast completes.',
+      rainName: 'Rain of Cinders',
+      rainSummary:
+        'Three fire sectors and marked meteor impacts punish players who remain inside their warnings.',
+      rainHeroicSummary:
+        'Three fire sectors and marked meteor impacts deal extreme damage to players who remain inside their warnings.',
+      rainResponse: 'Move into an unmarked gap and leave every meteor circle before impact.',
+      raysName: 'Revolving Inferno',
+      raysSummary:
+        'Rotating fire rays sweep around Ignivar and repeatedly damage players who touch them.',
+      raysHeroicSummary:
+        'Rotating fire rays sweep around Ignivar and inflict severe repeated damage on contact.',
+      raysResponse:
+        'Move with the open space between rays. Do not cut through a ray, even with a fast movement ability.',
+      forgeWaveName: 'Forge Wave',
+      forgeWaveSummary:
+        'An expanding wall of fire crosses the arena, leaving two opposite gaps and knocking back players it hits.',
+      forgeWaveHeroicSummary:
+        'An expanding wall of fire crosses the arena, leaving two opposite gaps and knocking hit players much farther.',
+      forgeWaveResponse:
+        'Find either gap during the windup, align with it, and avoid being knocked toward the arena edge.',
+      apocalypseName: 'Apocalypse',
+      apocalypseSummary:
+        'Ignivar summons an Ashcaller. If the add finishes Apocalypse, the raid is defeated immediately.',
+      apocalypseResponse:
+        'Switch all available damage to the Ignivar Ashcaller and defeat it before the cast completes.',
+      judgmentName: 'Judgment of the Forge',
+      judgmentSummary:
+        'Ignivar marks three shelters, identifies one safe refuge, and then repeatedly burns the rest of the arena.',
+      judgmentHeroicSummary:
+        'Ignivar marks one safe refuge while the arena burns. Brand of the Pyre remains active and still damages nearby allies.',
+      judgmentResponse:
+        'Identify the uniquely marked refuge during the warning and stack fully inside its boundary before the floor ignites.',
+      chainsName: 'Chains of the Forge',
+      chainsSummary:
+        "Ignivar links nearby pairs. Separating too far or crossing another pair's chain causes lethal damage.",
+      chainsResponse:
+        'Stay close to your linked partner, move together, and keep every other player from passing through your chain.',
+      lastInfernoName: 'Last Inferno',
+      lastInfernoSummary:
+        'Ignivar enrages and prepares a hard wipe while Rain of Cinders, Searing Torrent, and Revolving Inferno accelerate.',
+      lastInfernoResponse:
+        'Use remaining damage and healing cooldowns, keep executing the movement mechanics, and defeat Ignivar before the countdown ends.',
+      // Kept as catalog aliases until the existing locale overlays migrate to
+      // the structured journal rows above. The runtime guide no longer reads them.
+      brand:
+        'Brand of the Pyre: spread out. Aim Searing Torrent into a ready water conduit, then cross the water alone to cleanse.',
+      movement:
+        "Movement: avoid Rain of Cinders cones and meteors, move with Revolving Inferno, and use Forge Wave's two gaps.",
+      apocalypse: 'Apocalypse: kill Ignivar Ashcaller before its cast completes.',
+      judgment:
+        'Judgment of the Forge: identify the unique refuge during the warning, then stack inside its marked boundary when the floor ignites.',
+      finale:
+        'Last Inferno: finish Ignivar before the hard wipe while faster meteors, frontals, and Revolving Inferno continue.',
+      heroic:
+        'Heroic: paired players stay close during Chains of the Forge, Brand remains active inside Judgment, and Forge Wave pushes farther.',
+    },
+    varkhul: {
+      overview:
+        'Varkhul imprisoned the dying Last Spring to forge living metal, then created Ignivar to guard the crime. His encounter combines personal positioning with raid-wide control of the grand forge.',
+      phaseOpeningName: 'The Forgefather',
+      phaseOpeningSummary:
+        'Varkhul cycles tank pressure, wide frontals, moving projectiles, group soaks, meteor waves, and attacks from the grand anvil.',
+      phaseAssemblyName: "Intermission: The Master's Assembly",
+      phaseAssemblySummary:
+        'At {health} health, Varkhul becomes protected while his forge legion enters through portals and the pillar beams threaten a Forge Meltdown.',
+      phaseFinaleName: 'Finale: Masterpiece Unbound',
+      phaseFinaleSummary:
+        'At {health} health, Varkhul attacks faster, deals more damage, and pulses fire through the raid until the final deadline.',
+      phaseFinaleHeroicSummary:
+        'At {health} health, Varkhul abandons most earlier mechanics as Worldfire closes inward and consumes the crucible.',
+      makersBrandName: "Maker's Brand",
+      makersBrandSummary:
+        'Varkhul strikes his current tank and applies a stacking effect that increases all damage taken from him.',
+      makersBrandResponse:
+        'Tanks swap at {stacks} stacks. Healers prepare the incoming tank before Varkhul changes targets.',
+      frontalName: "Forgefather's Sweep",
+      frontalSummary:
+        'Varkhul releases a very wide frontal sweep that deals heavy fire damage to everyone in front of him.',
+      frontalHeroicSummary:
+        'Varkhul releases a very wide frontal sweep that deals nearly lethal fire damage to everyone in front of him.',
+      frontalResponse:
+        'Keep Varkhul facing away from the group and move behind him as soon as the warning appears.',
+      orbsName: 'Cinder Orbs',
+      orbsSummary:
+        'Marked non-tanks drop persistent cinder pools and release fire orbs in every direction. Red-hot Metal also absorbs incoming healing.',
+      orbsHeroicSummary:
+        'Marked non-tanks drop highly damaging persistent cinder pools and release dangerous fire orbs in every direction. Red-hot Metal also absorbs incoming healing.',
+      orbsResponse:
+        'Carry each mark to the room edge, separate the pools, then dodge the orbs as they cross the arena. Healers clear the absorb quickly.',
+      pyreName: 'Shared Pyre',
+      pyreSummary:
+        'A moving circle follows one player without Red-hot Metal. Its damage is divided among players inside, and every missing player deals {missingPenalty} maximum-health damage to the entire raid.',
+      pyreHeroicSummary:
+        'A moving circle follows one player without Red-hot Metal and splits a larger hit. Every missing player also deals {missingPenalty} maximum-health damage to the entire raid.',
+      pyreResponse:
+        'Stack at least {players} players inside the circle and move with its target until the cast resolves.',
+      forgestormName: 'Forgestorm',
+      forgestormSummary:
+        'Varkhul calls down {waves} consecutive waves of marked meteor impacts across the arena.',
+      forgestormHeroicSummary:
+        'Varkhul calls down {waves} consecutive waves of marked meteor impacts that deal extreme damage.',
+      forgestormResponse:
+        'Watch each new set of ground warnings and move out before that wave lands. Do not return to a previous position without checking the next wave.',
+      rayName: 'Tempering Ray',
+      raySummary:
+        'A ray tracks a marked player for a long windup. The first other player between Varkhul and the target intercepts the hit and receives Tempered Wound.',
+      rayResponse:
+        'Assign a healthy player, usually the off-tank, to step into the line. Keep other players out and rotate interceptors while Tempered Wound is active.',
+      anvilName: "Anvil's Decree",
+      anvilSummary:
+        'Varkhul walks to the grand forge and strikes it {strikes} times, dealing increasing raid-wide damage.',
+      anvilHeroicSummary:
+        'Varkhul strikes the grand forge {strikes} times for increasing raid damage while marked meteors fall on players.',
+      anvilResponse: 'Group for raid healing and use defensive cooldowns for the final strike.',
+      anvilHeroicResponse:
+        'Spread marked meteors away from the group while healers and defensive cooldowns cover all {strikes} strikes.',
+      assemblyName: "The Master's Assembly",
+      assemblySummary:
+        'Varkhul becomes protected and starts a timed assembly. The raid must defeat every portal wave before the forge completes his masterpiece.',
+      assemblyResponse:
+        'Split attention between beam control and priority adds. Defeat the full forge legion before the assembly timer expires.',
+      beamName: 'Crucible Beam',
+      beamSummary:
+        'Active pillar beams heat the forge unless a player blocks them. Blockers take increasing damage from Crucible Exposure, while blocked and inactive beams let heat fall.',
+      beamHeroicSummary:
+        'Active pillar beams heat the forge unless a player blocks them. Blockers take increasing damage from Crucible Exposure, and forge heat never decreases.',
+      beamResponse:
+        'Stand between each active pillar and the forge, then rotate blockers before exposure becomes dangerous. Reaching full heat causes a lethal Forge Meltdown.',
+      legionName: 'Forge Legion',
+      legionSummary:
+        'Crucible Wardens cast Crucible Quake to add forge heat, while Cinder Artificers use Repair Protocol to heal Varkhul.',
+      legionResponse:
+        'Interrupt Crucible Quake, stop Repair Protocol, and focus each dangerous caster before clearing the remaining adds.',
+      masterpieceName: 'Masterpiece Unbound',
+      masterpieceSummary:
+        'Varkhul attacks faster, deals more damage, and repeatedly burns the raid until the final wipe.',
+      masterpieceHeroicSummary:
+        'Varkhul attacks faster and deals more damage while Worldfire replaces most earlier mechanics for the final burn.',
+      masterpieceResponse:
+        'Commit remaining offensive and defensive cooldowns and defeat Varkhul before the final countdown ends.',
+      worldfireName: 'Worldfire',
+      worldfireSummary:
+        'On Heroic, fire advances from the arena edge toward the center in stages until the entire crucible burns.',
+      worldfireResponse:
+        'Move inward ahead of each advancing fire band, preserve the shrinking safe space, and finish Varkhul before the center ignites.',
+      // Locale-overlay compatibility aliases. The structured rows above own the
+      // rendered journal, but deleting these keys would orphan current translations.
+      tanks: "Tanks: swap at two stacks of Maker's Brand and keep Varkhul in melee range.",
+      orbs: 'Cinder Orbs: marked players spread to the room edge. Their fire pools persist and the released orbs cross the room.',
+      pyre: 'Shared Pyre: only a player without Red-hot Metal is selected. Stack four players inside the moving circle in either difficulty. Each missing player deals 15% of maximum health to the entire raid.',
+      forgestorm:
+        'Forgestorm: watch the falling meteors and leave every marked impact before each of the three waves lands.',
+      anvil:
+        "Anvil's Decree: Varkhul moves to the grand forge and strikes it three times for raid damage. Heroic also drops marked meteors.",
+      ray: 'Tempering Ray: another player, usually a tank, intercepts the moving line before the long windup ends. The player hit receives Tempered Wound.',
+      forge:
+        'Forge pillars: block active beams before they reach the forge and rotate blockers as Crucible Exposure grows. A full heat meter causes Forge Meltdown.',
+      assembly:
+        "The Master's Assembly: block both forge beams, kill every portal wave, interrupt Crucible Quake, and stop Cinder Artificers from healing Varkhul.",
+      worldfire:
+        'Worldfire: on Heroic, the burning edge closes toward the center during the final phase. Defeat Varkhul before the whole crucible burns.',
+      heroic:
+        "Heroic: forge heat never cools, Anvil's Decree adds meteors, and the final phase removes most mechanics to focus on Worldfire.",
+    },
+    // Nythraxis (the Abandoned Crypt raid). Every number is a {token} the view
+    // fills from the sim constants (src/ui/raid_boss_guide_view.ts); the Normal
+    // and Heroic copies name their own tokens because the tuning differs per tier.
+    nythraxis: {
+      overview:
+        'High Priest Malric refused to let his king die, and the rite that raised Nythraxis bound the whole court to the crypt. The encounter tests a disciplined tank swap, fast switches onto Bone Spikes, movement off burning ground, and a coordinated wardstone channel once the Throne falls.',
+      phaseThroneName: 'The Throne',
+      phaseThroneSummary:
+        'Nythraxis holds his throne room with a charged frontal cleave, the Dread Curse tank swap, Bone Spikes that impale raiders, and Grave Eruptions that leave burning ground.',
+      phaseWardstonesName: 'The Wardstones',
+      phaseWardstonesSummary:
+        'At {health} health, Shuddering Stomp holds the raid still while Brother Aldric arrives and lights the wardstones. Every spike shatters and the floor stops burning, then Soul Rend and Deathless Rage join the Throne mechanics.',
+      phaseKingsWrathName: "The King's Wrath",
+      phaseKingsWrathSummary:
+        "At {health} health, Nythraxis roars in The King's Wrath and gains {bonusNormal} damage on Normal or {bonusHeroic} on Heroic for the rest of the fight. Grave Eruption tightens to every {eruptionEveryNormal} sec ({eruptionEveryHeroic} on Heroic) and Gravefire to every {gravefireEveryNormal} sec ({gravefireEveryHeroic} on Heroic). Every other mechanic keeps its cadence.",
+      gravebreakerName: 'Gravebreaker',
+      gravebreakerSummary:
+        'Every {seconds} sec, Nythraxis charges his next landed swing. His target takes only the swing itself, but everyone else within {range} yd inside the {arc} degree cone in front of him takes {splash} of that swing as Physical damage, reduced by their own armor.',
+      gravebreakerResponse:
+        'Tanks keep Nythraxis facing away from the raid. Everyone else stays behind or beside him and never crosses the cone.',
+      dreadCurseName: 'Dread Curse',
+      dreadCurseSummary:
+        'Every {every} sec, Nythraxis strikes his current tank for {hitNormal} of maximum health as Shadow damage and adds a stack of Dread Curse. For {duration} sec, each stack increases the damage that tank takes from Nythraxis by {perStackNormal}, up to {max} stacks.',
+      dreadCurseHeroicSummary:
+        'Every {every} sec, Nythraxis strikes his current tank for {hitHeroic} of maximum health as Shadow damage and adds a stack of Dread Curse. For {duration} sec, each stack increases the damage that tank takes from Nythraxis by {perStackHeroic}, up to {max} stacks.',
+      dreadCurseResponse:
+        'Tanks swap at {stacks} stacks: the other tank taunts and the cursed tank stays out of the Gravebreaker cone while the stacks fade. Healers prepare the incoming tank before the swap.',
+      boneSpikeName: 'Bone Spike',
+      boneSpikeSummary:
+        'Every {everyNormal} sec, Nythraxis impales {victimsNormal} raiders other than his current target on Bone Spikes. An impaled raider cannot act and loses {drainNormal} of maximum health every second until their spike is destroyed.',
+      boneSpikeHeroicSummary:
+        'Every {everyHeroic} sec, Nythraxis impales {victimsHeroic} raiders other than his current target on Bone Spikes. An impaled raider cannot act and loses {drainHeroic} of maximum health every second until their spike is destroyed.',
+      boneSpikeResponse:
+        'Damage dealers switch to the Bone Spikes at once and destroy them to free the impaled raiders. Healers keep the impaled alive while the spikes fall.',
+      graveEruptionName: 'Grave Eruption',
+      graveEruptionSummary:
+        'Every {everyNormal} sec, skeletal hands mark {countNormal} circles of {radius} yd under raiders. After {warning} sec each circle erupts for {burstNormal} of maximum health as Shadow damage, then burns as Grave Flame for {flameNormal} sec, dealing {tickNormal} of maximum health every second to anyone standing in it.',
+      graveEruptionHeroicSummary:
+        'Every {everyHeroic} sec, skeletal hands mark {countHeroic} circles of {radius} yd under raiders. After {warning} sec each circle erupts for {burstHeroic} of maximum health as Shadow damage, then burns as Grave Flame for {flameHeroic} sec, dealing {tickHeroic} of maximum health every second to anyone standing in it.',
+      graveEruptionResponse:
+        'Step out of every warning circle before it erupts and stay off the burning ground. Tanks pull Nythraxis clear of the flames so melee keeps room to work.',
+      bindingSigilName: 'Binding Sigil',
+      bindingSigilSummary:
+        'Every {everyNormal} sec, a sigil of the old wards flares on the floor {minDist} to {maxDist} yd from Nythraxis and he begins Deathless Ascension, gaining {ascensionNormal} damage and attack speed every {ascensionEvery} sec. If he stands on the sigil within {bindNormal} sec he is Bound: the Ascension is purged, he is stunned for {stunNormal} sec, and he takes {vulnerability} more damage for {boundNormal} sec. Otherwise every raider takes {unboundHitNormal} of maximum health as Shadow damage and he keeps {unboundBonusNormal} more damage until the next binding.',
+      bindingSigilHeroicSummary:
+        'Every {everyHeroic} sec, a sigil of the old wards flares on the floor {minDist} to {maxDist} yd from Nythraxis and he begins Deathless Ascension, gaining {ascensionHeroic} damage and attack speed every {ascensionEvery} sec. If he stands on the sigil within {bindHeroic} sec he is Bound: the Ascension is purged, he is stunned for {stunHeroic} sec, and he takes {vulnerability} more damage for {boundHeroic} sec. Otherwise every raider takes {unboundHitHeroic} of maximum health as Shadow damage and he keeps {unboundBonusHeroic} more damage until the next binding.',
+      bindingSigilResponse:
+        'The tank drags Nythraxis onto the sigil at once, through whatever fire the raid left behind. Melee follow the drag and ranged stay out of the new Gravebreaker cone. Everyone burns him while he is Bound.',
+      raiseFallenName: 'Raise Fallen',
+      raiseFallenSummary:
+        'Every {every} sec during The Throne, Nythraxis raises Risen Royal Guards behind him. They rush his current target and fight until they are destroyed.',
+      raiseFallenResponse:
+        'The off-tank picks up each wave as it rises. Damage dealers clear the guards between Bone Spikes so the waves never pile up before the Throne falls.',
+      soulRendName: 'Soul Rend',
+      soulRendSummary:
+        "Nythraxis marks {marksNormal} raiders other than his current target with Soul Rend. After {fuse} sec each mark deals its bearer's full maximum health as Shadow damage, divided by the number of marked raiders within {range} yd of them.",
+      soulRendHeroicSummary:
+        "Nythraxis marks {marksHeroic} raiders other than his current target with Soul Rend. After {fuse} sec each mark deals {damageHeroic} of its bearer's maximum health as Shadow damage, divided by the number of marked raiders within {range} yd of them. A mark that resolves alone is lethal.",
+      soulRendResponse:
+        'Every marked raider runs to one stack point and stands within {range} yd of the other marks before the {fuse} sec fuse ends. Healers top the group off as the marks resolve.',
+      soulfireName: 'Soulfire',
+      soulfireSummary:
+        'Every Soul Rend detonation leaves a pool of purple fire with a {radius} yd radius where each mark stood, burning for {seconds} sec at {tickNormal} of maximum health every second. Standing where pools overlap takes a tick from each one. Pools never form within {clearance} yd of a wardstone.',
+      soulfireHeroicSummary:
+        'Every Soul Rend detonation leaves one pool of purple fire with a {radius} yd radius per stacked group of marks, burning for {secondsHeroic} sec at {tickHeroic} of maximum health every second. Standing where pools overlap takes only one tick, never stacked copies. Pools never form within {clearance} yd of a wardstone.',
+      soulfireResponse:
+        'Move out of the purple pool as soon as the marks detonate. Keep the next stack point clear of active fire.',
+      gravefireName: 'Gravefire',
+      gravefireSummary:
+        'Every {everyNormal} sec, a line of violet grave-fire runs from Nythraxis toward a raider, growing {speed} yd every second to {length} yd. Each yard burns for {burnNormal} sec and deals {tickNormal} of maximum health every second to anyone standing in it.',
+      gravefireHeroicSummary:
+        'Every {everyHeroic} sec, a line of violet grave-fire runs from Nythraxis toward a raider, growing {speed} yd every second to {length} yd. Each yard burns for {burnHeroic} sec and deals {tickHeroic} of maximum health every second to anyone standing in it.',
+      gravefireResponse:
+        'Sidestep the line as it comes: it is narrow and never turns. Ranged raiders keep moving instead of standing in one spot.',
+      deathlessRageName: 'Deathless Rage',
+      deathlessRageSummary:
+        'Every {every} sec, Nythraxis casts Deathless Rage for {cast} sec. While he casts, each lit wardstone can be channeled by one raider for {channel} sec. If three different raiders each complete a wardstone before the cast ends, the Rage is interrupted and Nythraxis is stunned for {stun} sec. Otherwise every raider takes {damageNormal} of maximum health as Shadow damage.',
+      deathlessRageHeroicSummary:
+        'Every {every} sec, Nythraxis casts Deathless Rage for {cast} sec. While he casts, each lit wardstone can be channeled by one raider for {channel} sec. If three different raiders each complete a wardstone before the cast ends, the Rage is interrupted and Nythraxis is stunned for {stun} sec. Otherwise every raider takes {damageHeroic} of maximum health as Shadow damage, which no health pool survives.',
+      deathlessRageResponse:
+        'Assign one raider to each wardstone before the pull. When the cast begins, each runs to their stone and channels it until it completes. Stuns, stepping away, and death break the channel, so keep the channelers safe and never assign an impaled raider.',
+      courtName: 'The Deathless Court',
+      courtSummary:
+        "On Heroic, Nythraxis raises his court after each Deathless Rage, interrupted or not, once the previous court has fallen. The Spirit of Aldren cleaves everything near his target with Royal Cleave. The Spirit of Malric channels Malric's Mending, healing Nythraxis for more with every cast. The Spirit of Voss ignores taunts and hunts the raid.",
+      courtResponse:
+        "Tanks pick up Aldren and turn his cleave away from the raid. Stun or silence Malric the moment Malric's Mending begins and kill him first, then root or stun Voss off the healers, since he cannot be taunted, and finish him next.",
+      kingsWrathName: "King's Wrath",
+      kingsWrathSummary:
+        'Nythraxis deals {bonusNormal} more damage on Normal or {bonusHeroic} on Heroic for the rest of the fight. Grave Eruption occurs every {eruptionEveryNormal} sec ({eruptionEveryHeroic} on Heroic) and Gravefire every {gravefireEveryNormal} sec ({gravefireEveryHeroic} on Heroic).',
+      kingsWrathResponse:
+        'Use remaining defensive cooldowns for unavoidable damage. Keep every earlier mechanic clean while the raid finishes the fight.',
+      boneStormName: 'Bone Storm',
+      boneStormSummary:
+        "Starting {first} sec into The King's Wrath and every {everyNormal} sec after, Nythraxis begins Bone Storm for {duration} sec. He ignores threat, moves at {speed} times normal speed, and makes {charges} charges lasting {chargeSeconds} sec each. His whirl deals {whirlNormal} of maximum health every second within {radius} yd. Each charge ends in a Bone Slam within the same radius for {slamNormal} of maximum health. He casts Bone Spike {spikeAt} sec into the storm, then Gravebreaker re-arms {rearm} sec after it ends.",
+      boneStormHeroicSummary:
+        "Starting {first} sec into The King's Wrath and every {everyHeroic} sec after, Nythraxis begins Bone Storm for {duration} sec. He ignores threat, moves at {speed} times normal speed, and makes {charges} charges lasting {chargeSeconds} sec each. His whirl deals {whirlHeroic} of maximum health every second within {radius} yd. Each charge ends in a Bone Slam within the same radius for {slamHeroic} of maximum health. He casts Bone Spike {spikeAt} sec into the storm, then Gravebreaker re-arms {rearm} sec after it ends.",
+      boneStormResponse:
+        'Spread out and keep running from Nythraxis. The charged raider runs away while everyone else leaves room around the charge path, then tanks pick him up when the storm ends.',
+      crownEnduresName: 'The Crown Endures',
+      crownEnduresSummary:
+        'At {enrageNormal} sec from the pull (the clock pauses while Brother Aldric enters at 70%), The Crown Endures triggers as a hard enrage. Nythraxis gains {damage} more damage and {haste} faster attacks, then another {rampStep} damage every {rampEveryNormal} sec. There is no timer bar. Warnings come as yells at {warn60}, {warn30}, and {warn10} sec remaining.',
+      crownEnduresHeroicSummary:
+        'At {enrageHeroic} sec from the pull (the clock pauses while Brother Aldric enters at 70%), The Crown Endures triggers as a hard enrage. Nythraxis gains {damage} more damage and {haste} faster attacks, then another {rampStep} damage every {rampEveryHeroic} sec. There is no timer bar. Warnings come as yells at {warn60}, {warn30}, and {warn10} sec remaining.',
+      crownEnduresResponse:
+        'Treat the first warning as the final burn. Save movement and defensive cooldowns for the remaining mechanics, then defeat Nythraxis before the enrage.',
+    },
+  },
+  auraEffect: {
+    sharedPyre:
+      "Deals {total}% of each player's maximum health, divided by the number of players inside the circle ({perPlayer}% each with {players} players).",
+    varkhulSharedPyre:
+      "Deals {total}% of each player's maximum health, divided among players inside the circle ({perPlayer}% each with {players} players). Each missing player also deals {missingPenalty}% of maximum health to the entire raid, including players inside the circle.",
+    makersBrand:
+      'For {duration} sec, each stack increases damage taken from Varkhul by {pct}%. Stacks up to {max} times. Tanks should swap at {swap} stacks.',
+    varkhulSentinelsGaze:
+      'The Ember Sentinel pursues you. Keep it away from the raid until it is destroyed.',
+    varkhulMoltenCore:
+      'Carry this core to the forge. Molten Burden deals increasing damage every {interval} sec, from {min}% to {max}% of maximum health.',
+    varkhulForgeLink:
+      'Intercept an active pillar beam before it reaches the forge. Open beams add 6% heat per second. In Normal, blocked beams and inactive pillars cool the forge; in Heroic, heat never falls. At 100%, the forge suffers a lethal Meltdown.',
+    varkhulCrucibleExposure:
+      'Blocking a Crucible Beam deals increasing maximum-health damage every second. The stacks reset 10 seconds after leaving a beam in Normal and after 60 seconds in Heroic.',
+    nythraxisDreadCurse:
+      'Each stack increases damage taken from Nythraxis by {perStack}% for {duration} sec: {stacks} of {max} stacks now, {pct}% more damage. Every {every} sec his next hit on his target deals {hit}% of maximum health and adds a stack. Tanks should swap at {swap} stacks.',
+    nythraxisImpaled:
+      'Impaled on a Bone Spike: you cannot act and lose {normal}% of your maximum health every {interval} sec ({heroic}% on Heroic) until the raid destroys the spike.',
+    nythraxisAscension:
+      'Deathless Ascension: {stacks} stacks, {pct}% more damage and attack speed. Drag Nythraxis onto the Binding Sigil to purge it.',
+    nythraxisBound:
+      'Bound by the old wards: Nythraxis takes {pct}% more damage for {duration} sec.',
+    nythraxisUnbound:
+      'Unbound: Nythraxis deals {pct}% more damage until a Binding Sigil holds him.',
+    nythraxisKingsWrath:
+      "King's Wrath: Nythraxis deals {pct}% more damage for the rest of the fight.",
+    nythraxisBoneStorm:
+      'Bone Storm: Nythraxis ignores threat, whirls for {tick}% of maximum health every second within {radius} yd, and charges raiders. Spread out and run.',
+    nythraxisCrownEndures:
+      'The Crown Endures: {stacks} stacks, {pct}% more damage and {haste}% faster attacks. The raid is out of time.',
+    dot: 'Deals {value} {school} damage every {interval} sec',
+    hot: 'Restores {value} health every {interval} sec',
+    mendingCurrent: 'Stores {value} healing, released over time or consumed by Cascading Mend',
+    mendingCurrentPercent: 'Stores healing equal to {pct}% of maximum health for Cascading Mend',
+    absorb: 'Absorbs {value} damage',
+    healAbsorb: 'Absorbs {value} incoming healing',
+    thorns: 'Deals {value} {school} damage to attackers',
+    stasis: 'Immune and unable to act',
+    slow: 'Reduces movement speed by {pct}%',
+    speed: 'Increases movement speed by {pct}%',
+    attackSpeedSlow: 'Slows attack speed by {pct}%',
+    attackSpeedFast: 'Increases attack speed by {pct}%',
+    haste: 'Increases attack and casting speed by {pct}%',
+    imbueRange: 'Weapon imbued: {min} to {max} bonus damage on Verdict',
+    petDamage: 'Increases pet damage by {pct}%',
+    petHaste: 'Increases pet action speed by {pct}%',
+    spellDamage: 'Increases spell damage by {pct}%',
+    spellHaste: 'Increases spell casting speed by {pct}%',
+    sated: 'Cannot benefit from another group haste effect',
+    cauterizeFatigue: 'Cauterize cannot prevent another lethal hit',
+    castShield: 'Casting cannot be interrupted or delayed by damage',
+    // wordy (M16): filled in the five non-Latin locales in this change.
+    dmgDone: 'Increases damage dealt by {pct}%',
+    dmgDoneReduce: 'Reduces damage dealt by {pct}%',
+    heatingUp:
+      'Your next consecutive Fire builder critical strike grants Hot Streak; a non-critical builder removes Heating Up',
+    elementalConvergencePrimed:
+      'Your next spell from the other elemental school grants Elemental Convergence',
+    hunterFerocity: '{stacks} Pack Ferocity: your pet deals {pct}% more damage',
+    cooldownCap: '{used} of {cap} sec of cooldown reduction used in this window',
+    funeralHarvestLock: 'Funeral Harvest cannot create another Soul Fragment yet',
+    leadenHexLock: 'Leaden Hex cannot root this target again yet',
+    forbiddenReflectionReady: 'Your next eligible Warlock cooldown can be cast again',
+    forbiddenReflectionLock: 'Forbidden Reflection cannot be prepared again yet',
+    internalCooldown: 'This effect cannot trigger again until the timer expires',
+    // The carried-flag buff's tooltip: the ONLY place the voluntary-drop
+    // affordance is spelled out, so the player can find it without folklore.
+    carriedFlag: 'You are carrying the enemy flag. Cancel this buff to drop it.',
+    battleStance: 'Battle Stance: 10% more rage generation',
+    berserkerStance: 'Berserker Stance: crits 3% more often and hit 3% harder',
+    crit: 'Increases critical strike chance by {pct}%',
+    rageGen: 'Increases Rage generation by {pct}%',
+    reckless: 'Increases critical strike chance by {pct}% and Rage generation by {ragePct}%',
+    avatar: 'Colossus: damage dealt increased by {pct}%',
+    bloodbath: 'Increases critical strike chance and damage dealt by {pct}%',
+    dieBySword: 'Reduces damage taken by {pct}%',
+    sanguine: 'Increases attack speed by {hastePct}% and damage dealt by {dmgPct}%',
+    // The two ability names are the locale's own (Reaver Strike / Brute Swing
+    // here; each fill uses its locale's translated names).
+    battleTrance: 'Your next Reaver Strike or Brute Swing costs no Rage',
+    revengeFree: 'Your next Revenge costs no Rage',
+    victoryRush: "Victor's Surge is ready",
+    maxHpPct: 'Increases maximum health by {pct}%',
+    enrage:
+      'Damage dealt increased by {damagePct}%, attack speed by {hastePct}%, and movement speed by {movePct}%',
+    suddenDeath: 'Your next Execute costs no Rage and ignores its health requirement',
+    aoeEcho:
+      '{charges} echoes remain: single-target abilities deal {pct}% damage to up to {targets} nearby enemies',
+    sureCrit: '{charges} damaging ability casts are guaranteed critical strikes',
+    temporalEcho:
+      "The caster's Arcane damage heals you for {singlePct}% of single-target or {areaPct}% of area damage. Aether Surge and Aether Darts use a 4x bonus on an individual Temporal Echo. Group Echoes create an equal healing reserve, shared among marked allies below 60% health according to missing health",
+    arcaneCharge:
+      '{stacks} Arcane Charges: Aether Surge deals {damagePct}% more damage, casts {castPct}% faster, and costs {costMult}x mana',
+    physicalReduction: 'Reduces Physical damage taken by {pct}%',
+    temporalHourglass:
+      'Immune and unable to act; restores health and accelerates cooldown recovery. Right-click to cancel.',
+    tongues: 'Increases casting time by {pct}%',
+    combustionCrit: 'Your Fire spells always critically strike',
+    overloadNext: 'Your next spell is amplified by {pct}% but costs 50% more mana',
+    powerEchoNext: 'Your next direct spell repeats at {pct}% power on the same target',
+    iceFloesCasts: 'Your next {n} spells with a cast time can be cast while moving',
+    freeCast: 'Your next cast costs nothing',
+    instantCast: 'Your next spell with a cast time is instant',
+    cheapCast: 'Your next spell costs {pct}% less',
+    radiantResonance:
+      "Your next Mending Light is instant, or your next Dawn's Embrace costs {pct}% less mana and casts in {castTime} sec",
+    solarReprisal:
+      'Your next Sunward Disc costs no mana, ignores its cooldown, and deals {pct}% more damage; Hammer of Grace ignores its cooldown and heals for 100% of damage dealt; or Mending Light is instant',
+    dawnsWrath: 'HoW: all HP · +1 use · CD 0 · +{pct}% DMG',
+    // Rogue spec-engine states; wordy (M16): filled in the five non-Latin
+    // locales in this change.
+    venomRitual:
+      'Venom Ritual {stacks}/{max}. Craven Thrust, Wicked Slash, and Venom Dart each add 1. At {max}, Dirt Nap becomes Venomrend',
+    gloam:
+      'Gloam {stacks}/{max}. Openers used from Duskveil each add 1. At {max}, your openers work without stealth, and the next one is free, spends all 3, and starts the Shadow Veil',
+    redline:
+      'Redline {stacks}/{max}. Each Haymaker adds 1. Lights Out hits {pct}% harder for each one and ends Redline. If the timer runs out first, the knockout is lost',
+    veilstrikeWindow:
+      'Shadow Veil: your Duskveil openers are usable in the open from any angle, and damage dealt is increased by {pct}%',
+    veiledEdge: "Your next Lurker's Strike strikes for double",
+    // v0.42.0 Skulduggery: veiledEdge's bonus is now tuned (halved from the
+    // old flat double) and read live off the aura's real value; a NEW key
+    // rather than reshaping veiledEdge, whose existing translations have no
+    // {pct} token. veiledEdge itself is left as dead English, unreferenced.
+    veiledEdgeStrike: "Your next Lurker's Strike deals {pct}% more weapon damage",
+    // v0.42.0 Coldsight: the choice a completed Fevered Draw banks. Neither
+    // shot is movement-gated (Fell Shot is just the mobile-friendly one).
+    coldsightRead:
+      'Your next Long Draw deals {longDrawPct}% more damage, or your next Fell Shot deals {fellShotPct}% more',
+    duskEconomy: 'Abilities cost {pct}% less energy',
+    moontide:
+      'Moontide {stacks}/{max}. Wildbolt, Skyfall, and Moonseed casts in Moonwing Form each add 1. At {max}: Moonseed becomes Moonsurge and Skyfall becomes Sunwake, and using either spends all 3',
+    oldBlood:
+      'Old Blood {stacks}/{max}. Landed hits from Rendclaw, Flense, Bloodrift, Gorebite, Sweeping Claws, and Bonecrush each add 1. At {max}: Gorebite becomes Redharvest in Wolf Form, Bonecrush becomes Marrowbreak in Bruin Form',
+    verdance:
+      'Verdance {stacks}/{max}. Each NEW Wildbloom or Second Bloom you plant adds 1. At {max}, Fleetmend becomes Overbloom',
+    freeExecute: 'Your next eligible execute ability costs nothing',
+    resourceSap: 'Restores {value} of your current resource every {interval} sec',
+    nextAttackCrit: 'Your next attack is guaranteed to critically strike',
+    healEcho: 'Falling below {threshold}% health restores {value} health',
+    increase: {
+      ap: 'Increases attack power by {value}',
+      str: 'Increases Strength by {value}',
+      sp: 'Increases spell power by {value}',
+      armor: 'Increases armor by {value}',
+      int: 'Increases Intellect by {value}',
+      agi: 'Increases Agility by {value}',
+      sta: 'Increases Stamina by {value}',
+      spi: 'Increases Spirit by {value}',
+      allStats: 'Increases all attributes by {value}',
+    },
+    reduce: {
+      ap: 'Reduces attack power by {value}',
+      str: 'Reduces Strength by {value}',
+      armor: 'Reduces armor by {value}',
+      int: 'Reduces Intellect by {value}',
+      agi: 'Reduces Agility by {value}',
+      sta: 'Reduces Stamina by {value}',
+      spi: 'Reduces Spirit by {value}',
+      allStats: 'Reduces all attributes by {value}',
+    },
+    allStatsPctReduce: 'Reduces all attributes by {pct}%',
+    // Percent raid buffs (Arcane Intellect, Mark of the Wild, Fortitude, Battle Shout,
+    // Blessing of Might, Devotion Aura).
+    increasePct: {
+      ap: 'Increases attack power by {pct}%',
+      armor: 'Increases armor by {pct}%',
+      int: 'Increases Intellect by {pct}%',
+      sta: 'Increases Stamina by {pct}%',
+      allStats: 'Increases all attributes by {pct}%',
+    },
+    dodge: 'Increases dodge chance by {pct}%',
+    dodgeReduce: 'Reduces dodge chance by {pct}%',
+    damageReduction: 'Reduces all damage taken by {pct}%',
+    guardianWard: 'The next lethal enemy hit restores you to {pct}% health instead',
+    armorFlat: 'Reduces armor by {value}',
+    armorFlatStacks: 'Reduces armor by {value} ({stacks} stacks)',
+    // Sunder Armor / Faerie Fire: percent armor reductions (Sunder stacks).
+    armorPct: 'Reduces armor by {pct}%',
+    armorPctStacks: 'Reduces armor by {pct}% ({stacks} stacks)',
+    mortalWound: 'Reduces healing received by {pct}%',
+    vulnerability: 'Increases damage taken by {pct}%',
+    physVuln: 'Increases physical damage taken by {pct}%',
+    bleedVuln: 'Increases bleed damage taken by {pct}%',
+    sourceVuln: 'Takes {pct}% more damage from the caster who applied this effect',
+    spellVuln: 'Increases magic damage taken by {pct}%',
+    critVuln: 'Increases chance to be critically hit by {pct}%',
+    costTax: 'Increases ability costs by {pct}%',
+    stun: 'Stunned: unable to act',
+    root: 'Rooted: unable to move',
+    incapacitate: 'Incapacitated: unable to act',
+    polymorph: 'Polymorphed: unable to act',
+    hex: 'Reduces damage and healing dealt by {pct}%',
+    blind: 'Blinded: unable to act',
+    silence: 'Silenced: unable to cast spells',
+    disarm: 'Disarmed: cannot use weapon attacks',
+    lockout: 'Spell school locked out',
+    imbue: 'Weapon imbued with bonus effects',
+    galeheartWeapon:
+      'Completing the {steps}-hit Warspirit cadence echoes the strike {count} times for {pct}% of its damage as Nature damage',
+    elementalTrance:
+      'Damage taken reduced by {pct}%. {mana}% of all damage you deal is converted to mana',
+    stealth: 'Concealed; movement speed reduced by {pct}%',
+    formBear: 'Bruin Form: increased health and armor',
+    formCat: 'Wolf Form: melee damage and energy',
+    formTravel: 'Fleet Form: movement speed increased by {pct}%',
+    formFireball: 'Ember Form: movement speed increased by {pct}%; attacks and spells are disabled',
+    formMoonkin:
+      'Moonwing Form: spell damage increased by {pct}% and armor increased by {armorPct}%',
+    formShadow: 'Gloamveil Form: Shadow damage increased by {pct}%',
+    resourceCount: '{value} of {max}',
+    formLich: 'Soul Lance also strikes up to {targets} nearby enemies for {pct}% damage',
+    afflictionEye:
+      'Maledict Gaze attacks every {interval} sec; effects at this Eye generate {pct}% Condemnation',
+    afflictionEyeSecondary:
+      'Effects at this Eye generate {doomPct}% Condemnation; Sentence echoes here for {echoPct}% damage',
+    afflictionAccomplice:
+      'Qualifying damage grants {value} Condemnation, at most once every {interval} sec',
+    afflictionViolence:
+      '{charges} reprisals remain; an enemy attack grants {doom} Condemnation and deals {damage} Shadow damage back',
+    afflictionVicarious:
+      'Redirects or reduces {pct}% of incoming damage and can generate up to {max} Condemnation',
+    afflictionPossession: 'Empowers Needle of Fate, Consume, Maledict Gaze, and Sentence',
+    afflictionJudgment:
+      'Primary Eye generates {eyePct}% more Condemnation; Sentence deals {sentencePct}% more damage and the first refunds {refund} Condemnation',
+    afflictionLitany:
+      'Condemnation gains deal {damage} Shadow damage to up to {targets} enemies within {radius} yd, once per sec',
+    afflictionFateThreads:
+      '{stacks} Fate Threads: Sentence deals {sentencePct}% more damage, or Consume gains {doom} extra Condemnation per tick',
+    afflictionConsumeThreads:
+      'Consume is devouring {stacks} Fate Threads for {doom} extra Condemnation per tick',
+    necromancyHarvestMark: 'Death can create 1 Soul Fragment',
+    necromancyOssuaryMark:
+      'Stores {storedPct}% of your and your undead damage, plus {lancePct}% of Soul Lance damage; recast to detonate. Death explodes within {radius} yd and creates 1 Soul Fragment',
+    necromancyDeathEcho: 'Legacy Death Echo; no current ability consumes it',
+    warlockAnchor: 'Recast within {range} yd to return here and consume the anchor',
+    formMetamorph: 'Demon form: body size increased by {pct}%; other bonuses ride separate buffs',
+    energyRegen: 'Increases Energy regeneration by {pct}%',
+    defensiveStance: 'Guarded Stance: reduced damage taken, more threat',
+    righteousFury: 'Burning Oath: greatly increased threat from Holy damage',
+    overpowerCharge: '{stacks} charges: your next Maiming Strike deals {pct}% more damage',
+    sweepingStrikes: 'Single-target strikes also hit {targets} nearby enemy for {pct}% damage',
+    fingersOfFrost:
+      '{charges} charges: Ice Lance treats its target as frozen and deals {pct}% frozen damage',
+    brainFreeze: 'Your next Flurry is instant and ignores its cooldown',
+    wintersChill: '{charges} charges: compatible spells treat this target as frozen',
+    icicles: '{value} of {max} Icicles; at {max}, Rimeneedle can be cast',
+    desolation:
+      '{charges} charges: your next Chaos Bolt casts {castPct}% faster or your next Rain of Fire lands immediately',
+    ruinousBrand:
+      '{charges} copies remain: direct spells copy {otherPct}% damage here, or {selfPct}% when this is their target',
+    duskfireClaim: 'Death grants {value} Wrack',
+    pyreGuardian:
+      'Generates {ruin} Wrack every {ruinInterval} sec and deals {damage} Fire damage within {radius} yd every {damageInterval} sec',
+    perfectMoment: 'Aether Darts does not consume Arcane Charges',
+    scale: 'Size increased by {pct}%',
+    jump: 'Jump height increased by {pct}%',
+    // Localized damage-school names spliced into {school} above.
+    school: {
+      physical: 'Physical',
+      fire: 'Fire',
+      frost: 'Frost',
+      arcane: 'Arcane',
+      shadow: 'Shadow',
+      holy: 'Holy',
+      nature: 'Nature',
+    },
+  },
+  // World-boss spawn announcement. The sim emits this server-wide in English when a
+  // world boss rises; src/ui/sim_i18n.ts re-localizes it through this key, splicing
+  // the localized boss name. English-only domain so an English-only PR compiles.
+  worldBoss: {
+    spawn: '{name} rises over Thornpeak Heights!',
+  },
+  // Password-reset ("forgot password") flow: the login-panel entry link, the
+  // request-a-link panel, and the set-a-new-password panel (index.html +
+  // main.ts). English-only lives here; the reset-link error is re-localized in
+  // main.ts userFacingApiError. The generic "sent" copy never reveals whether an
+  // account exists.
+  auth: {
+    appleLoginCta: 'Continue with Apple',
+    appleError: 'Could not sign in with Apple. Please try again.',
+    appleChoiceIntro: 'Create a new account, or link Apple to one you already have.',
+    appleChoiceExpired: 'That Apple sign-in expired. Please sign in with Apple again.',
+    forgotPrompt: 'Forgot password?',
+    forgotTitle: 'Reset your password',
+    forgotHint: 'Enter your username and we will email a reset link to the address on file.',
+    forgotUsername: 'Username',
+    forgotSubmit: 'Send reset link',
+    forgotSent:
+      'If an account with that username has an email on file, we have sent a reset link. Check your inbox.',
+    forgotBack: 'Back to log in',
+    resetTitle: 'Choose a new password',
+    resetNewPassword: 'New password',
+    resetConfirm: 'Confirm new password',
+    resetSubmit: 'Update password',
+    resetDone: 'Your password has been updated. You can now log in.',
+    resetMismatch: 'The passwords do not match.',
+    resetErrInvalid: 'This reset link is invalid or has expired. Request a new one.',
+  },
+  // Loot window title shown only when the chest entity is missing (the normal path
+  // uses the chest's localized entity name); replaces a former hard-coded 'Chest'.
+  loot: {
+    chestTitle: 'Chest',
+    // Loot-window legibility reword: the corpse arm's button is
+    // "Take Loot" (the old "Take All" label promised the harvest too); the
+    // delve-chest arm keeps itemUi.loot.takeAll, where "all" is accurate.
+    // takeLootTooltip pairs with corpseHarvest.harvestTooltip so the two
+    // loot-window buttons read as clearly distinct actions; successors to the
+    // retired takeAllTooltip/harvestButtonTooltip (reviewed fills in every
+    // locale, so a reword mints new keys rather than going stale in place).
+    takeLootButton: 'Take Loot',
+    takeLootTooltip: 'Takes the coins and dropped items. Does not use up the harvest.',
+    // Footer hint on the corpse loot window, the town-focus hint-line idiom.
+    // Intentional gathering PR1: the interact key takes ordinary loot only and
+    // never harvests; components come from the explicit Harvest button. The key
+    // is remappable, so the copy names the action, never a key cap. Existing
+    // locale fills were refreshed in this change under the rewording rule.
+    unifiedPressHint:
+      'The interact key only takes the loot. To gather components, use Harvest here.',
+    // The Take Loot confirm shown when the visible loot contains a soulbound
+    // item (loot_window_controller.ts): taking it binds it, so the player
+    // confirms once before the pickup, the classic bind-on-pickup warning.
+    bindConfirmTitle: 'Binds when picked up',
+    bindConfirmBody:
+      'This loot contains an item that will bind to you when taken. A bound item can only be traded to players who shared its drop, and only for a limited time.',
+  },
+  // Spellbook action-bar toggle accessible names. The visible glyph is +/-; the
+  // accessible name states the action so a screen reader is not left with a bare
+  // symbol. {name} is the (already localized) ability name.
+  spellbook: {
+    addToBarAria: 'Add {name} to action bar',
+    removeFromBarAria: 'Remove {name} from action bar',
+    // The touch-only assign control beside the +/- toggle: the + drops a spell on
+    // the FIRST free slot, which is not a choice, and touch has no drag to make
+    // one with. This opens the bar editor with the spell already armed, so the
+    // next tap decides where it goes. WORDY by M16, so the five non-Latin
+    // overlays carry real fills.
+    assignAria: 'Choose a slot for {name}',
+  },
+  // Live overworld mob nameplate level badge text. Level renders in its own
+  // element so con-color styling applies to the badge without recoloring the
+  // mob name line.
+  nameplate: {
+    // Level-only badge rendered in a separate element so the con color applies
+    // to the bracket only, not the mob name text.
+    mobLevel: '{level}',
+    mobEliteLevel: '{level}+',
+    // /afk tag prefixed to a player's overhead name (nameplate_painter.ts wraps
+    // it in angle brackets: "<AFK> Name"). Short label, not a sentence.
+    afkTag: 'AFK',
+    // The operator-applied Cheater sanction (src/sim/moderation/), resolved for
+    // the nameplate and the target frame through src/ui/cheater_tag.ts. Unlike
+    // afkTag the brackets are part of the VALUE, so a locale that punctuates a
+    // tag differently owns its own wrapper instead of inheriting an English one.
+    // Wordy (M16), so the five non-Latin fills ship in this same change.
+    cheaterTag: '< Cheater >',
+    // The guild line of a player who PLEDGED to a guild without being a member
+    // (docs/prd/guild-pledge-board.md): replaces the `<Guild>` member wrapper so
+    // an aspirant never reads as a member. Like cheaterTag the whole drawn form
+    // is the VALUE (no wrapper added in code), so a locale owns its own shape.
+    // Wordy (M16), so the five non-Latin fills ship in this same change.
+    pledgeTag: 'Pledge of {guild}',
+  },
+  // World mouseover tooltip shown when hovering a mob (mob_tooltip_view.ts):
+  // name (colored by the nameplate con-color), then "Level N <type>" ({family}
+  // reuses the existing guide.family.<id>.name bestiary labels), then an
+  // Elite/Boss rank badge (mirrors the target frame's rank chrome), then a
+  // Friendly/Hostile reaction line (green/red, from Entity.hostile). All the
+  // wordy ones (M16) are filled in the five non-Latin locales in this same
+  // change; "Boss" is not wordy (no four-plus consecutive-lowercase run) so
+  // it is also filled in the locale overlays by the release repair.
+  mobTooltip: {
+    levelFamily: 'Level {level} {family}',
+    // The one MobFamily with no guide.family.* bestiary entry (demons are
+    // warlock-pet / zone encounter mobs, out of scope for the public wiki
+    // bestiary generator), so it needs its own word here.
+    familyDemon: 'Demon',
+    hostile: 'Hostile',
+    friendly: 'Friendly',
+    // Elite/boss rank badge (target_rank_view.ts TargetRank), shown only when
+    // the mob's template carries elite/boss. "Elite" is wordy (M16, the
+    // "lite" run); "Boss" is not.
+    elite: 'Elite',
+    boss: 'Boss',
+  },
+  // Movable target frame: the small corner toggle that unlocks the frame for
+  // dragging and locks it back in place (target_frame_pos.ts + hud.ts wiring).
+  // The one button swaps its accessible name with its pressed state; both values
+  // are wordy (M16), filled in the five non-Latin locales in this same change.
+  targetFrame: {
+    // aria-label / title while LOCKED (aria-pressed=false): press to move it.
+    unlock: 'Move target frame',
+    // aria-label / title while UNLOCKED (aria-pressed=true): press to fix it.
+    lock: 'Lock target frame',
+  },
+  // Movable player frame: the same MovableFrame corner toggle on #player-frame
+  // (movable_frame.ts). Same shape as targetFrame above; both values are wordy
+  // (M16), filled in the five non-Latin locales in this same change.
+  playerFrame: {
+    unlock: 'Move player frame',
+    lock: 'Lock player frame',
+  },
+  partyFrames: {
+    section: 'Party and Raid Frames',
+    // The Frames tab's one labelled subsection (options window): every
+    // declarative row there tunes the party frames now. Wordy (M16):
+    // non-Latin fills land in this change.
+    optionsSection: 'Party Frame Options',
+    unlock: 'Move party and raid frames',
+    lock: 'Lock party and raid frames',
+    style: 'Frame Style',
+    styleAutomatic: 'Automatic',
+    styleClassic: 'Classic Party Frames',
+    styleRaid: 'Raid Frames',
+    scale: 'Frame Scale',
+    width: 'Frame Width',
+    height: 'Frame Height',
+    spacing: 'Frame Spacing',
+    columns: 'Raid Columns',
+    healthText: 'Health Text',
+    healthNone: 'None',
+    healthPercent: 'Percent',
+    healthCurrent: 'Current',
+    healthCurrentMax: 'Current / Max',
+    // Fifth mode, shared with the player and target frame rows: the pair plus the
+    // percent in parentheses. Wordy (M16): the five non-Latin fills land in this
+    // same change.
+    healthCurrentMaxPercent: 'Current / Max (Percent)',
+    sort: 'Sort Players',
+    sortGroup: 'Group',
+    sortRole: 'Role',
+    sortName: 'Name',
+    showResource: 'Show Mana, Rage, and Energy',
+    showAbsorbs: 'Show Absorb Shields',
+    showAuras: 'Show Buffs and Debuffs',
+    // Interface toggle for the pet health sliver on a party member's row. Kept
+    // NON-WORDY (no run of four+ lowercase) so an English-filled non-Latin locale
+    // does not trip the M16 untranslated-leak guard.
+    showPets: 'Show Pets',
+    // The sliver's accessible name, the only way a screen-reader user gets the pet's
+    // health (the sliver itself is a bar with no visible text), so it has to say WHAT
+    // it is, not just carry the numbers: "{name} 65%" alone named neither the pet nor
+    // the health. {name} is the pet's name, {pct} its health percent. Wordy (M16), so
+    // the five non-Latin fills land in this same change.
+    petHealth: 'Pet {name}, {pct} health',
+    showSelf: 'Show Your Frame',
+  },
+  // Interface panel row: snap both movable unit frames back to their stock
+  // spots (the button reuses chatWindow.resetAction). Wordy (M16): the five
+  // non-Latin fills land in this same change.
+  frameReset: {
+    label: 'Reset Frame Positions',
+  },
+  // Interface panel (Combat tab) row above Auto-Attack on Ability Use: one press
+  // loosens every movable HUD frame (action bars, cast bar, menu rail, minimap,
+  // unit and pet frames) so they can be dragged and scaled, and the button
+  // relabels itself to the lock action while they are loose. `unlockFrame` /
+  // `lockFrame` name each frame's own corner button, `resizeFrame` its SE grip.
+  // `resizeFrame` names an action rather than a gesture because the grip is a
+  // real button driven by pointer drag AND arrow keys, so a screen reader must
+  // not be told to drag something a keyboard player operates with arrows.
+  // All wordy (M16), so the five non-Latin fills land in this same change.
+  interfaceUnlock: {
+    label: 'Edit Frames',
+    unlock: 'Unlock interface',
+    lock: 'Lock interface',
+    // The floating button that appears while the interface is unlocked, so
+    // finishing an arrangement does not mean reopening the options menu.
+    lockAll: 'Lock Interface',
+    // The two guidance notes under the Unlock Interface option row: what shows
+    // while editing (and where extra bars come from), and that the game is
+    // deliberately inert for the duration.
+    barsNote:
+      'Only the action bars you have turned on appear while editing. To place more bars, add them with the plus and minus buttons on the main action bar first.',
+    frozenNote:
+      'While editing, the interface and camera are frozen: buttons and frames are still pictures to arrange, and clicks will not reach the game world.',
+    unlockFrame: 'Unlock this frame',
+    lockFrame: 'Lock this frame',
+    resizeFrame: 'Resize this frame',
+    // Name chips shown on each unlocked frame. Only the frames with no existing
+    // name key mint one here (the unit frames reuse their aria labels, the
+    // buff/debuff rows the target-aura tab names, the cast bar its own aria).
+    // Action Bar / Minimap / Stance Bar are wordy (M16), so their five
+    // non-Latin fills land in this same change; Menu / XP Bar / Chat are not.
+    frameNames: {
+      actionBar1: 'Action Bar',
+      actionBar2: 'Action Bar 2',
+      actionBar3: 'Action Bar 3',
+      steamWishlist: 'Wishlist Reminder',
+      menu: 'Menu',
+      minimap: 'Minimap',
+      stanceBar: 'Stance Bar',
+      xpBar: 'XP Bar',
+      chat: 'Chat',
+      actionBarGroup: 'Action Bars',
+      // The unit frames chip plain functional names rather than their lore
+      // aria labels (Your Hero / Your Mark / Your Band), which read as riddles
+      // in an arrangement mode.
+      playerFrame: 'Player',
+      targetFrame: 'Target',
+      partyFrames: 'Party',
+      // The auto-attack swing timer (#swingbar), hidden outside combat like
+      // the cast bar, so its chip is what names the placeholder.
+      swingBar: 'Auto Attack',
+      // The multi-target dot tracker (#target-dots), hidden while the player has
+      // no debuffs out, so its chip is what names the placeholder. Wordy (M16):
+      // the five non-Latin fills land in this same change.
+      targetDots: 'Target Dots',
+      // The right-stack trackers, movable frames since the 0.42 round. All
+      // wordy (M16): their five non-Latin fills land in the same change. The
+      // MECHANIC frames reuse the mechanic's own in-game name instead of a
+      // minted row (interface_unlock_core.ts frameRowLabelKey): the devotion
+      // medallion hudChrome.paladin.devotion, the doom meter
+      // hudChrome.warlock.doomLabel (Condemnation), the proc overlay its
+      // active spec's meter or ability name.
+      questTracker: 'Quest Tracker',
+      reliquaryTracker: 'Reliquary Tracker',
+      // The pet ACTION bar (#petbar); the pet unit frame reuses its aria key.
+      petBar: 'Pet Bar',
+      // The spell-proc overlay's FALLBACK name, for a character whose spec
+      // never lights it (an affliction warlock's placeholder); lit specs chip
+      // their mechanic's name instead (frameRowLabelKey above). The frost
+      // mage's Icicle bank has no existing name key anywhere, so its row is
+      // minted here. Both wordy (M16): non-Latin fills in this change, and
+      // the tabbed combat meter (#meters-window) likewise.
+      procOverlay: 'Spell Procs',
+      procOverlayFrost: 'Icicles',
+      damageMeter: 'Damage Meter',
+      // The remaining right-stack trackers and the off-hand swing timer.
+      // The three trackers are wordy (M16, fills in this change); Off Hand
+      // is not (no four-letter lowercase run).
+      deedTracker: 'Deed Tracker',
+      delveTracker: 'Delve Tracker',
+      riftTracker: 'Rift Tracker',
+      swingBarOffhand: 'Off Hand',
+    },
+    // The frames settings dropdown beside the floating Lock Interface button:
+    // a show/hide sub-menu plus the frame-behavior toggles that used to live
+    // in the options window. All wordy (M16): the five non-Latin fills land in
+    // this same change.
+    framesMenu: 'Frames Settings',
+    framesMenuTitle:
+      'Show or hide individual frames. An unticked frame stays hidden until you tick it again or reset to defaults.',
+    showHideFrames: 'Show or Hide Frames',
+    // The aura-row direction toggles in that dropdown (buffsLeftToRight /
+    // debuffsLeftToRight): ticked reads left to right, unticked keeps the
+    // stock right-to-left growth. Wordy (M16): non-Latin fills in this change.
+    buffsLeftToRight: 'Buffs left to right',
+    debuffsLeftToRight: 'Debuffs left to right',
+    // lockPlayerFrameToActionBar: the frame glues to the top of the action
+    // bars and stops being individually movable. Wordy (M16): non-Latin
+    // fills land in this change.
+    lockPlayerFrameToBar: 'Lock Player Frame to Action Bar',
+    // Orientation flips + the per-frame size reset (all wordy, M16:
+    // non-Latin fills land in this change). actionBarsVertical is the ONE
+    // combined-shape toggle; the numbered three are the per-bar rows shown
+    // while the bars are split.
+    actionBarsVertical: 'Vertical Action Bars',
+    actionBar1Vertical: 'Vertical Action Bar',
+    actionBar2Vertical: 'Vertical Action Bar 2',
+    actionBar3Vertical: 'Vertical Action Bar 3',
+    menuRailHorizontal: 'Horizontal Menu',
+    snapToGrid: 'Snap to Grid',
+    previewMemberName: '{className} {number}',
+    resetFrameSize: 'Reset size',
+    // The per-frame accessible name for that button ({name} is the frame name).
+    resetFrameSizeFor: 'Reset size for {name}',
+    // The sample spell name on the edit mode's filled cast-bar preview.
+    previewSpell: 'Example Spell',
+  },
+  // The export/import rows (Frames tab: the frame layout; General tab: every
+  // setting family). All wordy (M16): the five non-Latin fills land in this
+  // same change.
+  transfer: {
+    frameLayout: 'Frame Layout',
+    allSettings: 'All Settings',
+    exportAction: 'Export',
+    importAction: 'Import',
+    copy: 'Copy',
+    copied: 'Copied to clipboard.',
+    copyFailed: 'Copy failed. Select the code and copy it yourself.',
+    applyReload: 'Apply and Reload',
+    pastePlaceholder: 'Paste an exported code here.',
+    invalid: 'That is not a valid export code.',
+    wrongKind: 'That code is a different export type.',
+  },
+  // The Key Bindings panel's hotkey-setup export/import row (the key-code map
+  // of the current character, keybind_transfer_core.ts). Reuses transfer.* for
+  // the shared button and status strings. All wordy (M16): the five non-Latin
+  // fills land in this same change.
+  keybindTransfer: {
+    setup: 'Hotkey Setup',
+    // Import applies live (no reload), unlike the settings code's Apply and Reload.
+    apply: 'Apply',
+    imported: 'Hotkey setup imported.',
+    wrongKind: 'That code is a settings export, not a hotkey setup.',
+  },
+  // The Key Bindings panel's keyboard overview (src/ui/keyboard_map.ts): a live
+  // keyboard with every key in use coloured by category and captioned with its
+  // action, shown one modifier layer at a time. The layer names (Ctrl, Alt) are
+  // the key legends themselves and stay identical across locales; the wordy
+  // rows (M16) get their five non-Latin fills in this same change.
+  keyboardMap: {
+    title: 'Keyboard Overview',
+    hint: 'Keys in use are coloured by category. Hover or focus a key to see everything bound to it.',
+    hintInteractive:
+      'Keys in use are coloured by category. Click a key to change what it does; hover or focus one to see everything bound to it.',
+    // The header button that opens the overview in its own movable window,
+    // and that window's close control.
+    popOut: 'Pop Out',
+    close: 'Close keyboard overview',
+    // Status lines while rebinding through a key: {action} is the binding's
+    // action name, {key} the key label just pressed or clicked.
+    pressKey: 'Press a key for {action}. Esc cancels.',
+    boundTo: 'Bound {action} to {key}.',
+    // The key refused by Keybinds.bind (Escape, the camera mouse buttons).
+    notBindable: 'That key cannot be bound.',
+    assignHint: 'Choose an action to bind to {key}.',
+    assignPlaceholder: 'Assign an action to {key}',
+    layerGroup: 'Modifier layer',
+    // The keyboard size switch: a browser cannot detect the physical board, so
+    // the player picks. 75% and 60% are the usual names for those sizes and
+    // stay identical across locales.
+    formGroup: 'Keyboard size',
+    formFull: 'Full size',
+    formTkl: 'Tenkeyless',
+    form75: '75%',
+    form60: '60%',
+    // Bindings on keys the chosen size does not draw, listed under the board.
+    notOnLayout: 'Not on this keyboard: {bindings}',
+    // The legend choice, offered only when the browser reports an OS layout
+    // other than QWERTY (Colemak, Dvorak, AZERTY...): that layout's characters
+    // or the QWERTY caps physically on most boards. QWERTY is a name and stays
+    // identical across locales.
+    legendGroup: 'Key labels',
+    legendLayout: 'Your layout',
+    legendQwerty: 'QWERTY',
+    layerNone: 'No modifier',
+    layerShift: 'Shift',
+    layerCtrl: 'Ctrl',
+    layerAlt: 'Alt',
+    // The hovered key's detail line: {key} is the keycap legend, {bindings} the
+    // separator-joined list of "combo: action" pairs (or the unbound row).
+    keyDetail: '{key}: {bindings}',
+    separator: ', ',
+    // One binding in a list: the (modified) key and the action it drives.
+    bindingLine: '{key}: {action}',
+    // An entry of the assign picker: the action's category and name.
+    assignOption: '{category}: {action}',
+    // Legend entry for the dot on a key that also carries bindings in other layers.
+    otherLayers: 'Also bound with a modifier',
+  },
+  // The Game Menu's Import / Export sub-panel: the FULL preference set as one
+  // text code (settings_transfer_core.ts kind 'full'). Reuses transfer.*
+  // for the shared button and status strings. All wordy (M16): the five
+  // non-Latin fills land in this same change.
+  fullTransfer: {
+    menu: 'Import / Export',
+    title: 'Import / Export Settings',
+    fullSettings: 'Full Settings',
+    intro:
+      'Export every saved preference on this device as one code, and paste it on another device or browser to import it: graphics, audio, interface, theme, frame layout, key bindings for every character, controller and cross hotbar bindings, chat, window filters, language, and dismissed hints.',
+    excluded:
+      'Never included: your login, account, wallet, or purchase data. Action bar layouts are saved to your account and travel with it.',
+  },
+  // Item tooltip: the minimum character level needed to equip a piece (classic
+  // "Requires Level N"). Shown red when the viewer is below it. {level} runs
+  // through formatNumber.
+  // The Rift Forge window (src/ui/hud/rift_forge/): the Riftwright's
+  // upgrade / socket service on Riftbound bands. The tier, upgrade
+  // and socket labels reuse itemTooltip.rift* below; the reason.* rows map the
+  // sim's structured riftForgeResult reasons (src/sim/rift/progression.ts).
+  riftForge: {
+    title: 'Rift Forge',
+    subtitle: 'Riftbound bands',
+    currency: '{name}: {count}',
+    empty: 'No Riftbound band in your bags. A ranked Rift first clear mints one.',
+    wornHint: 'Worn. Unequip it to forge.',
+    upgradeBtn: 'Upgrade to item level {level} ({cost} essence)',
+    upgradeMax: 'Fully upgraded',
+    gemPickAria: 'Gem to socket',
+    // A gem in the socket picker: its name and the rating line its colour
+    // grants (itemUi.tooltip.stat), never concatenated.
+    gemOption: '{name} ({bonus})',
+    // Sockets are replaceable (rift/progression.ts socketRiftGem): on a full
+    // band the next gem destroys the oldest, and the hint names it first.
+    socketReplaceHint: 'Sockets full: the next gem replaces the oldest, {gem}.',
+    socketBtn: 'Socket',
+    socketsNone: 'no gems',
+    noGems: 'No Rift gems in your bags',
+    refused: 'The forge refused. Stand at the Riftwright and try again.',
+    reason: {
+      notFound: 'That band is not in your bags.',
+      notRiftGear: 'Only a Riftbound band can be forged.',
+      maxUpgrade: 'That band is fully upgraded.',
+      insufficientEssence: 'Not enough Rift Essence.',
+      invalidGem: 'You have no such Rift gem.',
+      dead: "You can't do that while dead.",
+      tooFar: 'You are too far from the Rift Forge.',
+    },
+    done: {
+      upgrade: 'Upgraded {name}.',
+      socket: 'Socketed a gem into {name}.',
+      // The same success on a full band: the oldest gem was destroyed.
+      socketReplaced: 'Socketed a gem into {name}; {gem} was destroyed.',
+    },
+  },
+  itemTooltip: {
+    requiresLevel: 'Requires Level {level}',
+    riftTier: '{tier}-rank Rift item',
+    riftUpgrade: 'Rift upgrade {level}/{max}',
+    riftSockets: 'Rift gems {used}/{total}',
+    // On a Rift gem's own tooltip, above the rating line its colour grants
+    // once socketed (src/ui/rift_band_tooltip.ts).
+    riftGemSocket: 'Socket bonus for a Riftbound band',
+    // The enchant-attributed sibling of itemUi.tooltip.stat, rendered on the
+    // share of a per-copy bonus stat that an applied enchant granted
+    // (item_instance_tooltip.ts instanceBonusStatLines). It replaced the old
+    // standalone "Enchanted" badge, so the tooltip names WHICH bonus the
+    // enchant paid for instead of only that one exists. Its own key with its
+    // own fills: the suffix is never concatenated onto the plain stat line.
+    statEnchanted: '+{value} {stat} (Enchanted)',
+    // The safety net behind statEnchanted: attribution can only speak through a
+    // bonus stat line, so a copy whose enchant grants no readable line (an
+    // enchant id this client's ENCHANTS table does not know, e.g. mid-rollout
+    // against a newer server, or a payload carrying the marker without
+    // rolled.stats) would otherwise say nothing at all about being enchanted,
+    // while its bag corner still paints the enchant glyph. Rendered ONLY in
+    // that case, never beside an attributed line.
+    enchantedFallback: 'Enchanted',
+    // The bind-on-pickup party trade window line, rendered under the
+    // Soulbound line it qualifies (item_instance_tooltip.ts
+    // instancePartyTradeLine). {time} is the already-localized remaining
+    // span from durationText. States the limit (equip ends it) per the
+    // tooltip-writing rule: it is the one trigger a player can regret.
+    partyTradeWindow:
+      'You may trade this item to players who shared its drop for the next {time}. Equipping it ends the trade window.',
+    // Phase 14, the Perfecting badges (item_instance_tooltip.ts
+    // instanceBadgeLines): the Perfected stamp as its own gold line (the
+    // owner's paperdoll and bag surfaces; the peer inspect card never
+    // receives the field), and the head-started rank line on the owner's
+    // full-payload surfaces. {rank}/{ranks} interpolate from the payload and
+    // the sim's PERFECTING_RANKS, never literals in copy.
+    perfectedBadge: 'Perfected',
+    perfectingRank: 'Perfecting: rank {rank} of {ranks}',
+    // Per-unit material provenance (item_instance_tooltip.ts
+    // materialSourceLines over the pure material_sources_view.ts model): one
+    // line per recorded descriptor, stating the surviving unit count first so a
+    // long list scans down its numbers. {count} is a formatted number and
+    // {name} is a historic display-name SNAPSHOT carried on the stack, never a
+    // live profile read.
+    //
+    // Four keys rather than a line plus a suffix, because the premium signature
+    // and the gatherer are independent facts and each combination is a
+    // different sentence: a recorded gatherer never implies the signature's
+    // crafting benefit, and legacy signed stock has no recorded gatherer at all,
+    // so it says so plainly and names the signer AS the signer instead of
+    // inventing an attribution for units nobody recorded.
+    materialSourceGatherer: '{count} × Collected by {name}',
+    materialSourceGathererSigned: '{count} × Collected by {name}, signed by {signer}',
+    materialSourceUnrecorded: '{count} × No gatherer recorded',
+    materialSourceUnrecordedSigned: '{count} × No gatherer recorded, signed by {name}',
+    materialSourceMore: '+{sources} more sources, {units} units',
+  },
+  // Full material-source details dialog. The picker quantities are exact units
+  // from one captured descriptor key; the command revalidates the captured
+  // selection before changing the inventory.
+  materialSources: {
+    detailsTitle: 'Sources for {item}',
+    pickerTitle: 'Choose sources from {item}',
+    close: 'Close material sources',
+    view: 'Sources',
+    choose: 'Sources',
+    viewAria: 'View all material sources for {item}',
+    chooseAria: 'Choose material sources to move for {item}',
+    cancel: 'Cancel',
+    confirm: 'Move selected units',
+    listAria: 'Material source list',
+    total: '{units} units in this stack',
+    row: '{count} units: {source}',
+    gatherer: 'Collected by {name}',
+    gathererSigned: 'Collected by {name}, signed by {signer}',
+    unrecorded: 'No gatherer recorded',
+    unrecordedSigned: 'No gatherer recorded, signed by {name}',
+    quantityAria: 'Units from {source}, up to {count}',
+    decreaseAria: 'Decrease units from {source}',
+    increaseAria: 'Increase units from {source}',
+  },
+  // Purpose hints for the eight enchanting materials
+  // (src/ui/hud/professions/material_hint_view.ts), keyed by item id there. Each says what the
+  // material is for and which gear disenchants into it, so a junk-kind reagent
+  // stops being an unexplained stack in the bags. The sources track the sim's
+  // own routing: DISENCHANT_MATERIAL_BY_QUALITY for the three arcane tiers,
+  // ARMOR_SECONDARY_BY_TYPE / TIMBER_WEAPON_TYPES for the five resonants.
+  materialHint: {
+    // One key shared by all nine fine grades: the sentence is true of every
+    // one of them, and nine copies would be nine chances to drift.
+    fineGrade:
+      'Fine grade. Gathered from a full-tier vein with a tool ranked above the material, and counts as the ordinary version wherever one is required.',
+    // One key shared by every raw fishing catch (RAW_COOKING_CATCH_IDS): cooking
+    // reagents only; never edible raw. Painted via createTooltipLine, not the
+    // materialHintLine HTML-string path.
+    cookingCatch: 'Cooking ingredient. Must be cooked before eating.',
+    // Profession affinity for honest materials (material_profession_hint_view.ts).
+    // {crafts} is a locale-aware conjunction list of localized craft names
+    // (Intl.ListFormat), e.g. "Leatherworking" or "Alchemy, Cooking, and Tailoring".
+    // Kind stays junk internally; the kind line already reads Material, and this
+    // line names which craft(s) consume the stack when an item can serve more
+    // than one role (WoW Crafting Reagent + multi-profession materials pattern).
+    usedBy: 'Used by {crafts}.',
+    arcaneDust: 'Crafting reagent. Disenchanted from common and uncommon gear.',
+    arcaneEssence: 'Crafting reagent. Disenchanted from rare gear.',
+    arcaneShard: 'Enchanting reagent. Disenchanted from epic and legendary gear.',
+    resonantThread: 'Enchanting reagent. Disenchanted from rare and better cloth armor.',
+    resonantHide: 'Enchanting reagent. Disenchanted from rare and better leather armor.',
+    resonantLinks: 'Enchanting reagent. Disenchanted from rare and better mail armor.',
+    resonantSteel: 'Enchanting reagent. Disenchanted from rare and better melee weapons.',
+    resonantTimber:
+      'Enchanting reagent. Disenchanted from rare and better staves, wands, bows, and crossbows.',
+    // One key shared by the nine Masterwrought skill-75 intermediates (Phase
+    // 07): a craft-free lead like fineGrade's, so the Used-by line still
+    // names the consuming craft once the apex recipes land.
+    masterwroughtIntermediate: 'Masterwrought crafting component.',
+    // The Quickening Catalyst states its own craft limit (the tooltip rule:
+    // never hide a limit); the Used-by line lists the nine consuming crafts.
+    quickeningCatalyst: 'Crafting catalyst. An alchemist can craft only one each day.',
+    // The crafted farm supply (Phase 6): kind junk with no use arm, consumed
+    // by plant_crop as the yield knob, so the tooltip purpose line is the one
+    // in-game place that says what it is for.
+    // Written from the live mechanic (src/sim/professions/farming.ts): spent
+    // at plant time via the knob payload, one yield roll at harvest, and a
+    // withered plot never reaches the resolver, so the tonic is forfeited
+    // with the crop. Magnitude stays qualitative on purpose: the chance and
+    // pick constants are maintainer-provisional (flagged at their rows).
+    growthTonic:
+      'Farming supply. Spent when you plant a crop for a chance of a slightly larger ' +
+      'harvest. If the crop withers, the tonic is lost with it.',
+    // The Deed of Making (masterwrought Phase 13): written from the live
+    // mechanic (perfecting.ts resolvePerfectingAttempt consumes exactly one
+    // at the PROMOTION, the step after Perfecting completes: it stamps an
+    // already-Perfected copy legendary under a chosen name; no Perfecting
+    // rank attempt touches it).
+    deedOfMaking:
+      'Inscription writ. Consumed to raise a Perfected Masterwrought work ' +
+      'to legendary and give it a name.',
+    // Wyrmfall Core (masterwrought Phase 14): the faucet line, written from
+    // the live income module (src/sim/professions/masterwrought_materials.ts
+    // and content/heroic_vendor.ts). The numbers are pinned against the
+    // module's own constants in tests/material_hint_view.test.ts, so a
+    // faucet retune fails there instead of shipping a stale sentence.
+    // Trigger wording is part of the pin (tests/material_hint_view.test.ts):
+    // the rift arm pays on the day's first WINNING A or S clear of the shared
+    // race, whatever earlier losses (a losing clear forfeits the cores,
+    // masterwrought_materials.ts); the boss gate is per (dungeon,
+    // difficulty), and only the raid has two eligible difficulties (dungeon
+    // bosses pay on heroic alone), so the two sources are stated apart.
+    // One sentence per source (the tooltip standard); the rolled boss count
+    // goes to EVERY participant (never a shared drop), and the rift pair is
+    // mapped to its rank.
+    wyrmfallCore:
+      'Masterwrought crafting catalyst. The raid final boss drops 1 to 3 to ' +
+      'each player once per day on each difficulty. Heroic dungeon final ' +
+      'bosses each drop 1 to 3 to each player once per day. Your first A or S ' +
+      'rank Rift race win of the day grants 1 at A rank or 2 at S rank. The ' +
+      'Heroic Quartermaster sells one for Heroic Marks.',
+    // The adopted trophies (masterwrought Phase 11l, per-item leads authored
+    // at Phase 18 on the reopened rejection row). Every lead is CRAFT-FREE
+    // like arcaneDust's, so it never supersedes the Used-by line that names
+    // the consuming craft (material_profession_hint_view's explicit
+    // craft-naming allowlist); what each one adds instead is the FAUCET, the
+    // one thing a Used-by line cannot say, written from the live mob loot
+    // tables the way wyrmfallCore is written from its income module. The
+    // wordings are pinned against those tables in
+    // tests/material_hint_view.test.ts, so a retuned drop chance reds there
+    // instead of shipping a stale sentence: "always" and "every time" mean a
+    // chance of 1, "about half the time" the 0.5 band, and the softer
+    // qualifiers their own live rows.
+    mudfinScale:
+      'Crafting reagent. Mudfin Skulkers drop it about half the time, the ' +
+      'deeper marsh fish a little less often, and the named terrors of those ' +
+      'waters always.',
+    crackedWyrmScale:
+      'Crafting reagent. Sanctum Scaleguards drop it about half the time, ' +
+      'and nothing else in the world carries one.',
+    crackedOgreTusk:
+      'Crafting reagent. Brutok Skullsmasher carries one every time he ' +
+      'falls, and he is its only source.',
+    tallowCandle:
+      'Crafting reagent. Deeprock diggers drop it more often than not and ' +
+      'Gravecaller cultists now and then, while the named leaders of both ' +
+      'always carry one.',
+    banditBandana:
+      'Crafting reagent. Bandits drop it about half the time, and their ' +
+      'named leaders always carry one.',
+    oldCragmawsPelt:
+      'Crafting reagent. Old Cragmaw yields one every time he falls, and no ' +
+      'other beast carries it.',
+    emberwingCinderscale:
+      'Crafting reagent. Voskar the Emberwing yields one every time he ' +
+      'falls, and no other beast carries it.',
+  },
+  discord: {
+    title: 'Discord',
+    panelTitle: 'World of ClaudeCraft',
+    open: 'Discord',
+    close: 'Close',
+    keybind: 'Discord Panel',
+    disabled: 'Discord integration is not available right now.',
+    // The options-window account row (accounts.discord_queue_pings): whether
+    // the official bot direct-messages the player when their battleground or
+    // arena queue pops. Opt-in, and it needs a linked Discord account, which
+    // the label says so an unlinked player knows why the toggle does nothing.
+    queuePingsLabel:
+      'Send me a Discord direct message when my battleground or arena queue pops (needs a linked Discord account)',
+    // Status-rung display names (the ladder lives in src/sim/discord_tier.ts).
+    tiers: {
+      none: 'Unranked',
+      initiate: 'Initiate',
+      squire: 'Squire',
+      footman: 'Footman',
+      knight: 'Knight',
+      champion: 'Champion',
+      warlord: 'Warlord',
+      legend: 'Legend',
+      mythic: 'Mythic',
+    },
+    loginCta: 'Continue with Discord',
+    orEmail: 'or use email',
+    cta: {
+      title: 'Link your Discord to earn points and rank up',
+      stats: '{online} online · {total} members in the server',
+      statsLoading: 'Join the community and earn rewards',
+      button: 'Link in one click',
+      dismiss: 'Dismiss',
+    },
+    link: {
+      cta: 'Link Discord',
+      relink: 'Relink Discord',
+      connecting: 'Opening Discord...',
+      benefits:
+        'Link your Discord to earn points from play and community activity, and climb the status tiers.',
+      error: 'Could not link Discord. Please try again.',
+      success: 'Discord linked.',
+      // Secondary action next to the link CTA: open the plain community invite
+      // without linking an account. This is the single Discord entry point in
+      // the game HUD (the corner community tray's separate invite link was
+      // removed as a duplicate), so an unlinked player still needs one click
+      // to just join the server.
+      joinServer: 'Just join the Discord server',
+    },
+    // First-time Discord login chooser (create a new account vs link an existing one).
+    choice: {
+      title: 'Continue with Discord',
+      intro: 'Create a new account, or link your Discord to one you already have.',
+      greeting: 'Welcome, {name}!',
+      createCta: 'Create a new account',
+      haveAccount: 'Already have an account?',
+      linkCta: 'Link an existing account',
+      linkSubmit: 'Link account',
+      error: 'Could not continue. Please try again.',
+      expired: 'That Discord sign-in expired. Please sign in with Discord again.',
+    },
+    // Unlinking a Discord-provisioned account: set a password first so it stays
+    // reachable (the username is fixed and shown read-only).
+    keep: {
+      title: 'Set a password',
+      body: 'Your account signs in with Discord. Set a password so you can still log in with your username after unlinking.',
+      usernameLabel: 'Your username',
+      confirmLabel: 'Confirm password',
+      submit: 'Set password and unlink',
+      cancel: 'Cancel',
+      mismatch: 'Passwords do not match.',
+      tooShort: 'Password must be at least 6 characters.',
+    },
+    linkedAs: 'Linked as {name}',
+    linkedTitle: 'Discord: {name}',
+    viewCharacter: 'View {name}',
+    viewProfile: "Open this character's public profile",
+    unlink: 'Unlink',
+    visit: 'Visit Discord',
+    unlinkConfirm: 'Unlink your Discord account from this game account?',
+    statusLabel: 'Status',
+    rank: 'Rank',
+    points: 'Points',
+    lifetime: 'Lifetime',
+    toNext: '{points} to next rank',
+    maxRank: 'Top rank reached',
+    tiersTitle: 'Status Tiers',
+    tierLocked: 'Locked',
+    tierCurrent: 'Current',
+    earnTitle: 'How to earn points',
+    earnBody:
+      'Earn points from time played in game and from staying active in the Discord. Points raise your status tier.',
+    memberSince: 'Member since',
+    memberSinceDays: '{days}d in the Discord',
+    roleTag: {
+      levyst: 'Levy St',
+      admin: 'Admin',
+      coredevs: 'Core Dev',
+      devs: 'Dev',
+      seniormods: 'Senior Mod',
+      mods: 'Mod',
+      juniormods: 'Junior Mod',
+      artists: 'Artist',
+      contentcreator: 'Content Creator',
+      legend: 'LEGEND',
+      shill: 'SHILL',
+    },
+    // Chat anti-impersonation disclosure: the hover/aria text on the colored
+    // [Role] tag beside a staff member's chat name (wordy, M16: the five
+    // non-Latin fills land in this same change).
+    roleTagChatTitle: 'Verified server role: {role}',
+    guildMember: 'Verified member',
+    notMember: 'Not in the server yet',
+    joinCta: 'Join the Discord',
+    online: '{count} online',
+    community: 'Community',
+    rewards: 'Rewards',
+    voice: {
+      title: 'Voice',
+      channel: 'In {channel}',
+      empty: 'No one is in voice right now.',
+      speaking: 'Speaking',
+      muted: 'Muted',
+      join: 'Join voice',
+      connect: 'Connect to voice channel',
+    },
+    swag: {
+      title: 'Swag',
+      claim: 'Claim',
+      claimed: 'Claimed',
+      locked: 'Locked',
+      free: 'Free',
+      cost: '{points} pts',
+      needTier: 'Reach a higher rank to claim this.',
+      needPoints: 'Not enough points.',
+      claimError: 'Could not claim that reward. Please try again.',
+      claimedToast: 'Claimed: {name}',
+      // Swag item display names (catalog ids in src/sim/discord_tier.ts).
+      titleDiscordian: 'Title: Discordian',
+      titleSquire: 'Title: Squire of the Realm',
+      chromaBlurple: 'Blurple Mech Chroma',
+      titleChampion: 'Title: Champion of Claudemoon',
+      swagStickers: 'Sticker Pack (shipped)',
+      swagTee: 'T-Shirt (shipped)',
+    },
+    // "!" community commands: an interactive chat dropdown that broadcasts in-game
+    // and cross-posts to Discord (looking-for-group, trade, recruiting, events).
+    relay: {
+      tooFast: 'You are posting too fast. Wait a moment and try again.',
+      lfg: { label: 'Looking for Group', hint: 'Find players for a dungeon or quest' },
+      wts: { label: 'Want to Sell', hint: 'Advertise an item or service for sale' },
+      wtb: { label: 'Want to Buy', hint: 'Request an item you want to buy' },
+      recruit: { label: 'Guild Recruiting', hint: 'Recruit players for your guild' },
+      event: { label: 'Event / Raid', hint: 'Announce a raid, meetup or event' },
+      help: { label: 'Need Help', hint: 'Ask the community for help' },
+    },
+  },
+  // Developer badge: a cosmetic honor for contributors by landed-commit count
+  // (the ladder lives in src/sim/dev_tier.ts; the data is sourced from a verified
+  // GitHub-OAuth link plus the repo's contributor stats). Shown on the player
+  // card, the overhead nameplate, and the inspect screen.
+  devBadge: {
+    title: 'Developer',
+    // Tier display names (the ladder lives in src/sim/dev_tier.ts).
+    tiers: {
+      tinkerer: 'Tinkerer',
+      artificer: 'Artificer',
+      runesmith: 'Runesmith',
+      architect: 'Architect',
+      worldwright: 'Worldwright',
+    },
+    // Flavor lines per rung (shown on the inspect screen and the player card).
+    // Rungs count MERGED pull requests, not raw commits: it is the unit that
+    // resists commit-spamming a single reviewed contribution.
+    flavors: {
+      tinkerer: 'Your first pull request landed in the realm.',
+      artificer: 'Five pull requests in, and the world bends to your code.',
+      runesmith: 'Fifteen pull requests forged into the running game.',
+      architect: 'An architect of the realm: 30 pull requests merged.',
+      worldwright: 'A wright of worlds: 70 pull requests shape the game.',
+    },
+    // Nameplate badge tooltip + inspect/card readouts.
+    badgeTitle: 'Developer: {tier}',
+    prsLanded: '{count} pull requests merged',
+    contributor: 'Open-source contributor',
+    // GitHub link control (mirrors the wallet link beside it on character select).
+    link: {
+      cta: 'Link GitHub',
+      relink: 'Relink GitHub',
+      benefits:
+        'Link your GitHub to earn a developer badge for the pull requests you have had merged into the open-source repo.',
+      error: 'Could not link GitHub. Please try again.',
+    },
+    linkedAs: 'Linked as {login}',
+    unlink: 'Unlink GitHub',
+  },
+  // Steam account link (the deeds achievement mirror), the stacked card beside
+  // the GitHub one on character select. Renders only when the server's
+  // /api/status advert says the Steam surface is lit; linking itself is
+  // desktop-app only (the shell mints the session ticket), web shows status +
+  // Unlink. Linking is never a sign-in method.
+  steam: {
+    title: 'Steam',
+    link: 'Link Steam',
+    unlink: 'Unlink Steam',
+    linked: 'Linked to Steam account {id}',
+    benefits:
+      'Link your Steam account from the desktop app to mirror the deeds you earn into Steam achievements.',
+    noTicket: 'Steam did not provide a link ticket. Start Steam, then try again.',
+    // The always-on wishlist reminder (src/ui/steam_wishlist.ts), a plain
+    // outbound store link with none of the account-link plumbing above it.
+    // `wishlist` is the chip label; `wishlistAria` is its accessible name and
+    // tooltip. It OPENS WITH the visible label on purpose: an accessible name
+    // that does not contain the visible text fails WCAG 2.5.3 (Label in Name)
+    // for speech input, and the mobile pill's short caption is inside it too.
+    wishlist: 'Wishlist on Steam',
+    wishlistAria: 'Wishlist on Steam: open the World of ClaudeCraft store page',
+    // The mobile More-tray caption: a 4-column 40px pill cannot hold the full
+    // label, so the pill shows this and carries `wishlistAria` as its name.
+    wishlistShort: 'Wishlist',
+  },
+  // Epic account link (the deeds achievement mirror), the stacked card beside
+  // the Steam one on character select. Renders only when the server's
+  // /api/status advert says the Epic surface is lit; linking itself is
+  // desktop epic-channel only (the shell mints the proof), website/steam/web
+  // show status + Unlink. Linking is never a sign-in method (D2).
+  epic: {
+    title: 'Epic',
+    link: 'Link Epic',
+    unlink: 'Unlink Epic',
+    linked: 'Linked to Epic account {id}',
+    benefits:
+      'Link your Epic account from the Epic desktop app to mirror the deeds you earn into Epic achievements.',
+    noProof: 'Epic did not provide a link proof. Launch from the Epic Games Store, then try again.',
+  },
+  // The Ravenpost mailbox window + envelope indicator. Authored letter
+  // sender/subject/body localize via entities.letters.* (world_entity_i18n),
+  // not here; these are the window chrome and the structured mailResult lines.
+  mailbox: {
+    title: 'Mailbox',
+    subtitle: 'The Ravenpost',
+    close: 'Close mailbox',
+    tabInbox: 'Inbox',
+    tabInboxWithCount: 'Inbox ({count})',
+    tabSend: 'Send',
+    empty: 'Your mailbox is empty.',
+    truncated: 'Showing the newest {shown} of {total} letters.',
+    attachmentsBadge: 'Parcel attached',
+    unreadBadge: 'Unread',
+    back: 'Back',
+    take: 'Take attachments',
+    delete: 'Delete letter',
+    deleteAria: 'Delete the letter {subject}',
+    openAria: 'Read the letter {subject} from {name}',
+    noSubject: '(no subject)',
+    toLabel: 'To',
+    toPlaceholder: 'Character name',
+    subjectLabel: 'Subject',
+    bodyLabel: 'Message',
+    coinLabel: 'Attach coin',
+    parcelsLabel: 'Parcels',
+    parcelsHint: 'Click an item in your bags to attach it.',
+    removeParcelAria: 'Remove {item} from the letter',
+    parcelQtyDecreaseAria: 'Send one fewer {item}',
+    parcelQtyIncreaseAria: 'Send one more {item}',
+    // The chip's typeable quantity field (wordy, M16: the five non-Latin
+    // fills land in this same change).
+    parcelQtyAria: 'Quantity of {item} to send',
+    sendButton: 'Send letter',
+    postageNote: 'Postage: {amount}. The raven flies for about {seconds}s.',
+    arrivedBanner: 'The raven has landed: mail from {name}.',
+    arrivedLog: 'You have new mail from {name}.',
+    indicatorAria: 'Unread mail: {count}',
+    indicatorTip: 'You have {count} unread letters. Visit a mailbox to read them.',
+    clickAttach: 'Click to attach to your letter.',
+    cannotMail: 'This cannot be mailed.',
+    result: {
+      sent: 'A raven takes wing with your letter to {name} ({postage} postage).',
+      collected: 'You collect {amount} from the letter.',
+      tooFar: 'You must be at a mailbox to tend your post.',
+      needRecipient: 'Name a recipient for your letter.',
+      noRecipient: 'No one by that name holds a mailbox here.',
+      tooManyParcels: 'A letter carries at most {count} parcels.',
+      noMailQuestItems: 'You cannot mail quest items.',
+      // Wordy, M16: the five non-Latin fills land in this same change.
+      noMailBound: 'That item is bound and cannot be mailed.',
+      notEnoughItems: 'You do not have that many to send.',
+      cantAffordPostage: 'You cannot afford the postage.',
+      recipientBoxFull: 'Their mailbox is full.',
+      letterGone: 'That letter is no longer in your box.',
+      takeParcelsFirst: 'Take the parcels out before discarding the letter.',
+    },
+  },
+  // The World Market coin by the minimap (the mailbox indicator pattern):
+  // visible while sale proceeds or returned items wait at the Merchant.
+  // (Wordy, M16: the five non-Latin fills land in this same change.)
+  marketIndicator: {
+    aria: 'World Market proceeds or items waiting',
+    tip: 'Sale proceeds or returned items are waiting for you at the Merchant.',
+  },
+  noticeboard: {
+    empty: 'Nothing seems posted.',
+    // The signpost guild board window (src/ui/hud/guild_board/): the title
+    // reuses popupTitle below; the subtitle and the roster drill-in link
+    // title are its own.
+    subtitle: 'Guilds of the realm',
+    rosterTitle: 'View the roster of {guild}',
+    back: 'Back',
+    // The 'listings' arm of the noticeboard event opens the signpost popup
+    // (src/ui/noticeboard_popup.ts). Guild names and notes are world data,
+    // spliced verbatim like player names, never translated.
+    popupTitle: 'Guild Signpost',
+    close: 'Close',
+  },
+  // The Eastbrook Vale Realm Builder monument's honour roll
+  // (src/ui/realm_builder_popup.ts), opened by inspecting the statue. Honouree
+  // names are world data and splice verbatim like player names, never
+  // translated; only this chrome and the Intl-formatted month localize.
+  realmBuilder: {
+    title: 'Realm Builder of the Month',
+    currentLabel: 'Honoured this month',
+    // The unclaimed plate's stand-in name (src/sim/content/realm_builders.ts
+    // ships the English constant; every surface substitutes this key for it).
+    placeholderName: 'Your Name Here',
+    // Shown only while the plate still carries the unclaimed placeholder name,
+    // so nobody reads the placeholder as a real award.
+    placeholderHint: 'This plate is waiting for its first name.',
+    pastTitle: 'Past honourees',
+    pastEmpty: 'No names on the roll yet.',
+    close: 'Close',
+  },
+  // The bank window (the Gilded Strongbox): a pooled deposit box shown while standing
+  // at a banker NPC. Plain click withdraws a stack; shift-click withdraws a partial
+  // amount; the footer buys 6-slot expansion blocks. The withdraw-quantity and
+  // buy-confirm prompts reuse the generic vendor cancel key (itemUi.vendor.sellQuantityCancel).
+  bank: {
+    title: 'Bank',
+    subtitle: 'The Gilded Strongbox',
+    close: 'Close bank',
+    capacity: '{used}/{total}',
+    capacityAria: 'Bank slots used: {used} of {total}',
+    empty: 'Your bank is empty.',
+    tooFar: 'You must be at a banker to view your bank.',
+    buySlots: 'Buy {count} slots',
+    buySlotsMaxed: 'Fully expanded',
+    buyConfirm: 'Purchase {count} additional bank slots for {price}?',
+    buyConfirmAccept: 'Purchase',
+    // The capacity meter footer (Bank Storage phase 08): one footer band holds
+    // the meter and the single expand button. The meter label shows the summed
+    // display total; the tooltip and split aria carry the per-pool truth, so
+    // the footer never implies a non-material item can use materials-pool
+    // space. The economy disclaimer rides the click-gated purchase confirm;
+    // later purchase surfaces (store, Claudium) reuse the same key.
+    // (Wordy values, M16: the five non-Latin fills land in this same change.)
+    meterLabel: '{used} of {total} slots',
+    meterPoolGeneral: 'General: {used} of {total}',
+    meterPoolMaterials: 'Materials: {used} of {total}',
+    meterPoolsAria:
+      'Bank slots used: {used} of {total}. General items: {generalUsed} of {generalTotal}. Materials: {materialsUsed} of {materialsTotal}.',
+    meterMaterialsNote: 'Materials-only space from socketed satchels. Other items cannot use it.',
+    priceDisclaimer: 'Prices may change with the game economy.',
+    // The banker's SECOND price tag (Bank Storage phase 13): the same next
+    // rung the gold price buys, priced in Claudium by the economy service and
+    // delivered on the owner-only bank wire. ONE button carries both tags and
+    // the confirm prompt carries both rails, so gold stays primary by position
+    // and nothing anywhere states a rate, an equivalence, or a combined total.
+    // The top-up handoff, the cancel label and the price-changed line REUSE the
+    // shared hudChrome.wocStore.* Claudium strings (they name no product), and
+    // the disclaimer reuses priceDisclaimer above; only the copy that has to
+    // say BANK SLOTS is minted here. Never "vault": that word belongs to the
+    // Materials Vault, which has no Claudium path at all.
+    // (Wordy values, M16: the five non-Latin fills land in this same change.)
+    rungItemName: '{count} bank slots',
+    buySlotsDualAria: 'Buy {count} slots for {price} or {cost} Claudium',
+    buyConfirmDual: 'Purchase {count} additional bank slots?',
+    buyConfirmGold: 'Purchase for {price}',
+    buyConfirmClaudium: 'Purchase for {cost} Claudium',
+    rungGranted: 'The bank slots were added. The bank of this character is larger now.',
+    rungAlreadyGranted: 'These slots are already on this character. You were not charged again.',
+    rungApplyDeferred:
+      'Payment complete. The slots apply automatically the next time this character logs in.',
+    rungGrantUnresolved:
+      'Payment complete, but the slots could not be applied yet. The purchase is recorded and support can finish it for you.',
+    rungInProgress:
+      'A purchase for this character is still being completed. Try again in a moment.',
+    rungDoesNotFit: 'The bank of this character cannot fit another expansion.',
+    rungNotPurchasable: 'These bank slots cannot be purchased right now.',
+    rungFailed: 'The purchase could not be completed.',
+    rungOutage:
+      'The purchase could not be confirmed. Try again with this button and you will not be charged twice. Reloading the game first can lose that protection.',
+    withdrawHint: 'Click to withdraw',
+    withdrawPartialHint: 'Shift-click to withdraw a partial amount',
+    depositHint: 'Click to deposit',
+    depositPartialHint: 'Shift-click to deposit a partial amount',
+    cannotDeposit: 'Cannot be banked',
+    // The bank is open on a view with NO grid to deposit into (its guild pane's
+    // Log). State-based, not item-based: the item is fine, the surface has
+    // nowhere to put it. One terse key serving both the hover hint and the
+    // click's refusal toast, the way cannotVendor / cannotMarket already do.
+    // (Wordy value, M16: the five non-Latin fills land in this same change.)
+    cannotDepositNow: 'Cannot be deposited right now',
+    depositQuantityTitle: 'Deposit {item}',
+    depositQuantityInput: 'Quantity to deposit',
+    depositQuantityConfirm: 'Deposit',
+    withdrawQuantityTitle: 'Withdraw {item}',
+    withdrawQuantityInput: 'Quantity to withdraw',
+    withdrawQuantityConfirm: 'Withdraw',
+    // The vault row's accessible ACTION name (its aria-label). Same English as
+    // withdrawQuantityTitle on purpose, but a distinct key: that one titles the
+    // quantity PROMPT, and rewording a dialog title must not silently rename
+    // every vault row. (The five non-Latin fills land in this same change.)
+    vaultRowWithdrawName: 'Withdraw {item}',
+    // The gold-ladder stale-price notice (vault upgrade, guild bank slots, bag
+    // sockets). Same English as hudChrome.wocStore.priceChanged, but its own
+    // key: those are sim-priced GOLD surfaces, and rewording the Claudium
+    // store's notice must not silently reword them. (Wordy value, M16: the
+    // five non-Latin fills land in this same change.)
+    priceChanged:
+      'The price changed before the purchase completed. Review the refreshed price and confirm again.',
+    // Item-qualified accessible name/title for every stocked-row partial action.
+    // (Wordy value, M16: the five non-Latin fills land in this same change.)
+    withdrawQuantityAction: 'Quantity to withdraw: {item}',
+    // Search / category / sort toolbar. The category chip and sort option
+    // labels reuse the generic hudChrome.bags.* strings; only these bank-named aria
+    // labels are distinct from the bags wording.
+    filterGroupAria: 'Filter bank by category',
+    sortAria: 'Sort bank items',
+    searchAria: 'Search bank items by name',
+    // Deposit-all-materials button + its transient summary line. {count} is
+    // the number of material stacks moved. The Notable arms additionally name
+    // an epic-or-better material the sweep sent (the vaultDepositAllNotable
+    // sibling below; a bare count reads as unremarkable and this reagent is
+    // rare and valuable enough to call out). (Wordy values, M16: the five
+    // non-Latin fills land in this same change.)
+    depositAll: 'Deposit all materials',
+    depositAllTooltip:
+      'Sends every crafting material (anything whose tooltip reads Material or Fine Material) from your bags to the bank in one trip. Everything else stays in your bags, gathering tools, quest items, consumables, and gray items included.',
+    depositAllDone: 'Materials deposited: {count}.',
+    depositAllFull: 'Materials deposited: {count}. Bank now full.',
+    depositAllNone: 'Bank full: nothing deposited.',
+    depositAllNotable: 'Materials deposited: {count}, including {item}.',
+    depositAllNotableFull: 'Materials deposited: {count}, including {item}. Bank now full.',
+    // Bonus-slot breakdown footer (online only): a header total plus one row
+    // per account source, advertising what linking earns. {count} is a slot count.
+    bonusTitle: 'Bonus slots',
+    bonusEarned: '+{count}',
+    bonusStatusEarned: '+{count}',
+    bonusSourceEmail: 'Verified email',
+    bonusSourceDiscord: 'Discord linked',
+    bonusSourceWallet: 'Wallet linked',
+    bonusSourceReferral: 'Referred friends',
+    bonusAdvertEmail: 'Verify your email to earn 2 slots.',
+    bonusAdvertDiscord: 'Link your Discord to earn 2 slots.',
+    bonusAdvertWallet: 'Link a wallet to earn 2 slots.',
+    bonusReferralProgress: '{count}/{cap}',
+    bonusReferralExplainer:
+      'Invite a friend: when they reach level 10 you each earn 2 slots, up to 5 friends.',
+    bonusSectionAria: 'Bonus bank slots and how to earn more',
+    // The bag-socket row (Bank Storage phase 07): four gold-bought sockets
+    // above the slot ladder, each holding one bag whose slots join the bank's
+    // budget. Every price is interpolated from the WIRE (nextSocketCost),
+    // never a client constant (phase 09 makes prices tunable). The filled
+    // cell's aria REUSES the generic hudChrome.bags.bagSocketAria
+    // '{name}: {slots}' with the shared itemUi.tooltip.bagSlots /
+    // bagSlotsMaterials line as its {slots} token, so the row says which pool
+    // the bag's slots actually feed without minting a duplicate key. (Wordy
+    // values, M16: the five non-Latin fills land in this same change.)
+    socketRowAria: 'Bank bag sockets',
+    socketEmpty: 'Empty bank bag socket',
+    // "in the bank", never "here": the bags-side click fills the FIRST empty
+    // unlocked socket, so a later empty cell's hint promising "here" would
+    // name a cell the click does not fill (tooltip-writing.md: write from the
+    // live mechanic).
+    socketEmptyHint: 'Click a bag in your bags to store it in the bank',
+    socketLocked: 'Locked bag socket',
+    socketLockedLater: 'Bag sockets unlock in order, cheapest first',
+    socketUnlockAria: 'Unlock a bank bag socket for {price}',
+    socketUnlockHint: 'Click to unlock this bag socket',
+    socketUnlockConfirm: 'Unlock a bank bag socket for {price}?',
+    socketUnlockAccept: 'Unlock',
+    unsocketHint: 'Click to return this bag to your bags',
+    // The bags-side hover while the personal pane is open and an unlocked
+    // socket is empty (the socket arm of the bank-deposit click ladder).
+    socketHint: 'Click to socket this bag into your bank',
+    // The Materials Vault tab (Bank Storage Phase 03): the per-material
+    // stockpile beside the slot bank. Every price and capacity is interpolated
+    // from the WIRE snapshot (nextUpgradeCost / perMaterialCap), never a
+    // client constant. Withdraw hints, the quantity prompts, the confirm
+    // accept, and the maxed label all REUSE the personal keys above; the
+    // bags-side click denies voice the sim's own error.vaultOnlyMaterials
+    // line (its cannot-store sibling retired with the identity-preserving
+    // deposit rework), so no deny copy lives here. {count} in
+    // the deposit-all summaries is the number of ITEMS moved (pooled counts,
+    // not stacks; the bank's summary counts stacks because slots are its
+    // unit). (Wordy values, M16: the five non-Latin fills land in this same
+    // change.)
+    vaultTab: 'Vault',
+    vaultCapacityNote: 'Each material holds up to {cap}.',
+    vaultEmpty: 'Your vault is empty. Click a material in your bags to deposit it.',
+    vaultRowAria: '{item}: {count} of {cap} stored',
+    vaultLockedIntro:
+      'Unlock the Materials Vault to stockpile crafting materials beside your bank. Every material gets its own room, up to {cap} apiece.',
+    vaultUnlockButton: 'Unlock the Materials Vault',
+    vaultUnlockConfirm: 'Unlock the Materials Vault for {price}?',
+    vaultUpgrade: 'Widen every ceiling to {cap}',
+    vaultUpgradeConfirm: 'Widen every material ceiling to {cap} for {price}?',
+    vaultDepositAll: 'Deposit all materials',
+    vaultDepositAllTooltip:
+      'Sends every material from your bags to your vault in one trip, filling each material up to its ceiling. Gear, tools, quest items, and consumables are never touched.',
+    vaultDepositAllDone: 'Materials deposited: {count}.',
+    vaultDepositAllFull: 'Materials deposited: {count}. Some ceilings are full.',
+    vaultDepositAllNone: 'Vault ceilings full: nothing deposited.',
+    vaultDepositAllNotable: 'Materials deposited: {count}, including {item}.',
+    vaultDepositAllNotableFull:
+      'Materials deposited: {count}, including {item}. Some ceilings are full.',
+    vaultWithdrawShort: 'Only {fit} of {count} fit in your bags.',
+    // Bags-side hints while the VAULT tab is active (the guild pair's rule:
+    // distinct keys because the target differs).
+    vaultDepositHint: 'Click to deposit into your vault',
+    vaultCannotDeposit: 'Cannot go in the vault',
+    // The Guild tab (guild bank): the Personal/Guild strip renders only while
+    // guildBankInfo is non-null (officer-plus standing at a banker, online).
+    // Withdraw/deposit prompt bodies reuse the personal keys above; the gold
+    // prompts reuse itemUi.money.* for the coin field labels. (Wordy values,
+    // M16: the five non-Latin fills land in this same change.)
+    tabsAria: 'Bank tabs',
+    personalTab: 'Personal',
+    guildTab: 'Guild',
+    guildCapacityAria: 'Guild bank slots used: {used} of {total}',
+    guildEmpty: 'The guild bank is empty.',
+    guildTreasury: 'Guild treasury',
+    guildDepositGold: 'Deposit money',
+    guildWithdrawGold: 'Withdraw money',
+    guildDepositGoldTitle: 'Deposit money into the guild treasury',
+    guildWithdrawGoldTitle: 'Withdraw money from the guild treasury',
+    guildGoldAvailable: 'Available: {amount}',
+    guildBuyConfirm:
+      'Purchase {count} additional guild bank slots for {price} from the guild treasury?',
+    guildBuyNote: 'Paid from the guild treasury',
+    guildTreasuryShort: 'Treasury short',
+    // The UNOPENED pane (ladder rung 0): a new guild's bank has no item slots
+    // until an officer opens it, paid from the CLICKING OFFICER'S OWN PURSE
+    // (never the treasury). The row mirrors the expansion row's contract
+    // (never disabled; visible shortfall marker; always-visible payer note).
+    // (Wordy values, M16: the five non-Latin fills land in this same change.)
+    guildOpenBank: 'Open the guild bank',
+    guildOpenConfirm: 'Open the guild bank for {price}? This is paid from your own money.',
+    guildOpenAccept: 'Open',
+    guildOpenNote: 'Paid from your own money, not the guild treasury',
+    guildPurseShort: 'Not enough money',
+    // The read-only legend a plain member sees: every guild member can VIEW
+    // the bank (v0.35), only officer-plus can act, and the pane says so up
+    // front instead of leaving dead buttons to be discovered. Always-visible
+    // text, the dormant-note precedent.
+    // (Wordy values, M16: the five non-Latin fills land in this same change.)
+    guildReadOnlyNote: 'Only guild officers can make changes to the guild bank.',
+    // The member-facing line of the UNOPENED pane: the officer pane explains
+    // that state through the open-the-bank row, which a read-only viewer does
+    // not get, and a treasury with no grid and no explanation reads as broken.
+    guildUnopenedNote: 'The guild bank has not been opened yet.',
+    guildDormantNote: 'Locked items cannot be withdrawn and prevent disbanding the guild.',
+    guildDormantHint: 'This item is locked in the guild bank and cannot be withdrawn.',
+    guildDormantAria: '{item}, quantity {count}, cannot be withdrawn',
+    guildUnknownItem: 'Unknown item',
+    // Bags-side hints while the GUILD tab is active: distinct from the
+    // personal depositHint/cannotDeposit because the consequences differ
+    // (a shared pool any officer can take from; a refused copy would strand).
+    guildDepositHint: 'Click to deposit into the guild bank',
+    guildCannotDeposit: 'Cannot go in the guild bank',
+    // The gold prompt's refusal line when a non-zero amount cannot move at
+    // all right now (empty purse on deposit, full treasury, empty treasury).
+    guildGoldCannotMove: 'That amount cannot be moved right now.',
+    // The Guild pane's Contents / Log sub-strip and the ACTIVITY LOG itself.
+    // The log is the social trust mechanism the officer-only EDIT design rests
+    // on: every op already writes an audit row, and this is what lets the
+    // whole guild (every member reads it, v0.35) see
+    // who moved shared property. Sentences are plain language with the actor
+    // spliced as a VALUE (a player-authored character name is never a key), the
+    // time rendered by the i18n date formatter, and money by formatMoney.
+    // (Wordy values, M16: the five non-Latin fills land in this same change.)
+    guildViewsAria: 'Guild bank views',
+    guildContentsTab: 'Contents',
+    guildLogTab: 'Log',
+    // The transaction history (paged, filterable) replaced the fixed recent
+    // window under a NEW tab key: `guildLogTab` and `logNote` keep their
+    // shipped locale rows for the retired "50 most recent" surface.
+    // (Wordy values, M16: the five non-Latin fills land in this same change.)
+    guildHistoryTab: 'History',
+    logAria: 'Guild bank activity log',
+    // {count} is interpolated from GUILD_BANK_LOG_LIMIT at the painter
+    // boundary: a baked-in number would lie in six languages the moment the
+    // window size moved.
+    logNote: 'The {count} most recent guild bank actions.',
+    // {count} is the number of rows ON SCREEN (every page loaded so far), from
+    // formatNumber; the footer below the list says whether older rows exist.
+    logShowing: 'Showing {count} guild bank actions, newest first.',
+    logFilterAria: 'Filter the guild bank history',
+    logFilterAll: 'All',
+    logFilterItems: 'Items',
+    logFilterMoney: 'Money',
+    logOlder: 'Show older',
+    logOlderLoading: 'Loading older actions...',
+    // Said in words at the end of the list, so an absent row reads as "it did
+    // not happen" and never as "the list stopped here".
+    logEnd: 'That is the whole guild bank history.',
+    // An empty FILTERED slice: "nothing has been moved" would be false about
+    // a bank whose money moved while the Items chip is pressed.
+    logEmptyFiltered: 'No guild bank actions match this filter.',
+    // The history TABLE: four column headers (pinned to the top of the
+    // scroller), the Action column's word per row kind, the Member cell's
+    // stand-in for an operator action, and the Details cell's item form.
+    // The retired sentence keys (logDepositItem and friends) keep their
+    // shipped locale rows. (Wordy values, M16: the five non-Latin fills land
+    // in this same change.)
+    logColTime: 'When',
+    logColMember: 'Member',
+    logColAction: 'Action',
+    logColDetail: 'Details',
+    logActionDeposit: 'Deposited',
+    logActionWithdraw: 'Withdrew',
+    logActionBuySlots: 'Bought an expansion',
+    logActionOpenBank: 'Opened the bank',
+    logActionCharterFee: 'Paid the charter fee',
+    logActionAdminPurge: 'Removed',
+    logActorAdmin: 'An administrator',
+    // {count} from formatNumber, {item} the localized item name.
+    logDetailItem: '{count} {item}',
+    // The history search, over the LOADED rows (the server pages by cursor and
+    // never sees the query); the footer's Show older widens what it searches.
+    // (Wordy values, M16: the five non-Latin fills land in this same change.)
+    logSearchPlaceholder: 'Search this history',
+    logSearchAria: 'Search the loaded guild bank actions by member, action or item',
+    logShowingMatched: 'Showing {matched} of {count} loaded guild bank actions.',
+    logSearchNoMatch:
+      'No loaded guild bank actions match your search. Show older rows to widen it.',
+    logLoading: 'Loading the guild bank log...',
+    logEmpty: 'Nothing has been moved in or out of the guild bank yet.',
+    // A refusal is deliberately NOT an empty list: "you cannot read this right
+    // now" and "nobody has done anything" are opposite facts. The log is
+    // readable by EVERY guild member (v0.35: the bank view went guild-wide),
+    // so a refusal means the gate dropped mid-view (walked away, died, lost
+    // the guild), never a rank. A NEW key replacing logRefused, because that
+    // key's shipped locale rows promise the retired officers-only rule.
+    // (Wordy value, M16: the five non-Latin fills land in this same change.)
+    logUnavailable: 'The guild bank log cannot be read right now.',
+    // The stand-in when a row's character no longer exists.
+    logFormerMember: 'A former guild member',
+    logDepositItem: '{actor} deposited {count} {item}',
+    logWithdrawItem: '{actor} withdrew {count} {item}',
+    logDepositMoney: '{actor} deposited {amount}',
+    logWithdrawMoney: '{actor} withdrew {amount}',
+    logBuySlots: '{actor} bought a bank expansion for {amount}',
+    logOpenBank: '{actor} opened the guild bank for {amount}',
+    logCharterFee: '{actor} paid the guild charter fee of {amount}',
+    // An operator removal is shown so a disappearance is never an unexplained
+    // gap, and it names NOBODY: the underlying row's character is the escrow
+    // carrier, a bystander who did not order it.
+    logAdminPurge: 'An administrator removed {count} {item}',
+  },
+  // The event calendar window: recurring system events plus the guild lane
+  // (booked by officers and the Guild Master, mirrored via socialInfo).
+  calendar: {
+    title: 'Event Calendar',
+    close: 'Close calendar',
+    keybindLabel: 'Event Calendar',
+    prevMonth: 'Previous month',
+    nextMonth: 'Next month',
+    dayAria: '{date}: {count} events',
+    noEvents: 'Nothing planned for this day.',
+    allDay: 'All day',
+    bookedBy: 'Booked by {name}',
+    deleteAria: 'Remove the event {title}',
+    bookTitle: 'Book a guild event',
+    titlePlaceholder: 'Event title',
+    notePlaceholder: 'Note (optional)',
+    hourLabel: 'Hour (UTC)',
+    hourAllDay: 'All day',
+    addButton: 'Book event',
+    guildOnlyNote: 'Join a guild to plan events together.',
+    result: {
+      created: 'The event is on the guild calendar.',
+      removed: 'The event was taken off the calendar.',
+      notInGuild: 'You are not in a guild.',
+      notOfficer: 'Only officers and the Guild Master may manage guild events.',
+      badInput: 'Give the event a title and a valid day.',
+      calendarFull: 'The guild calendar is full.',
+      eventGone: 'That event is no longer on the calendar.',
+    },
+    events: {
+      raidCall: {
+        title: 'Raid Call',
+        note: 'Wardens sound the horn: gather a party for the crypts and the raid.',
+      },
+      marketDay: {
+        title: 'Market Day',
+        note: 'The Merchant expects fresh stock. A fine day to browse the World Market.',
+      },
+      arenaClash: {
+        title: 'Arena Clash',
+        note: 'Duelists flock to the Ashen Coliseum. Queue up and climb the ladder.',
+      },
+      doubleHonor: {
+        title: 'Double Honor Weekend',
+        note: 'The war camps sound the muster: all weekend, Thornhollow Fields Honor pays double and a played-out loss pays like a win.',
+      },
+      fishingDerby: {
+        title: 'Fishing Derby',
+        note: 'Anglers line the lakes. Bring a pole and swap fishing tales.',
+      },
+      delveDay: {
+        title: 'Delve Day',
+        note: 'Brother Halven marks his charts: a fine day to brave the Collapsed Reliquary.',
+      },
+      moongateCommunion: {
+        title: 'Moongate Communion',
+        note: 'Pilgrims gather at the temple moongate under the mid-month moon.',
+      },
+    },
+  },
+  // Guild roster: a member's last world-entry time, shown on offline rows. {when}
+  // is a locale-formatted date/time, or the "never" leaf when the character has no
+  // recorded login.
+  social: {
+    lastSeen: 'Last seen: {when}',
+    lastSeenNever: 'never',
+    // The two PLAYER chat-filter tiers get a tab each. Ignored is chat-only;
+    // Blocked also stops whispers, invites and mail. (Neither is the admin mute.)
+    ignoredTab: 'Ignored',
+    blockedTab: 'Blocked',
+    ignoredEmpty: 'You are not ignoring anyone.',
+    blockedEmpty: 'You have not blocked anyone.',
+    blockSearchPlaceholder: 'Player name',
+    blockAction: 'Block',
+    nowBlocking: 'Blocked {name}.',
+    stopBlockingTitle: 'Stop blocking {name}',
+    // Guild roster grouping: members are split into an online group over an offline
+    // group, each header carrying its member count ({n}, formatted). The hide-offline
+    // toggle is a persisted USER choice that suppresses the offline group.
+    onlineHeader: 'Online ({n})',
+    offlineHeader: 'Offline ({n})',
+    hideOffline: 'Hide offline',
+    hideOfflineTitle: 'Hide offline guild members',
+    // The guild billboard: a short officer-set message (announcements, Discord
+    // links) pinned atop the Guild tab. Rendered as plain escaped text only,
+    // deliberately (player-controlled; never linkified). {name} in setBy is the
+    // setter's character name, spliced verbatim.
+    billboard: {
+      label: 'Guild Billboard',
+      empty: 'Nothing on the billboard yet.',
+      // Chat-log echo at login and on a mid-session billboard change; {text} is
+      // the player-authored MOTD, untranslated and profanity-masked like any
+      // other chat-pane body (appendLog escapes it; [[i:...]] renders as links).
+      loginLine: 'Guild billboard: {text}',
+      setBy: 'Set by {name}',
+      save: 'Save',
+      placeholder: 'Write a message for the guild',
+      inputLabel: 'Guild billboard message',
+      result: {
+        set: 'The guild billboard was updated.',
+        notOfficer: 'Only officers and the Guild Master may edit the billboard.',
+      },
+    },
+    // Guild roster expansion (docs/prd/guild-roster-expansion.md): the seat
+    // count against the guild's cap, the Guild Master's buy button and its
+    // confirm prompt, the guild-wide success line, and the refusal codes the
+    // server answers with (hud.ts renders them from result_code_keys.ts).
+    // {seats} is the page size, {price} the page price (the confirm prompt
+    // splices coin-icon markup into it, so the button itself carries neither),
+    // {cap} the seat cap, {name} the buyer's character name spliced verbatim.
+    // Wordy, M16: the five non-Latin fills land in this same change.
+    roster: {
+      seats: '{count} of {cap} seats',
+      expand: 'Expand roster',
+      maxed: 'The roster is at its largest size',
+      confirm:
+        'Expand the guild roster by {seats} seats for {price}? The gold comes from your own purse and is not refunded.',
+      confirmAction: 'Expand',
+      expandedLine: '{name} has expanded the guild roster to {cap} members.',
+      result: {
+        notLeader: 'Only the Guild Master may expand the guild roster.',
+        maxed: 'The guild roster cannot grow any larger.',
+        cannotAfford: 'You need {price} to expand the guild roster.',
+        retry: 'The guild roster changed while you were buying. Try again.',
+      },
+    },
+  },
+  // Gathering proficiency section on the character sheet (#1124). Profession
+  // display names mirror src/sim/content/professions.ts (GatheringProfessionId).
+  gathering: {
+    title: 'Gathering',
+    mining: 'Mining',
+    logging: 'Logging',
+    herbalism: 'Herbalism',
+    fishing: 'Fishing',
+    farming: 'Farming',
+    // The sixth family (masterwrought decision C): a gathering FAMILY
+    // without being a gathering PROFESSION (src/sim/professions/
+    // gathering_supply.ts CORPSE_HARVEST_FAMILY). Sits beside its five
+    // siblings above rather than in a second registry: the gathering goal
+    // panel's per-material source label is the one reader today.
+    corpseHarvesting: 'Corpse Harvesting',
+    // #1866: click/tap/interact-key error when a targeted node's per-viewer
+    // respawn timer has not elapsed yet (IWorldProfessions#nodeHarvestableByMe).
+    notReady: 'This resource node has not respawned for you yet.',
+    // Harvest feedback line (Professions 2.0), rendered from the
+    // id-based gatherResult SimEvent. The SOLE player-visible line for a
+    // harvest grant (#2430): the grant hub's own 'loot' event no longer prints
+    // its "You receive:" line for a gather (the loot event's callerLogs flag),
+    // so this line carries the quantity and splices {name} as a clickable,
+    // quality-colored item link. It stays worded APART from the loot family
+    // anyway, because that family's "You receive:" wording still belongs to
+    // every non-profession grant and its hud.ts matcher (single-line contract
+    // pin: tests/gather_event_i18n.test.ts).
+    gatherLine: 'You gather: {name}.',
+    gatherLineQty: 'You gather: {name} x{qty}.',
+    // Corpse-harvest feedback lines (#2457), rendered from the id-based
+    // harvestResult SimEvent. One line per DISTINCT item the harvest granted,
+    // and the SOLE lines for those grants: corpse harvest reaches the grant
+    // hub from six call sites and every one of them now stands its
+    // "You receive:" line down (the loot event's callerLogs flag), where it
+    // used to print one line and one ding per component. Like gatherLine
+    // above, these carry the quantity and splice {name} as a clickable,
+    // quality-colored item link, and stay worded APART from the loot family
+    // whose "You receive:" wording Hud.localizeLootText still matches on
+    // (contract pin: tests/gather_event_i18n.test.ts).
+    harvestLine: 'You harvest: {name}.',
+    harvestLineQty: 'You harvest: {name} x{qty}.',
+    // The Pristine specimen jackpot (#1145) takes its own line: it is a pure
+    // extra granted BESIDE its family's own plain component, so folding it
+    // into the line above would read as the same yield reported twice. The
+    // wording follows the rare-or-better disenchant's typed secondary
+    // (hudChrome.enchanting.disenchantedAlso), the shipped precedent for a
+    // second distinct yield on its own line. Always exactly one unit, so this
+    // family has no Qty sibling.
+    harvestSpecimenLine: 'You also recover {name}.',
+    // Reel-in feedback line (Professions 2.0), rendered from the
+    // id-based fishingResult SimEvent. Like gatherLine above, the sole line
+    // for a landed catch and worded apart from both the loot family and the
+    // gather family. The ONE grant-line family with no Qty sibling, and only
+    // because a catch is always exactly one fish (professions/fishing.ts grants
+    // `caught` with count 1). A multi-fish catch would need the variant added
+    // here, or the count would go unreported now that the hub line is gone.
+    catchLine: 'You reel in: {name}',
+    // Bite minigame lines (Professions 2.0), rendered from the
+    // text-free personal fishingBite / fishingGotAway SimEvents. biteLine
+    // keeps the bite moment visible in the log (never sound-only,
+    // accessibility); gotAwayLine is the no-cost miss.
+    biteLine: 'Something takes the bait!',
+    gotAwayLine: 'It got away.',
+    // The early reel (the spam-click fix): a pole re-press before the bite
+    // now ends the session empty, and this line says why, so the player
+    // learns to wait for the bite instead of reading a silent cancel as a
+    // bug. Same grey no-cue register as gotAwayLine.
+    earlyReelLine: 'You reel in too soon. Nothing had taken the bait.',
+    // Base tool tier gating (Professions 2.0). The sim's gatherDenied
+    // SimEvent and the node hover tooltip are both text-free at the source:
+    // every line here is composed client-side off structured fields, keyed per
+    // profession (single-key interpolation, never concatenated fragments).
+    nodeName: {
+      ore: 'Ore Vein',
+      wood: 'Timber Stand',
+      herb: 'Herb Patch',
+    },
+    // Tooltip requirement line for tier 2+ nodes; doubles as the locked-state
+    // line (red while the viewer's usable tool falls short: the R22
+    // wield-filtered scan, so an owned but unwieldable tool reads short too).
+    tierRequired: {
+      mining: 'Requires a tier {tier} mining pick',
+      logging: 'Requires a tier {tier} logging axe',
+      herbalism: 'Requires a tier {tier} herbalism sickle',
+      // The farming arm's sink is NOT the node tooltip (farming has no world
+      // nodes): it is the farmDenied 'tool' toast, which names the tier the
+      // refused CROP demands when the event's cropId resolves
+      // (farming_view.ts farmDeniedToast), so the refusal teaches the same
+      // number the node families' hover line does.
+      farming: 'Requires a tier {tier} farming hoe',
+    },
+    // Tooltip requirement line for tier-1 nodes (#2343: every harvest needs a
+    // matching tool, bare hands never gather, so tier 1 needs the base tool).
+    // No farming arm: farming has no nodes, so a tierless "requires a hoe"
+    // line has no surface to render on (the tiered toast above covers the
+    // refusal, falling back to hudChrome.farming.denied.tool).
+    requiresTool: {
+      mining: 'Requires a mining pick',
+      logging: 'Requires a logging axe',
+      herbalism: 'Requires a herbalism sickle',
+    },
+    // gatherDenied error toast for a named tier: surface 'node' worded per
+    // node family, plus the fishing arm, which is the ZONE rod gate (this
+    // water takes a better rod than the one you carry) rather than a node.
+    toolTierUnmet: {
+      mining: 'You need a tier {tier} mining pick to harvest this vein.',
+      logging: 'You need a tier {tier} logging axe to fell this stand.',
+      herbalism: 'You need a tier {tier} herbalism sickle to gather this patch.',
+      fishing: 'You need a tier {tier} fishing rod to fish these waters.',
+      farming: 'You need a tier {tier} farming hoe to work this bed.',
+    },
+    // gatherDenied error toast for requiredTier 1 (#2343): the player owns no
+    // matching tool at all, so no tier number is named. The fishing arm is
+    // the startFishing implement gate (surface 'fishing').
+    toolRequired: {
+      mining: 'You need a mining pick to harvest this vein.',
+      logging: 'You need a logging axe to fell this stand.',
+      herbalism: 'You need a herbalism sickle to gather this patch.',
+      fishing: 'You need a fishing pole to cast a line.',
+      farming: 'You need a farming hoe to work this bed.',
+    },
+    // gatherToolNoNode error toast (#2343): the player used a gathering tool
+    // from the bags with no matching resource node within interact range.
+    // Node professions only, so fishing has no arm here (a rod routes to
+    // startFishing and never emits the event); farming does, because a crop
+    // bed is a world node like a vein, a stand, or a patch.
+    noNodeNearby: {
+      mining: 'There is no ore vein within reach.',
+      logging: 'There is no timber stand within reach.',
+      herbalism: 'There is no herb patch within reach.',
+      farming: 'There is no crop bed within reach.',
+    },
+    // gatherDenied error toast, the R22 wield arm: a covering tool IS in the
+    // bags and only its proficiency requirement is short, so the line names
+    // the counter instead of a tier. {skill} is the smallest proficiency at
+    // which something already carried would work the target
+    // (professions/wield_gate.ts minWieldRequirementToWork).
+    wieldUnmet: {
+      mining: 'You need Mining {skill} to swing the pick already in your bags.',
+      logging: 'You need Logging {skill} to swing the axe already in your bags.',
+      herbalism: 'You need Herbalism {skill} to work the sickle already in your bags.',
+      farming: 'You need Farming {skill} to swing the hoe already in your bags.',
+    },
+    // The corpse flavor of the wield arm: profession-neutral like its
+    // tier-based sibling below.
+    wieldUnmetCorpse: 'You need gathering skill {skill} to put your finest tool to work.',
+    // gatherDenied error toast, surface 'corpse': profession-neutral (a corpse
+    // harvest is gated by the best WIELDABLE tool across ALL gathering
+    // professions, R22/R50, so no single tool is named).
+    toolTierUnmetCorpse: 'You need a tier {tier} gathering tool to recover the finest materials.',
+    // Gathering-tool item tooltip lines (#2343): what the tool is, what it is
+    // required for, how using it behaves, and its speed/fishing bonuses. All
+    // composed client-side (src/ui/gather_tool_tooltip.ts), keyed per
+    // profession (single-key interpolation, never concatenated fragments).
+    toolTooltip: {
+      kind: {
+        mining: 'Mining tool (tier {tier})',
+        logging: 'Logging tool (tier {tier})',
+        herbalism: 'Herbalism tool (tier {tier})',
+        fishing: 'Fishing rod (tier {tier})',
+        farming: 'Farming tool (tier {tier})',
+      },
+      unlocks: {
+        mining: 'Required to mine ore veins up to tier {tier}.',
+        logging: 'Required to fell timber stands up to tier {tier}.',
+        herbalism: 'Required to gather herb patches up to tier {tier}.',
+        // The rod arm says WATER rather than nodes: fishing has no nodes, and
+        // what a rod tier opens is which zones will take a line at all
+        // (professions/fishing_zones.ts). Without this the rod was the one
+        // tool family whose tooltip never named the access it buys, so the
+        // only way to learn the water refuses you was to be refused.
+        fishing: 'Required to fish waters up to tier {tier}.',
+        // The hoe arm says CROPS rather than nodes: what a hoe tier opens is
+        // which crop tiers may be planted (the step-12 gate in
+        // professions/farming.ts), and beds themselves are not tiered nodes.
+        farming: 'Required to plant crops up to tier {tier}.',
+      },
+      use: {
+        mining: 'Use: Mine a nearby ore vein.',
+        logging: 'Use: Fell a nearby timber stand.',
+        herbalism: 'Use: Gather from a nearby herb patch.',
+        // No "Use:" imperative: a hoe is a passive gate (clicking it starts
+        // nothing; beds are worked by planting and harvesting directly), so
+        // the line states the bags-carried behavior instead of a click.
+        farming: 'Works from your bags when you plant a crop bed.',
+      },
+      speed: 'Gathers faster at nodes below tier {tier}.',
+      rodRequired: 'Required to fish.',
+      rodBite: 'Fish bite up to {seconds}s sooner.',
+      rodReel: 'Extends the reel window by {seconds}s.',
+      rodBand: 'Unlocks richer catch tables at fishing skill {skill} and above.',
+      // The rung-specific line: names the catch this rod's band introduces.
+      // Bands 3 to 5 all gate at fishing 200, so the skill alone cannot tell
+      // three crafted rods apart and the catch name is what does.
+      rodBandCatch: 'Unlocks {fish} at fishing skill {skill} and above.',
+    },
+    // Full-bag signed-grant downgrade toasts, rendered from the
+    // text-free personal gatherDowngrade SimEvent, one key per lost arm:
+    // 'mark' (the yield arrived unsigned) and 'find' (the jackpot dropped).
+    downgradeMark: "Bags full: the find was stored without its gatherer's mark.",
+    // The crop surface's own mark line (Phase 14): "the find" is prospecting
+    // vocabulary and reads wrong for a harvest you grew; a crop can only
+    // ever lose the mark (nothing-rots always lands the units), so no crop
+    // find line exists.
+    downgradeMarkCrop: "Bags full: the harvest was stored without its grower's mark.",
+    downgradeFind: 'Bags full: a pristine find slipped away.',
+    // The empty-hook FCT self-note (the UX pass), fired off the
+    // fishingEmptyHook event beside the sim's grey log line: the reel was
+    // timed right, the hook just came up bare.
+    emptyHookNote: 'Nothing on the hook',
+    // Tooltip third line: the per-viewer respawn state. The timed variant
+    // renders when the world can put a number on the same timer
+    // (IWorldProfessions nodeRespawnSeconds); the plain one stays the
+    // fallback for a null read. {time} is the respawnClock template below.
+    stateReady: 'Ready',
+    stateCooldown: 'Respawning',
+    stateCooldownTimed: 'Respawns in {time}',
+    // m:ss, the finder-clock token pattern: {minutes} unpadded via
+    // formatNumber, {seconds} pre-padded to two digits.
+    respawnClock: '{minutes}:{seconds}',
+    // Tooltip grade-preview line (the UX pass): shown only when the viewer's
+    // current wieldable tool (plus a usable slotted quality effect) would
+    // mint this node's FINE grade, through the same effectiveGradeToolTier
+    // read the grant runs.
+    fineGradePreview: 'Your tool refines this yield to fine grade.',
+  },
+  // Farming (the growth-engine phase): the chat lines and refusal toasts for
+  // the plant / grow / harvest loop, rendered from the text-free, id-carrying
+  // farmPlanted / farmHarvested / farmWithered / farmDenied SimEvents. Its own
+  // namespace rather than more arms under `gathering` above, because those are
+  // per-profession arms of TOOL keys every gathering profession shares, while
+  // these are farming's own event family. The line keys follow the shipped
+  // grant-line shape (a plain variant plus a {qty} sibling, selected by
+  // grant_line_view.ts isMultiUnitGrant) and stay worded APART from both the
+  // gather and the corpse-harvest families, whose "You gather:" / "You
+  // harvest:" wording those matchers still own.
+  farming: {
+    // The plant confirmation. Names the SEED that was consumed, the
+    // disenchant/salvage precedent for a line about a spent item, so the
+    // player can tell which of several seeds went into the bed.
+    plantLine: 'You plant: {name}.',
+    // The produce a ready plot paid. The sole line for the grant (the farming
+    // resolver emits its hub grants callerLogs, the #2430 one-line rule), so
+    // it carries the quantity.
+    harvestLine: 'You bring in: {name}.',
+    harvestLineQty: 'You bring in: {name} x{qty}.',
+    // The fine-grade twin, on its own line for the reason
+    // harvestSpecimenLine takes one: it is a DIFFERENT item granted beside
+    // the plain produce, so folding it in would read as one yield counted
+    // twice. Unlike a specimen it can land several units, so it keeps a
+    // {qty} sibling.
+    harvestFineLine: 'You also bring in: {name}.',
+    harvestFineLineQty: 'You also bring in: {name} x{qty}.',
+    // The failed-crop payout. A plot that lost its survival roll pays husks
+    // instead of produce, and the player learns it HERE, at the harvest:
+    // nothing rots and no timer fires, so this line is the whole of the bad
+    // news and says plainly that the crop, not the bed, was lost.
+    witheredLine: 'The crop withered. You clear the bed: {name}.',
+    witheredLineQty: 'The crop withered. You clear the bed: {name} x{qty}.',
+    // The interact affordance for the one ambiguous farming press: a placed
+    // feast and a garden bed both in reach (ruling 11b-R3c-1 orders the pair,
+    // feast first). The claim is deliberately COMPARATIVE, "before the bed",
+    // never "your press does X": corpses, delve objects, lootable objects,
+    // npcs, escorts and gather nodes all rank ABOVE both farming arms in
+    // tryNearbyInteraction, so an absolute promise would be false whenever one
+    // of those is also in reach. The second sentence is the way out, because a
+    // notice that only describes a problem is not an affordance.
+    // Intentional gathering PR1: the bed press OPENS the bed window (harvest
+    // mode over my plot), it never harvests, so the way-out clause names the
+    // window. Existing locale fills were refreshed in this change.
+    pressTarget: {
+      feastOverHarvest:
+        "A feast and your crop are both in reach. Interact takes the feast before the bed; step away from the feast to open your crop's bed window.",
+      feastOverPlant:
+        'A feast and an empty bed are both in reach. Interact takes the feast before the bed; step away from the feast to plant.',
+    },
+    // The seed-back sentence (the crop-ladder phase): a tier 3/4 harvest can
+    // hand back seeds beside its payout, on EITHER outcome, so this renders
+    // whenever farmHarvested / farmWithered carries a positive seedBackCount.
+    // Names the SEED as a spliced token (farming_view.ts resolves the crop id
+    // to its seed item, the plant line's shared hop), with the family's
+    // quantity split.
+    seedBackLine: 'You recover seed: {name}.',
+    seedBackLineQty: 'You recover seed: {name} x{qty}.',
+    // The golden-harvest BONUS sentence (Phase 11f): a golden harvest pays one
+    // extra item beside its five-fold windfall, a seed of the next tier up or,
+    // far more rarely, a farming recipe. ONE key, no quantity split, because
+    // the bonus is always exactly one item; the item resolves as a spliced
+    // token like every other grant line. Rendered only when the event carries
+    // goldenBonusItemId, which only a golden win sets.
+    goldenBonusLine: 'The golden harvest yields: {name}.',
+    // Refusal toasts, one per farmDenied reason, keyed by the reason id
+    // itself so gathering_view.ts resolves them by template literal and no
+    // second map can drift. Error toasts only: no line, no cue, no other
+    // state (the gatherDenied pattern).
+    denied: {
+      bad_bed: 'There is no crop bed there.',
+      bad_crop: 'You cannot plant that here.',
+      range: 'You are too far from that crop bed.',
+      bed_taken: 'You already have a crop growing there.',
+      skill: 'Your Farming skill is too low for that crop.',
+      no_seed: 'You have no seed for that crop.',
+      not_ready: 'That crop is still growing.',
+      no_plot: 'Nothing is planted in that bed.',
+      // The knobs phase: the husk trade with fewer husks than one batch
+      // costs (convert_husks), then the three plant-time knob payments.
+      no_husks: 'You do not have enough withered husks.',
+      no_compost: 'You have no compost.',
+      no_fee_produce: 'You have no produce to pay the watch fee.',
+      no_tonic: 'You have no growth tonic.',
+      // The hoe phase: the step-12 hoe gate's refusal, one line for both the
+      // no-hoe and the tier-short (or wield-short) case.
+      tool: 'You have no farming hoe fit for that crop.',
+      // Player item lock (issue 3042, the v0.38.0 sync): fired instead of the
+      // family shortfall line when the shortfall is caused solely by a locked
+      // copy, so the denial names the real cause rather than reading as a
+      // generic shortage (the crafting.reagentLocked twin). One line for all
+      // five farming spends: the event does not say which leg was locked.
+      locked: 'An item that would pay for that is locked.',
+      // The farming go-live: the husk trade's range gate (convertHusks refuses
+      // out of reach of a farmer NPC, professions/farmer_npcs.ts). Its own
+      // leaf rather than `range` above, whose English names a crop bed.
+      no_farmer: 'You must be near a farmer to trade husks for compost.',
+      // The shared feast (professions/feast.ts): place refusals cover a
+      // missing item or an already-active table; consume refusals cover a
+      // stale or expired id, a picked-clean table, or a repeat diner. An
+      // out-of-range lookup deliberately reuses feast_expired, and a
+      // lock-caused shortfall reuses locked above.
+      no_feast: 'You have no feast to set out.',
+      feast_active: 'Your feast is already set out.',
+      feast_expired: 'That feast is gone.',
+      feast_finished: 'That feast has been picked clean.',
+      feast_eaten: 'You have already eaten from that feast.',
+    },
+    // THE PLACED FEAST TITLES (professions/feast.ts), composed client-side off
+    // the entity's templateId by src/ui/hud/professions/feast_title.ts, which is the ONE map
+    // both the target frame and the floating world label read. In every one,
+    // {name} is the PLACER'S raw player name, carried by the entity as a VALUE
+    // and never translated (the gatherEvent.goldenHarvest finder-param
+    // precedent).
+    //
+    // ONE KEY PER FEAST TIER, and that is decision K1 rather than decoration:
+    // a raider standing at the table learns WHICH plate is on it from this
+    // title, so an apex feast sharing the party feast's key would label a
+    // Stonepot Feast as a Harvest Feast. The keys are LITERAL in that map
+    // (never `...${id}Title`), so a re-key stays a local edit and the release
+    // fill can see them. feastTitle itself is NOT reworded here, so no filled
+    // locale row goes stale.
+    feastTitle: "{name}'s Harvest Feast",
+    // The three apex role feasts (masterwrought Phase 11k). Each name is the
+    // shipped apex plate it serves plus the mechanic word, so the role reads
+    // off the table without inspecting the entity.
+    stonepotFeastTitle: "{name}'s Stonepot Feast",
+    warspiceFeastTitle: "{name}'s Warspice Feast",
+    sageleafFeastTitle: "{name}'s Sageleaf Feast",
+    // The placer's own confirmation, rendered from the text-free
+    // farmFeastPlaced SimEvent (everyone else learns of the feast by seeing
+    // the entity itself, so only the placer gets a line).
+    feastPlacedLine: 'You set out your harvest feast.',
+    // The farmer NPC's gossip row (the farming go-live): the one UI affordance
+    // that sends convert_husks, offered in the dialog of every NpcDef carrying
+    // the farmer flag (hud/quest/quest_dialog_controller.ts). The trade's own
+    // feedback is the husksConverted line below and the denied toasts above.
+    huskTrade: 'Trade husks for compost',
+    // WCAG 2.5.3 label-in-name: the accessible name CONTAINS the visible
+    // huskTrade label verbatim (speech-input users say what they see), so
+    // the aria adds only the counterparty, never rewords the action. The
+    // same containment rule binds every locale fill of this pair.
+    huskTradeAria: 'Trade husks for compost with {name}',
+    // The plant sheet (the bed-verbs phase): the window a press on a free
+    // garden bed opens. Seed and supply names come from itemDisplayName and
+    // the watch knob reuses the journal's careWatch label, so the copy here
+    // is only what no other family owns: the title, the one Plant control,
+    // the seed-row aria, and the no-sowable-seed empty state.
+    plantSheet: {
+      title: 'Plant a Crop',
+      plant: 'Plant',
+      sowAria: 'Sow {name}',
+      empty: 'You have no seed you can sow at this bed.',
+      // Intentional gathering PR1: the same window paints harvest mode for a
+      // bed holding my plot, so the close control names the bed window, not
+      // the plant sheet. Existing locale fills were refreshed in this change.
+      close: 'Close the bed window',
+    },
+    // The husk trade's one line (the knobs phase): names BOTH sides of the
+    // trade, what left the bags and what arrived, because the compost grant's
+    // hub line stands down for it (silent + callerLogs, the #2430 one-line
+    // rule). BOTH items splice as tokens ({husksName} is the husk item's own
+    // localized link, exactly like {name}): hardcoding "withered husks" as
+    // prose would drift from entities.items.withered_husks.name per locale
+    // on any rename, and the xN form sidesteps English pluralization. The
+    // quantity split follows the grant-line families above.
+    husksConvertedLine: 'You trade {husksName} x{husks} for {name}.',
+    husksConvertedLineQty: 'You trade {husksName} x{husks} for {name} x{qty}.',
+    // The ready notice (the ready-notice phase), rendered on BOTH the ambient
+    // banner and the chat log from one text-free farmReady event. Two
+    // sentences, one per outcome, so a mixed notice reports both halves
+    // honestly; a notice never repeats for the same plot, so each reads as
+    // news rather than a standing reminder. {count} is a count of BEDS, not a
+    // stack size, which is why these carry a spelled-out plural sibling
+    // instead of the grant families' " xN" form.
+    readyLine: 'A crop is ready to harvest.',
+    readyLineQty: '{count} crops are ready to harvest.',
+    // The failed-crop half. Says only that the crop is finished and lost, not
+    // what it will pay: the husks arrive at the harvest, and the withered
+    // harvest line above is where they get counted.
+    readyWitheredLine: 'A crop withered in its bed.',
+    readyWitheredLineQty: '{count} crops withered in their beds.',
+  },
+  // The Harvest Journal window: the farmer's read-only list of their own
+  // planted beds. INFORMATIONAL ONLY, so nothing in here labels an action:
+  // the plant and harvest verbs stay at the beds themselves and this window
+  // sends no command, which is why there is no button copy but the entry
+  // control and the close chrome.
+  harvestJournal: {
+    title: 'Harvest Journal',
+    close: 'Close',
+    listLabel: 'Planted crop beds',
+    // The time cell, one arm per plot state. `growing` wraps whichever clock
+    // arm below the remaining duration selected. READY IS ITS OWN ARM AND
+    // COMES FROM THE AUTHORITY'S `status`, never from a countdown reaching
+    // zero, which is what `finishing` is for: the deadline has passed on this
+    // client's clock while the server still calls the plot growing, so the
+    // line reports the wait honestly instead of promising a harvest that
+    // would be refused.
+    growing: 'Ready in {time}',
+    ready: 'Ready to harvest',
+    finishing: 'Finishing up',
+    withered: 'Withered',
+    // The in-dialog status line (role=status, the a11y batch): announced when
+    // a row flips to ready UNDER an open journal, naming the crop(s); the
+    // chat line reaches the log live region, but a reader standing in the
+    // journal hears nothing there. {name} is the produce display name (a
+    // comma-joined list when several flip on one repaint).
+    readyAnnounce: 'Ready to harvest: {name}',
+    // The clock arms, selected by scale in harvest_journal_view.ts. Token-only
+    // on purpose: no colon string is ever hand-built, and a locale is free to
+    // reorder the units or change the unit letters. The seconds value arrives
+    // zero-padded, so the minute arms read 3m 07s.
+    remainingDaysHours: '{days}d {hours}h',
+    remainingHoursMinutes: '{hours}h {minutes}m',
+    remainingMinutesSeconds: '{minutes}m {seconds}s',
+    remainingSeconds: '{seconds}s',
+    // Where the bed is. The patch's ZONE is the only localized location handle
+    // farming content carries (patches and beds have ids, not names), so the
+    // line pairs it with the bed's 1-based position in that garden; the
+    // unknown arm covers a bed id no shipped patch claims (content drift
+    // between a client and a newer server).
+    bedLine: '{zone}, bed {index}',
+    bedLineUnknown: 'Unknown bed',
+    // The plant-time knobs this plot was paid for. Compost and the growth
+    // tonic are real items and take their names from the item catalog, so
+    // they need no copy here; the farmer's watch is a produce FEE with no
+    // item of its own, which makes it the one knob that needs a name.
+    careWatch: "Farmer's Watch",
+    careNone: 'No extras',
+    // The four derived growth stages (farmGrowthStage), shown on growing rows
+    // so a journal line matches what the bed itself looks like in the world.
+    stageSprout: 'Sprout',
+    stageSeedling: 'Seedling',
+    stageMaturing: 'Maturing',
+    stageRipe: 'Ripe',
+    // The two empty states. Gathering professions have no learn gate in this
+    // game, so NEITHER sentence claims a plant would be refused: the skill-0
+    // one simply says where to start, and the other says the list fills
+    // itself.
+    emptyTitle: 'No crops planted',
+    emptyBody: 'Sow a seed in any garden bed and the plot appears here with its timer.',
+    noviceTitle: 'You have not worked a garden bed yet',
+    noviceBody:
+      'Farming skill grows every time you bring in a crop. Sow a seed in any garden bed to begin.',
+  },
+  // Archetype title chrome (#1130, pair-named under Professions 2.0):
+  // `label` heads the character-sheet title line, `none` is shown before the
+  // zone-1 acceptance quest has ever been completed (no "Jack of All Trades"
+  // fallback, just untitled), and `hobbyLabel` heads the hobby line (#1294).
+  // The title NAMES live under archetypePair below, keyed by canonical pair id.
+  archetypeTitle: {
+    label: 'Title',
+    none: 'None',
+    hobbyLabel: 'Hobby',
+  },
+  // Pair-named archetype titles (Professions 2.0): one named title per
+  // selectable adjacent-pair attunement, keyed by the CANONICAL PAIR ID from
+  // src/sim/professions/archetype.ts ARCHETYPE_PAIR_TARGETS (the two majors
+  // joined by '+' in CRAFT_RING order); keep both in sync. These replace the
+  // retired per-craft practitioner titles (Armorer, Weaponsmith, ...).
+  archetypePair: {
+    'engineering+alchemy': 'Bombardier',
+    'alchemy+cooking': 'Apothecary',
+    'cooking+leatherworking': 'Trapper',
+    'leatherworking+tailoring': 'Outfitter',
+    'tailoring+inscription': 'Inkweaver',
+    'inscription+enchanting': 'Arcanist',
+    'enchanting+jewelcrafting': 'Gembinder',
+    'jewelcrafting+weaponcrafting': 'Bladewright',
+    'weaponcrafting+armorcrafting': 'Smith',
+    'armorcrafting+engineering': 'Gearwright',
+  },
+  // Per-craft display names, keyed by the same craft id as CRAFT_RING
+  // (src/sim/content/professions.ts); keep both in sync. Used wherever a CRAFT
+  // (not a title) is meant: the hobby line, identity-card skill rows and
+  // nudges, crafting-window section headers, and combo requirement labels.
+  craftName: {
+    armorcrafting: 'Armorcrafting',
+    weaponcrafting: 'Weaponcrafting',
+    jewelcrafting: 'Jewelcrafting',
+    alchemy: 'Alchemy',
+    engineering: 'Engineering',
+    cooking: 'Cooking',
+    inscription: 'Inscription',
+    enchanting: 'Enchanting',
+    tailoring: 'Tailoring',
+    leatherworking: 'Leatherworking',
+  },
+  // Per-enchant display names (Professions 2.0), keyed by the same
+  // enchant id as content/enchants.ts ENCHANTS; keep both in sync. This is the
+  // FIRST render sink for EnchantDef.name (it never rendered before), resolved
+  // by enchant_apply_view.ts enchantNameKey in the Apply Enchant picker; never
+  // the raw def name in the DOM.
+  enchantName: {
+    enchant_weapon_lastflame_zeal: "Last Flame's Zeal",
+    enchant_weapon_might: 'Weapon Etching: Might',
+    enchant_weapon_intellect: 'Weapon Etching: Spellpower',
+    enchant_offhand_stamina: 'Offhand Etching: Stamina',
+    enchant_helmet_fortitude: 'Helmet Etching: Fortitude',
+    enchant_neck_spirit: 'Necklace Etching: Spirit',
+    enchant_shoulder_agility: 'Shoulder Etching: Agility',
+    enchant_chest_stamina: 'Chest Etching: Stamina',
+    enchant_waist_stamina: 'Belt Etching: Stamina',
+    enchant_legs_stamina: 'Leg Etching: Stamina',
+    enchant_gloves_agility: 'Glove Etching: Agility',
+    enchant_gloves_intellect: 'Glove Etching: Spellpower',
+    enchant_feet_agility: 'Boot Etching: Agility',
+    enchant_ring_spirit: 'Ring Etching: Spirit',
+    enchant_weapon_agility: 'Weapon Etching: Agility',
+    enchant_helmet_intellect: 'Helmet Etching: Intellect',
+    enchant_helmet_armor: 'Helmet Etching: Reinforcement',
+    enchant_neck_intellect: 'Necklace Etching: Intellect',
+    enchant_neck_agility: 'Necklace Etching: Agility',
+    enchant_shoulder_strength: 'Shoulder Etching: Strength',
+    enchant_shoulder_intellect: 'Shoulder Etching: Intellect',
+    enchant_chest_spirit: 'Chest Etching: Spirit',
+    enchant_chest_armor: 'Chest Etching: Reinforcement',
+    enchant_waist_strength: 'Belt Etching: Strength',
+    enchant_waist_agility: 'Belt Etching: Agility',
+    enchant_legs_intellect: 'Leg Etching: Intellect',
+    enchant_gloves_strength: 'Glove Etching: Strength',
+    enchant_feet_strength: 'Boot Etching: Strength',
+    enchant_feet_stamina: 'Boot Etching: Stamina',
+    enchant_ring_strength: 'Ring Etching: Strength',
+    enchant_ring_agility: 'Ring Etching: Agility',
+    enchant_ring_intellect: 'Ring Etching: Intellect',
+    enchant_weapon_greater_might: 'Weapon Etching: Greater Might',
+    enchant_weapon_greater_spellpower: 'Weapon Etching: Greater Spellpower',
+    enchant_helmet_greater_fortitude: 'Helmet Etching: Greater Fortitude',
+    enchant_chest_greater_stamina: 'Chest Etching: Greater Stamina',
+    enchant_legs_greater_stamina: 'Leg Etching: Greater Stamina',
+    enchant_gloves_greater_agility: 'Glove Etching: Greater Agility',
+    enchant_weapon_runed_edge: 'Weapon Etching: Runed Edge',
+    enchant_weapon_runed_focus: 'Weapon Etching: Runed Sigil',
+    enchant_chest_runeweave: 'Chest Etching: Runed Weave',
+    enchant_legs_runed_hide: 'Leg Etching: Runed Hide',
+    enchant_helmet_runed_links: 'Helmet Etching: Runed Links',
+    // The Lucent (apex) tier. The first four follow the slot-and-effect
+    // formula every row above uses (the weapon int twin landed with the
+    // phase 10 QA D10-D1 ruling); Lucent Infusion is a registered standalone
+    // name, so it takes no slot prefix even though it targets a slot.
+    enchant_weapon_lucent_might: 'Weapon Etching: Lucent Might',
+    enchant_weapon_lucent_spellpower: 'Weapon Etching: Lucent Spellpower',
+    enchant_chest_lucent_stamina: 'Chest Etching: Lucent Stamina',
+    enchant_feet_lucent_agility: 'Boot Etching: Lucent Agility',
+    enchant_lucent_infusion: 'Lucent Infusion',
+  },
+  enchantDescription: {
+    enchant_weapon_lastflame_zeal:
+      "Your landed melee attacks can grant 50 Strength for 15 sec and heal you for 200 health. Healing modifiers apply. Each hit rolls 1% per 0.6 sec of the striking weapon's base speed. No internal cooldown. Each hand has its own buff; repeated triggers refresh that hand. Ranged attacks do not trigger this effect. Wolf Form uses its 1 sec base swing speed instead.",
+  },
+  // Professions window (Professions 2.0): the read-only craft-wheel
+  // window. Craft and pair NAMES resolve through craftName / archetypePair
+  // above; these keys are the window's own chrome. Wording follows the
+  // crafting identity card family (crafting.identity.*).
+  professions: {
+    title: 'Professions',
+    close: 'Close professions',
+    // The corpse examine entry (intentional gathering PR1): the keyboard,
+    // pad and touch route to the corpse choice popup, since Tab targeting
+    // skips dead mobs. The button opens the CHOICE; the popup's own Harvest
+    // control is the only thing that gathers, and the hint says so.
+    harvestBodyButton: 'Harvest a body',
+    harvestBodyHint:
+      'Opens the choice for a body in reach that can still be harvested. Nothing is gathered until you choose.',
+    ringAria: 'Craft wheel',
+    skillsHeader: 'Craft skills',
+    gatheringHeader: 'Gathering',
+    perksHeader: 'Perks',
+    identityHeader: 'Identity',
+    roleMajor: 'Major',
+    roleHobby: 'Hobby',
+    roleDormant: 'Dormant',
+    roleUnattuned: 'Unattuned',
+    ceilingUnlimited: 'No empowerment cap',
+    ceilingRare: 'Rare cap',
+    ceilingCommon: 'Common cap',
+    skillValue: '{skill} / {max}',
+    // The slotted tool effect under a gathering row. Charges are shown as a
+    // fraction of what the slot was MINTED with, which depends on the rarity of
+    // the tool it went onto, so the denominator is per-slot and not a constant.
+    toolEffectCharges: '{charges} of {max} charges',
+    // Said in words rather than as "0 of 30": a bare zero reads like a broken
+    // tool, and the tool is fine. Only the effect is spent, and it recharges.
+    toolEffectSpent: 'Spent, needs recharging',
+    // The last-charge FCT self-note (the UX pass), fired off the
+    // gatherResult event's effectDepleted flag: the harvest that spent the
+    // final charge says so instead of letting the effect expire silently.
+    toolEffectDepleted: 'Tool effect spent',
+    // The recharge cost preview beside the button (the UX pass): the priced
+    // material and count the resolver would charge right now. Ceil-priced,
+    // so the marginal top-up (one charge short) honestly reads one full
+    // material.
+    toolEffectRechargePrice: 'Recharge: {count} x {material}',
+    // The R40 prompt-mode surfaces. The toggle configures the NEXT slot
+    // action's mint; the chip marks a LIVE 'prompt' slot; the dialog is the
+    // per-use ask (accept spends the charge, decline still gathers, and the
+    // body says so, because a dialog whose cancel still acts must never
+    // surprise).
+    toolEffectModeAsk: 'Ask each use',
+    toolEffectModePrompt: 'Asks each use',
+    toolEffectConfirmTitle: 'Use {effect}?',
+    // Count-neutral on purpose (the phase 14 QA): "one of {charges}
+    // charges" read "one of 1 charges" on the last charge, the moment the
+    // prompt matters most. The label form carries the number without
+    // pluralization; the zh fills already phrased it this way, and the
+    // ja/ko/ru fills were re-worded off the same partitive in the fix
+    // round (the reword-staleness rule: an English reword re-reads every
+    // overlay it invalidates).
+    toolEffectConfirmBody:
+      'Spend a charge on this harvest? Declining still gathers, without the bonus. Charges left: {charges}.',
+    toolEffectConfirmAccept: 'Use a Charge',
+    toolEffectConfirmDecline: 'Gather Without',
+    // The TOOL_EFFECTS catalog by id (src/sim/content/professions.ts). Three
+    // are slottable today (gatherers_cache, artisans_eye, makers_charm):
+    // slotToolEffectRefused refuses every respawnSpeed-kind effect
+    // (quickening_charm) on every profession, so no shipped UI path offers
+    // that one; its name is still reachable through the refusal line, which
+    // echoes a hand-sent effectId, so the key stays localized. The sim is
+    // language-agnostic and emits the id; these are where it becomes a name.
+    toolEffectName: {
+      gatherersCache: "Gatherer's Cache",
+      artisansEye: "Artisan's Eye",
+      quickeningCharm: 'Springback Charm',
+      makersCharm: "Maker's Charm",
+    },
+    // Tool-effect charm tooltip copy (src/ui/tool_effect_tooltip.ts): what each
+    // charm does, how to slot it, and the charge ladder. Shared by item tooltips
+    // (bags / bank / crafting / market) and the Professions window hover card so
+    // a player never has to discover the system by trial and error. Bonus lines
+    // track applyEffectBonus kinds in professions/tools.ts; charge numbers come
+    // from TOOL_EFFECTS.startingDurability and RARITY_DURABILITY_BONUS.
+    toolEffectTooltip: {
+      kind: 'Tool charm',
+      bonus: {
+        gatherersCache: '+1 yield per harvest while charged.',
+        artisansEye: 'Raises the harvest grade by 1 tool tier while charged.',
+        // Catalog-only today: slotToolEffectRefused refuses every respawnSpeed
+        // effect until the arm is wired. The name still appears on hand-sent
+        // refusal lines, so the bonus copy stays honest about the catalog claim.
+        quickeningCharm: 'Shortens the node respawn timer it triggers.',
+        // Profession-dependent, and the tooltip says so because the player
+        // chooses the tool AFTER reading it. Farming caps a quantity effect
+        // at +1 (FARM_EFFECT_BONUS_PICK_CAP, masterwrought DECISION C);
+        // mining, logging and herbalism pay the catalog's full 2.
+        makersCharm: '+2 yield per harvest while charged, or +1 on a farming tool.',
+      },
+      howToSlot:
+        'Slot onto a mining, logging, herbalism, or farming tool from the Professions window. Consumed when slotted.',
+      charges: 'Starts with {base} charges on a common tool (+{bonus} per rarity rung).',
+      landOnly: 'Does not slot on fishing rods.',
+      openProfessions: 'Open Professions to slot this onto a gathering tool.',
+    },
+    // Mobile-station tool tooltip copy (src/ui/hud/professions/mobile_station_tooltip.ts):
+    // what placing the Master's Field Forge does, the party-share radius,
+    // the duration, and the replace rule. {radius} interpolates
+    // STATION_RADIUS and {minutes} derives from
+    // MOBILE_CRAFTING_STATION_DURATION_TICKS (content/professions.ts), so
+    // the copy tracks the live constants, never hardcoded numbers.
+    mobileStationTooltip: {
+      // {station} is the localized stationName.* noun derived from the def's
+      // own stationCraftId, so a second placeMobileStation item names its own
+      // station kind rather than inheriting the forge copy.
+      kind: 'Field station',
+      use: 'Places a party-shared {station} at your feet.',
+      radius: 'You can craft at it from anywhere; party members must be within {radius} yards.',
+      duration: 'Lasts {minutes} minutes.',
+      notConsumed: 'Never consumed.',
+      replace: 'Placing replaces your active field station, including a specialty-placed one.',
+    },
+    // The toolEffectResult event's chat lines (the acquisition craft): one
+    // line per outcome, rendered off ids only (the event is text-free).
+    // {effect} and {profession} splice localized names; {material} splices a
+    // clickable item link, the craftedToast idiom.
+    // The slot/recharge buttons on a gathering row. The slot label names the
+    // charm it consumes; the recharge label stays bare because it sits on the
+    // effect's own line.
+    toolEffectSlotButton: 'Slot {effect}',
+    toolEffectRechargeButton: 'Recharge',
+    toolEffectSlotted: '{effect} slotted on {profession}.',
+    toolEffectSlotInvalid: '{effect} cannot be slotted there.',
+    toolEffectNoTool: 'You need a real {profession} tool first.',
+    toolEffectNoCharm: 'You need a crafted {effect} charm in your bags.',
+    toolEffectNoGain: '{effect} is already slotted and fully charged.',
+    toolEffectRecharged: '{effect} recharged: {material} x{count} consumed.',
+    toolEffectRechargeNoSlot: 'No effect is slotted on {profession}.',
+    toolEffectRechargeFull: '{effect} is already fully charged.',
+    // The R47 distinction: the slot is at everything the carried tool can
+    // fill, but its own ceiling is higher, so the line points at the tool
+    // rather than claiming the slot is full.
+    toolEffectRechargeToolCapped: 'Carry a better {profession} tool to charge {effect} further.',
+    toolEffectRechargeMaterials: 'Recharging {effect} needs {material} x{count}.',
+    // In-progress readouts for the four crafting/gathering-service actions plus
+    // tool-effect recharging (social/chat_readouts.ts describeActiveAction):
+    // countdown chat lines shown while the action channels.
+    craftingProgress: 'You are crafting: {remaining}s of {total}s remaining.',
+    disenchantingProgress: 'You are disenchanting: {remaining}s of {total}s remaining.',
+    enchantingProgress: 'You are enchanting: {remaining}s of {total}s remaining.',
+    salvagingProgress: 'You are salvaging: {remaining}s of {total}s remaining.',
+    rechargingToolEffectProgress:
+      'You are recharging a tool effect: {remaining}s of {total}s remaining.',
+    tierPipAria: 'Tier {tier}',
+    nextUnlockTier: '{points} points to the next tier: masterwork odds improve',
+    nextUnlockSpecialized: '{points} points to Specialized: material costs drop',
+    nextUnlockMastered: 'Mastered, for now',
+    perkSpecializedLine: '{craft}: Specialized, material costs -{pct}%',
+    perkSpecializedAt: 'Specializes at {threshold} skill',
+    switchCost: 'Next archetype switch costs {cost} amends',
+    syncing: 'Waiting for your profession data from the realm.',
+    tutorialLine: 'Reach {target} skill in any craft to unlock your first tier.',
+    ctaHeader: 'Next step',
+    ctaRaise: 'Keep raising {craft}: {points} more points to the next tier.',
+    ctaRaiseSpecialized:
+      'Keep raising {craft}: {points} more points to Specialized, and material costs drop.',
+    ctaStart: 'Craft or gather with any profession to begin.',
+    unattunedIdentity:
+      'You are not yet attuned to an archetype. Raise your crafts and complete an attunement to choose your pair.',
+    nudgeNearTier: '{craft}: {points} points from the next tier',
+    nudgeDormant: 'Your {craft} knowledge lies dormant',
+    hobbyLabel: 'Hobby: {craft}',
+    majorsLabel: 'Majors: {a} and {b}',
+    pairsHeld: 'Pairs held: {count}',
+    returnsLabel: 'Returns: {count}',
+  },
+  // Crafting window (#1127): the minimal common-tier crafting action, one row
+  // per known recipe, a Craft button enabled only when every reagent is held.
+  crafting: {
+    title: 'Crafting',
+    close: 'Close crafting',
+    // The gossip-dialog Crafting option on a station master: opens the
+    // crafting window straight to the master's own craft tab. {craft} in the
+    // aria is the localized craft name (craftName above).
+    dialogOption: 'Crafting',
+    dialogOptionAria: 'Open the crafting window for {craft}',
+    // Craft Cast System Phase 2: button label while this recipe's cast runs.
+    crafting: 'Crafting',
+    // Phase 3 batch craft: primary action with the row qty, and mats-limited max.
+    create: 'Create',
+    createAll: 'Create All',
+    createAllAria: 'Create the maximum number of this recipe from materials held',
+    // Qty stepper group for one recipe row.
+    qtyRowAria: 'Craft quantity',
+    qtyDecreaseAria: 'Decrease craft quantity, currently {count}',
+    qtyIncreaseAria: 'Increase craft quantity, currently {count}',
+    qtyValueAria: 'Craft quantity, {count}',
+    // The gathering-goal Track control (Intentional Gathering PR4): its OWN
+    // quantity stepper, deliberately separate from the craft-batch qty group
+    // above (which clamps to the current mats-fit and so cannot express a
+    // shortage to plan a goal around). Track REPLACES the current goal.
+    goalQtyRowAria: 'Goal quantity',
+    goalQtyDecreaseAria: 'Decrease goal quantity, currently {count}',
+    goalQtyIncreaseAria: 'Increase goal quantity, currently {count}',
+    trackGoalButton: 'Track',
+    trackGoalButtonAria: 'Track {count} crafts of {name} as your gathering goal',
+    // Batch progress on the in-window strip ({remaining} / {total} localized).
+    batchRemaining: '{remaining} of {total} remaining',
+    batchRemainingAria: '{remaining} of {total} crafts remaining',
+    // Compact row chip for expected cast time ({seconds} is a localized number).
+    durationChip: '{seconds}s',
+    // Accessible duration line (aria + tooltip); {seconds} is a localized number.
+    durationAria: 'Cast time: {seconds} seconds',
+    // In-window progress strip accessible name.
+    progressAria: 'Craft progress',
+    // Polite live-region lines for cast start / complete / cancel.
+    announceStart: 'Crafting {name}',
+    announceComplete: 'Finished crafting {name}',
+    announceCancel: 'Crafting cancelled',
+    reagentsNeeded: 'Requires:',
+    reagentLine: '{name} x{have}/{required}',
+    // The fine-substitution suffix (the UX pass): appended to a reagent line
+    // when base stock runs short and the craft would spend fine grades (the
+    // D8 downward substitution, 2x gather value), so the spend is stated
+    // before the click instead of silent after it.
+    reagentFineSub: '(spends {count} fine-grade)',
+    // The craft-from-vault suffix (Bank Storage Phase 04): appended to a
+    // reagent line when carried stock runs short and the craft would draw the
+    // remainder from the Materials Vault (carried always drains first), so
+    // the vault spend is stated before the click, exactly like the
+    // fine-substitution suffix above. Rendered only while the world reports
+    // vault draw available here (craftVaultStock non-null).
+    reagentVaultDraw: '(draws {count} from your vault)',
+    // The place-blocked note (Phase 04 QA): rendered once at the top of the
+    // recipe list when the world reports vault draw BLOCKED here
+    // (craftVaultStock null: an instanced context) AND some reagent row is
+    // short, so a row the vault would have satisfied in town never reads as
+    // a bare red count with no reason (the stationOutOfRange precedent).
+    // Neutral phrasing on purpose: it must stay true for a player who has
+    // never unlocked the vault.
+    vaultUnreachable: 'The Materials Vault is out of reach here.',
+    // The #1301 gold-sink fee (src/sim/professions/crafting.ts
+    // resolveCraftForRecipe), charged on every successful craft but never
+    // shown anywhere before this: {fee} is the already-localized formatMoney
+    // string, so no separate number param is needed. "Each" matters because
+    // the row's Create and Create All controls can submit multi-craft batches.
+    craftFeeLine: 'Craft fee: {fee} each',
+    empty: 'No recipes known yet.',
+    resultAria: 'Craft {name}',
+    // The SOLE player-visible line for a craft grant (#2430). The grant hub's
+    // own 'loot' event no longer prints its "You receive:" line for a craft
+    // (the loot event's callerLogs flag), so this line carries everything it
+    // used to: {name} is spliced as a clickable, quality-colored item link,
+    // and the Qty variant carries the output count of a resultCount > 1
+    // recipe, which used to be visible only through the hub line's " xN".
+    craftedToast: 'Crafted: {name}',
+    craftedToastQty: 'Crafted: {name} x{qty}',
+    insufficientMaterials: 'You do not have the materials for that.',
+    // Player item lock (issue 3042): fired instead of insufficientMaterials
+    // when the reagent shortfall is caused solely by a locked copy, so the
+    // denial names the real cause rather than reading as a generic shortage.
+    reagentLocked: 'A reagent for that is locked.',
+    unknownRecipe: 'That recipe does not exist.',
+    comboRequirementUnmet:
+      'You do not have both required crafts at the required tier for that recipe.',
+    comboRequires: 'Attunement: {craftA} + {craftB}, tier {tier}.',
+    comboMet: 'Ready.',
+    comboSyncing: 'Checking realm attunement.',
+    comboNotAttuned: 'Choose an archetype pair first.',
+    comboWrongPair: 'Activate this exact pair to craft it.',
+    comboTierUnmet: 'Raise both major crafts to the required tier.',
+    // Named tier_unmet guidance: {crafts} is the localized
+    // craft-name list of ONLY the under-tier crafts, so the player can tell
+    // which one to raise from the row alone. comboTierUnmet above stays the
+    // defensive fallback when the eligibility result names no craft.
+    comboTierUnmetNamed: 'Raise {crafts} to tier {tier}.',
+    professionChoice: 'Profession choice',
+    noProfessionChoice: 'No valid profession choice is currently available.',
+    // One selectable pair in the attunement quest dropdown: the pair archetype
+    // name leading, the two major craft names kept visible for the choice.
+    pairOptionLabel: '{pair} ({craftA} + {craftB})',
+    attunementPreview:
+      'Result: {title} title; {majorA} and {majorB} become uncapped majors; {hobby} becomes the rare-capped hobby; all other skill knowledge is retained but capped at common while dormant.',
+    hobbyPreview:
+      'Result: {hobby} becomes the rare-capped hobby. Both majors and all retained skill values stay unchanged.',
+    // Professions 2.0: the escalating make-amends return cost, shown in
+    // the attunement preview and on the identity card (closes the 2039 preview
+    // gap). {cost} is requiredAmendsProgress at rest.
+    attunementReturnCost:
+      'If you leave this pair, returning to it later costs {cost} make-amends tasks.',
+    identity: {
+      title: 'Crafting Identity',
+      syncing: 'Waiting for your crafting identity from the realm.',
+      unattuned:
+        'No archetype pair is active. Your knowledge is retained, but combo recipes require an attuned pair.',
+      titleLabel: 'Title',
+      majorsLabel: 'Majors',
+      hobbyLabel: 'Hobby',
+      historyLabel: 'History',
+      history: '{pairs} pairs discovered, {returns} returns completed',
+      roleMajor: 'Major',
+      roleHobby: 'Hobby',
+      roleDormant: 'Dormant knowledge',
+      roleUnattuned: 'Unattuned',
+      ceilingUnlimited: 'No empowerment cap',
+      ceilingRare: 'Rare cap',
+      ceilingCommon: 'Common cap',
+      skillAria: '{craft}, skill {skill}, tier {tier}, {role}, {ceiling}',
+      // RETIRED in place (phase 22): the visual column-header row died with
+      // the row-family rework (rows self-label through their pill chips).
+      // The four keys stay because their fills already exist in the
+      // maintainer-owned overlays, which contributors never edit; drop the
+      // keys and the overlay rows together in a maintainer pass.
+      colCraft: 'Craft',
+      colSkill: 'Skill',
+      colRole: 'Role',
+      colCap: 'Cap',
+      // The uniform-chips caption over the skill rows (the option 3
+      // collapse): shown when every craft shares one role and one cap, so
+      // ten rows do not repeat the same two chips. M16: wordy, so the five
+      // non-Latin fills land in the same change.
+      allCrafts: 'All crafts',
+      // aria-label for the capped, internally scrolling skill list (the
+      // attuned card): the scroll region needs a name once it is focusable
+      // for keyboard scrolling. M16 fills as above.
+      skillListAria: 'Craft skills',
+      tutorial:
+        'First tier: reach skill {skill} in a craft. Successful recipes raise that craft without erasing knowledge elsewhere.',
+      nearTier: '{craft} is {points} skill from its next tier.',
+      dormantKnowledge:
+        '{craft} knowledge is retained but dormant until its pair or hobby is active.',
+    },
+    // Professions 2.0 (supersedes the retired notAtHub key): denied
+    // because the recipe is station-bound and the player is not at a station
+    // of its type. {station} is the localized stationName.* value below.
+    stationRequired: 'You must be at the {station} to craft that.',
+    // The six station display names (stations.ts StationType), resolved via
+    // crafting_window.ts stationNameText, the craftName-table idiom.
+    stationName: {
+      forge: 'Forge',
+      kitchens: 'Kitchens',
+      apothecary: 'Apothecary',
+      tannery: 'Tannery',
+      loom: 'Loom',
+      toolworks: 'Toolworks',
+    },
+    // Craft Cast System: already casting or consuming when craft_item arrives.
+    // Cast duration paces craft-family actions (busy is the concurrent-cast
+    // deny; the retired 'throttled' wire reason renders this same copy).
+    busy: 'You are busy.',
+    // #1299: the recipe exists but this player has not learned it yet.
+    recipeNotLearned: 'You have not learned that recipe yet.',
+    // #2350: denied because the output cannot fit the bags, even after the
+    // reagents are consumed.
+    noBagSpace: 'You do not have room for the crafted item.',
+    // Masterwrought phase 07: a oncePerDay recipe already crafted inside the
+    // current reset-day window (the Quickening Catalyst daily gate).
+    dailyLimit: 'You can only craft that once per day.',
+    // Phase 14, the refusal countdown: rendered INSTEAD of dailyLimit when
+    // the craftResult refusal carried retryAfterSeconds (the host fed a live
+    // reset clock); {duration} is duration_text.ts over that figure. Older
+    // or calendar-less hosts keep the plain line above.
+    dailyLimitRetry: 'You can only craft that once per day. Available again in {duration}.',
+    // The oncePerDay row affordance label (chip, tooltip line, and aria
+    // clause): states the limit BEFORE the attempt, where the dailyLimit
+    // refusal above lands after. Kept non-wordy (no 4-plus lowercase run)
+    // per M16, so no non-Latin fill is owed at PR tier.
+    oncePerDay: 'Once per day',
+    // Professions 2.0: crafting window legibility (skill requirement
+    // line, skill-gain difficulty labels, hub-station badge) plus the
+    // masterwork and tier-up celebration copy. Masterwork is a proc with
+    // baked bonus stats; the copy never claims a quality-rank upgrade.
+    // Rendered by the crafting window's recipe rows AND by a locked vendor row
+    // in the goods grid (hud/vendor/vendor_window.ts), which reuses it so a
+    // tool gated on gathering proficiency needs no second key saying the same
+    // sentence. {craft} is a NAME slot, not a claim of craftness: the crafting
+    // window passes a craft name, the vendor row a gathering profession name.
+    // Rewording this restyles that vendor line too.
+    skillReqLine: 'Requires {craft} {skill}',
+    difficultyFull: 'Full skill gain',
+    difficultyReduced: 'Reduced skill gain',
+    difficultyMinimal: 'Minimal skill gain',
+    difficultyNone: 'No skill gain',
+    stationBadge: 'Station',
+    // Supersedes the retired stationOutOfRange key: the crafting
+    // window's out-of-range row note, naming WHICH station to walk to.
+    stationOutOfRangeNamed: 'Move to the {station} to craft this.',
+    // Professions 2.0: the per-section "learnable at a master"
+    // discoverability hint, shown when the viewer has unlearned trainer recipes
+    // for a craft. {master} is the resident master's name (entity i18n),
+    // {station} the localized stationName.* value, {craft} the craftName.* value.
+    learnMoreAtStation: '{master} at the {station} can teach you more {craft} recipes.',
+    // The apex tier's restrained treatment (Masterwrought phase 14): the chip
+    // marks the endgame rung, and the provenance line says where a KNOWN
+    // recipe's pattern came from (the R8 channels, apex_recipe_view.ts; the
+    // window lists known recipes only, so no line ever reveals an unlearned
+    // one). perfectingLink is the apex GEAR rows' quiet door to the
+    // Perfecting window; its accessible name is perfecting.openButtonAria,
+    // which contains this visible label (WCAG 2.5.3).
+    apexChip: 'Apex',
+    apexPatternRaid: 'Its pattern is a rare raid trophy.',
+    apexPatternRift: 'Its pattern is won on victorious high-rank Rift clears.',
+    apexPatternVendor: 'The Heroic Quartermaster sells its pattern for Heroic Marks.',
+    apexPatternDrop: 'Its pattern is found in the world.',
+    perfectingLink: 'Perfecting',
+    masterworkToast: 'Masterwork! {name}',
+    masterworkZoneLine: '{crafter} crafted a masterwork {name}!',
+    // Masterwrought phase 13, the orange promotion celebration
+    // (craft_celebration_text_view.ts). {name} is the PLAYER-CHOSEN legendary
+    // name and {player} the owner's character name: both interpolated VALUES,
+    // never keys (the feast/makers-mark precedent). legendaryLine is the
+    // personal line; legendaryZoneLine the soft zone-broadcast sibling on the
+    // masterworkZoneLine sentence shape.
+    legendaryLine: '{item} is reborn as {name}, a legend!',
+    legendaryZoneLine: '{player} forged {item} into the legend {name}!',
+    tierUpToast: '{craft} advanced to tier {tier}!',
+    // Profession skill level-up (skill_level_toast_view.ts). skillUpToast is
+    // the per-point chat line (and the polite announcer line) for every
+    // floored craft or gathering skill climb. skillUpSubtext is the copper
+    // milestone plate's detail line; the plate's title is the profession
+    // name itself (already localized), so it carries no key. Distinct
+    // presentation from character level-up and from craft tier-up (which
+    // names the tier bucket, not the skill counter).
+    skillUpToast: '{skill} skill increased to {level}!',
+    skillUpSubtext: 'Skill increased to {level}!',
+    // Professions 2.0 attunement + trend events (profession_event_lines
+    // _core.ts). Trend nudge: the soft in-world hint that an unattuned crafter's
+    // skills lean toward a pair; {archetype} is the pair's archetype title,
+    // {master} the anchor master's name (the noMaster variant for the six ring
+    // pairs with no seated master). attunedZoneLine mirrors masterworkZoneLine;
+    // attunedBanner is the personal celebration banner naming the earned title.
+    trendNudge:
+      'Your hands are leaning toward the {archetype}. Its attunement waits with {master}.',
+    trendNudgeNoMaster:
+      'Your hands are leaning toward the {archetype}. Seek a craft master to take it up.',
+    attunedZoneLine: '{name} has attuned as {archetype}!',
+    attunedBanner: 'Attuned: {title}',
+    // The one-time first-tier tutorial panel (profession_tutorial_view.ts),
+    // fired the first time any craft crosses tier 1. Explains the tier cap that
+    // just bit, the craft-wheel identity concept, and that masters offer
+    // attunement quests. {skill} is the first-tier threshold.
+    tierTutorial: {
+      title: 'Your First Tier',
+      tierCap:
+        'A craft reaches its first tier at {skill} skill, and each tier improves what it can make. But a craft only climbs past rare work once it is one of your two majors.',
+      radar:
+        'Your professions form a wheel. Attune to an adjacent pair and those two crafts become uncapped majors, one craft across the wheel becomes a rare-capped hobby, and the rest lie dormant: their knowledge kept, but capped at common until you take them up again.',
+      masters:
+        'Craft masters in the towns offer attunement quests. Visit one to choose your pair whenever you are ready. Nothing you have learned is ever lost.',
+      dismiss: 'Got it',
+    },
+    makersMark: 'Crafted by {name}',
+    // The gathered-material sibling of makersMark, resolved by item
+    // KIND (item_instance_tooltip.ts isGatheredProvenanceKind); same signer
+    // payload, different wording.
+    gatheredBy: 'Gathered by {name}',
+    masterworkSeal: 'Masterwork',
+    // (The standalone `enchantedLine` badge was retired: the enchanted state is
+    // now attributed inline on the bonus stat lines it caused, through
+    // hudChrome.itemTooltip.statEnchanted.)
+    // Commissions and the Maker's Bond (Professions 2.0): the
+    // per-craft opt-in control in the crafting window, and the two tooltip
+    // lines a commissioned copy renders beside the soulbound line. The bound
+    // line deliberately names no one (boundTo is an entity id, not a stable
+    // cross-session identity).
+    commissionToggle: 'Commission piece',
+    commissionToggleHint: 'Binds to the first character to receive it in a trade.',
+    commissionUnbound: 'Commission piece: binds to the first recipient',
+    commissionBound: 'Commission piece: bound to its recipient',
+  },
+  // Bag-item context menu verbs (Professions 2.0): the row labels for
+  // the right-click / touch action menu (bag_item_context_menu.ts). The first
+  // row mirrors the classic left-click action (equip gear, use everything else);
+  // the rest are the eligible enchanting actions.
+  itemMenu: {
+    use: 'Use',
+    equip: 'Equip',
+    disenchant: 'Disenchant',
+    salvage: 'Salvage',
+    applyEnchant: 'Apply Enchant',
+    // The Sundered Essence extraction row (Masterwrought phase 04), offered
+    // on raid-won epic GEAR only (bag_item_context_menu.ts isSunderable).
+    sunder: 'Sunder',
+    // The vendor right-click / tap menu's own default row (Sell, since that is
+    // what it runs there) and its Sell all (N) row (bag_item_context_menu.ts
+    // vendorSellContextActions), the total held across every bag.
+    sell: 'Sell',
+    sellAll: 'Sell all ({count})',
+    viewSources: 'View sources',
+    separateByGatherer: 'Separate by gatherer',
+    takeChosenQuantity: 'Take out chosen quantity',
+    combine: 'Combine material stacks',
+  },
+  // Enchanting actions (Professions 2.0): the result toasts for the
+  // disenchant / apply-enchant / salvage commands (enchanting_view.ts maps each
+  // text-free SimEvent to one of these), the destroy-confirm copy (a stronger
+  // body when the copy consumed is special), and the Apply Enchant picker chrome.
+  // Craft Cast System Phase 5: concurrent-cast denies use per-action busy keys
+  // (cast duration paces; the shared "too quickly" quota is retired).
+  enchanting: {
+    recipeNotLearned: 'Learn the formula before applying this enchant.',
+    // The SOLE player-visible lines for these actions (#2430). The grant hub's
+    // "You receive:" lines no longer print for a disenchant or a salvage yield
+    // (the loot event's callerLogs flag), so the Yield variants below name the
+    // reclaimed material as well as the consumed piece, or the player would be
+    // told nothing about what came back. {item} and {material} are both
+    // spliced as clickable, quality-colored item links. The plain
+    // disenchantedLine / salvagedLine stay as the yield-free fallback for a
+    // success carrying no resolvable material.
+    disenchantedLine: 'You disenchant {item}.',
+    disenchantedYield: 'You disenchant {item} into {material}.',
+    disenchantedYieldQty: 'You disenchant {item} into {material} x{qty}.',
+    // A rare-or-better disenchant also yields a typed bind-on-trade material.
+    // That is a DIFFERENT item from the primary, so it takes its own line
+    // rather than being folded into the sentence above (one line per distinct
+    // granted item); rendering it from the event's secondaryCount is also what
+    // collapses the sim's per-unit grant calls into this one line.
+    disenchantedAlso: 'You also recover {material}.',
+    disenchantedAlsoQty: 'You also recover {material} x{qty}.',
+    salvagedLine: 'You salvage {item}.',
+    salvagedYield: 'You salvage {item} into {material}.',
+    salvagedYieldQty: 'You salvage {item} into {material} x{qty}.',
+    enchantAppliedLine: 'You enchant {item} with {enchant}.',
+    notHeld: 'You do not have that item.',
+    notDisenchantable: 'You cannot disenchant that.',
+    notSalvageable: 'You cannot salvage that.',
+    // Player item lock (issue #3042): fired when the exact copy a salvage
+    // targeted is locked. Distinct from notSalvageable, which means the item
+    // type itself is never salvageable.
+    salvageLocked: 'That item is locked.',
+    // Craft Cast System Phase 4/5: cast busy gate when another cast is already
+    // running (the retired 'throttled' wire reason renders the same copy).
+    disenchantBusy: 'You are busy.',
+    salvageBusy: 'You are busy.',
+    enchantBusy: 'You are busy.',
+    enchantWrongSlot: 'That enchant cannot be applied to that item.',
+    enchantUnknown: 'That enchant does not exist.',
+    enchantInsufficient: 'You do not have the materials for that enchant.',
+    // #2350 capacity denials: each names ITS OWN action (the throttled-key
+    // rule above), fired when the yields cannot fit the bags even after the
+    // consumed copy and reagents are accounted for.
+    disenchantNoSpace: 'You do not have room for the arcane materials.',
+    salvageNoSpace: 'You do not have room for the salvaged materials.',
+    enchantNoSpace: 'You do not have room for the enchanted item.',
+    disenchantConfirmTitle: 'Disenchant {item}?',
+    disenchantConfirmBody:
+      'This destroys {item} and yields arcane materials. This cannot be undone.',
+    disenchantConfirmBodySpecial:
+      'This destroys a special copy of {item} (signed, masterwork, or enchanted) and yields arcane materials. This cannot be undone.',
+    salvageConfirmTitle: 'Salvage {item}?',
+    salvageConfirmBody:
+      'This destroys {item} and yields crafting materials. This cannot be undone.',
+    salvageConfirmBodySpecial:
+      'This destroys a special copy of {item} (signed, masterwork, or enchanted) and yields crafting materials. This cannot be undone.',
+    // The Sundered Essence extraction confirm (Masterwrought phase 04): same
+    // destroy-confirm family as disenchant/salvage above, stronger body when
+    // the consumed copy is special.
+    sunderConfirmTitle: 'Sunder {item}?',
+    sunderConfirmBody: 'This destroys {item} and yields Sundered Essence. This cannot be undone.',
+    sunderConfirmBodySpecial:
+      'This destroys a special copy of {item} (signed, masterwork, or enchanted) and yields Sundered Essence. This cannot be undone.',
+    pickerTitle: 'Apply Enchant',
+    targetTitle: 'Choose an item to enchant',
+    noEnchants: 'No enchant uses this reagent.',
+    noTargets: 'No eligible item to enchant.',
+    // The tag on a WORN target row in the Apply Enchant picker: worn gear is
+    // enchanted in place, so it lists alongside the bagged copies and needs to
+    // say which equipment slot it is on ({slot} resolves through the shared
+    // itemUi.slots labels, so Main Hand and Off Hand separate a dual-wielded
+    // pair).
+    wornTag: 'Worn ({slot})',
+    // The same tag for an equipment key whose slot label is SHARED with another
+    // key: both fingers read "Finger", so two rings listed at once produced two
+    // identical rows and the player could not tell which finger a tap would
+    // change (#2466). {index} is the 1-based position inside the shared-label
+    // group (enchant_apply_view.ts slotIndex), so this reads "Worn (Finger 1)"
+    // and "Worn (Finger 2)". One key, never the plain tag with a number glued
+    // on: the order of a slot name and its ordinal is the translator's call.
+    wornTagIndexed: 'Worn ({slot} {index})',
+    // The Apply Enchant picker's section headers, in ladder order. The tier is
+    // derived from the reagents alone (enchant_apply_view.ts enchantTier), so
+    // these headers name the same ladder content/enchants.ts documents: the
+    // dust/essence basics, the typed resonant tier, the shard-consuming
+    // Greater tier, and the apex Lucent tier above it. Each header is named
+    // for the enchants under it, which is why the apex row reads Lucent (what
+    // every one of its enchants is called) rather than a tier word of its own.
+    tier: {
+      base: 'Base Enchants',
+      runed: 'Runed Enchants',
+      greater: 'Greater Enchants',
+      lucent: 'Lucent Enchants',
+    },
+    // The disenchant confirm's expected-yield preview
+    // (src/ui/hud/professions/disenchant_yield_view.ts), appended under the destroy warning so
+    // an irreversible destroy states what it pays out first. The range shape
+    // covers the sub-rare rng bonus arm and the epic/legendary secondary roll.
+    yieldHeader: 'Expected materials:',
+    yieldLineExact: '{count} {item}',
+    yieldLineRange: '{min} to {max} {item}',
+    // Enchant replacement (#2415): the two dedicated denies (the honest copy
+    // that replaced the misleading notHeld fallback for an already-enchanted
+    // target), the flagged replace-target row tags, and the replace confirm
+    // dialog. {old} in the confirm body is the doomed enchant's name, or a
+    // legacy copy's raw stat lines when the copy predates the enchant marker
+    // and has no name to give. The no-refund line states the settled economy
+    // ruling; the cost line states the reagents being paid before they are.
+    alreadyEnchanted: 'That item is already enchanted.',
+    sameEnchant: 'That item already has that enchant.',
+    // The Lucent tier's two denies (Masterwrought phase 10), each naming the
+    // real cause rather than the shared notHeld fallback: the Perfected-only
+    // enchant aimed at an ordinary copy, and an enchant above the applier's
+    // Enchanting skill. Both say what stands in the way, not what to do about
+    // it: how a piece becomes Perfected is the Perfecting stage's own copy.
+    notPerfected: 'Only a Perfected item can bear that enchant.',
+    enchantSkillTooLow: 'Your Enchanting skill is too low for that enchant.',
+    // Riftbound bands are forge-only (rift/band_ladder.ts); the enchanting
+    // profession refuses them by id.
+    riftGear: 'Riftbound bands take Rift gems, not enchants.',
+    replaceTag: 'Replaces {enchant}',
+    sameEnchantTag: 'Already applied',
+    // The tag on the PLAIN twin of a mixed holding (#2421): one item id held
+    // both plain and enchanted emits two rows under one item name, and without
+    // this the pair differs only by the replace row HAVING a sub-line. Painted
+    // on that twin alone (enchant_apply_view.ts mixedHolding), never on an
+    // unambiguous plain row, so an ordinary target list stays tag-free.
+    plainTag: 'Not enchanted',
+    replaceConfirmTitle: 'Replace the enchant on {item}?',
+    replaceConfirmBody: 'This replaces {old} on {item} with {new}.',
+    replaceConfirmNoRefund:
+      'The old enchant is destroyed. Its materials are not refunded. This cannot be undone.',
+    // What the swap does NOT destroy (#2421). The sim's replace payload carries
+    // the signature, the masterwork roll, and the bind state through
+    // byte-identical, and the dialog previously named only what dies; {kept}
+    // joins the trait labels below, and the whole line is omitted when the
+    // victim carries none of them (a plain copy is never told its signature is
+    // safe). One label per trait rather than one key per combination, the
+    // replaceConfirmCost / replaceConfirmCostItem shape next door. Each label
+    // reuses the vocabulary its own surface already taught the player: the
+    // maker's mark from makersMark, the seal from masterworkSeal, and the bond
+    // from the commission lines, never a raw ItemInstancePayload field name.
+    replaceConfirmKeeps: 'Kept: {kept}',
+    replaceConfirmKeepsSigner: "Maker's mark",
+    replaceConfirmKeepsMasterwork: 'Masterwork bonus',
+    // ONE label for both bind states. An armed lock (bindOnTrade) and an applied
+    // one (boundTo) are the same bond, and this line says what the swap leaves
+    // alone, not which state the bond is in; the item tooltip's commissionBound
+    // / commissionUnbound lines own that distinction. Named for the mechanic the
+    // tooltip and the unbind window already call it, so a player recognizes the
+    // thing being preserved; it never names WHO it is bound to (boundTo is an
+    // entity id, not a stable identity).
+    replaceConfirmKeepsBond: 'Commission bond',
+    // ONE label for the whole Perfecting family, the bond rule above: a
+    // head-started copy's rank progress and a Perfected copy's stamp with its
+    // bonus all survive a replace untouched (the marker-arm peel subtracts
+    // only the old enchant's own share), and this line says the family is
+    // safe rather than which state it is in; the item tooltip's Perfected /
+    // Perfecting lines own that distinction.
+    replaceConfirmKeepsPerfecting: 'Perfecting',
+    replaceConfirmCost: 'Cost: {cost}',
+    replaceConfirmCostItem: '{name} x{count}',
+    replaceConfirmAccept: 'Replace',
+  },
+  // Recipe training window (Professions 2.0): a station master
+  // teaches trainer-acquisition recipes for a tier-priced copper fee
+  // (src/sim/professions/training.ts). Recipe result names resolve through
+  // the item table, craft names through craftName above, so these keys are
+  // only the window's own chrome plus the trainResult chat lines (the
+  // 'trainResult' SimEvent is text-free; the client derives every name from
+  // recipeId plus static content).
+  training: {
+    title: 'Training: {name}',
+    close: 'Close training',
+    empty: 'This master has nothing to teach.',
+    free: 'Free',
+    stateKnown: 'Known',
+    stateTeachable: 'Available',
+    stateLocked: 'Locked',
+    // The in-flight state label on a teachable row whose learn command has
+    // been sent but not yet answered (issue #2342).
+    statePending: 'Learning',
+    // The locked-row requirement line: {craft} is the localized craft name,
+    // {skill} the flat skill threshold of the recipe's tier.
+    requirement: 'Taught at {craft} {skill}',
+    trainAria: 'Learn {name} for {fee}',
+    // Accessible name of a pending row's disabled button: the visible
+    // statePending pill never reaches AT through the aria-label above.
+    pendingAria: 'Learning {name}',
+    // The gossip-dialog Train option on a station master.
+    dialogOption: 'Training',
+    dialogOptionAria: 'Browse training from {name}',
+    // trainResult chat lines. learned is the ONE success surface: no toast,
+    // no sound cue (the grant-hub double-log trap).
+    learned: 'Recipe learned: {recipe}',
+    tierUnmet: 'You need {craft} {skill} to learn that recipe.',
+    cannotAfford: 'You cannot afford that training.',
+    notTaughtHere: 'That recipe is not taught here.',
+    alreadyKnown: 'You already know that recipe.',
+    outOfRange: 'You must be at the station to train.',
+  },
+  // Recipe pattern items (kind 'recipe'), the drop-side second way to learn a
+  // recipe. Only the teaches line is new: the pattern tooltip's requirement
+  // line reuses crafting.skillReqLine and its known line reuses
+  // training.alreadyKnown above, since a pattern grants the same knowledge a
+  // trainer does and must not word it a second way. {item} is the LOCALIZED
+  // name of the item the taught recipe crafts (entity i18n, never a raw id).
+  pattern: {
+    teaches: 'Use: Teaches you how to craft {item}.',
+    teachesEnchant: 'Use: Teaches you how to apply {enchant}.',
+  },
+  // Maker's Bond unbind service window + result lines (Professions 2.0):
+  // the station master's second gossip service beside training.
+  // Item NAMES resolve through entity i18n, never through these keys; the
+  // fee formats via formatMoney.
+  unbind: {
+    title: 'Unbinding: {name}',
+    close: 'Close unbinding',
+    intro: 'The master can release a commission piece from its bond, for a fee.',
+    empty: 'You carry no bound commission pieces.',
+    rowSub: 'Releases the bond; the piece binds again on its next trade.',
+    unbindAria: 'Unbind {name} for {fee}',
+    // The gossip-dialog Unbind option on a station master.
+    dialogOption: 'Unbinding',
+    dialogOptionAria: 'Unbind a commission piece with {name}',
+    confirmTitle: 'Unbind Commission Piece',
+    confirmBody: 'Unbind {name} for {fee}?',
+    confirmOk: 'Unbind',
+    confirmCancel: 'Cancel',
+    // unbindResult chat lines. unbound is the ONE success surface: no toast,
+    // no sound cue (the trainResult single-surface rule).
+    unbound: 'Unbound {name} for {fee}. It will bind again on its next trade.',
+    notEligible: 'That item cannot be unbound.',
+    notBound: 'That item is not bound.',
+    cannotAfford: 'You cannot afford the unbinding fee.',
+    outOfRange: 'You must be at a crafting station to unbind.',
+    // #2350: unbinding one copy out of a bound stack needs room for the
+    // unbound copy it peels off.
+    noSpace: 'You do not have room for the unbound copy.',
+    // Masterwrought phase 12: the Perfecting bind (masterwrought R2) is not
+    // a fee-reversible Maker's Bond; the resolver refuses unbind_perfecting.
+    perfecting: 'A piece on the Perfecting track, or already Perfected, stays bound.',
+  },
+  // Commission order board (issue #1298): a lightweight job board layered
+  // on the Maker's Bond above. Opened from a button in the crafting
+  // window's header; no location gate, since opening/cancelling an order
+  // carries no escrow. Chat lines answer commissionOrderResult (the
+  // trainResult/unbindResult single-surface rule: one line, no toast).
+  // The Perfecting window (Masterwrought phase 14): the apex rank track and
+  // the orange promotion. Item and material NAMES resolve through entity
+  // i18n, never through these keys; the player-chosen legendary name is a raw
+  // VALUE (the D13-2 ruling), rendered esc'd standalone and only ever
+  // interpolated as a {name} param, never composed into a catalog value.
+  // The bind copy states the live mechanic exactly: fail-forward (a failed
+  // attempt spends materials, never lowers rank), and a promotion is
+  // permanent. The bind's OWN permanence is conditional and the copy says
+  // only what holds: the unbind service refuses pieces with Perfecting
+  // progress and Perfected pieces, so any bind with progress holds for
+  // good, but a FAILED first attempt leaves a bound rank-0 copy with no
+  // marker, which the Maker's Bond unbind can still clear for its fee (the
+  // recorded rank-0 shape; whether the sim should close that hole is a
+  // maintainer read in the Phase 14 QA ledger).
+  perfecting: {
+    swapTitle: 'Exchange Perfecting ranks',
+    swapIntro:
+      'Choose another owned piece from this collection. Exchange ranks at the matching crafting station, out of combat, with craft skill {skill}. No materials or failure roll.',
+    swapChoose: 'Choose a second piece to preview the exchange.',
+    swapRank: '{name}: rank {before} to {after}',
+    swapAction: 'Review rank exchange',
+    swapPending: 'Exchanging ranks',
+    swapConfirm: 'Both pieces become permanently bound to you. Exchange their Perfecting ranks?',
+    swapConfirmAccept: 'Bind and exchange ranks',
+    swapPreserve:
+      'Neither item is consumed. Names, cosmetic legendary promotion, and enchants stay on their original pieces. Equipment limits still apply.',
+    swapEnchantInactive:
+      'Its Perfected-only enchant becomes inactive until this piece is Perfected again.',
+    swapEnchantActive: 'Its Perfected-only enchant becomes active again.',
+    swapSuccess: 'Perfecting ranks exchanged. Both pieces are permanently bound.',
+    swapInterrupted:
+      "We could not confirm the exchange after reconnecting. Check both pieces' ranks before choosing another exchange.",
+    swapChanged: 'The selected pieces changed. Choose them again and review the new ranks.',
+    swapDead: 'You must be alive to exchange ranks.',
+    swapBusy: 'Leave combat and finish your current action before exchanging ranks.',
+    swapInvalid: 'These pieces have unsupported Perfecting progress and cannot exchange ranks.',
+    swapSameRank: 'These pieces already have the same Perfecting rank.',
+    swapSkill: "You need skill {skill} in this collection's craft.",
+    swapStation: 'Move to the matching crafting station to exchange ranks.',
+    swapLocked: 'Unlock both pieces before exchanging ranks.',
+    enchantInactive:
+      'Enchantment inactive: this piece must be Perfected. The enchantment is preserved.',
+    title: 'Perfecting',
+    close: 'Close the Perfecting window',
+    openButton: 'Perfecting',
+    openButtonAria: 'Open the Perfecting window',
+    empty: 'You hold no Masterwrought piece. The apex recipes forge one.',
+    wornChip: 'Worn',
+    bagCopy: 'Bag copy {index} of {count}',
+    rowRank: 'Rank {rank} of {ranks}',
+    rowPerfected: 'Perfected',
+    // The status-region announcements (role=status beside the repaint shell):
+    // a landed rank, the Perfected stamp, and the landed promotion, for
+    // assistive tech; the track and lead lines carry the visible state. Each
+    // names the item: the window is aria-modal, so the chat notice outside
+    // it is not in the reader's tree and this line stands alone.
+    rankAnnounce: '{name} reaches Perfecting rank {rank} of {ranks}.',
+    perfectedAnnounce: '{name} is now Perfected.',
+    promotedAnnounce: '{name} is forged as {chosen}.',
+    // The {name} the three lines above take when the mirrors name an item id
+    // this client's catalog does not carry (a server/client content drift):
+    // player copy never shows the raw id token. WORDY by M16, so the five
+    // non-Latin overlays carry real fills.
+    unknownItem: 'Unknown item',
+    // The one announcement the refused same-copy edge owes while the naming
+    // dialog is open (perfecting_window.ts, the sameSelectedCopy gate): the
+    // selected copy could not be confirmed after a bag shift, the dialog
+    // stays open and unlocked, and a re-submit sends the ref it was opened
+    // for, so the reader is told to check before forging. WORDY (M16).
+    namingSelectionUnconfirmed:
+      'Your bags shifted: the piece being named could not be confirmed. Check the selection before you forge.',
+    rowPromoted: 'Legendary',
+    attemptCost: 'Attempt cost',
+    promoteCost: 'Promotion cost',
+    matCount: '{have} of {required}',
+    skillNeed: 'Needs {craft} skill {skill}.',
+    skillMet: 'Met.',
+    skillUnmet: 'Not met.',
+    skillSyncing: 'Checking your craft skill.',
+    bindWarn: 'Your first perfecting attempt binds {name} to you.',
+    bindWarnDetail:
+      'Perfecting never lowers a rank: a failed attempt only spends its materials. A piece with Perfecting progress or a Perfected piece cannot be unbound, and a promotion is permanent.',
+    bindConfirmText: 'Your first attempt binds {name} to you. Attempt anyway?',
+    bindConfirmAccept: 'Bind and Attempt',
+    bindConfirmCancel: 'Cancel',
+    attempt: 'Attempt Perfecting',
+    promote: 'Name and Promote',
+    perfectedLead: 'Perfected. Give it a name to forge a legend.',
+    promotedLine: 'A finished legend: nothing left to perfect.',
+    equipBlocked: 'You could not equip it once promoted. Unequip the conflicting piece first.',
+    nameTitle: 'Name the Legend',
+    nameLabel: 'Inscribe a name for {name}. The name is permanent.',
+    nameInputAria: 'Legendary name',
+    nameHint:
+      'Two to 32 characters: letters, spaces, apostrophes, and hyphens, starting with a letter.',
+    nameCount: '{count} of {max}',
+    nameSubmit: 'Forge the Legend',
+    nameSubmitBusy: 'Forging',
+    nameCancel: 'Cancel',
+  },
+  commissionBoard: {
+    title: 'Commission Orders',
+    close: 'Close commission orders',
+    openButton: 'Orders',
+    openButtonAria: 'Open the commission order board',
+    intro: "Commission a crafter to make you a piece, or take on someone else's order.",
+    // The "open a new order" form.
+    formTitle: 'Open a Commission',
+    recipeLabel: 'Item',
+    recipeEmpty: 'You know no craftable equipment recipes yet.',
+    scopeLabel: 'Who can accept',
+    scopeOpen: 'Anyone (open board)',
+    scopeCrafter: 'A specific crafter',
+    crafterNameLabel: 'Crafter name',
+    crafterNamePlaceholder: 'Character name',
+    openSubmit: 'Post Order',
+    // Section headings over the three row groups.
+    sectionMine: 'My Requests',
+    sectionToCraft: 'My Commissions',
+    sectionBoard: 'Open Board',
+    boardEmpty: 'No open orders right now.',
+    mineEmpty: 'You have not opened any commissions.',
+    toCraftEmpty: "You are not crafting anyone's order right now.",
+    // One row's line: "{item} for {requester}" / "for {crafter}" when a
+    // 'crafter'-scope order names a specific target.
+    rowFor: '{item} for {requester}',
+    rowTargeted: '{item} for {requester} (for {crafter})',
+    acceptedBy: 'Accepted by {name}',
+    // The crafter's-record quality signal on accepted rows (Masterwrought
+    // phase 14): the label ahead of the two tPlural count phrases
+    // (hudChrome.plurals.commissionMasterworks / commissionLegendaries).
+    crafterRecordLabel: "Crafter's record:",
+    statusOpen: 'Open',
+    statusAccepted: 'Accepted',
+    statusDelivered: 'Delivered',
+    statusCancelled: 'Cancelled',
+    statusExpired: 'Expired',
+    cancelButton: 'Cancel',
+    acceptButton: 'Accept',
+    deliverButton: 'Deliver',
+    deliverHint:
+      'Craft the commissioned piece (with the commission toggle on), then come back here to deliver it.',
+    // The gathering goal Track control (Intentional Gathering PR4): shown
+    // beside Deliver on an order this viewer has accepted to craft.
+    trackButton: 'Track',
+    // commissionOrderResult chat lines, one success line per action (the
+    // trainResult single-surface rule) plus the shared deny-reason set.
+    opened: 'You post a commission order for {item}.',
+    cancelled: 'You cancel the commission order for {item}.',
+    accepted: 'You accept the commission order for {item}.',
+    delivered: 'You deliver {item} to {name}.',
+    denyUnknownRecipe: 'That recipe does not exist.',
+    denyNotCommissionEligible: 'That recipe cannot be commissioned.',
+    denyUnknownCrafter: 'No character by that name is known.',
+    denySelfCrafter: 'You cannot commission yourself.',
+    denyTooManyOpen: 'You already have too many open commission orders.',
+    denyUnknownOrder: 'That commission order no longer exists.',
+    denyOrderNotOpen: 'That commission order is no longer open.',
+    denySelfOrder: 'You cannot accept your own commission order.',
+    denyNotEligibleCrafter: 'That commission order was posted for someone else.',
+    denyNotYourOrder: 'That is not your commission order.',
+    denyOrderNotAccepted: 'That commission order has not been accepted yet.',
+    denyNotYourAcceptance: 'You did not accept that commission order.',
+    denyNotCrafted: 'Craft the commissioned piece first (with the commission toggle on).',
+    denyOutOfRange: 'You must be near the requester to deliver a commission.',
+    denyNoSpace: 'The requester has no room in their bags.',
+  },
+  // Dungeon Finder window (docs/prd/dungeon-finder.md). Dungeon, creature,
+  // item, quest, and zone NAMES resolve through tEntity/world_entity_i18n,
+  // never through these keys.
+  // The Thornhollow Fields queue-pop prompt (src/ui/hud/battleground/
+  // battleground_proposal_popup.ts). Counts only, never names: the ten have not
+  // been introduced and a decline must not leak who was opposite.
+  bgOffer: {
+    title: 'Thornhollow Fields is ready',
+    backfillTitle: 'Thornhollow Fields needs a fighter',
+    backfillBody:
+      'This battle is already under way. You will join the side that is short, and this match will not change your rating.',
+    accepted: '{accepted} of {size} ready',
+    remaining: '{seconds}s to answer',
+    accept: 'Accept',
+    decline: 'Decline',
+    acceptedWait: 'Waiting for the others...',
+  },
+  finder: {
+    title: 'Dungeon Finder',
+    close: 'Close',
+    back: 'Back',
+    syncing: 'Waiting for the realm...',
+    tabCatalogue: 'Catalogue',
+    tabQueue: 'Quick Match',
+    tabBoard: 'Premade Groups',
+    normal: 'Normal',
+    heroic: 'Heroic',
+    kindDungeon: 'Dungeon',
+    kindRaid: 'Raid',
+    kindSolo: 'Solo adventure',
+    levels: 'Levels {min} to {max}',
+    levelOne: 'Level {level}',
+    // Group size renders through tPlural(hudChrome.plurals.finderPartySize).
+    // The mm:ss clock separator is a token pattern, like every other HUD clock.
+    clock: '{minutes}:{seconds}',
+    // Count-plus-role composition ({count} tanks): a token pattern so a locale
+    // owns the ORDER, never a `${n} ${label}` concat at the call site.
+    roleCount: '{count} {role}',
+    roleTank: 'Tank',
+    roleHealer: 'Healer',
+    roleDps: 'Damage',
+    freeRoles: 'Any roles welcome',
+    lockoutDaily: 'Daily lockout on the final boss',
+    lockoutNone: 'No lockout',
+    lockedFor: 'Locked for about {minutes} min',
+    attunement: 'Requires attunement: {quest}',
+    heroicMarks: 'Heroic Marks: {count} per player',
+    entrance: 'Entrance: {zone}',
+    showOnMap: 'Show on Map',
+    encounters: 'Encounters',
+    finalBoss: 'Final boss',
+    summoned: 'Summoned guardian',
+    lootGuaranteed: 'One of these always drops:',
+    lootMaybe: 'At most one of these may drop:',
+    lootChance: 'Additional chance drops:',
+    lootHeroic: 'Heroic bonus, one of these always drops:',
+    pct: '{pct}%',
+    blockedLevel: 'Levels {min} to {max} only',
+    blockedSpec: 'Requires a specialization',
+    yourRoles: 'Your roles',
+    needsSpec: 'Choose a specialization to use the Dungeon Finder.',
+    leaderNote: 'Only your party leader can queue the group.',
+    chooseActivities: 'Choose activities',
+    joinQueue: 'Join queue',
+    leaveQueue: 'Leave queue',
+    waited: 'Time in queue: {time}',
+    cooldownNote: 'You may queue again in {seconds}s.',
+    travelNote:
+      'The group forms where everyone stands. Travel to the entrance together; nobody is teleported.',
+    proposalTitle: 'Group found: {name}',
+    proposalRole: 'Your role: {role}',
+    accepted: '{accepted} of {size} confirmed',
+    remaining: '{seconds}s to answer',
+    accept: 'Accept',
+    decline: 'Decline',
+    acceptedWait: 'Waiting for the others...',
+    slotState: '{role}: {accepted} of {total} ready',
+    openListings: 'Open listings',
+    boardEmpty: 'No listings right now. Publish one!',
+    boardLeaderGate: 'Only your party leader can publish a listing.',
+    publishListing: 'Publish a listing',
+    activity: 'Activity',
+    publish: 'Publish',
+    yourListing: 'Your listing',
+    closeListing: 'Close listing',
+    applicants: 'Applicants',
+    noApplicants: 'No applicants yet.',
+    acceptApplicantAria: 'Accept {name}',
+    declineApplicantAria: 'Decline {name}',
+    levelClass: 'Lv {level} {className}',
+    leader: 'Leader: {name}',
+    needs: 'Needs {roles}',
+    slots: '{size}/{capacity}',
+    apply: 'Apply',
+    withdraw: 'Withdraw application',
+    tagFirstRun: 'First run',
+    tagQuestRun: 'Quest run',
+    tagFullClear: 'Full clear',
+    tagLearning: 'Learning welcome',
+    tagFastRun: 'Fast run',
+    // Notable encounter mechanics (stable keys authored in
+    // src/sim/content/dungeon_finder.ts encounter records).
+    mech: {
+      shadow_pulse: 'Shadow Pulse (pulsing area damage)',
+      reaping_arc: 'Reaping Arc (frontal cleave)',
+      mist_surge: 'Mist Surge (pulsing area damage)',
+      summons_adds: 'Summons reinforcements',
+      lunar_tide: 'Lunar Tide (pulsing area damage)',
+      enrage: 'Enrages at low health',
+      shuddering_stomp: 'Shuddering Stomp (area stun)',
+      grave_inferno: 'Grave Inferno (channeled fire AoE, stay spread)',
+      grave_cleaver: 'Grave-Cleaver (frontal cleave)',
+      shadow_nova: 'Shadow Nova (area burst)',
+      profane_mending: 'Profane Mending (heals its allies)',
+      mana_burn: 'Withered Benediction (burns mana)',
+      deathstalker_cleave: 'Deathstalker Cleave (frontal cleave)',
+      mortal_wound: 'Forgotten Wound (reduces healing taken)',
+      sealbreak_shockwave: 'Sealbreak Shockwave (area burst)',
+      gravebreaker: 'Gravebreaker (frontal cone, face it away from the raid)',
+      raise_fallen: 'Raise Fallen (periodic waves of adds)',
+      soul_rend: 'Soul Rend (marked players stack together, then leave the fire)',
+      deathless_rage: 'Deathless Rage (interrupted at the wardstones)',
+      wardstones: 'Wardstone channels (phase transition)',
+      // The swap point spelled here is pinned to NYTHRAXIS_DREAD_CURSE_TANK_SWAP_STACKS
+      // by tests/nythraxis_callout.test.ts (the finder chips take no values).
+      dread_curse: 'Dread Curse (stacking tank-swap debuff, swap at 2 stacks)',
+      bone_spike: 'Bone Spike (impaled raiders drain until the spike is destroyed)',
+      grave_eruption: 'Grave Eruption (warning circles that leave burning ground)',
+      binding_sigil: 'Binding Sigil (drag the boss onto the sigil or the raid pays)',
+      gravefire: 'Gravefire (a traveling line of fire to sidestep)',
+      soulfire: 'Soulfire (Soul Rend detonations leave burning pools)',
+      kings_wrath: "King's Wrath (30%: permanent damage bonus, faster floor hazards)",
+      bone_storm: 'Bone Storm (he ignores threat, whirls, and charges the raid)',
+      crown_endures: 'The Crown Endures (hard enrage at 6:00, heroic 5:00)',
+      deathless_court:
+        'The Deathless Court (heroic only, the royal court rises after Deathless Rage)',
+    },
+  },
+  // The Book of Deeds window: the deed catalog browser (summary strip,
+  // category rail, entry cards, title picker), the watchlist HUD tracker, and
+  // the unlock moment (banner, log lines, retro catch-up summary). Deed
+  // names, descriptions, and title strings are sim content localized through
+  // deed_i18n.ts, never through these keys.
+  // The Reliquary: cold collection trophy window (Overview + shelf chrome in
+  // Phase 4; page grids and Illumination celebration land later).
+  // The Cosmetics window (src/ui/hud/cosmetics/): English lives in cosmetics.ts.
+  cosmetics: cosmeticsStrings,
+  reliquary: {
+    title: 'The Reliquary',
+    close: 'Close The Reliquary',
+    countLabel: '{owned}/{total} relics',
+    completionAria: 'Relics filled: {owned} of {total}',
+    curatorRank: 'Curator rank {rank}',
+    curatorUnranked: 'Unranked Curator',
+    // Phase 6: named Curator ranks (cosmetic window chrome + rank-up toast).
+    curatorRankName1: 'Apprentice Curator',
+    curatorRankName2: 'Spoilskeeper',
+    curatorRankName3: 'Master Curator',
+    curatorRankName4: 'Grand Curator',
+    curatorRankName5: 'Eternal Curator',
+    rankUpBanner: 'Curator rank {rank}: {name}',
+    rankUpToast: 'Curator rank {rank} reached: {name}',
+    // Phase 19: the one Curator rank whose deed bridge rewards a wearable
+    // nameplate border. ONE key for both surfaces that say it (the rank-up
+    // chat line and the standing Overview note), so the moment and the durable
+    // readout cannot drift; {name} is that deed's name, resolved through
+    // deed_i18n, never the reward slug.
+    borderWearableNote: 'The {name} border can be worn from the Book of Deeds.',
+    // Phase 20: the rank-5 Curator sigil badge on the click-inspect card. This
+    // names the honor on the badge row's VISIBLE sub-line, the slot the three
+    // sibling tier badges use for their own descriptive line. The art itself
+    // carries alt="" like those siblings, so this string is read once by
+    // everyone rather than announced a second time off the image. Sink is a
+    // visible label, NOT an aria/alt string: length and tone should match the
+    // sub-lines beside it, not an accessibility annotation.
+    sigilCaption: 'Curator sigil',
+    recentLabel: 'Recent finds:',
+    nearlyLabel: 'Nearly complete:',
+    nearlyJumpAria: 'Open {name}, {owned} of {total} filled',
+    progressText: '{owned}/{total}',
+    shelvesAria: 'Reliquary shelves',
+    navOverview: 'Overview',
+    navConquerors: 'Conquerors',
+    navProfessions: 'Professions',
+    navHorizons: 'Horizons',
+    navCountAria: '{shelf}: {owned} of {total} relics filled',
+    shelfEmpty: 'No pages on this shelf yet.',
+    pageComplete: 'Illuminated',
+    clearsLabel: '{count} clears',
+    // Phase 21: the Rift page's display-only SECOND meter, rendered beside
+    // clearsLabel on the page header (secondaryClearSource, riftSRankClears).
+    srankClearsLabel: '{count} S-rank clears',
+    // Phase 21: the chip a retired (excludeFromCompletion) page carries on
+    // its shelf row and page header (the Vault of Ages).
+    retiredLabel: 'Retired',
+    // Phase 21: the same chip on the OTHER outside-completion reason, a
+    // class-personal page no one character can fill (the Riftbound bands).
+    personalLabel: 'Personal',
+    backToShelf: 'Back to shelf',
+    // Phase 5: page grid, live unlock toast, Illumination celebration.
+    gridAria: 'Relics on {name}',
+    pageProgressAria: 'Page progress: {owned} of {total} relics filled',
+    cellOwnedAria: '{name}, catalogued',
+    cellMissingAria: '{name}, not yet found',
+    ownedTooltipStatus: 'Catalogued in The Reliquary',
+    missingTooltipStatus: 'Not yet found',
+    // {count} here is the CLEAR number, not the obtain tally: the plural
+    // obtain bases (hudChrome.plurals.reliquaryObtainedTimes and friends)
+    // reuse the {count} name for the OBTAIN count because tPlural selects on
+    // it, and their clear number rides {clears} instead. Renaming this key's
+    // slot would invalidate every shipped overlay fill, so the two meanings
+    // coexist and this note is the guard.
+    firstFindClears: 'First found on clear {count}',
+    unlockToast: 'Relic catalogued: {name}',
+    illuminateBanner: 'Page illuminated: {name}',
+    illuminateToast: 'Every relic on {name} is filled.',
+    // Phase 18: another player's FIRST-EVER page Illumination, the
+    // hudChrome.deeds.broadcastLine sibling (guild-chat green, page name
+    // spliced in as a clickable jump; the wire event carries the page id
+    // only and the client resolves {page} through reliquary_i18n).
+    illuminationBroadcastLine: '{name} has illuminated a Reliquary page: {page}',
+    // Phase 7: profession mark find labels (player-visible chrome). Catalog page
+    // names are NOT keys here: they resolve from the page id through
+    // src/ui/reliquary_i18n.ts, the deed_i18n entity-style channel.
+    markFind: {
+      masterwork_first: 'First Masterwork',
+      masterwork_weaponcrafting: 'Weaponcrafting Masterwork',
+      masterwork_armorcrafting: 'Armorcrafting Masterwork',
+      masterwork_tailoring: 'Tailoring Masterwork',
+      masterwork_leatherworking: 'Leatherworking Masterwork',
+      masterwork_jewelcrafting: 'Jewelcrafting Masterwork',
+      masterwork_inscription: 'Inscription Masterwork',
+      masterwork_engineering: 'Engineering Masterwork',
+      gather_event_pristine_vein: 'Pristine Vein',
+      gather_event_ancient_heartwood: 'Ancient Heartwood',
+      gather_event_moonlit_bloom: 'Moonlit Bloom',
+      gather_event_golden_harvest: 'Golden Harvest',
+      gather_event_perfect_specimen: 'Perfect Specimen',
+      // Phase 21: Rares of the Realm kill proofs, 'Slain: <mob display name>'
+      // with names verbatim from MOBS (the server table and the wiki generator
+      // carry the identical strings; tests/character_sheet.test.ts cross-pins).
+      slain_old_greyjaw: 'Slain: Old Greyjaw',
+      slain_mogger: 'Slain: Mogger',
+      slain_grix_the_tunnelking: 'Slain: Grix the Tunnelking',
+      slain_captain_verlan: 'Slain: Captain Verlan',
+      slain_wraithbinder_maldrec: 'Slain: Wraithbinder Maldrec',
+      slain_mirejaw_the_ravenous: 'Slain: Mirejaw the Ravenous',
+      slain_sloomtooth_the_drowned: 'Slain: Sloomtooth the Drowned',
+      slain_sister_nhalia: 'Slain: Sister Nhalia',
+      slain_grubjaw: 'Slain: Grubjaw the Glutton',
+      slain_ironvein_foreman: 'Slain: Ironvein Foreman',
+      slain_brutok_skullsmasher: 'Slain: Brutok Skullsmasher',
+      slain_voskar_emberwing: 'Slain: Voskar the Emberwing',
+      slain_marrowlord_varkas: 'Slain: Marrowlord Varkas',
+      slain_old_cragmaw: 'Slain: Old Cragmaw',
+      slain_shardlord_kazzix: 'Slain: Shardlord Kazzix',
+      slain_gleamstag: 'Slain: The Gleamstag',
+      slain_old_marrowshell: 'Slain: Old Marrowshell',
+      slain_aurelhorn: 'Slain: Aurelhorn, First of the Herd',
+      slain_drakemaw_broodlord: 'Slain: Drakemaw Broodlord',
+    },
+    // Phase 8: Horizons account-scope chrome for weapon skins (account cosmetics).
+    accountScopeBadge: 'Account',
+    accountScopeNote: 'Account collection: unlocked across every character on this account.',
+    // Phase 13: one display-name ladder (no humanized ids), authored source
+    // lines for missing relics, page blurbs, and the search / ownership filter.
+    unknownRelic: 'Unrecorded relic',
+    sourceBossDungeon: 'Drops from {boss} in {dungeon}',
+    sourceBoss: 'Drops from {boss}',
+    sourceZone: 'Found in {zone}',
+    sourceProfession: 'Earned through {profession}',
+    sourceDeed: 'Awarded by the deed {deed}',
+    sourceVendor: 'Sold by {vendor}',
+    // {requirement} is the vendor's own lock-badge phrase (delveUi.shop.reqHeroic
+    // / reqClears), pre-localized before it reaches this template: a signature
+    // rare gated behind a delve clear reads "Sold by {vendor} (Requires a
+    // Heroic clear)" instead of an unconditional "Sold by {vendor}" that looks
+    // buyable on sight and reads as removed once it is not actually on the
+    // counter yet.
+    sourceVendorGated: 'Sold by {vendor} ({requirement})',
+    // A relic with several live routes shows one line per route, so these read
+    // as siblings of the six above rather than as a summary of them.
+    // {boss} here is the open-world rare and {zone} where it camps: half an
+    // answer either way, which is why they share one line.
+    sourceBossZone: 'Drops from {boss} in {zone}',
+    sourceDelve: 'Found in the delve {delve}',
+    // "{rank}-rank" matches the established Rift wording (itemTooltip.riftTier,
+    // sim.rift.raceWorldWin), and the reins come off the CLEAR, not one boss.
+    sourceRift: 'Drops from {rank}-rank Rift clears',
+    sourceQuest: 'Reward from the quest {quest}',
+    sourceStore: 'Purchased from the WOC Store',
+    // Award activities: the player action itself is the source, with no mob,
+    // vendor, or quest in between.
+    sourceActivityCorpseHarvest: 'Recovered while harvesting creature corpses',
+    sourceActivityMasterworkCraft: 'Earned by crafting a masterwork',
+    // The Riftbound bands: minted per participant for the party that wins a
+    // ranked rift's first-clear race (addRiftProgressionLoot), any rank. The
+    // English names the RACE, not a personal milestone: a party that clears a
+    // ranked event after its first clear mints nothing (claimRiftFirstClear
+    // returns won: false). The five non-Latin fills were sharpened WITH this
+    // English at Phase 21 QA (both gained the ranked and party qualifiers;
+    // the old fills carried the race reading but not those qualifiers).
+    sourceActivityRiftFirstClear:
+      "Awarded to every member of the party that wins a ranked Rift's first clear",
+    // The aria label folds the lines through formatList (Intl.ListFormat), so
+    // there is no join key to translate: CLDR owns the separators per locale,
+    // including the final-conjunction shapes a pairwise key cannot express.
+    // Missing cells fold the source line into the label so a keyboard or screen
+    // reader user gets everything a hover tooltip shows; owned cells fold in the
+    // first-find clear number on the same rule.
+    cellMissingSourceAria: '{name}, not yet found, {source}',
+    // {count} is the CLEAR number here too (see the firstFindClears note);
+    // the obtain-count aria lives on the plurals bases with {clears}/{count}
+    // split the other way round.
+    cellOwnedClearsAria: '{name}, catalogued, first found on clear {count}',
+    searchPlaceholder: 'Search relics',
+    searchAria: 'Search The Reliquary by name',
+    searchEmpty: 'No relics match that search.',
+    // Distinct from searchEmpty: clicking Catalogued with nothing typed must not
+    // blame a search the player never made.
+    filterEmpty: 'No relics match this filter.',
+    filterGroupAria: 'Filter relics by whether you have found them',
+    // SR-only description on the relic grid: roving tabindex leaves one tab
+    // stop, and list/listitem announces no keyboard model of its own.
+    gridKeyboardHint: 'Use the arrow keys to move between relics, Home and End for the ends.',
+    filterAll: 'All',
+    filterOwned: 'Catalogued',
+    filterMissing: 'Missing',
+    // The same chip state on a SHELF narrows whole pages by illumination, so
+    // the shelf paints its own labels, empty line and group name: a page is
+    // illuminated or still has relics remaining, never "catalogued".
+    filterIlluminated: 'Illuminated',
+    filterRemaining: 'Remaining',
+    filterEmptyPages: 'No pages match this filter.',
+    filterGroupAriaPages: 'Filter pages by whether they are illuminated',
+    // Phase 14: the Overview becomes the way IN to the catalog. Recent finds
+    // are jump buttons, each strip keeps its label and explains itself when
+    // empty, and three shelf cards summarize the shelves the rail lists.
+    recentJumpAria: 'Open the page for {name}',
+    recentEmpty: 'No finds yet. Relics you catalogue from now on land here.',
+    nearlyEmpty: 'Pages within reach of completion gather here.',
+    // A live needle that empties ONE strip while the other keeps matches: the
+    // whole-Overview searchEmpty line stays reserved for the nothing-anywhere
+    // case, so the emptied strip explains itself instead of sitting as a bare
+    // label over nothing.
+    stripNoMatch: 'Nothing here matches your search.',
+    shelfRecent: 'Latest find: {name}',
+    shelfNoFinds: 'Nothing catalogued on this shelf yet.',
+    shelfOpenAria: 'Open the {name} shelf, {owned} of {total} filled',
+    // Why a page can read full while the catalog total is smaller than the sum
+    // of the page totals: a relic on two pages is one relic.
+    sharedUniquesNote:
+      'Your overall total counts each relic once; shelf and page counts list every slot, so a relic shown on more than one page is counted by each of them.',
+    // Phase 9: character sheet labeled completion pair + Curator rank.
+    charCompletionLabel: 'Reliquary',
+    charCompletion: '{owned}/{total}',
+    charRankLabel: 'Curator',
+    charOpen: 'The Reliquary',
+    // Phase 15: the always-on HUD tracker (#reliquary-tracker) and the pin
+    // control that fills it. The row tally reuses hudChrome.questTracker.count
+    // and the row progress reuses progressText above, so neither is duplicated
+    // here. The pin cap note is a real refusal, not a silent no-op (the deeds
+    // watchFull precedent).
+    trackerLabel: 'Reliquary',
+    collapseHint: 'Collapse Reliquary tracker',
+    expandHint: 'Expand Reliquary tracker',
+    openWindowHint: 'Open The Reliquary',
+    pin: 'Pin',
+    unpin: 'Unpin',
+    pinFull: 'The tracker is full (up to {cap} pages)',
+    pinAria: 'Pin {name} to the HUD tracker',
+    unpinAria: 'Unpin {name}',
+    // The summary band's eye toggle for the HUD tracker's master switch
+    // (showReliquaryTracker). The label is the toggle's constant accessible
+    // name (aria-pressed carries the state); each hint is the action the
+    // press performs, rendered through the window's shared tooltip seam
+    // (reliquary_window.ts attachTooltip; that window never sets a native
+    // title, a pinned contract), not a title attribute.
+    trackerToggleLabel: 'HUD tracker',
+    trackerToggleShowHint: 'Show the Reliquary tracker on your screen',
+    trackerToggleHideHint: 'Hide the Reliquary tracker from your screen',
+    // Phase 22: realm population rarity (the hudChrome.deeds.rarityLine
+    // sibling). {percent} arrives pre-formatted through formatNumber's percent
+    // style. "Found" is deliberate over "Owned": the aggregate counts sticky
+    // first discovery (items) and kill proofs (marks), so it stays true for a
+    // mount whose reins were later sold or traded away.
+    rarityLine: 'Found by {percent} of collectors',
+    pageRarityLine: 'Illuminated by {percent} of collectors',
+    // Joins a cell's base aria sentence and the rarity sentence; the key owns
+    // the punctuation so locales can reorder or repunctuate the pair.
+    cellAriaWithRarity: '{base}, {rarity}',
+    // Joins a cell's base aria sentence and the account-scope badge, so the
+    // weapon-skin scope fact is not hover-only; the key owns the punctuation.
+    cellAriaWithAccountScope: '{base}, {scope}',
+  },
+  deeds: {
+    title: 'Book of Deeds',
+    close: 'Close the Book of Deeds',
+    searchPlaceholder: 'Search deeds',
+    searchAria: 'Search deeds by name',
+    renownLabel: 'Renown',
+    countLabel: '{earned}/{total} deeds',
+    completionAria: 'Deeds earned: {earned} of {total}',
+    recentLabel: 'Recent:',
+    recentJumpAria: 'Jump to {name}',
+    nearestLabel: 'Nearly there:',
+    filterGroupAria: 'Filter deeds',
+    filterAll: 'All',
+    filterEarned: 'Earned',
+    filterUnearned: 'Unearned',
+    filterNearly: 'Nearly done',
+    categoriesAria: 'Deed categories',
+    catProgression: 'Progression',
+    catCombat: 'Combat',
+    catDungeon: 'Dungeons',
+    catDelve: 'Delves',
+    catChronicle: 'Chronicles',
+    catCollection: 'Collection',
+    catPvp: 'PvP and Sport',
+    catSocial: 'Social',
+    catExploration: 'Exploration',
+    catFeat: 'Feats',
+    categoryCountAria: '{category}: {earned} of {visible} deeds earned',
+    emptyCategory: 'No deeds match here.',
+    progressText: '{current}/{target}',
+    progressAria: 'Progress: {current} of {target}',
+    renownChip: '{renown} Renown',
+    earnedDate: 'Earned {date}',
+    featRibbon: 'Feat',
+    hiddenBadge: 'Hidden',
+    titleChip: 'Title reward',
+    borderChip: 'Border reward',
+    watch: 'Watch',
+    unwatch: 'Unwatch',
+    watchFull: 'Watchlist full ({cap} max)',
+    watchAria: 'Watch {name} on the HUD tracker',
+    unwatchAria: 'Stop watching {name}',
+    // The worn-cosmetics shelf: the rail button names both pickers it holds,
+    // then one heading, group label, None option and empty line per picker.
+    // Border options are named by their DEED (a border reward carries a slug,
+    // never player-facing display text of its own).
+    cosmeticsSection: 'Titles and Borders',
+    titlesSection: 'Titles',
+    // UNRENDERED since the picker groups took their accessible name from the
+    // visible headings (aria-labelledby); kept because the shipped locale
+    // fills carry it. Candidate for removal at a release locale fill.
+    titlesAria: 'Choose your displayed title',
+    titlesNone: 'No Title',
+    titlesEmpty: 'Earn a title-bearing deed to unlock this shelf.',
+    bordersSection: 'Borders',
+    bordersNone: 'No Border',
+    bordersEmpty: 'Earn a border-bearing deed to unlock this shelf.',
+    unlockedBanner: 'Deed accomplished: {name}',
+    unlockedTitleHint: 'New title earned: {title}. Choose it in the Book of Deeds.',
+    // The border sibling. It names the DEED rather than a reward text, since a
+    // border reward carries only a palette slug.
+    unlockedBorderHint: 'New border earned: {name}. Wear it from the Book of Deeds.',
+    broadcastLine: '{name} has accomplished a deed: {deed}',
+    rarityLine: 'Earned by {percent} of adventurers',
+    // The exploration-deed card's still-missing-places line (deeds_window.ts
+    // missingPoiLabels): which named places an unearned wayfarer deed still
+    // needs, so a player is never left guessing which one of the ten never
+    // registered.
+    stillToVisit: 'Still to visit: {places}',
+    trackerLabel: 'Deeds',
+    collapseHint: 'Collapse deed tracker',
+    expandHint: 'Expand deed tracker',
+    // Compact touch tier: the tracker header is a count chip that opens the Book
+    // of Deeds dialog rather than toggling the inline watch list.
+    openBookHint: 'Open the Book of Deeds',
+    charTitleLabel: 'Title',
+    charTitleNone: 'No title chosen',
+    charOpenBook: 'Book of Deeds',
+    // The character sheet's earned-border badges: the worn one says so in its
+    // own label, so the state never rides the badge colour alone.
+    charBorderWorn: '{name} (worn)',
+    // The Renown tab of the high-score window: tab label, the deeds-board
+    // column headers (rank/name reuse the shared game.leaderboard.* headers,
+    // the Renown column reuses renownLabel above), the visible account-scope
+    // note, the viewer's standing line (the Renown-carrying arm for a current
+    // server, the rank-only arm when an older server omits self.renown), and
+    // the empty-board state. Renown is the ONE ranked number on the board:
+    // there is deliberately no deed-count column (issue #2044).
+    lbTab: 'Renown',
+    lbTitleCol: 'Title',
+    lbScopeNote:
+      'Accounts ranked by lifetime Renown. Each deed counts once across all characters on an account.',
+    lbSelfAccount: 'Your account: rank {rank}, top {percent} percent, {renown} Renown',
+    lbSelfRank: 'Your account: rank {rank}, top {percent} percent',
+    lbEmpty: 'No ranked chroniclers yet.',
+    // The options-window account row (accounts.deed_broadcasts): whether a
+    // marquee unlock is shared with guildmates and followers, AND whether the
+    // Discord activity feed posts the account's deed and masterwork cards
+    // (R58: one consent flag gates all three surfaces; masterwork cards go
+    // ONLY to Discord, so the label keeps the two audiences distinct).
+    broadcastsLabel:
+      'Share deed unlocks with guildmates and followers, and deed and masterwork cards with the Discord feed',
+    // The name-plus-title display pattern every titled surface composes
+    // through (chat sender, target frame): the bracket decoration and its
+    // placement around the name live HERE so a locale owns both. Non-wordy
+    // after placeholder strip, so no forced non-Latin fills.
+    titledName: '{name} [{title}]',
+  },
+  // World map continent overview (right-click the map, or the level-toggle
+  // button, to zoom out to the whole world; click a region to open its zone map).
+  continentMap: {
+    title: 'World Map',
+    // aria-live summary announced when the overview opens.
+    summary: 'World map. Choose a zone to open its map.',
+    // Level-toggle button visible text per level (the accessible name too). The
+    // static aria/title is generic so it never needs a per-level setAttribute.
+    toWorld: 'World map',
+    toZone: 'Zone map',
+    // Third stop of the cycle inside an instance (and outside, when a party member
+    // is in a dungeon whose floor plan can be drawn): the schematic instance map.
+    toInstance: 'Instance map',
+    toggleAria: 'Switch between the world map, zone map, and instance map',
+    // Hover tooltip over a zone region: its name plus the suggested level band.
+    levels: 'Levels {min} to {max}',
+  },
+  // Ranked Arena's minimum-level queue gate (src/sim/social/arena.ts
+  // arenaQueueJoin, 1v1/2v2 only): the arena window's disabled-queue note
+  // when the local character is below the floor.
+  arenaGate: {
+    minLevelNote: 'Requires level {level}',
+  },
+  // The $WOC Exchange window (docs/prd/woc/marketplace.md): USD-denominated
+  // auctions settled in $WOC, browser web + website desktop only,
+  // config-gated server-side.
+  // Every USD amount renders through formatNumber currency options and every
+  // timestamp through formatDateTime (UTC plus local, per the PRD); the
+  // window never composes numbers into these strings by concatenation.
+  // Wallet-bridge failure classes (src/ui/wallet_bridge_reason_text.ts): the
+  // bridge throws English prose and provider Errors, and these are the
+  // player-facing lines the classifier resolves instead of rendering
+  // err.message raw. Shared by every surface the bridge signs for (the
+  // Exchange, the trade arm, the Claudium checkout).
+  walletBridge: {
+    cancelled: 'The wallet request was cancelled. Nothing was sent.',
+    timeout: 'Your wallet did not respond in time. Open the wallet and try again.',
+    notConnected: 'Connect and verify a wallet, then try again.',
+    unsupported: 'This wallet cannot complete that action. Connect a different wallet.',
+    unavailable: 'No wallet connection is available here. Reconnect your wallet and try again.',
+    badResponse: 'Your wallet returned an unusable answer. Try again.',
+  },
+  wocMarket: {
+    title: '$WOC Exchange',
+    close: 'Close the Exchange',
+    launcherLabel: '$WOC Exchange',
+    tabBrowse: 'Browse',
+    tabSell: 'Sell',
+    // "My", said outright: the tab is the viewer's own bids and listings, and
+    // the bare "Activity" read as a market-wide feed (Zyzz's dev-test note).
+    tabActivity: 'My Activities',
+    // The tab strip's own accessible name (the store's 'WOC Store sections'
+    // precedent), never the window title twice.
+    tabsLabel: '$WOC Exchange sections',
+    loading: 'Loading the Exchange...',
+    loadFailed: 'The Exchange could not be reached. Try again shortly.',
+    disabledRealm: 'The $WOC Exchange is not available on this realm.',
+    // The wrapped DESKTOP shell's (Electron, Steam, packaged website build)
+    // launcher confirm dialog (src/ui/woc_market_link.ts): the Exchange
+    // itself stays fail-closed there (docs/prd/woc/marketplace.md), so this
+    // hands the player off to the browser build instead of leaving the
+    // launcher unexplained. Never shown on Capacitor native.
+    browserOnlyConfirmTitle: 'Open the $WOC Exchange in your browser?',
+    browserOnlyConfirmBody:
+      'The $WOC Exchange runs on the browser version of World of ClaudeCraft only. This opens World of ClaudeCraft in your browser, where you can sign in and open the Exchange; the game keeps running here.',
+    browserOnlyConfirmOpen: 'Open in Browser',
+    browserOnlyConfirmCancel: 'Cancel',
+    // Names no cause (an operator pause and an unhealthy price print both
+    // land here) and every action the pause refuses (guardEnabledHealthy
+    // gates listing, bidding, offers and the payment quote); a payment
+    // already sent is not health-gated and still settles.
+    pausedBanner:
+      'Trading is paused. Auctions keep counting down; new listings, bids, offers, and payments wait until trading resumes, and a payment already sent still settles.',
+    walletLinkedDisconnected:
+      'Your public address is linked. Reconnect that wallet app when you want to pay with $WOC.',
+    walletLinkedConnected: 'Your linked wallet app is connected and ready for $WOC purchases.',
+    walletUsdBalance: '{amount} USD',
+    walletUsdUnknown: 'Unknown',
+    // The card's dismiss button (accessible name). Only the two linked states
+    // offer it (woc_wallet_card_dismiss.ts); the card returns when the state changes.
+    walletCardDismiss: 'Hide wallet card',
+    // The rate is per ONE dollar, said outright: 'per USD' read as a unit
+    // label and players asked per how many.
+    rateNote: 'Rate: about {tokens} $WOC per $1.00 USD as of {time}.',
+    // Under the paused banner the print is the last KNOWN rate, dated, never a
+    // live one.
+    rateNotePaused: 'Last known rate: about {tokens} $WOC per $1.00 USD as of {time}.',
+    // Anchored to the amount it converts (the current bid, else the starting
+    // bid: the same rule the server priced); the fixed-at-payment rule lives
+    // in the bid form's own warning.
+    estimateNote: 'About {tokens} $WOC for {usd} at the current rate.',
+    browseEmpty: 'No listings right now. Check back soon.',
+    browseError: 'Listings could not be loaded.',
+    colItem: 'Item',
+    colSeller: 'Seller',
+    colCurrentBid: 'Current bid',
+    colBuyNow: 'Buy now',
+    colTimeLeft: 'Time left',
+    reserveMet: 'Reserve met',
+    reserveNotMet: 'Reserve not met',
+    yourListing: 'Your listing',
+    buyNowLockedBadge: 'Purchase in progress',
+    // The badges' explainers (the shared tooltip box, hover, focus and touch):
+    // a bidder's only encounter with a hidden reserve, and what a locked or
+    // own listing means for them.
+    reserveMetTip: 'The seller set a hidden minimum price, and the current bid meets it.',
+    reserveNotMetTip:
+      'The seller set a hidden minimum price. If the highest bid at close is below it, the item is not sold and every bond is returned.',
+    yourListingTip:
+      'You listed this item. You cannot bid on your own listing; while it has no bids you can cancel it here or from Activity.',
+    buyNowLockedTip:
+      'Another buyer holds this listing while they pay. If they do not pay in time, it reopens.',
+    pagePrev: 'Previous page',
+    pageNext: 'Next page',
+    pageNumber: 'Page {current}',
+    sortLabel: 'Sort',
+    sortEnding: 'Ending soonest',
+    sortNewest: 'Newest',
+    sortPriceAsc: 'Price: low to high',
+    sortPriceDesc: 'Price: high to low',
+    // The Browse filters (the server-validated browse params, finally on the
+    // strip): quality and format are closed vocabularies, the item box is a
+    // free-text name search resolved to item ids client-side and applied on
+    // change (Enter or blur), never per keystroke.
+    filterQuality: 'Quality',
+    filterFormat: 'Format',
+    filterAny: 'Any',
+    filterFormatAuction: 'Auction',
+    filterFormatBuyNow: 'Buy now',
+    filterItemLabel: 'Item',
+    filterItemPlaceholder: 'Search by item name',
+    // The stamped category axes: the player split (weapons and armor apart,
+    // unlike the policy's one equipment bucket) plus the finer weapon-type /
+    // armor-slot axis, whose option labels come from the shared families
+    // (weaponTypeLabel, itemSlotLabel).
+    filterCategory: 'Category',
+    filterCategoryWeapon: 'Weapons',
+    filterCategoryArmor: 'Armor',
+    filterCategoryMount: 'Mounts',
+    filterSubcategory: 'Type',
+    // The seller click-through: a seller's recent completed trades, opened
+    // from any Browse row's seller cell, with its own way back.
+    sellerLinkAria: 'View recent trades by {name}',
+    sellerTitle: 'Recent trades by {name}',
+    sellerBack: 'Back to Browse',
+    sellerEmpty: 'No completed trades yet.',
+    sellerError: 'Recent trades could not be loaded.',
+    sellerSaleRow: '{time}: {item} to {buyer} for {usd}',
+    detailTitle: 'Listing',
+    detailSeller: 'Sold by {name}',
+    detailEndsAt: 'Ends {utc} UTC ({local} local)',
+    detailStartingBid: 'Starting bid: {usd}',
+    detailCurrentBid: 'Current bid: {usd}',
+    detailNoBids: 'No bids yet',
+    detailMinNext: 'Minimum next bid: {usd}',
+    detailBuyNow: 'Buy now: {usd}',
+    detailSales: 'Recent sales',
+    detailSaleRow: '{time}: {seller} sold to {buyer} for {usd}',
+    detailNoSales: 'No recorded sales for this item yet.',
+    // The history is its own round trip: while it is on its way the pane says
+    // so, never 'no recorded sales'.
+    detailSalesLoading: 'Loading recent sales...',
+    bidLabel: 'Your bid (USD)',
+    bidPlaceholder: 'Enter a USD amount',
+    bidButton: 'Place bid',
+    bidAria: 'Place a bid on {item}',
+    // The disclosure well's toggle: the full commitment disclosures collapsed
+    // behind one line so Place bid stays above the fold (aria-expanded says
+    // which state the button is in; the label never changes).
+    bidTermsToggle: 'Bid terms',
+    // The row activator opens the listing (a buy-now-only listing takes no
+    // bids, and neither does your own), so its name says that.
+    rowOpenAria: 'View the listing for {item}',
+    buyNowButton: 'Buy now for {usd}',
+    buyNowAria: 'Buy {item} now for {usd}',
+    cancelButton: 'Cancel listing',
+    cancelAria: 'Cancel your listing of {item}',
+    // The bond schedule for THIS listing: both figures are server-computed
+    // and ride the listing view (the bond for the minimum next bid; a higher
+    // bid holds more), on top of the bid, and every way it comes back. The
+    // forfeit and strike rule is stated once, in bidBindingNote.
+    bidBondNote:
+      'Placing a bid holds a refundable bond in $WOC on top of the bid: {bond} for a bid of {bid}, more for a higher bid. It is returned when you are outbid or lose, or after you pay if you win; a second-chance offer holds it again.',
+    // The GENERAL bond schedule for an arbitrary typed bid, resolved from the
+    // figures /status ships (the copy-figures rule: named figures come off
+    // the wire, never hard-coded prose). Rendered only when the server sent
+    // them; an older server keeps the figure-free bidBondNote alone.
+    bidBondSchedule: 'The bond is {rate} percent of your bid, at least {min} and at most {max}.',
+    // The bond payment window off /status: an unpaid bond lapses the bid.
+    bidBondPayWindow: 'Pay the bond within {duration} of placing your bid, or the bid lapses.',
+    // The pre-bid commitment disclosures (draft Terms 10.4/10.5), shown
+    // BEFORE the first bond charge: a bid binds once its bond is signed.
+    bidBindingNote:
+      'A bid is binding once you sign its bond transaction: it cannot be withdrawn, and if you win and do not pay, the bond is forfeited and your account earns a Marketplace strike.',
+    // The anti-snipe rule with its real figures (2 minutes, capped at 30
+    // past the listed end; pinned against the server constants), and what a
+    // bond that confirms after the close is: not counted, refunded.
+    bidCloseNote:
+      'A bid whose bond confirms in the last 2 minutes extends the auction to 2 minutes after that bid, up to 30 minutes past the listed end. A bond that confirms after the auction closes does not count and is refunded.',
+    // Bidder-facing second-chance disclosure, shown when the seller opted in:
+    // the cascade is automatic (the bond is re-held and a settlement opens),
+    // not an offer the bidder accepts.
+    offerNextNote:
+      'If the winner does not pay, you may become the buyer at your own bid: your bond is held again (or asked for again if it was already returned) and payment is due within {duration}.',
+    // Buy now claims the listing; walking away has a cost of its own.
+    // The real figures (a 270 second hold, a 30 minute per-listing cooldown,
+    // three unpaid Buy Nows per rolling hour; pinned against the server
+    // constants), in plain words.
+    buyNowNote:
+      'Buy now holds this listing for you for about four and a half minutes while you pay. If you do not pay in time, you cannot try this listing again for 30 minutes, and three unpaid Buy Nows within an hour pause Buy Now for you until the oldest is an hour old.',
+    variableTokenWarning:
+      'You are committing to pay a USD value in $WOC. The exact token amount is set by a fresh quote when payment is requested and may differ from the estimate.',
+    // On the quote faces the amount IS fixed until the quote expires: the note
+    // says that instead of warning that the number on screen may still move.
+    quoteFixedNote: 'This quote fixes the $WOC amount until it expires. A new quote may differ.',
+    settlementDeadlineNote: 'If you win, payment is due within {duration} of the auction closing.',
+    // The claim_cooldown refusal's parametric variant: rendered by the
+    // api_error matcher when the server names the remaining time (it lives
+    // here because the apiError catalog is a strict bijection with the
+    // server code set).
+    claimCooldownRetry: 'You recently walked away from a Buy Now. Try again in {duration}.',
+    // Named after the document it links (10.3: presented, or clearly linked,
+    // at the moment of acceptance), not a settlement-mechanics nickname.
+    termsLabel: 'I accept the Marketplace terms.',
+    termsLink: 'View the Marketplace terms (opens in a new tab)',
+    quoteTitle: 'Confirm payment',
+    quoteTotal: 'Total: {tokens} $WOC',
+    quoteSeller: 'Seller receives: {tokens} $WOC',
+    // The two fee legs name what each share is: the buyer never reads the
+    // seller's fee note.
+    quoteBurn: 'Burned (removed from supply): {tokens} $WOC',
+    quoteTreasury: 'To the game treasury: {tokens} $WOC',
+    quoteExpires: 'Quote expires in {duration}',
+    // The static-time twin for cold surfaces with no countdown driver (the
+    // trade arm's review panel).
+    quoteExpiresAt: 'Quote expires at {time}.',
+    quoteExpired: 'The quote expired. Request a fresh one.',
+    quoteSign: 'Sign and pay',
+    quoteRefresh: 'New quote',
+    quoteCancel: 'Not now',
+    quoteBondFor: 'Refundable bid bond: {usd}',
+    // The bond face names its listing's item when the painter knows it (a
+    // retry after a declined wallet still says which auction it is for).
+    quoteBondForItem: 'Refundable bid bond for {item}: {usd}',
+    quoteSettlementFor: 'Settlement for {item}: {usd}',
+    // The claim's own payment deadline on the settlement quote face (the trade
+    // arm's quote face shows its twin); a public Buy Now that lapses earns a
+    // cooldown, not a strike, so this line names no strike.
+    paymentDueAt: 'Payment is due by {time}.',
+    signing: 'Waiting for your wallet...',
+    signFailed: 'Your wallet did not complete the payment. Check the wallet and try again.',
+    // The step-up (listing / directed acceptance) authorization is a message
+    // signature that moves NO funds, so its failure must not say "payment".
+    signFailedConfirm: 'Your wallet did not sign the confirmation. Check the wallet and try again.',
+    confirming: 'Confirming on chain...',
+    // The listing submit's second phase is a plain REST create, not an on-chain
+    // settlement: it must not borrow the payment path's "Confirming on chain".
+    listing: 'Listing your item...',
+    activityCancelPending: 'Cancel pending',
+    activityDirected: 'Directed sale',
+    bidPlacedStanding: 'Your bid stands. You are the high bidder.',
+    bidPlacedOutbid: 'Your bond confirmed, but a higher bid landed first.',
+    purchaseComplete: 'Purchase complete. Your item arrives by Ravenpost mail.',
+    // A CONFIRMED or DELIVERING answer is decided money whose delivery has
+    // not finished: not "complete" yet, and not "confirming" any more.
+    paymentConfirmedDelivering:
+      'Payment confirmed. Your item arrives by Ravenpost mail once delivery completes.',
+    listingCreated: 'Your listing is live.',
+    listingCancelled: 'Listing cancelled. Your item returns by Ravenpost mail.',
+    listingCancelPending:
+      'Cancel pending: a buyer holds the purchase window. Unless they pay, the listing closes and your item returns by Ravenpost mail.',
+    sellTitle: 'Create a listing',
+    // The RESOLVED sell-empty caption: {floor} is this realm's live quality
+    // floor off /status (localized through itemQualityLabel), and the
+    // collectible sentence below it is chosen from the realm's own category
+    // switches, so the copy names what THIS realm takes instead of a generic
+    // "some realms" sentence (the copy-figures rule). Replaces the retired
+    // figure-free sellEmpty; the ready model always has the figures.
+    sellEmptyFloor:
+      'No eligible items in your bags. This realm takes unbound equipment of {floor} quality or better.',
+    // The collectible-category sentence, one key per switch combination so no
+    // locale ever composes a list in code; omitted when both are off.
+    sellCollectiblesBoth: 'Mounts and mech chroma plates can also be listed.',
+    sellCollectiblesMounts: 'Mounts can also be listed.',
+    sellCollectiblesChromas: 'Mech chroma plates can also be listed.',
+    // A copy the player locked themselves is filtered out of the picker; the
+    // note says so instead of leaving it silently missing.
+    sellLockedHidden: 'Locked items are not listed here. Unlock them in your bags to sell them.',
+    sellSearchPlaceholder: 'Type to filter your bags',
+    sellClear: 'Clear {item} and choose another',
+    sellChoose: 'Item to list',
+    sellNoMatches: 'No items match that search',
+    sellBuyNowAboveStart: 'The buy-now price must be higher than the starting bid.',
+    sellFormat: 'Format',
+    sellFormatAuction: 'Auction',
+    sellFormatBuyNow: 'Buy now only',
+    sellFormatAuctionBuyNow: 'Auction with buy now',
+    sellStart: 'Starting bid (USD)',
+    sellReserve: 'Reserve (USD, optional)',
+    sellReserveNote:
+      'Optional, at least the starting bid. Bidders see only whether it is met; if the highest bid at close is below it, the item comes back to you unsold and every bond is returned.',
+    sellBuyNowNote: 'Required. A buy-now listing sells at this price with no bidding.',
+    sellBuyNowAuctionNote:
+      'Optional. Set a price a buyer can pay to end the auction early; it must be above the starting bid and the reserve.',
+    sellBuyNowPrice: 'Buy-now price (USD)',
+    sellDuration: 'Duration',
+    sellOfferNext:
+      'If the winner does not pay, sell to the next-highest bidder whose bid meets the reserve, at their bid, instead of ending unsold.',
+    sellSubmit: 'List item',
+    sellSubmitAria: 'List {item} on the Exchange',
+    // The fee schedule is service configuration and is not on the wire, so
+    // the note names no percentage: the resolved fee for the price being
+    // typed renders beside it from the server's estimate (an auction's fee
+    // follows the final price).
+    sellFeeNote:
+      'A completed sale pays an Exchange fee out of the price: part is burned and part goes to the treasury, and you receive the remainder at your linked wallet in the settlement transaction. The fee for the price you enter is shown here; on an auction it follows the final price.',
+    activityListings: 'My listings',
+    activityBids: 'My bids',
+    activitySettlements: 'My settlements',
+    // YOUR-scoped on both sentences: "Nothing yet. Bids ... appear here."
+    // read as an empty market-wide feed rather than "you have none".
+    activityEmpty:
+      'You have no bids, listings, or settlements yet. Your Exchange activity appears here.',
+    // A section with nothing in it says so instead of a heading over air.
+    activityNoListings: 'You have no listings.',
+    activityNoBids: 'You have no bids.',
+    activityNoSettlements: 'You have no settlements.',
+    activityPayNow: 'Pay now',
+    activityPayNowAria: 'Pay for settlement {id} now',
+    // The item-named twin, used when the wire carries the item (H13 put it on
+    // the row); the id form stays for an older server.
+    activityPayNowItemAria: 'Pay {usd} for {item} now',
+    activityDeadline: 'Payment due in {duration}',
+    // The exact deadline (the countdown's tooltip), the detailEndsAt shape.
+    dueAt: 'Due {utc} UTC ({local} local)',
+    activityStrikes: 'Marketplace strikes: {count}',
+    // A strike suspends listing, buying, offers and the step-up too (every
+    // guardSuspended arm), not only bidding.
+    activitySuspended:
+      'Exchange suspended for {duration} after unpaid deals: no bids, purchases, listings, or $WOC trades until then.',
+    // What a strike is and the ladder it climbs (pinned against the server's
+    // suspension table).
+    strikesTip:
+      'A strike is earned each time you do not pay for a deal you committed to. After the first, each strike suspends you from the Exchange for longer: 3 days, then 14, then 90, then a year.',
+    bidStatusPending: 'Awaiting bond',
+    bidStatusActive: 'High bidder',
+    bidStatusOutbid: 'Outbid',
+    bidStatusLapsed: 'Lapsed',
+    bidStatusWon: 'Won',
+    bidStatusDefaulted: 'Defaulted',
+    bidStatusCancelled: 'Cancelled',
+    bidBondPay: 'Pay bond',
+    bidBondPayAria: 'Pay the bond for your bid on listing {id}',
+    bidBondPayItemAria: 'Pay the {bond} bond for your bid on {item}',
+    settlementOffered: 'Payment due',
+    settlementConfirming: 'Confirming',
+    settlementConfirmedDelivering: 'Payment confirmed, delivering',
+    settlementReview: 'Payment under review',
+    settlementDelivered: 'Delivered',
+    settlementExpired: 'Expired unpaid',
+    settlementFailed: 'Payment failed',
+    settlementFailBurnMissing: 'The payment did not include the required token burn.',
+    settlementFailBurnMismatch: 'The payment burned the wrong token amount.',
+    settlementFailBurnAuthority: 'The token burn came from a wallet this purchase did not name.',
+    settlementFailUnexpectedCredit: 'The transaction paid a wallet outside this purchase.',
+    // The common non-forensic ends, each its own sentence (the generic line
+    // used to cover them all and explained nothing).
+    settlementFailQuoteExpired:
+      'The payment quote expired before it was used. Request a fresh one and pay again.',
+    settlementFailTransaction:
+      'The payment transaction failed on the network. Request a fresh quote and try again.',
+    settlementFailRefunded: 'This payment was returned to your wallet.',
+    settlementFailSuperseded: 'This payment attempt was replaced by a newer one.',
+    // Rendered on a FAILED row only (a review row carries its own label), so
+    // it names the terminal outcome, never a review that is over.
+    settlementFailConfirmingOverdue:
+      'This payment took too long to confirm and could not be verified.',
+    settlementFailGeneric: 'This payment could not be completed.',
+    paymentSeenAwaitingFinality: 'Payment seen on the ledger. Waiting for final confirmation.',
+    paymentNotYetVisible:
+      'No payment is visible on the ledger yet. It can take a moment to appear.',
+    paymentServiceUnreachable:
+      'The payment service is unreachable. Your payment stays recorded and will be re-checked.',
+    paymentPendingGeneric: 'Your payment is submitted and awaiting confirmation.',
+    // The bond leg's own pending voice: "payment seen" reads as the purchase
+    // money, and the figure in flight here is the refundable bid bond.
+    bondSeenAwaitingFinality: 'Bond payment seen on the ledger. Waiting for final confirmation.',
+    bondNotYetVisible:
+      'No bond payment is visible on the ledger yet. It can take a moment to appear.',
+    bondServiceUnreachable:
+      'The payment service is unreachable. Your bond payment stays recorded and will be re-checked.',
+    bondPendingGeneric: 'Your bond payment is submitted and awaiting confirmation.',
+    listingStatusActive: 'Active',
+    listingStatusSettling: 'Awaiting payment',
+    listingStatusSold: 'Sold',
+    listingStatusReturned: 'Returned',
+    listingStatusCancelled: 'Cancelled',
+    listingStatusSuspended: 'Suspended',
+    listingStatusUnsold: 'Unsold',
+  },
+  // Loot Explorer: a searchable, filterable catalog of every item the game
+  // can hand a player and where to get it, grouped by encounter and
+  // difficulty on request (src/ui/hud/loot_explorer/). Cold, static-content
+  // window: nothing here reads live world state.
+  lootExplorer: {
+    title: 'Loot Explorer',
+    close: 'Close Loot Explorer',
+    searchPlaceholder: 'Search items...',
+    searchAria: 'Search items',
+    filterCategoryAria: 'Source',
+    filterClassAria: 'Class',
+    filterStatAria: 'Stat',
+    filterQualityAria: 'Quality',
+    filterAll: 'All',
+    tabItems: 'By Item',
+    tabEncounters: 'By Encounter',
+    category: {
+      raid: 'Raid',
+      dungeon: 'Dungeon',
+      delve: 'Delve',
+      open_world: 'Open World',
+      rift: 'Rift',
+      vendor: 'Vendor',
+      quest_reward: 'Quest Reward',
+      quest_objective: 'Quest Objective',
+      ground_object: 'World Object',
+      starting_equipment: 'Starting Equipment',
+    },
+    difficulty: { normal: 'Normal', heroic: 'Heroic' },
+    // {rank} is the bare rank letter (C/B/A/S), which needs no translation.
+    riftRankLabel: 'Rift Rank {rank}',
+    // {category} is one of the category.* labels above, {name} the resolved
+    // boss/vendor/quest/class name, {context} the dungeon/raid/delve name.
+    source: '{category}: {name}',
+    sourceWithContext: '{category}: {name} ({context})',
+    chance: '{pct}% chance',
+    guaranteed: 'Guaranteed',
+    gatedByQuest: 'While questing: {quest}',
+    empty: 'No loot matches these filters.',
+    resultCount: '{count} results',
+  },
+};

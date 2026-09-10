@@ -1,0 +1,426 @@
+// Delve Marks vendor (Brother Halven's shop): gate unlock logic + the
+// server-authoritative buy path (gate, door range, and balance re-validated
+// in the Sim).
+import { describe, expect, it } from 'vitest';
+import { bagCapacity } from '../src/sim/bags';
+import { delveShopGateClears, delveShopGateForItem } from '../src/sim/content/delves';
+import { isCataloguedRelicItem } from '../src/sim/content/reliquary';
+import { DELVE_SHOPS, DELVES, ITEMS } from '../src/sim/data';
+import { Sim } from '../src/sim/sim';
+import type { PlayerClass } from '../src/sim/types';
+import { terrainHeight } from '../src/sim/world';
+
+// autoEquip:false so a bought wearable stays in the bags where we can count it
+// (mirrors the chest-loot test in delves.test.ts).
+const makeSim = (cls: PlayerClass = 'warrior', seed = 7) =>
+  new Sim({ seed, playerClass: cls, autoEquip: false });
+const metaOf = (sim: Sim) => (sim as any).players.get(sim.playerId);
+const countOf = (sim: Sim, id: string) =>
+  sim.inventory.filter((s) => s.itemId === id).reduce((n, s) => n + s.count, 0);
+
+function teleport(sim: Sim, x: number, z: number) {
+  const p = sim.player;
+  p.pos.x = x;
+  p.pos.z = z;
+  p.pos.y = terrainHeight(x, z, sim.cfg.seed);
+  p.prevPos = { ...p.pos };
+}
+
+// Brother Halven's shop is gated to the delve door, like enter_delve; every
+// buying test below must stand the player there first.
+const reliquaryDoor = DELVES.collapsed_reliquary.doorPos;
+const teleportToReliquaryDoor = (sim: Sim) => teleport(sim, reliquaryDoor.x, reliquaryDoor.z);
+
+const shop = DELVE_SHOPS.collapsed_reliquary;
+const availableEntry = shop.find((e) => e.gate === 'available')!;
+const clearsEntry = shop.find((e) => e.gate === 'clears:3')!;
+const heroicEntry = shop.find((e) => e.gate === 'heroicClear')!;
+
+describe('delve shop, gate logic', () => {
+  it('available is always open', () => {
+    const sim = makeSim();
+    expect(sim.delveShopGateMet(metaOf(sim), 'collapsed_reliquary', 'available')).toBe(true);
+  });
+
+  it('clears:N counts this delve at any difficulty (normal + heroic), not other delves', () => {
+    const sim = makeSim();
+    const meta = metaOf(sim);
+    expect(sim.delveShopGateMet(meta, 'collapsed_reliquary', 'clears:3')).toBe(false);
+    meta.delveClears['collapsed_reliquary:normal'] = 2;
+    meta.delveClears['collapsed_reliquary:heroic'] = 1;
+    expect(sim.delveShopGateMet(meta, 'collapsed_reliquary', 'clears:3')).toBe(true);
+    // A different delve's clears must not bleed into this gate.
+    meta.delveClears['collapsed_reliquary:normal'] = 0;
+    meta.delveClears['collapsed_reliquary:heroic'] = 0;
+    meta.delveClears['some_other_delve:normal'] = 9;
+    expect(sim.delveShopGateMet(meta, 'collapsed_reliquary', 'clears:3')).toBe(false);
+  });
+
+  it('heroicClear needs at least one heroic completion', () => {
+    const sim = makeSim();
+    const meta = metaOf(sim);
+    meta.delveClears['collapsed_reliquary:normal'] = 5; // normal clears do not unlock it
+    expect(sim.delveShopGateMet(meta, 'collapsed_reliquary', 'heroicClear')).toBe(false);
+    meta.delveClears['collapsed_reliquary:heroic'] = 1;
+    expect(sim.delveShopGateMet(meta, 'collapsed_reliquary', 'heroicClear')).toBe(true);
+  });
+});
+
+describe('delve shop, buying', () => {
+  it('grants the item and debits Marks on a valid purchase', () => {
+    const sim = makeSim();
+    teleportToReliquaryDoor(sim);
+    metaOf(sim).delveMarks = 100;
+    const before = countOf(sim, availableEntry.itemId);
+    sim.delveBuyShopItem('collapsed_reliquary', availableEntry.itemId);
+    expect(countOf(sim, availableEntry.itemId) - before).toBe(1);
+    expect(sim.delveMarks).toBe(100 - availableEntry.marks);
+  });
+
+  it('a Marks purchase of a catalogued relic COUNTS on the obtain tally', () => {
+    // The positive arm of the Reliquary movement doctrine, pinned nowhere
+    // else: a CURRENCY vendor counts, on purpose (the coin was earned in the
+    // world), where every player-to-player pipe is movement-flagged and never
+    // counts. The facet doc (src/world_api/reliquary.ts) names the four delve
+    // Marks relics as the canonical case; buying one twice must move the
+    // player-visible tally 1 then 2 through the real buy path.
+    const sim = makeSim();
+    teleportToReliquaryDoor(sim);
+    const meta = metaOf(sim);
+    meta.delveClears['collapsed_reliquary:heroic'] = 1;
+    meta.delveMarks = 100;
+    const RELIC = 'deacon_reliquary_helm';
+    expect(isCataloguedRelicItem(RELIC), 'the premise: the shop relic is catalogued').toBe(true);
+    expect(shop.some((e) => e.itemId === RELIC)).toBe(true);
+
+    sim.delveBuyShopItem('collapsed_reliquary', RELIC);
+    expect(countOf(sim, RELIC)).toBe(1);
+    expect(meta.reliquary.counts[RELIC]).toBe(1);
+    sim.delveBuyShopItem('collapsed_reliquary', RELIC);
+    expect(countOf(sim, RELIC)).toBe(2);
+    expect(meta.reliquary.counts[RELIC]).toBe(2);
+
+    // The facet doc's six-id premise, pinned as an EXACT set equality: the
+    // catalogued relics stocked across all delve shops are precisely the six
+    // ids the doc names (four Phase 12 originals plus the two chase rods the
+    // Phase 21 specimens growth catalogued off the Litany board), so a
+    // seventh catalogued relic landing in any delve shop reds here and
+    // forces the doc sentence to be revisited (the ids' properties are what
+    // this pins; the prose itself cannot be pinned).
+    const DOC_RELICS = [
+      'deacon_reliquary_helm',
+      'varric_shadow_cowl',
+      'sister_nhalia_choir_plate',
+      'drowned_choir_fang',
+      'stormreel_fishing_rod',
+      'tidewrought_fishing_rod',
+    ];
+    const stocked = new Set(
+      Object.values(DELVE_SHOPS).flatMap((entries) => entries.map((e) => e.itemId)),
+    );
+    expect([...stocked].filter((id) => isCataloguedRelicItem(id)).sort()).toEqual(
+      [...DOC_RELICS].sort(),
+    );
+  });
+
+  it('rejects when Marks are insufficient, no item, no debit', () => {
+    const sim = makeSim();
+    teleportToReliquaryDoor(sim);
+    metaOf(sim).delveMarks = availableEntry.marks - 1;
+    const before = countOf(sim, availableEntry.itemId);
+    sim.delveBuyShopItem('collapsed_reliquary', availableEntry.itemId);
+    expect(countOf(sim, availableEntry.itemId)).toBe(before);
+    expect(sim.delveMarks).toBe(availableEntry.marks - 1);
+  });
+
+  it('rejects a purchase made far from the delve door, no debit (defense-in-depth: the WS dispatch already geo-gates this, but the sim must refuse it too)', () => {
+    const sim = makeSim();
+    teleport(sim, reliquaryDoor.x + 200, reliquaryDoor.z + 200);
+    const meta = metaOf(sim);
+    meta.delveMarks = 100;
+    sim.drainEvents();
+    sim.delveBuyShopItem('collapsed_reliquary', availableEntry.itemId);
+    expect(countOf(sim, availableEntry.itemId)).toBe(0);
+    expect(sim.delveMarks, 'the Marks must survive the refusal').toBe(100);
+    const ev = sim.drainEvents();
+    expect(ev.some((e) => e.type === 'error' && e.text === 'Too far away.')).toBe(true);
+  });
+
+  it('rejects a full-bag purchase BEFORE the spend: no Marks debit, no overflow grant', () => {
+    // The grant hub deliberately never capacity-caps (a mid-flight grant must
+    // not vanish), so the buy path itself has to gate, exactly like buyItem:
+    // without the gate the purchase landed past capacity and the counter was
+    // an overflow loophole.
+    const sim = makeSim();
+    teleportToReliquaryDoor(sim);
+    const meta = metaOf(sim);
+    meta.delveMarks = 100;
+    const capacity = bagCapacity(meta.bags);
+    const fillerStack = ITEMS.bone_fragments.stackSize ?? 20;
+    while (meta.inventory.length < capacity)
+      sim.addItem('bone_fragments', fillerStack, sim.playerId);
+    expect(meta.inventory.length).toBe(capacity);
+    expect(sim.ctx.canAddItem(availableEntry.itemId, 1, sim.playerId)).toBe(false);
+
+    sim.drainEvents();
+    sim.delveBuyShopItem('collapsed_reliquary', availableEntry.itemId);
+    expect(countOf(sim, availableEntry.itemId)).toBe(0);
+    expect(sim.delveMarks, 'the Marks must survive the refusal').toBe(100);
+    expect(meta.inventory.length).toBe(capacity);
+    // The refusal is TOLD to the player, the same bags-full idiom buyItem
+    // uses: a silent early return would keep every absence assert above green
+    // while the counter just ate the click.
+    const ev = sim.drainEvents();
+    expect(ev.some((e) => e.type === 'error' && e.text === 'Your bags are full.')).toBe(true);
+  });
+
+  it('rejects a locked clears:3 item until the clears requirement is met', () => {
+    const sim = makeSim();
+    teleportToReliquaryDoor(sim);
+    const meta = metaOf(sim);
+    meta.delveMarks = 100;
+    sim.delveBuyShopItem('collapsed_reliquary', clearsEntry.itemId);
+    expect(countOf(sim, clearsEntry.itemId)).toBe(0);
+    expect(sim.delveMarks).toBe(100); // gate blocks BEFORE any debit
+
+    meta.delveClears['collapsed_reliquary:normal'] = 3;
+    sim.delveBuyShopItem('collapsed_reliquary', clearsEntry.itemId);
+    expect(countOf(sim, clearsEntry.itemId)).toBe(1);
+    expect(sim.delveMarks).toBe(100 - clearsEntry.marks);
+  });
+
+  it('rejects a Heroic-gated rare until a heroic clear is recorded', () => {
+    const sim = makeSim();
+    teleportToReliquaryDoor(sim);
+    const meta = metaOf(sim);
+    meta.delveMarks = 100;
+    sim.delveBuyShopItem('collapsed_reliquary', heroicEntry.itemId);
+    expect(countOf(sim, heroicEntry.itemId)).toBe(0);
+    expect(sim.delveMarks).toBe(100);
+
+    meta.delveClears['collapsed_reliquary:heroic'] = 1;
+    sim.delveBuyShopItem('collapsed_reliquary', heroicEntry.itemId);
+    expect(countOf(sim, heroicEntry.itemId)).toBe(1);
+    expect(sim.delveMarks).toBe(100 - heroicEntry.marks);
+  });
+
+  it('rejects an item that is not in the shop / wrong delve, no debit', () => {
+    const sim = makeSim();
+    teleportToReliquaryDoor(sim);
+    metaOf(sim).delveMarks = 100;
+    sim.delveBuyShopItem('collapsed_reliquary', 'worn_sword');
+    sim.delveBuyShopItem('no_such_delve', availableEntry.itemId);
+    expect(sim.delveMarks).toBe(100);
+    expect(countOf(sim, 'worn_sword')).toBe(0);
+  });
+});
+
+// The shop tab (hud.ts) renders from this IWorld view; the same resolver backs the
+// online ClientWorld off its mirrored delveClears, so the lock badge it shows
+// matches the gate the server-authoritative buy enforces.
+describe('delve shop, delveShopOffers view', () => {
+  it('mirrors the stock and resolves lock state + gate breakdown from clears', () => {
+    const sim = makeSim();
+    const offers = sim.delveShopOffers('collapsed_reliquary');
+    expect(offers).toHaveLength(shop.length);
+
+    const clearsOffer = offers.find((o) => o.itemId === clearsEntry.itemId)!;
+    expect(clearsOffer.requiresClears).toBe(3);
+    expect(clearsOffer.requiresHeroicClear).toBe(false);
+    const heroicOffer = offers.find((o) => o.itemId === heroicEntry.itemId)!;
+    expect(heroicOffer.requiresHeroicClear).toBe(true);
+    expect(heroicOffer.requiresClears).toBe(0);
+
+    // Fresh character: available open, gated entries locked.
+    expect(offers.find((o) => o.itemId === availableEntry.itemId)?.unlocked).toBe(true);
+    expect(clearsOffer.unlocked).toBe(false);
+    expect(heroicOffer.unlocked).toBe(false);
+  });
+
+  it('unlocks gated offers once the clears requirement is met', () => {
+    const sim = makeSim();
+    const meta = metaOf(sim);
+    meta.delveClears['collapsed_reliquary:normal'] = 3;
+    meta.delveClears['collapsed_reliquary:heroic'] = 1;
+    const offers = sim.delveShopOffers('collapsed_reliquary');
+    expect(offers.find((o) => o.itemId === clearsEntry.itemId)?.unlocked).toBe(true);
+    expect(offers.find((o) => o.itemId === heroicEntry.itemId)?.unlocked).toBe(true);
+  });
+
+  it('returns an empty list for an unknown delve', () => {
+    expect(makeSim().delveShopOffers('no_such_delve')).toEqual([]);
+  });
+});
+
+describe('Drowned Litany shop stock (data pins)', () => {
+  it('pins the Marks price ladder, gates, and item ids (2x the Reliquary slots)', () => {
+    // The whole stock as literals: a price, gate, or id change must be a
+    // deliberate edit here, not silent drift.
+    expect(DELVE_SHOPS.drowned_litany).toEqual([
+      { itemId: 'litany_legs', marks: 16, gate: 'available' },
+      { itemId: 'litany_shoulder', marks: 16, gate: 'available' },
+      { itemId: 'litany_gloves_rog', marks: 16, gate: 'available' },
+      { itemId: 'litany_cloth_chest', marks: 20, gate: 'available' },
+      { itemId: 'litany_leather_chest', marks: 20, gate: 'available' },
+      { itemId: 'litany_plate_chest', marks: 20, gate: 'available' },
+      { itemId: 'litany_helm', marks: 24, gate: 'clears:3' },
+      { itemId: 'sister_nhalia_choir_plate', marks: 56, gate: 'heroicClear' },
+      { itemId: 'drowned_choir_fang', marks: 56, gate: 'heroicClear' },
+      // The crafted top-tier tools, a non-crafter's route to the tool ladder.
+      // Tier 4 on the commitment rung, tier 5 on the Heroic rung.
+      { itemId: 'thorium_mining_pick', marks: 24, gate: 'clears:3' },
+      { itemId: 'ashwood_axe', marks: 24, gate: 'clears:3' },
+      { itemId: 'goldleaf_sickle', marks: 24, gate: 'clears:3' },
+      { itemId: 'stormreel_fishing_rod', marks: 24, gate: 'clears:3' },
+      { itemId: 'osmium_hoe', marks: 24, gate: 'clears:3' },
+      { itemId: 'arcanite_mining_pick', marks: 56, gate: 'heroicClear' },
+      { itemId: 'elderwood_axe', marks: 56, gate: 'heroicClear' },
+      { itemId: 'sunpetal_sickle', marks: 56, gate: 'heroicClear' },
+      { itemId: 'tidewrought_fishing_rod', marks: 56, gate: 'heroicClear' },
+      { itemId: 'evergarden_hoe', marks: 56, gate: 'heroicClear' },
+    ]);
+  });
+
+  it('stocks every crafted tier-4/5 tool, each on the rung its tier earns', () => {
+    // DERIVED from the item table, never a second hand-written list: a ninth
+    // crafted tool added to content and forgotten here fails, which is the
+    // whole point of the route existing.
+    // FARMING IS NO LONGER EXCLUDED (masterwrought Phase 11j, decision B), and
+    // the exclusion was discharged by RE-DECIDING it rather than by widening
+    // anything to keep this arm green. The old skip said the crafted osmium_hoe
+    // deliberately had no Marks route and that whether the top hoe ever joined
+    // a delve shop was a later decision. That decision is made: leaving farming
+    // out made it the only gathering profession with no non-crafter route at
+    // the tier-4 rung, which masterwrought R18 forbids, so BOTH hoe rungs
+    // joined the counter and the filter below stopped excluding the profession.
+    // Every per-tier arm therefore reads FIVE rather than four.
+    //
+    // THE FISHING EXCLUSION IS UNCHANGED, and this exclusion is
+    // NOT a widening of it (masterwrought Phase 11i). Both shipped crafted rods
+    // keep their Marks rows and both are still swept below; what is excluded is
+    // the ONE tier-6 apex rung 11i minted, by TIER rather than by profession,
+    // so a future crafted tier-4 or tier-5 rod still lands inside this guard.
+    // The reasoning is recorded where the prices are (content/delves/shop.ts):
+    // pricing a tier-6 rung means inventing a Marks number and a gate above
+    // heroicClear, the rung needs no bad-luck backstop because its schematic is
+    // deterministic marks stock and the rod is market-listable, and the two rod
+    // prices below are themselves pending a re-derivation. A later decision,
+    // pinned ABSENT here so it stays visible rather than becoming a hole.
+    const APEX_ROD_TIER = 6;
+    const craftedTools = Object.values(ITEMS).filter(
+      (def) => def.use?.type === 'gatherTool' && def.use.tier > 3 && def.use.tier < APEX_ROD_TIER,
+    );
+    // The excluded rung is pinned by NAME and by absence, both ways, so neither
+    // the exclusion nor the rung can drift quietly: a second tier-6 tool, or
+    // this one gaining a row, reds here.
+    const apexRungs = Object.values(ITEMS).filter(
+      (def) => def.use?.type === 'gatherTool' && def.use.tier >= APEX_ROD_TIER,
+    );
+    expect(apexRungs.map((d) => d.id)).toEqual(['clockreel_fishing_rod']);
+    expect(
+      DELVE_SHOPS.drowned_litany.some((e) => e.itemId === 'clockreel_fishing_rod'),
+      'the apex rung has no Marks route by decision; see content/delves/shop.ts',
+    ).toBe(false);
+    // At-least, not exactly: an eleventh crafted tool added WITH its Marks row
+    // is a legitimate content addition, and an exact pin would red on it with a
+    // misleading message. The per-tool loop below is what actually guards the
+    // claim, and the literal stock pin above already fixes today's count.
+    // RE-DERIVED to 10 at masterwrought Phase 11j: a >= floor left at its old
+    // value silently stops guarding as the set grows, so the floor moves with
+    // the set every time the set does.
+    expect(craftedTools.length).toBeGreaterThanOrEqual(10);
+    const rows = new Map(DELVE_SHOPS.drowned_litany.map((e) => [e.itemId, e]));
+    for (const tool of craftedTools) {
+      const row = rows.get(tool.id);
+      expect(row, `${tool.id} must have a Marks route`).toBeDefined();
+      const tier = tool.use?.type === 'gatherTool' ? tool.use.tier : 0;
+      // Tier decides the rung, and the two rungs are genuinely different, so
+      // this cannot pass by every tool landing on one price.
+      expect([row?.marks, row?.gate], tool.id).toEqual(
+        tier === 4 ? [24, 'clears:3'] : [56, 'heroicClear'],
+      );
+    }
+    // Both arms are populated, so neither branch above is dead. FIVE and FIVE
+    // since masterwrought Phase 11j seated farming at both rungs: one pick, one
+    // axe, one sickle, one rod and one hoe per rung. A matched pair is also a
+    // more drift-resistant shape than four against five.
+    expect(
+      craftedTools.filter((t) => t.use?.type === 'gatherTool' && t.use.tier === 4),
+    ).toHaveLength(5);
+    expect(
+      craftedTools.filter((t) => t.use?.type === 'gatherTool' && t.use.tier === 5),
+    ).toHaveLength(5);
+    // THE FARMING TRIPWIRE IS DISCHARGED, and replaced by its own positive
+    // pin rather than deleted. It used to assert that NO farming gatherTool had
+    // a Marks row anywhere, carrying a self-clearing message telling whoever
+    // added one to re-decide the skip; 11j added two and re-decided it. What
+    // stands in its place is the claim that is now true and load-bearing: the
+    // farming rungs that belong on the counter are exactly the two crafted top
+    // rungs, and the three below stay off it (the low-rung half is pinned in
+    // tests/professions_hoe_recipes.test.ts, which owns the hoe ladder).
+    const farmingTools = Object.values(ITEMS).filter(
+      (def) => def.use?.type === 'gatherTool' && def.use.professionId === 'farming',
+    );
+    // At the real count rather than a token floor. NOT the same shape as the
+    // craftedTools assertion above, which is deliberately a >= floor because
+    // that set may legitimately grow with a new crafted tool; this roster is
+    // closed content, so an exact pin is right and a hoe leaving it reds here.
+    expect(farmingTools.length, 'the five shipped hoe rungs').toBe(5);
+    const allDelveRows = new Set(
+      Object.values(DELVE_SHOPS)
+        .flat()
+        .map((e) => e.itemId),
+    );
+    const farmingOnCounter = farmingTools
+      .filter((t) => allDelveRows.has(t.id))
+      .map((t) => t.id)
+      .sort();
+    expect(farmingOnCounter).toEqual(['evergarden_hoe', 'osmium_hoe']);
+  });
+
+  it('every Litany slot costs exactly 2x its Collapsed Reliquary price tier', () => {
+    const reliquary = DELVE_SHOPS.collapsed_reliquary;
+    const litany = DELVE_SHOPS.drowned_litany;
+    const tiers = (entries: typeof reliquary) =>
+      [...new Set(entries.map((e) => e.marks))].sort((a, b) => a - b);
+    expect(tiers(litany)).toEqual(tiers(reliquary).map((m) => m * 2));
+  });
+});
+
+describe('delveShopGateForItem (static, player-independent lookup)', () => {
+  it("finds the gate on the NAMED delve's own shop", () => {
+    expect(delveShopGateForItem('drowned_litany', 'litany_legs')).toBe('available');
+    expect(delveShopGateForItem('drowned_litany', 'litany_helm')).toBe('clears:3');
+    expect(delveShopGateForItem('drowned_litany', 'sister_nhalia_choir_plate')).toBe('heroicClear');
+    expect(delveShopGateForItem('drowned_litany', 'drowned_choir_fang')).toBe('heroicClear');
+    // Same gate vocabulary, a different shop table entirely.
+    expect(delveShopGateForItem('collapsed_reliquary', 'deacon_reliquary_helm')).toBe(
+      'heroicClear',
+    );
+  });
+
+  it('refuses an item real for one delve but asked of a DIFFERENT delve', () => {
+    // The whole point of keying on (delveId, itemId) rather than itemId alone:
+    // a page must never be told a gate for a vendor it did not itself name.
+    expect(delveShopGateForItem('collapsed_reliquary', 'litany_legs')).toBeUndefined();
+    expect(delveShopGateForItem('drowned_litany', 'deacon_reliquary_helm')).toBeUndefined();
+  });
+
+  it('returns undefined for an item no DELVE_SHOPS table stocks, or an unknown delve', () => {
+    expect(delveShopGateForItem('drowned_litany', 'worn_sword')).toBeUndefined();
+    expect(delveShopGateForItem('drowned_litany', 'not_a_real_item_id')).toBeUndefined();
+    expect(delveShopGateForItem('no_such_delve', 'litany_legs')).toBeUndefined();
+  });
+});
+
+describe('delveShopGateClears (the one clears:N parse)', () => {
+  it('parses the count out of a clears:N gate', () => {
+    expect(delveShopGateClears('clears:3')).toBe(3);
+    expect(delveShopGateClears('clears:0')).toBe(0);
+  });
+
+  it('answers null for the two non-numeric gates', () => {
+    expect(delveShopGateClears('available')).toBeNull();
+    expect(delveShopGateClears('heroicClear')).toBeNull();
+  });
+});
