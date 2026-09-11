@@ -2466,8 +2466,10 @@ export const VISUALS: Record<string, VisualDef> = {
   },
   // Priston Tale imports (scripts/pt-port/glb_assembler.ts). PT clips use
   // uppercase state names (STAND, WALK, ATTACK, DAMAGE, DEAD). No hit-react
-  // for Hopy; Bargon's death is a separate model (bargon-die.glb) so the
-  // main body has no death clip — the mob simply stops on kill.
+  // for Hopy; Bargon's death is a separate model (Monbagon-die.glb) with a
+  // DIFFERENT skeleton (bone names differ), so the DEAD clip cannot be
+  // merged via animUrls. The death animation reuses DAMAGE for now; a
+  // proper fix needs either converter-side retargeting or a death model swap.
   mob_hopy: {
     url: `${CREATURES}/hopy.glb`,
     height: 1.2,
@@ -2481,14 +2483,14 @@ export const VISUALS: Record<string, VisualDef> = {
     },
   },
   mob_bargon: {
-    url: `${CREATURES}/bargon.glb`,
+    url: `${CREATURES}/Monbagon.glb`,
     height: 2.5,
     clips: {
       idle: 'STAND',
       walk: 'WALK',
       run: 'WALK',
       attack: ['ATTACK'],
-      death: 'DAMAGE', // death anim is in separate bargon-die.glb (future swap)
+      death: 'DAMAGE', // TODO: die model has a different skeleton; needs retargeting
       hit: ['DAMAGE'],
       cast: 'EAT',
     },
