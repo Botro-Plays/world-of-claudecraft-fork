@@ -1,0 +1,779 @@
+// Player-adjustable game settings (camera, audio, graphics) surfaced in the
+// Esc options menu. Pure + persisted to localStorage; main.ts applies each
+// value to the live subsystem (Input / GameAudio / MusicDirector / Renderer).
+
+import { parseStoredJson } from './local_storage_json';
+
+// Camera default is 0.7: the old fixed speed (1.0) was near the top of the
+// reasonable range and drew complaints, so out of the box it's calmer while
+// the slider still reaches 1.25 for players who liked it fast.
+export const SETTING_RANGES = {
+  cameraSpeed: { min: 0.25, max: 1.25, def: 0.7 },
+  sfxVolume: { min: 0, max: 1, def: 0.8 },
+  musicVolume: { min: 0, max: 1, def: 0.8 },
+  // Pre-rendered NPC voice-line clips (public/audio/voice). Slightly louder than
+  // SFX by default so dialogue reads over ambient combat noise.
+  voiceVolume: { min: 0, max: 1, def: 0.9 },
+  brightness: { min: 0.6, max: 1.5, def: 1 },
+  // 1 low, 2 medium, 3 high, 4 ultra, 5 advanced. The renderer reads this from
+  // localStorage during startup because tier choice controls preload. def is MEDIUM (a safe
+  // middle, also the Reset target): on a player's FIRST run main.ts probes the device and
+  // PERSISTS a device-appropriate preset over this default when the GPU is recognized
+  // (resolveDefaultGraphicsPreset in gfx.ts), so a phone is not stuck on a tier it cannot enter
+  // the world at and a strong desktop is not capped below what it can drive. EVERY touch device
+  // resolves to LOW there, so a phone is persisted at 1 on its first boot and never re-detected.
+  // A masked/inconclusive DESKTOP stays on this medium default and keeps re-detecting on later
+  // boots (see graphicsDefaultApplied).
+  // An explicit player choice (stored here) is never overridden.
+  // max 6: 1 low .. 4 ultra, 5 advanced, 6 insane (the everything-on showcase;
+  // manual opt-in only, hardware detection never selects it).
+  graphicsPreset: { min: 1, max: 6, def: 2 },
+  // Adaptive browser-effects tier for the DOM/CSS layer (distinct from the WebGL
+  // graphicsPreset above). 0 = Auto: detect the engine (Chromium/WebKit/Gecko),
+  // version and desktop-vs-mobile and tone down the most GPU-expensive CSS
+  // (backdrop-filter, big blurs/shadows, decorative background animations) so
+  // weaker engines stay smooth. 1 = Full (force all effects), 2 = Reduced,
+  // 3 = Minimal. Purely presentational; never touches the sim. See browser_env.ts.
+  browserEffects: { min: 0, max: 3, def: 0 },
+  // Advanced-only: 0 keeps terrain/foliage cheap, 1 enables high terrain.
+  // Advanced-preset sub-settings (only read when graphicsPreset is 5). The
+  // historical rows were binary 0/1; round 10 extended them to level ladders
+  // (0 Low, 0.5 Medium, 1 High, 2 Insane; effectsQuality and shadowQuality
+  // stop at 1) mapped
+  // in gfx.ts settingsFor. Backward compatible by construction: a stored 0
+  // still means Low and a stored 1 still means High.
+  terrainDetail: { min: 0, max: 2, def: 1 },
+  foliageDensity: { min: 0, max: 2, def: 1 },
+  // The shader warm-up worker (src/game/shader_warm_setting.ts): 0 auto
+  // (follows the GPU backend), 1 off, 2 on. Read at the next start.
+  shaderWarm: { min: 0, max: 2, def: 0 },
+  // The desktop shell's graphics backend on Linux
+  // (src/game/desktop_gpu_backend_sync.ts): 0 auto (one Vulkan trial),
+  // 1 Vulkan, 2 OpenGL. Mirrors the shell prefs store; next launch.
+  gpuBackend: { min: 0, max: 2, def: 0 },
+  effectsQuality: { min: 0, max: 1, def: 1 },
+  // Capped at High (the 4096 map, above the High tier's own 2560 base): the
+  // retired Insane rung's 8192x8192 shadow target was a ~256 MB-class GPU
+  // allocation redrawn every frame. A stored historical 2 clamps to 1 on
+  // load, and gfx.ts maps it to the same top rung.
+  shadowQuality: { min: 0, max: 1, def: 1 },
+  // The worn-surface triplanar layer dial (0 Off, 0.5 Basic, 1 Full, 2
+  // Insane), new in round 10: the town-street frame-cost dial.
+  surfaceDetail: { min: 0, max: 2, def: 1 },
+  // Round-12 per-effect dials (Advanced-preset sub-settings like the block
+  // above; the options panel shows them for every preset and switches to
+  // Advanced when one is edited). The binaries read 0 Off / 1 On;
+  // ambientOcclusion adds the 0.5 half-resolution middle; the two ladders
+  // reuse the 0/0.5/1/2 level scale mapped onto whole render tiers.
+  antiAliasing: { min: 0, max: 1, def: 1 },
+  bloomQuality: { min: 0, max: 1, def: 1 },
+  ambientOcclusion: { min: 0, max: 1, def: 1 },
+  viewDistance: { min: 0, max: 2, def: 1 },
+  waterQuality: { min: 0, max: 2, def: 1 },
+  characterDetail: { min: 0, max: 1, def: 1 },
+  dynamicLights: { min: 0, max: 1, def: 1 },
+  particleEffects: { min: 0, max: 1, def: 1 },
+  // vertical camera field of view in degrees. def 60 keeps the shipped look;
+  // a wider FOV shows more of the world (good for situational awareness) while
+  // a narrower one zooms in. Purely a comfort/visibility preference.
+  cameraFov: { min: 55, max: 100, def: 60 },
+  // Camera zoom distance (Input.camDist), remembered across sessions like the other
+  // camera settings. Range mirrors Input.zoomBy's clamp; def 12 is the shipped starting
+  // distance. Set by the wheel/pinch zoom (persisted debounced from main.ts), applied back
+  // to Input on boot via the startup apply-all loop and on Reset (issue 1657).
+  cameraZoom: { min: 3, max: 22, def: 12 },
+  renderScale: { min: 0.5, max: 1, def: 1 },
+  fullscreen: { min: 0, max: 1, def: 1 },
+  // Desktop-shell window mode: 1 = borderless fullscreen (what the shell opens
+  // with, matching its prefs-store default), 0 = a normal resizable window.
+  // Only the desktop shell can act on it, so its options row replaces the
+  // browser Fullscreen toggle there and never renders anywhere else; the two
+  // are separate keys because a player who leaves fullscreen in the desktop app
+  // has not changed what the web build should do on the same machine.
+  displayMode: { min: 0, max: 1, def: 1 },
+  // on by default: post-cap players see their overflow/virtual-level bar; turn
+  // off for the classic static "MAX LEVEL" text (Max-Level XP Overflow)
+  showOverflowXp: { min: 0, max: 1, def: 1 },
+  // off by default: always-on click-to-move would disrupt the precise melee
+  // positioning the team wanted to preserve, so it's opt-in (#95)
+  clickToMove: { min: 0, max: 1, def: 0 },
+  // 0 = left mouse button, 2 = right mouse button. Surfaced as a two-state
+  // button in Key Bindings so click-to-move's trigger is remappable without
+  // pretending mouse buttons are keyboard codes.
+  clickToMoveButton: { min: 0, max: 2, def: 0 },
+  // Which control interface to present: 0 = Auto (detect desktop vs touch from
+  // the device), 1 = Desktop (force keyboard/mouse, hide the on-screen controls),
+  // 2 = Touch (force the on-screen joysticks/buttons). Lets a tablet driven by a
+  // keyboard+mouse pick the desktop UI, and a touch-capable desktop opt into the
+  // on-screen controls. Read by useTouchInterface in mobile_controls.ts.
+  interfaceMode: { min: 0, max: 2, def: 0 },
+  // touch-only: scales the camera (look) joystick turn/pitch rate. The Camera
+  // Speed slider only scales mouselook, so before this phones had no way to
+  // tune look sensitivity; surfaced in Graphics only on phone touch devices.
+  touchLookSpeed: { min: 0.4, max: 1.8, def: 1 },
+  // 1.0 (fully opaque) by default; touch-only. Lets phone players dim the
+  // on-screen joysticks + buttons so they obscure less of the world.
+  touchOpacity: { min: 0.3, max: 1, def: 1 },
+  // on by default: biome-driven ambient snow/rain. Stored 0/1 so it reuses the
+  // existing settingToggle UI; players on weak machines can switch it off.
+  weather: { min: 0, max: 1, def: 1 },
+  // touch-only: scales both on-screen joysticks from their anchored corner so
+  // players can size the thumb pads to their hands (0.7x–1.3x). 1.0 = stock.
+  joystickScale: { min: 0.7, max: 1.3, def: 1 },
+  // touch only: scale the on-screen action button cluster so players with
+  // larger or smaller thumbs can size the controls to taste (default 1.0x).
+  // Surfaced in the Esc menu only on phone-touch devices.
+  actionButtonScale: { min: 0.8, max: 1.3, def: 1 },
+  // touch-only: how far the move thumbstick must travel before it registers
+  // movement. Higher values resist accidental drift on a jittery thumb; lower
+  // values make the stick more responsive. Default matches the old fixed 0.22.
+  joystickDeadzone: { min: 0.1, max: 0.4, def: 0.22 },
+
+  // --- Gamepad / controller pack. Applied to the GamepadManager in main.ts. ---
+  // How far an analog stick must travel before it registers, killing resting
+  // drift. Separate from the touch joystick deadzone above.
+  gamepadStickDeadzone: { min: 0.05, max: 0.4, def: 0.18 },
+  // Right-stick camera turn/pitch rate, in radians/sec at full deflection.
+  gamepadCameraSpeed: { min: 0.5, max: 5, def: 2.4 },
+  // Left-stick ground-reticle movement multiplier while placing an ability.
+  gamepadReticleSpeed: { min: 0.5, max: 2, def: 1 },
+  // Rumble intensity (0 silences haptics without disabling the pad entirely).
+  gamepadVibration: { min: 0, max: 1, def: 1 },
+  // Printed controller glyph family: 0 Auto, 1 Xbox, 2 PlayStation, 3 Nintendo.
+  // Auto follows Gamepad.id detection and retains generic labels when anonymized.
+  gamepadGlyphStyle: { min: 0, max: 3, def: 0 },
+  // How much of itself the cross hotbar shows: 0 full (framed, both halves
+  // labelled), 1 compact (no frame, labels only on the armed half), 2 minimal
+  // (nothing until a trigger is held). A taste call, so it is a setting.
+  gamepadCrossHotbarDisplay: { min: 0, max: 2, def: 0 },
+
+  // --- Interface & Comfort pack: presentational HUD tuning, applied via CSS
+  // custom properties in main.ts. All default to 1.0 (unchanged look) and are
+  // purely client-side display choices — they never touch the sim. ---
+  // Scales the hover tooltip's text so small-screen / low-vision players can
+  // read item & ability tooltips without squinting.
+  tooltipScale: { min: 0.85, max: 1.5, def: 1 },
+  // Scales the combat-log / chat text independently of tooltips. The ceiling
+  // is 2.5 (not the 1.4 the other comfort scales stop near) because chat is
+  // 11px at stock: on a 4K display at 100% OS scaling, 1.4 still leaves it
+  // unreadable, and 2.0 is what restores 1080p-equivalent size. 2.5 leaves
+  // headroom for low-vision players and TV distances.
+  chatFontScale: { min: 0.85, max: 2.5, def: 1 },
+  // Dims the chat frame's backdrop so it obscures less of the world (1 = the
+  // classic opaque frame, lower = more see-through).
+  chatOpacity: { min: 0.3, max: 1, def: 1 },
+  // Scales floating combat text (the damage/heal numbers over units). Bigger
+  // for readability on a TV; smaller to declutter a busy fight.
+  fctScale: { min: 0.7, max: 1.8, def: 1 },
+  // How large the nameplate dot row draws, 100% to 300% of the plate-native
+  // size. Plate space is small and the row's countdown is a number a player
+  // reads mid-fight, so 100% is deliberately the FLOOR rather than the middle:
+  // the slider only ever makes it bigger. Defaults to 150% because the native
+  // size measured too small to read at a glance (owner feedback). The renderer
+  // sees this multiplied by the showNameplateDots toggle, so 0 means off.
+  nameplateDotScale: { min: 1, max: 3, def: 1.5 },
+  // Fades the HUD panels & windows as a whole; lets players see more of the
+  // world behind their frames without hiding them entirely.
+  hudOpacity: { min: 0.5, max: 1, def: 1 },
+  // Scales the ENTIRE in-game HUD layer (#ui) up or down via CSS zoom, so every
+  // fixed-px frame/label/button grows together — the global "fonts too small"
+  // remedy that the per-element tooltip/chat/fct scales can't cover. 1.0 = stock.
+  uiScale: { min: 0.85, max: 1.4, def: 1 },
+  // Scales just the player unit frame (portrait, name, hp/resource bars, combo
+  // pips) via --player-frame-scale, so it can shrink toward the target frame's
+  // compact read without touching the rest of the HUD. Pairs with the frame's
+  // move/lock button (MovableFrame): moved, it also adopts the target frame's
+  // narrow bar width. 1.0 = stock.
+  playerFrameScale: { min: 0.7, max: 1.15, def: 1 },
+  // The target frame's twin of playerFrameScale, via --target-frame-scale.
+  // Same children-zoom trick (the frame itself is drag-positioned). 1.0 = stock.
+  targetFrameScale: { min: 0.7, max: 1.15, def: 1 },
+  // Real-dimension sizing for the player/target unit frames, the raid-frame
+  // model: the interface editor's edge drags write these settings, so the
+  // bars RE-LAY-OUT at their crisp text size instead of transform-stretching.
+  // playerFrameWidth is the frame's full row width (--player-frame-width;
+  // stock 612 = the 520px bars panel plus 92px of portrait chrome), while
+  // targetFrameWidth is that frame's bars-panel width (--target-frame-width,
+  // stock 190). The two heights are the hp/resource BAR thickness in px
+  // (--player-frame-height / --target-frame-height, stock 15).
+  playerFrameWidth: { min: 300, max: 900, def: 612 },
+  playerFrameHeight: { min: 8, max: 30, def: 15 },
+  targetFrameWidth: { min: 100, max: 320, def: 190 },
+  targetFrameHeight: { min: 8, max: 30, def: 15 },
+  // Health text on the player frame and on the target (plus target-of-target)
+  // frame, same mode table as partyFrameHealthText below; both default to the
+  // historical always-on "current / max".
+  playerFrameHealthText: { min: 0, max: 4, def: 3 },
+  targetFrameHealthText: { min: 0, max: 4, def: 3 },
+  // WoW-style party/raid frame profile. Width/height are CSS pixels before the
+  // independent scale; columns and spacing let raids grow across rather than
+  // covering the whole left edge. style: 0 automatic, 1 classic, 2 raid frames.
+  // healthTextMode (party, player and target frames alike): 0 none, 1 percent,
+  // 2 current, 3 current/max, 4 current/max (percent).
+  // partyFrameSort: 0 group, 1 role, 2 name.
+  partyFrameStyle: { min: 0, max: 2, def: 0 },
+  partyFrameScale: { min: 0.7, max: 1.4, def: 1 },
+  partyFrameWidth: { min: 80, max: 260, def: 170 },
+  partyFrameHeight: { min: 20, max: 72, def: 42 },
+  partyFrameSpacing: { min: 0, max: 12, def: 4 },
+  partyFrameColumns: { min: 1, max: 5, def: 1 },
+  partyFrameHealthText: { min: 0, max: 4, def: 1 },
+  partyFrameSort: { min: 0, max: 2, def: 0 },
+} as const;
+
+export const BOOL_SETTINGS = {
+  // Icon flow of the standalone buff/debuff rows (the Frames Settings menu in
+  // edit mode). Off = the stock right-to-left growth (the rows anchor beside
+  // the minimap and fill toward the screen centre); on = left to right, via
+  // --buff-bar-direction / --debuff-bar-direction in main.ts.
+  buffsLeftToRight: { def: false },
+  debuffsLeftToRight: { def: false },
+  // Orientation flips (the Frames Settings menu): lay a desktop action bar
+  // out as a COLUMN instead of a row, PER BAR so split bars mix freely
+  // (owner request); the combined block follows bar 1's orientation and the
+  // menu shows one toggle that drives all three while combined. The corner
+  // menu rail flips to a ROW instead of its stock two stacked columns. Pure
+  // CSS via element/body classes in main.ts.
+  actionBar1Vertical: { def: false },
+  actionBar2Vertical: { def: false },
+  actionBar3Vertical: { def: false },
+  menuRailHorizontal: { def: false },
+  // Arrange-mode drag snapping (the editor's Snap to Grid toggle): dragged
+  // frames land on the shared FRAME_SNAP_GRID so layouts align without
+  // pixel hunting. Off by default: snapping surprises a player who wants
+  // pixel placement, and the toggle lives beside the gesture it changes.
+  frameSnapToGrid: { def: false },
+  // Glue the player frame to the TOP of the action bars (the Frames Settings
+  // menu): the frame gives up its own dragged spot (kept in storage for
+  // switching back) and re-docks over the bars, riding along when the
+  // combined block is moved and when bar 2 or 3 is added or removed. While
+  // on, the frame itself is not individually movable. Hud.
+  // setLockPlayerFrameToActionBar owns the mechanics.
+  lockPlayerFrameToActionBar: { def: false },
+  mouseCamera: { def: false },
+  // on by default: while a camera drag is active, pointer-lock the canvas so the
+  // OS cursor cannot leave the window during rotation (otherwise it hits the
+  // screen edge and the camera freezes, or slips onto a second monitor).
+  lockCursorOnRotate: { def: true },
+  // on by default: poll a connected controller for input. Off ignores the pad
+  // entirely (keyboard/mouse/touch unaffected).
+  gamepadEnabled: { def: true },
+  // off by default: invert the vertical axis of the right-stick camera, the
+  // classic console/flight-sim preference. Independent of mouse/touch invert.
+  gamepadInvertY: { def: false },
+  // on by default: the trigger-modifier cross hotbar. Holding a trigger lights
+  // eight action-bar slots on the d-pad and face diamonds. Off restores the flat
+  // one-action-per-button pad layout, triggers included.
+  gamepadCrossHotbar: { def: true },
+  // on by default: tapping the opposite trigger while holding swaps the cross
+  // hotbar to its second set. Off pins it to the first sixteen slots.
+  gamepadCrossHotbarExpand: { def: true },
+  // off by default: mirrors the touch layout so the movement joystick sits on
+  // the right and the camera joystick on the left, for left-thumb-dominant
+  // players. CSS-only swap gated on body.mobile-left-handed; ignored on desktop.
+  leftHandedTouch: { def: false },
+  // off by default: shows the fixed camera joystick on touch (hidden otherwise,
+  // reserving no layout space and consuming no touches). Swipe-look on open
+  // gameplay space is the primary camera path; this is an opt-in alternative for
+  // players who prefer a dedicated stick. Gated on body.mobile-camera-joystick-on.
+  mobileCameraJoystick: { def: false },
+  // on by default: touch position abilities enter ground aim before casting.
+  // Turning it off casts immediately at the smart seed point instead.
+  touchPreciseGroundAim: { def: true },
+  // off by default: replaces every touch gesture menu (the action radial, the
+  // consumables row, the menu control) with a tap-only flow. Opening a menu casts
+  // nothing, a second tap on the control runs its default action, and a tap
+  // outside dismisses. This is what closes WCAG 2.5.1 (Pointer Gestures) for the
+  // touch HUD: without it the 16 directional actions are reachable only by a
+  // path-based flick, and it is also the answer for players who cannot hold and
+  // drag reliably.
+  touchTapMenus: { def: false },
+  // on by default: mask configured swear words in chat with ****. Purely a
+  // local display choice; the server sends raw text and each client decides.
+  // (Slurs are blocked server-side regardless and never reach here.)
+  filterProfanity: { def: true },
+  // off by default: MOBA-style "attack move". When on, one rebindable Attack
+  // Move key (default A) walks the player toward the cursor, auto-attacking the
+  // enemy under it or the nearest one met along the way. Other movement keys
+  // keep working; only the attack-move key itself is reserved while active.
+  attackMove: { def: false },
+  // off by default: invert the vertical axis of the touch camera joystick (and
+  // swipe-to-look) so pushing the stick up tilts the camera down — the classic
+  // flight-sim / console preference some touch players reach for (#323-adjacent)
+  touchInvertLook: { def: false },
+  // on by default: classic-style "start auto-attack on ability use". When on,
+  // using an offensive ability also engages your white-swing auto-attack (read
+  // live by the HUD at cast time, see ui/attack_on_ability.ts). The sim's
+  // startAutoAttack still no-ops unless a valid hostile target is in range, and
+  // heals / buffs / damage-breakable CC (gouge, sap, sheep) never trigger it.
+  startAttackOnAbilityUse: { def: true },
+  // off by default (issue #1358): the classic MMO default is that switching
+  // targets while auto-attacking carries the swing over to the new target
+  // (Tab, click, nearest-enemy, assist, any method). Turning this on flips
+  // that: every target switch disengages auto-attack instead. Mirrored onto
+  // the authoritative sim via setStopAutoAttackOnTargetSwitch (see
+  // src/sim/targeting.ts), since the sim stays authoritative for auto-attack.
+  stopAutoAttackOnTargetSwitch: { def: false },
+  // off by default: lock the action bar slots against drag-to-move,
+  // drag-to-replace, and clear (right-click / shift+clear-key) so an
+  // accidental click-and-drag mid-fight can't move or wipe a slot. Abilities
+  // still fire from keybinds and clicks while locked (see ui/action_bar_lock.ts
+  // and the hud.ts drag/drop/clear wiring it gates).
+  lockActionBars: { def: false },
+  // on by default: slot 0 shows the classic fixed Attack (auto-attack) toggle.
+  // Turning it off (or right-clicking the Attack button) removes it from the bar,
+  // freeing slot 0 and its keybind to hold a normal assignable action.
+  showAttackButton: { def: true },
+  // off by default: walk-by proximity autoloot (loot corpses just by walking
+  // past them). Auto-grabbing loot can feel jarring, so it is opt-in and classic
+  // deliberate looting stays the default. Gates the client AutoLoot pass in
+  // main.ts; the sim's authoritative gate and the raid-instance gate are separate.
+  walkByAutoloot: { def: false },
+  // on by default: desktop ground-targeted spells open a terrain reticle before
+  // casting. Touch keeps the instant target-feet fallback because there is no
+  // persistent cursor to preview.
+  groundReticle: { def: true },
+  // off by default: anchor the player's own BUFF row to the movable player
+  // frame instead of the classic top-right corner. hud.ts reparents the buff
+  // bar into #player-frame, where it sits above the frame by default; the
+  // debuff row stays put in the DOM and slides up beside the minimap (the
+  // vacated top spot) so incoming debuffs keep one glanceable classic corner.
+  // Desktop only; the mobile layout keeps its own aura placement.
+  aurasOnPlayerFrame: { def: false },
+  // off by default (buffs sit above the frame): flips the anchored buff row to
+  // below the frame instead. Only visible when aurasOnPlayerFrame is on. Purely
+  // presentational (main.ts toggles body.auras-below-frame; hud.css keys off
+  // it), so it is a deliberate player choice, independent of whether the frame
+  // has been moved: the row used to flip above/below based on the frame's
+  // dragged (pf-detached) state, which meant moving the frame even once
+  // silently and permanently relocated the buffs with no way back short of a
+  // full frame reset. See hud.css #player-frame > #buff-bar.
+  auraBarBelowFrame: { def: false },
+  // off by default: bypass the low graphics preset's buff-icon cap
+  // (AURA_VISIBLE_CAP_LOW, src/game/ui_tier_knobs.ts) so every active buff
+  // always renders in #buff-bar, at the cap's per-frame cost. The cap itself
+  // stays the sane default for the weak-device population Low targets; this is
+  // an explicit opt-in for a player who would rather pay that cost than ever
+  // lose a buff icon to it (player feedback on PR #3668). Read by
+  // AurasPainter's getFxTier closure (hud.ts), never by ui_tier_knobs.ts
+  // itself, so no OTHER low-tier knob is affected.
+  alwaysShowAllBuffs: { def: false },
+  // on by default: Clique-style mouseover casting. Pressing an action-bar key
+  // for a friendly (heal/buff) ability while the cursor is over a party frame
+  // casts it on the hovered member without touching the current target (read
+  // live by Hud.castSlot). Off restores the classic target-else-self routing.
+  mouseoverCast: { def: true },
+  // Party/raid frame display profile. Health is always visible; these switches
+  // choose the supporting information layered around it.
+  partyFrameShowResource: { def: true },
+  partyFrameShowAbsorbs: { def: true },
+  partyFrameShowAuras: { def: true },
+  // on by default: a thin pet health sliver on the row of any party member who has a
+  // pet out (hunter / warlock / mage). The pet is read from the client's own entity
+  // roster, so it appears only for pets in interest range, which is far wider than
+  // any ability's reach. Clicking the sliver selects that pet.
+  partyFrameShowPets: { def: true },
+  partyFrameShowSelf: { def: false },
+
+  // --- Interface & Comfort pack (booleans). ---
+  // off by default: drop every HUD cross-fade / panel animation, for players
+  // who get motion-sick or just want instant windows. Mirrors the built-in
+  // prefers-reduced-motion handling as an explicit in-game switch.
+  reduceMotion: { def: false },
+  // off by default: thicken the dark outline behind HUD text so labels stay
+  // legible against bright terrain (a low-vision / high-glare aid).
+  highContrastText: { def: false },
+  // off by default: an opt-in frosted-glass blur behind HUD panels & windows.
+  // Off keeps the classic crisp look (and zero GPU cost); on softens the world
+  // showing through translucent frames.
+  frostedPanels: { def: false },
+  // off by default: shrink the chat frame to a compact height so it covers
+  // less of the lower-left world view.
+  compactChat: { def: false },
+  // off by default: show a small frames-per-second readout in the corner for
+  // players tuning their graphics settings.
+  showFps: { def: false },
+  // on by default: show the linked/connected wallet row on the character
+  // selection screen. This is only a local display preference; verification and
+  // holder perks remain active when the row is hidden.
+  showWalletOnCharacterScreen: { def: true },
+  // on by default: include verified wallet holder/balance details in newly
+  // rendered player cards. The player-card modal can toggle this per device.
+  showWalletOnPlayerCard: { def: true },
+  // on by default: show the developer badge (nameplate glyph + name outline,
+  // inspect-window block, player card, and the Developers leaderboard tab).
+  // Purely a local display preference: the badge is still earned and broadcast
+  // either way, this only controls whether THIS client renders it.
+  showDevBadges: { def: true },
+  // on by default: reveal the lifetime "Time Played" value on the character
+  // sheet. The sheet's eye button flips this per device (screenshot / stream
+  // privacy); the total keeps accruing either way, this only controls whether
+  // THIS client displays it.
+  showPlaytime: { def: true },
+  // on by default: render your OWN overhead nameplate (name, level, guild, hp,
+  // $WOC holder tier, dev badge, linked-Discord PFP) exactly as other players see
+  // it, so Discord linking and other flair changes have immediate visual feedback.
+  // Purely a local display preference; players can turn it off for the classic view.
+  showOwnNameplate: { def: true },
+  // on by default: render OTHER players' overhead nameplates. Off hides them
+  // (the current target stays visible so a clicked player is still readable),
+  // decluttering crowded hubs on short mobile viewports. Purely a local display
+  // preference; mob nameplates and unit frames are unaffected.
+  showPlayerNameplates: { def: true },
+  // on by default: draw the LOCAL player's own debuffs as a small icon row on an
+  // enemy's overhead nameplate, between the name row and the health bar, each with
+  // a cooldown swipe and a countdown. Only YOUR debuffs, on mobs only; the group's
+  // stay on the target frame strip, which is the clutter this row exists to avoid.
+  // Class-agnostic (ownership plus isDebuffAura, never an ability list) and never
+  // graphics-tier gated: these are timers a player acts on.
+  showNameplateDots: { def: true },
+  // on by default: the Target dots frame (#target-dots), the multi-target tracker
+  // listing every debuff YOU have out across every enemy in interest range, one
+  // bar row each with a live countdown. Hidden entirely while you have no dots
+  // out, so the default costs a player who never uses it nothing.
+  showTargetDots: { def: true },
+  // The six aura tracks (src/ui/hud/aura_tracks/): bars listing the player's OWN
+  // beneficial auras, one frame per question. ALL OFF BY DEFAULT and opted into
+  // individually: six frames on at once would put roughly twenty rows on screen
+  // for a healer in a raid, on a first login, for a player who asked for none of
+  // it. The options panel is the discovery surface. None is graphics-tier gated:
+  // these are timers a player acts on, so the setting is the only switch.
+  showDefensivesTrack: { def: false },
+  showSelfBuffTrack: { def: false },
+  showOffensiveTrack: { def: false },
+  showUtilityTrack: { def: false },
+  showFriendlyTrack: { def: false },
+  showShieldTrack: { def: false },
+  // A sub-option of the Movement and Stealth track, the only track that carries
+  // MODE rows: the utility modes (stealth, travel form, Ghost Wolf) are steady
+  // chips rather than timers, so a player who wants Dash timed may not want a
+  // permanent stealth row parked in the bar. It is a plain row in the Combat
+  // tab (not nested); it simply has no effect while that track is off.
+  showUtilityModes: { def: true },
+  // off by default: invert the vertical axis of mouselook (push mouse forward
+  // to look down), the classic flight-sim preference.
+  invertLookY: { def: false },
+  // on by default: play an NPC's voiced line when its dialogue / quest detail
+  // opens. Off mutes voice-over entirely (independent of the SFX/music toggles).
+  voiceEnabled: { def: true },
+  // off by default: the per-footfall step clips (self + other entities) tend to
+  // read as repetitive over a long session, so they're silenced out of the box;
+  // players who want them back can re-enable. Independent of the SFX volume
+  // slider — jump/land/splash/swim and combat one-shots are unaffected.
+  footstepSfx: { def: false },
+  // on by default (no change out of the box): the discrete interface and feedback
+  // cues, the loot-roll/looted "ding", level-up, quest, whisper, polymorph, death,
+  // and denied-action beeps, plus the combat miss/dodge/parry avoid cues. Players
+  // who find these repetitive can silence just this family without touching the SFX
+  // volume slider or the spatial world sounds (impacts, casts, footsteps, ambience).
+  interfaceSfx: { def: true },
+  // on by default: a brief OSRS-style ground marker (an expanding ring plus a
+  // crossed "X") where you left-click in the world, gold for a normal click and
+  // red when the click lands on a hostile. Purely a local presentation cue; it
+  // never touches sim state. Off removes the marker entirely.
+  clickFeedback: { def: true },
+  // off by default (the classic behavior: a left-click on empty ground clears
+  // your target). When on, a ground left-click keeps the current target, so
+  // click-to-move players can reposition without deselecting; the target still
+  // drops by targeting something else, target death, or range/stealth as normal.
+  // Read by the pick handler via shouldClearTargetOnGroundClick (target_click.ts).
+  stickyTarget: { def: false },
+  // off by default: swap the looping landing-page trailer for a static, dimmed,
+  // high-contrast backdrop so the start-screen text stays legible (and the
+  // 5.7 MB video is never fetched). Forced on regardless for phones / Save-Data /
+  // prefers-reduced-motion, see shouldUseStaticBackdrop in landing_backdrop.ts.
+  landingHighContrast: { def: false },
+  // off by default (expanded): when on, the on-screen quest tracker is collapsed
+  // to just its "Quests (N)" header. Toggled by clicking the tracker header; kept
+  // here so the choice persists across sessions like the other HUD preferences.
+  questTrackerCollapsed: { def: false },
+  // off by default (expanded): when on, the on-screen Book of Deeds watchlist
+  // tracker is collapsed to just its header. Toggled by clicking the tracker
+  // header (the quest-tracker convention); kept here so the choice persists.
+  deedTrackerCollapsed: { def: false },
+  // off by default (expanded): when on, the on-screen Reliquary tracker is
+  // collapsed to just its header. Toggled by clicking the tracker header (the
+  // quest-tracker convention); kept here so the choice persists.
+  reliquaryTrackerCollapsed: { def: false },
+  // on by default: the on-screen Reliquary tracker (pinned pages, or the
+  // nearly-complete default before any pin) is shown at all. The master
+  // switch above the collapse: off removes the strip entirely. Flipped from
+  // The Reliquary window's eye toggle and the Interface options row; pinning
+  // a page while it is off turns it back on.
+  showReliquaryTracker: { def: true },
+  // off by default: append an "Item Level N" (plus power score) line to every item
+  // tooltip. Purely a display preference read live by the HUD; off keeps the
+  // classic stat-only tooltip. See src/sim/item_level.ts for the derivation.
+  showItemLevel: { def: false },
+  // off by default: out of the box the HUD shows a single action bar. When on, the
+  // second action bar row (#actionbar2, slots 12..22) is revealed via a body class
+  // applied in main.ts. Purely a display preference; the slots stay reachable via
+  // their keybinds either way, so the row being hidden never disables those abilities.
+  showSecondaryActionBar: { def: false },
+  // off by default: reveals the third desktop action bar row (#actionbar3, slots
+  // 23..33). main.ts enforces that this row can only remain enabled while the
+  // secondary row is visible. Mobile exposes the same slots through ring pages.
+  showThirdActionBar: { def: false },
+  // off by default: merges the three desktop action bar rows into ONE movable
+  // frame (#actionbar-group) instead of three independent ones, so the whole
+  // block is placed as a single piece under the "Unlock interface" option.
+  // Purely a layout preference; every slot keeps its keybind either way.
+  combineActionBars: { def: false },
+  // off by default (the classic look, unchanged out of the box): strips the black
+  // background, border, and keybind label from desktop action-bar slots that hold
+  // no ability or item, via a body class main.ts toggles (issue 2429). The fixed
+  // Attack slot and any bound slot are unaffected, so the emptied-out look never
+  // disturbs the deliberate slot layout the extra rows exist for (arranging buffs
+  // and consumables); the slots stay in place and keybind-reachable either way.
+  hideUnusedActionSlots: { def: false },
+  // OFF by default: the interactive water wake/ripple height-field
+  // (render/water_simulation.ts) that swimmers, waders and splashes disturb.
+  // Purely decorative — bubbles, splash particles and the scrolling water
+  // normal maps are all independent of it — and measured-cheap (2 passes over
+  // a <=128x128 field), but it is the one water effect that runs extra GPU
+  // passes per frame, so the player who wants the quietest water gets it as
+  // an opt-in rather than an opt-out.
+  waterRipples: { def: false },
+  // off by default: the classic "target of target" mini-frame. When on, and you have
+  // a target, a small unit frame under the target frame shows who YOUR target is
+  // targeting (a mob's aggro target, a player's selected target). Purely a display
+  // preference read by the HUD's target-frame update; the id it reads already rides
+  // the wire, and the frame hides itself when the target-of-target is unknown.
+  showTargetOfTarget: { def: false },
+  // off by default: the target and target-of-target's own melee/ranged swing
+  // timer bars, under the target frame. Purely a display preference read by
+  // the HUD's per-frame update; the swingTimer/autoAttack data already rides
+  // the wire (server/game.ts dynamicFields), and both bars hide themselves
+  // when the target (or its own target) is unknown or not auto-attacking.
+  showTargetSwingTimer: { def: false },
+  // on by default: the pet health strip under the player frame (hunter / warlock /
+  // mage). It paints only while the player actually HAS a pet, so the six petless
+  // classes never see it and the default costs them nothing. Purely a display
+  // preference read by the HUD's pet-frame update; the pet already rides the wire
+  // as an ordinary owned mob entity.
+  showPetFrame: { def: true },
+  // on by default: keep the Daily Rewards chest launcher visible on the HUD. Hiding
+  // it only removes the shortcut; rewards, eligibility, and the panel remain available.
+  showDailyRewardsChest: { def: true },
+  // on by default (the safety net from the enchanted-offhand-vanishes report,
+  // #3547): a vendor sale of anything beyond true junk (see vendorSellIsInstant
+  // in bags_view.ts) opens a confirm prompt first, since an unhinted bag stack
+  // can shift position between clicks. Off restores the classic one-click
+  // instant sale for every item, for a player who would rather trade that
+  // safety net for speed.
+  confirmVendorSell: { def: true },
+  // on by default (today's behavior, unchanged out of the box): mirrors the desktop
+  // shell's GPU preference store, whose stored field is the INVERSE opt-out. The
+  // shell asks the OS for the dedicated gaming GPU at launch; a MUXless laptop panel
+  // cannot always drive it, so the row is an escape hatch. Desktop-only: the options
+  // row renders only when the installed shell exposes the preference over the bridge
+  // (see game/desktop_gpu_pref_sync.ts), and the shell store, not this key, is the
+  // source of truth: this value is reflected from it at boot and takes effect on the
+  // next launch, never the running one.
+  forceHighPerfGpu: { def: true },
+  // on by default (the phase 10 decision): publish the current zone as a Discord
+  // Rich Presence activity while playing. Discord's own activity-sharing setting
+  // still gates whether anyone sees it, and the desktop options row is the in-game
+  // off switch. Inert outside the desktop shell: the row renders only when the
+  // installed shell exposes the presence bridge (see game/discord_presence.ts),
+  // and nothing else reads the key.
+  discordPresence: { def: true },
+  // internal, never shown in the options UI: set true once main.ts has persisted a
+  // device-appropriate graphicsPreset on a player's first run (a CONCLUSIVE detection).
+  // It gates firstRunGraphicsPreset so a recognized device is classified at most once and
+  // an explicit later choice is never re-detected over. def MUST be false: save() writes the
+  // whole values object (def-filling every key) the first time any setting is stored, so a
+  // non-false def would fake "applied" and defeat detection. reset() clears it back to false,
+  // so Reset to Defaults re-detects the device default on the next reload.
+  graphicsDefaultApplied: { def: false },
+} as const;
+
+export type NumericSettingKey = keyof typeof SETTING_RANGES;
+export type BoolSettingKey = keyof typeof BOOL_SETTINGS;
+export type GameSettings = { [K in NumericSettingKey]: number } & {
+  [K in BoolSettingKey]: boolean;
+};
+
+interface Range {
+  min: number;
+  max: number;
+  def: number;
+}
+
+const STORE_KEY = 'woc_settings';
+const NUMERIC_KEYS = Object.keys(SETTING_RANGES) as NumericSettingKey[];
+const BOOL_KEYS = Object.keys(BOOL_SETTINGS) as BoolSettingKey[];
+// Mirrors PHONE_TOUCH_QUERY in mobile_controls.ts without importing that DOM-heavy
+// module into the pure settings core.
+const DEFAULT_TOUCH_INTERFACE_QUERY =
+  '(pointer: coarse) and (hover: none), (pointer: coarse) and (max-width: 940px), (pointer: coarse) and (max-height: 760px)';
+
+function clampNumeric(key: NumericSettingKey, v: number): number {
+  const r = SETTING_RANGES[key];
+  if (!Number.isFinite(v)) return r.def;
+  return Math.min(r.max, Math.max(r.min, v));
+}
+
+function defaultTouchInterface(): boolean {
+  try {
+    if (typeof document !== 'undefined' && document.body.classList.contains('native-app'))
+      return true;
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+    return window.matchMedia(DEFAULT_TOUCH_INTERFACE_QUERY).matches;
+  } catch {
+    return false;
+  }
+}
+
+function defaultBoolSetting(
+  key: BoolSettingKey,
+  values: Pick<GameSettings, 'interfaceMode'>,
+): boolean {
+  if (key !== 'showPlayerNameplates') return BOOL_SETTINGS[key].def;
+  if (values.interfaceMode >= 2) return false;
+  if (values.interfaceMode >= 1) return true;
+  return !defaultTouchInterface();
+}
+
+export type ClickMoveMouseButton = 0 | 2;
+
+export function normalizeClickMoveButton(value: number): ClickMoveMouseButton {
+  return value >= 1 ? 2 : 0;
+}
+
+export function clickMoveButtonLabel(value: number): string {
+  return normalizeClickMoveButton(value) === 2 ? 'Right Click' : 'Left Click';
+}
+
+/**
+ * Fired on `window` after any settings write is persisted. It exists for readers
+ * that would otherwise rebuild the whole store to answer one question on a hot
+ * path (`tapMenusEnabled`), so they can cache and invalidate instead.
+ */
+export const SETTINGS_CHANGE_EVENT = 'woc:settingschange';
+
+export class Settings {
+  private values: GameSettings;
+
+  constructor() {
+    this.values = this.load();
+  }
+
+  private load(): GameSettings {
+    const stored = parseStoredJson(STORE_KEY);
+    const raw = stored && typeof stored === 'object' ? (stored as Record<string, unknown>) : {};
+    const out = {} as GameSettings;
+    for (const key of NUMERIC_KEYS) {
+      const v = raw[key];
+      out[key] = typeof v === 'number' ? clampNumeric(key, v) : SETTING_RANGES[key].def;
+    }
+    for (const key of BOOL_KEYS) {
+      const v = raw[key];
+      out[key] = typeof v === 'boolean' ? v : defaultBoolSetting(key, out);
+    }
+    return out;
+  }
+
+  private save(): void {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify(this.values));
+    } catch {
+      /* storage unavailable */
+    }
+    // Every consumer here holds its OWN Settings instance (the options panel
+    // writes through one, main.ts through another), so a live reader that caches
+    // a value cannot see the write any other way. One broadcast per persisted
+    // write, which is a player action, never a frame.
+    // Guarded on the METHOD, not on `window`: several Node suites stub a partial
+    // window global, and a settings write must never throw on a host that has no
+    // event target to broadcast into.
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(new Event(SETTINGS_CHANGE_EVENT));
+    }
+  }
+
+  get<K extends keyof GameSettings>(key: K): GameSettings[K] {
+    return this.values[key];
+  }
+
+  all(): GameSettings {
+    return { ...this.values };
+  }
+
+  /**
+   * The nameplate dot row's drawn SIZE for the renderer: the scale slider gated
+   * by the show toggle, so 0 means "draw no row at all". The two settings fold
+   * here rather than at each of main.ts's three apply sites, so the toggle and
+   * the slider can never disagree about whether the row is on.
+   */
+  nameplateDotRenderScale(): number {
+    return this.values.showNameplateDots ? this.values.nameplateDotScale : 0;
+  }
+
+  /** Validate every value, apply the whole patch, then persist the settings blob once. */
+  patch(patch: Partial<GameSettings>): GameSettings {
+    const staged: Record<string, boolean | number> = {};
+    for (const [key, value] of Object.entries(patch)) {
+      if ((BOOL_KEYS as readonly string[]).includes(key)) {
+        if (typeof value !== 'boolean') {
+          throw new TypeError(`Invalid boolean setting: ${key}`);
+        }
+        staged[key] = value;
+        continue;
+      }
+      if ((NUMERIC_KEYS as readonly string[]).includes(key)) {
+        if (typeof value !== 'number' || !Number.isFinite(value)) {
+          throw new TypeError(`Invalid numeric setting: ${key}`);
+        }
+        staged[key] = clampNumeric(key as NumericSettingKey, value);
+        continue;
+      }
+      throw new TypeError(`Unknown setting: ${key}`);
+    }
+
+    this.values = { ...this.values, ...staged } as GameSettings;
+    this.save();
+    return this.all();
+  }
+
+  /** Clamp + store a value; returns the value actually applied. */
+  set<K extends NumericSettingKey>(key: K, value: number): number;
+  set<K extends BoolSettingKey>(key: K, value: boolean): boolean;
+  set<K extends keyof GameSettings>(key: K, value: GameSettings[K]): GameSettings[K] {
+    if ((BOOL_KEYS as readonly string[]).includes(key)) {
+      const v = !!value;
+      (this.values as Record<string, unknown>)[key] = v;
+      this.save();
+      return v as GameSettings[K];
+    }
+    const v = clampNumeric(key as NumericSettingKey, value as number);
+    (this.values as Record<string, unknown>)[key] = v;
+    this.save();
+    return v as GameSettings[K];
+  }
+
+  /** Restore defaults. With no `keys`, every setting resets (the historical
+   *  behavior). With `keys`, only those keys reset, so a caller that owns just
+   *  one sub-view (e.g. the options window's per-panel footer) can offer a
+   *  "Reset to Defaults" that does not silently wipe settings the player
+   *  never saw (issue 2341). */
+  reset(keys?: readonly (keyof GameSettings)[]): void {
+    if (!keys) {
+      for (const key of NUMERIC_KEYS) this.values[key] = SETTING_RANGES[key].def;
+      for (const key of BOOL_KEYS) this.values[key] = defaultBoolSetting(key, this.values);
+      this.save();
+      return;
+    }
+    for (const key of keys) {
+      if ((BOOL_KEYS as readonly string[]).includes(key as string)) {
+        const boolKey = key as BoolSettingKey;
+        this.values[boolKey] = defaultBoolSetting(boolKey, this.values);
+      } else if ((NUMERIC_KEYS as readonly string[]).includes(key as string)) {
+        this.values[key as NumericSettingKey] = SETTING_RANGES[key as NumericSettingKey].def;
+      }
+    }
+    this.save();
+  }
+}
+
+export type { Range };

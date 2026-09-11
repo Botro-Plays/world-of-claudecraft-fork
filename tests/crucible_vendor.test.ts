@@ -1,0 +1,267 @@
+// The Crucible Quartermaster: the sigil-redemption buy path (one matching
+// sigil debited from bags, class gate, range, stock, space-before-debit) and
+// the pure class-filtered shop view. The item stat/budget pins live in
+// tests/ignivar_loot.test.ts.
+
+import { describe, expect, it } from 'vitest';
+import { CRUCIBLE_COLLECTIONS } from '../src/sim/content/crucible_collections';
+import {
+  CRUCIBLE_VENDOR_ENTITY_ID,
+  CRUCIBLE_VENDOR_ENTRANCE_POS,
+  CRUCIBLE_VENDOR_NPC_ID,
+  CRUCIBLE_VENDOR_STOCK,
+  IGNIVAR_VENDOR_NPCS,
+} from '../src/sim/content/ignivar_loot';
+import { ITEMS } from '../src/sim/data';
+import { Sim } from '../src/sim/sim';
+import type { Entity } from '../src/sim/types';
+import { buildCrucibleVendorView } from '../src/ui/hud/vendor/crucible_vendor_view';
+
+type AnySim = Sim & Record<string, any>;
+type AnyEntity = Entity & Record<string, any>;
+
+// The vendor is a dynamic overworld singleton on the keep's landing court.
+function vendorSim(playerClass: 'warrior' | 'mage' = 'warrior'): AnySim {
+  const sim = new Sim({
+    seed: 2786,
+    playerClass,
+    autoEquip: true,
+    devCommands: true,
+  }) as AnySim;
+  return sim;
+}
+
+function vendorEntity(sim: AnySim): AnyEntity {
+  const npc = [...sim.entities.values()].find(
+    (e: AnyEntity) => e.kind === 'npc' && e.templateId === CRUCIBLE_VENDOR_NPC_ID,
+  );
+  if (!npc) throw new Error('Crucible Quartermaster did not spawn in the overworld');
+  return npc as AnyEntity;
+}
+
+function standAtVendor(sim: AnySim): void {
+  const npc = vendorEntity(sim);
+  const p = sim.player as AnyEntity;
+  p.pos = { x: npc.pos.x + 1, y: npc.pos.y, z: npc.pos.z };
+  p.prevPos = { ...p.pos };
+  sim.rebucket(p);
+}
+
+function errorTexts(sim: AnySim): string[] {
+  return (sim.drainEvents() as any[]).flatMap((e) => (e.type === 'error' ? [e.text] : []));
+}
+
+describe('crucible quartermaster: spawn and dialog routing', () => {
+  it('spawns on the overworld landing with the crucibleVendor dialog flag', () => {
+    const sim = vendorSim();
+    const npc = vendorEntity(sim);
+    expect(npc.id).toBe(CRUCIBLE_VENDOR_ENTITY_ID);
+    expect(npc.dungeonId).toBeNull();
+    // On the keep's landing court (floor 15.34, one flight below the door), not on
+    // the terrain shelf outside the wall (6.1) where he first landed: close enough
+    // to read as "beside the door", clear of its 2 yd walk-in trigger.
+    const doorDist = Math.hypot(npc.pos.x - 503.05, npc.pos.z - 2243.7);
+    expect(doorDist).toBeGreaterThan(4);
+    expect(doorDist).toBeLessThanOrEqual(8);
+    expect(npc.pos.y).toBeGreaterThan(15);
+    // The authored spot itself: the west edge of the keep's landing court. A
+    // literal pin, so moving the constant is a deliberate, reviewed change.
+    expect(CRUCIBLE_VENDOR_ENTRANCE_POS).toEqual({ x: 505.5, z: 2237.6 });
+    // Exactly where authored: no safe-spot spiral may displace him off the plate.
+    expect(npc.pos.x).toBeCloseTo(CRUCIBLE_VENDOR_ENTRANCE_POS.x, 6);
+    expect(npc.pos.z).toBeCloseTo(CRUCIBLE_VENDOR_ENTRANCE_POS.z, 6);
+    expect(IGNIVAR_VENDOR_NPCS[CRUCIBLE_VENDOR_NPC_ID].crucibleVendor).toBe(true);
+    expect(IGNIVAR_VENDOR_NPCS[CRUCIBLE_VENDOR_NPC_ID].dynamic).toBe(true);
+  });
+});
+
+describe('crucible quartermaster: buy path', () => {
+  it('debits the matching sigil and grants the set piece', () => {
+    const sim = vendorSim('warrior');
+    standAtVendor(sim);
+    sim.addItem('sigil_anvil_helmet', 2, sim.playerId);
+    sim.drainEvents();
+
+    sim.buyCrucibleVendorItem('slagbreaker_helmet', sim.playerId);
+
+    expect(sim.countItem('slagbreaker_helmet', sim.playerId)).toBe(1);
+    expect(sim.countItem('sigil_anvil_helmet', sim.playerId)).toBe(1);
+    expect(
+      (sim.drainEvents() as any[]).some(
+        (e) => e.type === 'vendor' && e.action === 'buy' && e.itemId === 'slagbreaker_helmet',
+      ),
+    ).toBe(true);
+  });
+
+  it('redemptions repeat: each buy debits exactly one sigil from the stack', () => {
+    const sim = vendorSim('warrior');
+    standAtVendor(sim);
+    sim.addItem('sigil_anvil_helmet', 3, sim.playerId);
+    sim.drainEvents();
+
+    sim.buyCrucibleVendorItem('slagbreaker_helmet', sim.playerId);
+    sim.buyCrucibleVendorItem('slagbreaker_helmet', sim.playerId);
+
+    expect(sim.countItem('slagbreaker_helmet', sim.playerId)).toBe(2);
+    expect(sim.countItem('sigil_anvil_helmet', sim.playerId)).toBe(1);
+  });
+
+  it('refuses without the matching sigil (a different slot sigil does not pay)', () => {
+    const sim = vendorSim('warrior');
+    standAtVendor(sim);
+    sim.addItem('sigil_anvil_gloves', 1, sim.playerId);
+    sim.drainEvents();
+
+    sim.buyCrucibleVendorItem('slagbreaker_helmet', sim.playerId);
+
+    expect(sim.countItem('slagbreaker_helmet', sim.playerId)).toBe(0);
+    expect(sim.countItem('sigil_anvil_gloves', sim.playerId)).toBe(1);
+    expect(errorTexts(sim).join(' ')).toContain('You need a Helm Sigil of the Anvil');
+  });
+
+  it("refuses another class's piece even with the right sigil in hand", () => {
+    // A warrior holds an Anvil helm sigil; Aetherweave is the mage set in the
+    // same Anvil group, so only the class gate stands between them.
+    const sim = vendorSim('warrior');
+    standAtVendor(sim);
+    sim.addItem('sigil_anvil_helmet', 1, sim.playerId);
+    sim.drainEvents();
+
+    sim.buyCrucibleVendorItem('chronoweave_helmet', sim.playerId);
+
+    expect(sim.countItem('chronoweave_helmet', sim.playerId)).toBe(0);
+    expect(sim.countItem('sigil_anvil_helmet', sim.playerId)).toBe(1);
+    expect(errorTexts(sim)).toContain('You cannot equip that.');
+  });
+
+  it('refuses items that are not in the redemption stock', () => {
+    const sim = vendorSim('warrior');
+    standAtVendor(sim);
+    sim.drainEvents();
+
+    sim.buyCrucibleVendorItem('cord_of_the_last_flame', sim.playerId);
+
+    expect(sim.countItem('cord_of_the_last_flame', sim.playerId)).toBe(0);
+    expect(errorTexts(sim)).toContain('That item is not sold here.');
+  });
+
+  it('refuses out of range, before any debit', () => {
+    const sim = vendorSim('warrior');
+    // Still at the room entry, not at the vendor.
+    const npc = vendorEntity(sim);
+    const p = sim.player as AnyEntity;
+    p.pos = { x: npc.pos.x + 40, y: npc.pos.y, z: npc.pos.z };
+    p.prevPos = { ...p.pos };
+    sim.rebucket(p);
+    sim.addItem('sigil_anvil_helmet', 1, sim.playerId);
+    sim.drainEvents();
+
+    sim.buyCrucibleVendorItem('slagbreaker_helmet', sim.playerId);
+
+    expect(sim.countItem('slagbreaker_helmet', sim.playerId)).toBe(0);
+    expect(sim.countItem('sigil_anvil_helmet', sim.playerId)).toBe(1);
+    expect(errorTexts(sim)).toContain('Too far away.');
+  });
+
+  it('checks bag space BEFORE the debit so a full-bags refusal keeps the sigil', () => {
+    const sim = vendorSim('warrior');
+    standAtVendor(sim);
+    sim.addItem('sigil_anvil_helmet', 1, sim.playerId);
+    // Fill every remaining slot with unstackable items.
+    for (let filled = 0; sim.canAddItem('slagbreaker_helmet', 1, sim.playerId); filled++) {
+      sim.addItem('slagbreaker_chest', 1, sim.playerId);
+      if (filled > 200) throw new Error('bags never filled');
+    }
+    sim.drainEvents();
+
+    sim.buyCrucibleVendorItem('slagbreaker_helmet', sim.playerId);
+
+    expect(sim.countItem('slagbreaker_helmet', sim.playerId)).toBe(0);
+    expect(sim.countItem('sigil_anvil_helmet', sim.playerId)).toBe(1);
+    expect(errorTexts(sim).length).toBeGreaterThan(0);
+  });
+});
+
+describe('crucible vendor view (pure core)', () => {
+  const count = (held: Record<string, number>) => (sigilId: string) => held[sigilId] ?? 0;
+  const scrollIds = [
+    ...CRUCIBLE_COLLECTIONS.map((collection) => `pattern_${collection.id}`),
+    'formula_lastflame_zeal',
+  ].sort();
+
+  it('filters the stock to the viewer class and prices rows by sigil possession', () => {
+    const view = buildCrucibleVendorView(
+      CRUCIBLE_VENDOR_STOCK,
+      ITEMS,
+      'warrior',
+      count({ sigil_anvil_helmet: 1 }),
+    );
+    // Warrior: three raid sets of five slots, plus every tradable manual/formula.
+    expect(view.rows.length).toBe(27);
+    expect(view.rows.filter((row) => row.item.kind !== 'recipe')).toHaveLength(15);
+    expect(
+      view.rows
+        .filter((row) => row.item.kind === 'recipe')
+        .map((row) => row.itemId)
+        .sort(),
+    ).toEqual(scrollIds);
+    for (const row of view.rows) {
+      if (row.item.kind === 'recipe') {
+        expect(row.sigilId).toBe('lastflame_core');
+        expect(row.item.requiredClass).toBeUndefined();
+      } else {
+        expect(row.item.requiredClass).toContain('warrior');
+      }
+      expect(row.affordable).toBe(row.sigilId === 'sigil_anvil_helmet');
+    }
+    expect(view.balances).toEqual([
+      expect.objectContaining({ sigilId: 'sigil_anvil_helmet', count: 1 }),
+    ]);
+  });
+
+  it('druid and shaman see four sets (the hybrid tank lane)', () => {
+    const druid = buildCrucibleVendorView(CRUCIBLE_VENDOR_STOCK, ITEMS, 'druid', count({}));
+    const shaman = buildCrucibleVendorView(CRUCIBLE_VENDOR_STOCK, ITEMS, 'shaman', count({}));
+    for (const view of [druid, shaman]) {
+      expect(view.rows.length).toBe(32);
+      expect(view.rows.filter((row) => row.item.kind !== 'recipe')).toHaveLength(20);
+      expect(
+        view.rows
+          .filter((row) => row.item.kind === 'recipe')
+          .map((row) => row.itemId)
+          .sort(),
+      ).toEqual(scrollIds);
+    }
+    expect(druid.balances).toEqual([]);
+  });
+
+  it('drops rows whose item or sigil id does not resolve', () => {
+    const view = buildCrucibleVendorView(
+      [{ itemId: 'no_such_piece', sigilId: 'sigil_anvil_helmet' }, ...CRUCIBLE_VENDOR_STOCK],
+      ITEMS,
+      'mage',
+      count({}),
+    );
+    expect(view.rows.some((row) => row.itemId === 'no_such_piece')).toBe(false);
+    expect(view.rows.length).toBe(27);
+  });
+
+  it('one core makes every collection manual and the Zeal formula affordable, not raid sigil gear', () => {
+    const view = buildCrucibleVendorView(
+      CRUCIBLE_VENDOR_STOCK,
+      ITEMS,
+      'warrior',
+      count({ lastflame_core: 1 }),
+    );
+    expect(scrollIds).toHaveLength(12);
+    expect(
+      view.rows
+        .filter((row) => row.affordable)
+        .map((row) => row.itemId)
+        .sort(),
+    ).toEqual(scrollIds);
+    expect(view.balances).toEqual([
+      expect.objectContaining({ sigilId: 'lastflame_core', count: 1 }),
+    ]);
+  });
+});

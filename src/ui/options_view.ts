@@ -1,0 +1,1032 @@
+// Pure, host-agnostic view-model for the Esc options window.
+//
+// The pure-core half of the cold-window pure-core + thin-painter split (root
+// CLAUDE.md Conventions; reference vendor_view.ts / social_view.ts). The options
+// window is the densest control surface in the HUD: nine sub-panels reached
+// through a small family of reusable control primitives. This module owns the
+// DECLARATIVE model the painter renders: which control of which kind sits in
+// which panel, its setting key, its label key, its choice set, and the pure
+// value-coercion each control fires when changed. The DOM, the i18n runtime, the
+// audio/music singletons, and the dispatch wiring all live in options_window.ts;
+// the structure and the dispatch contract are decided here so a Vitest can pin
+// every sub-panel's dispatch without a DOM.
+//
+// DOM/Three-free and game-free: setting keys are plain strings (the painter
+// narrows them against the real GameSettings), label keys are t() keys the
+// painter resolves. Registered in tests/architecture.test.ts UI_PURE_CORES.
+
+import type { TranslationKey } from './i18n.catalog';
+
+/** Copy at the ownership boundary so a caller can never mutate the applied
+ *  renderer snapshot while editing its local options draft. */
+export function copyGraphicsDraft<K extends string>(
+  source: Readonly<Record<K, number>>,
+): Record<K, number> {
+  return { ...source };
+}
+
+/** Dirty is intentionally raw-value equality. A change and exact revert clears
+ *  dirty even when two distinct raw profiles would resolve to the same effective
+ *  renderer tier. Effective no-op detection belongs to the apply coordinator. */
+export function graphicsDraftDirty<K extends string>(
+  keys: readonly K[],
+  draft: Readonly<Record<K, number>>,
+  applied: Readonly<Record<K, number>>,
+): boolean {
+  return keys.some((key) => draft[key] !== applied[key]);
+}
+
+/** Overlay just the caller-identified staged numbers onto the live settings projection. */
+export function withGraphicsDraft<K extends string>(
+  live: OptionsSettingsSource,
+  keys: readonly K[],
+  draft: Readonly<Record<K, number>>,
+): OptionsSettingsSource {
+  const keySet: ReadonlySet<string> = new Set(keys);
+  return {
+    num: (key) => (keySet.has(key) ? draft[key as K] : live.num(key)),
+    bool: (key) => live.bool(key),
+    range: (key) => live.range(key),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Control primitive descriptors (cluster 1)
+// ---------------------------------------------------------------------------
+// The four setting-write controls share a uniform dispatch (each fires
+// onSettingChange(key, value)); they differ only in the value contract, which is
+// the one thing worth modelling per kind. Do NOT collapse them: a slider carries
+// a numeric range, a toggle an on/off, a boolToggle a true/false store key, a
+// choice an enumerated set.
+
+/** How a slider's readout is formatted; the painter maps this to a formatter. */
+export type SliderFmt = 'percent' | 'degrees' | 'oneDecimal';
+
+/** Which Interface-panel tab a control belongs to. The Interface panel is split
+ *  into four tabs (the interface list grew to ~40 rows in one scroll); every
+ *  declarative interface control carries exactly one category so the painter can
+ *  filter the list per tab. Non-interface panels (graphics/audio/controller)
+ *  leave `category` unset. */
+export type InterfaceTab = 'general' | 'frames' | 'chat' | 'combat';
+
+export interface SliderControl {
+  control: 'slider';
+  /** A NumericSettingKey (the painter narrows it to the live settings store). */
+  key: string;
+  labelKey: TranslationKey;
+  min: number;
+  max: number;
+  step: number;
+  /** Current value at build time; the painter re-reads the live value on input. */
+  value: number;
+  fmt: SliderFmt;
+  /** Commit the setting on release ('change') instead of live on every 'input'
+   *  tick. Set for uiScale, whose live rescale moves the slider under the cursor
+   *  mid-drag (issue 1558); dragging updates only the readout, not the setting.
+   *  Other sliders keep their intended live preview (volume, fov, frame scale). */
+  commitOnChange?: boolean;
+  /** Interface-panel tab this control lives in (unset on other panels). */
+  category?: InterfaceTab;
+}
+
+export interface ToggleControl {
+  control: 'toggle';
+  /** A numeric 0/1 setting key (on when the stored value is >= 0.5). */
+  key: string;
+  labelKey: TranslationKey;
+  on: boolean;
+  /** Interface-panel tab this control lives in (unset on other panels). */
+  category?: InterfaceTab;
+}
+
+export interface BoolToggleControl {
+  control: 'boolToggle';
+  /** A BOOL_SETTINGS key (true/false stored directly). */
+  key: string;
+  labelKey: TranslationKey;
+  on: boolean;
+  /** Disabled controls remain visible but cannot dispatch until their dependency is met. */
+  disabled?: boolean;
+  /** Rebuild the panel after dispatch so dependent controls refresh immediately. */
+  rerender?: boolean;
+  /** Interface-panel tab this control lives in (unset on other panels). */
+  category?: InterfaceTab;
+}
+
+export interface ChoiceOption {
+  value: number;
+  labelKey: TranslationKey;
+}
+
+export interface ChoiceControl {
+  control: 'choice';
+  key: string;
+  labelKey: TranslationKey;
+  /** The currently selected value (rounded, matching the inline button-sync). */
+  current: number;
+  options: ChoiceOption[];
+  /** True when selecting an option re-renders the panel (preset + interfaceMode). */
+  rerender: boolean;
+  /** A live reading rendered INSIDE this row, under its buttons: what the
+   *  setting is actually doing right now, as opposed to what it asks for.
+   *
+   *  A row of its own rather than a NoteControl beside the row, because the
+   *  wide graphics cards flow their children two-up (control, note, control,
+   *  note) and a third child for one control shifts every row after it by a
+   *  cell. Placeholders are KEYS the painter resolves, like NoteControl's. */
+  statusKey?: TranslationKey;
+  statusValueKeys?: Record<string, TranslationKey>;
+  /** Render that line as an ASSERTIVE live region (role="alert") rather than a
+   *  polite one: the reading is a verdict a player has to act on (their choice
+   *  did not take), and it arrives long after the panel was built, so assistive
+   *  technology has to be told rather than left to notice. */
+  statusAlert?: boolean;
+  /** Interface-panel tab this control lives in (unset on other panels). */
+  category?: InterfaceTab;
+}
+
+/** A standalone explanatory line rendered between controls (class set-note). */
+export interface NoteControl {
+  control: 'note';
+  textKey: TranslationKey;
+  /** Placeholders for a note whose text carries a live reading, given as KEYS
+   *  the painter resolves: this module stays string-free, and a translator
+   *  keeps the whole sentence including where the value sits (never a
+   *  concatenation). */
+  valueKeys?: Record<string, TranslationKey>;
+  /** Interface-panel tab this control lives in (unset on other panels). */
+  category?: InterfaceTab;
+}
+
+/** Position marker for the bespoke music on/off toggle inside the audio panel.
+ *  It reads the live MusicDirector singleton, not a setting, so it carries only a
+ *  label; the painter renders + dispatches it. */
+export interface MusicToggleControl {
+  control: 'musicToggle';
+  labelKey: TranslationKey;
+  /** Interface-panel tab this control lives in (unset on other panels). */
+  category?: InterfaceTab;
+}
+
+export type OptionsControl =
+  | SliderControl
+  | ToggleControl
+  | BoolToggleControl
+  | ChoiceControl
+  | NoteControl
+  | MusicToggleControl;
+
+// ---------------------------------------------------------------------------
+// Pure dispatch-value functions (the dispatch matrix's load-bearing contract)
+// ---------------------------------------------------------------------------
+// Pinning each control's value coercion as a pure function lets the per-sub-panel
+// dispatch test prove a control still fires the SAME write after extraction, with
+// no DOM. The painter calls these exact functions, so the dispatch cannot drift.
+
+/** A slider input dispatches the raw input value coerced to a Number. */
+export const sliderDispatchValue = (rawValue: string): number => Number(rawValue);
+
+/** A numeric toggle flips between 0 and 1 off the current stored value. */
+export const toggleNextValue = (current: number): number => (current >= 0.5 ? 0 : 1);
+
+/** A numeric toggle reads as on when its stored value is >= 0.5. */
+export const toggleIsOn = (current: number): boolean => current >= 0.5;
+
+/** A bool toggle flips the stored boolean. */
+export const boolToggleNextValue = (current: boolean): boolean => !current;
+
+// ---------------------------------------------------------------------------
+// Settings projection + environment the panel builders read from
+// ---------------------------------------------------------------------------
+
+/** The minimal settings projection the options view-model needs. The painter
+ *  builds it from the live Settings + SETTING_RANGES, keeping this core game-free. */
+export interface OptionsSettingsSource {
+  /** Current numeric value for a range/choice/slider setting key. */
+  num(key: string): number;
+  /** Current boolean value for a BOOL_SETTINGS key. */
+  bool(key: string): boolean;
+  /** Static [min, max] range for a numeric setting key (from SETTING_RANGES). */
+  range(key: string): { min: number; max: number };
+}
+
+/** Device/shell flags that gate which rows a panel shows. */
+export interface OptionsEnv {
+  /** useTouchInterface(): reveals the touch-only sliders. */
+  touch: boolean;
+  /** isNativeAppShell(): hides the Interface Mode picker (the shell forces touch). */
+  nativeShell: boolean;
+  /** desktopGpuPrefSupported(): reveals the desktop GPU preference row. A BRIDGE
+   *  CAPABILITY, deliberately not nativeShell (which is also true in the mobile
+   *  shells, and is true for a desktop shell too old to have the preference).
+   *  Absent (the web/offline callers) means the row never renders. */
+  desktopGpuPref?: boolean;
+  /** desktopGpuBackendSupported() AND the shell's platform answer: reveals
+   *  the Linux graphics backend row (Auto / Vulkan / OpenGL) in the Graphics
+   *  panel's System card, under the shader warm-up worker it feeds. A bridge
+   *  capability plus a platform gate: Windows and macOS shells expose the
+   *  methods but have no choice to make, so they show no row. */
+  desktopGpuBackend?: boolean;
+  /** What the shell answered about THIS launch: the rung it actually bound and
+   *  whether that fell short of the setting. Absent until the shell has judged
+   *  it (and on every non-desktop caller), which is why the status line is
+   *  conditional rather than showing an empty reading. */
+  desktopGpuBackendActive?: {
+    active: string;
+    requestedUnavailable: boolean;
+    /** Auto held at OpenGL by the shell's GPU policy (an excluded card). */
+    autoCapped?: boolean;
+  } | null;
+  /** desktopGpuBackendWriteFailed(): the shell refused the last write of the
+   *  backend choice, so its STORED value is still the old one and the next
+   *  launch keeps it. Outranks the reading above: a player must not leave the
+   *  panel believing a pick took when the shell never stored it. */
+  desktopGpuBackendWriteFailed?: boolean;
+  /** Whether the shader warm-up worker is a real choice on this host. False on
+   *  iOS, where shaderWarmModeFor() forces the worker off whatever the setting
+   *  (a second WebGL2 context is a per-process memory ceiling risk on
+   *  phone-class WebKit), so the row and its note would both be lies. Absent
+   *  means yes, which is what every non-iOS caller wants. */
+  shaderWarmChoice?: boolean;
+  /** desktopDisplayModeSupported(): the shell owns the window, so the Display
+   *  card shows a windowed/borderless picker INSTEAD of the browser Fullscreen
+   *  toggle (asking the browser for fullscreen inside an already-fullscreen
+   *  shell window makes the two fight). Also a BRIDGE CAPABILITY, not
+   *  nativeShell: a desktop shell too old to have display modes keeps the
+   *  browser toggle, which is what actually works there. Absent (the
+   *  web/offline callers) means the picker never renders. */
+  desktopDisplayMode?: boolean;
+  /** desktopDiscordPresenceSupported(): reveals the Discord Rich Presence row.
+   *  A BRIDGE CAPABILITY like the two above, deliberately not nativeShell: the
+   *  mobile shells cannot publish a presence at all, and neither can a desktop
+   *  shell installed before it shipped. Absent (the web/offline callers) means
+   *  the row never renders. */
+  desktopDiscordPresence?: boolean;
+}
+
+const slider = (
+  s: OptionsSettingsSource,
+  key: string,
+  labelKey: TranslationKey,
+  fmt: SliderFmt = 'percent',
+  step = 0.05,
+): SliderControl => {
+  const r = s.range(key);
+  return { control: 'slider', key, labelKey, min: r.min, max: r.max, step, value: s.num(key), fmt };
+};
+
+const toggle = (
+  s: OptionsSettingsSource,
+  key: string,
+  labelKey: TranslationKey,
+): ToggleControl => ({
+  control: 'toggle',
+  key,
+  labelKey,
+  on: toggleIsOn(s.num(key)),
+});
+
+const boolToggle = (
+  s: OptionsSettingsSource,
+  key: string,
+  labelKey: TranslationKey,
+  opts: Pick<BoolToggleControl, 'disabled' | 'rerender'> = {},
+): BoolToggleControl => ({ control: 'boolToggle', key, labelKey, on: s.bool(key), ...opts });
+
+/** The option value nearest the stored setting (the level ladders persist
+ *  half-step values like 0.5, which plain rounding would mis-select). Exact
+ *  matches behave exactly as before. */
+export function nearestOptionValue(value: number, options: ChoiceOption[]): number {
+  let best = options[0]?.value ?? 0;
+  for (const option of options) {
+    if (Math.abs(option.value - value) < Math.abs(best - value)) best = option.value;
+  }
+  return best;
+}
+
+/** The one health-text mode table the player, target and party frame rows share
+ *  (hud_frames.ts HealthTextMode): the choice values ARE the setting values. */
+const HEALTH_TEXT_CHOICES: ChoiceOption[] = [
+  { value: 0, labelKey: 'hudChrome.partyFrames.healthNone' },
+  { value: 1, labelKey: 'hudChrome.partyFrames.healthPercent' },
+  { value: 2, labelKey: 'hudChrome.partyFrames.healthCurrent' },
+  { value: 3, labelKey: 'hudChrome.partyFrames.healthCurrentMax' },
+  { value: 4, labelKey: 'hudChrome.partyFrames.healthCurrentMaxPercent' },
+];
+
+const choice = (
+  s: OptionsSettingsSource,
+  key: string,
+  labelKey: TranslationKey,
+  options: ChoiceOption[],
+  rerender = false,
+): ChoiceControl => ({
+  control: 'choice',
+  key,
+  labelKey,
+  current: nearestOptionValue(s.num(key), options),
+  options,
+  rerender,
+});
+
+const note = (
+  textKey: TranslationKey,
+  valueKeys?: Record<string, TranslationKey>,
+): NoteControl => ({
+  control: 'note',
+  textKey,
+  ...(valueKeys ? { valueKeys } : {}),
+});
+
+/** What the player calls the rung the shell reports. Both Vulkan rungs read as
+ *  "Vulkan": the parallel-compile feature is an internal distinction, and a
+ *  picker that offered "Vulkan" must not answer with a name it never offered. */
+function gpuBackendActiveNameKey(active: string): TranslationKey {
+  return active.startsWith('vulkan')
+    ? 'hudChrome.options.gpuBackendActiveNameVulkan'
+    : 'hudChrome.options.gpuBackendActiveNameOpenGL';
+}
+
+// The shader warm-up worker: auto follows the GPU backend (on where the
+// compile runs off the presenting thread, off on OpenGL); the stored numbers
+// are src/game/shader_warm_setting.ts SHADER_WARM_SETTING_VALUES.
+const shaderWarmOptions: ChoiceOption[] = [
+  { value: 0, labelKey: 'hudChrome.options.shaderWarmAuto' },
+  { value: 1, labelKey: 'hudChrome.options.shaderWarmOff' },
+  { value: 2, labelKey: 'hudChrome.options.shaderWarmOn' },
+];
+
+// The desktop shell's graphics backend on Linux; the stored numbers are
+// src/game/desktop_gpu_backend_sync.ts GPU_BACKEND_SETTING_VALUES.
+const gpuBackendOptions: ChoiceOption[] = [
+  { value: 0, labelKey: 'hudChrome.options.gpuBackendAuto' },
+  { value: 1, labelKey: 'hudChrome.options.gpuBackendVulkan' },
+  { value: 2, labelKey: 'hudChrome.options.gpuBackendOpenGL' },
+];
+
+// What the player calls the choice the shell has STORED, for the sentence that
+// says a write did not take, keyed by the same stored numbers. Auto keeps the
+// picker's own label (it is a stored choice, not a rung); the two backends
+// borrow the active-reading names, so the sentence says "OpenGL" rather than
+// the picker's "OpenGL (slow)".
+const gpuBackendStoredNameKeys: Record<number, TranslationKey> = {
+  0: 'hudChrome.options.gpuBackendAuto',
+  1: 'hudChrome.options.gpuBackendActiveNameVulkan',
+  2: 'hudChrome.options.gpuBackendActiveNameOpenGL',
+};
+
+function gpuBackendStoredNameKey(value: number): TranslationKey {
+  return gpuBackendStoredNameKeys[value] ?? 'hudChrome.options.gpuBackendAuto';
+}
+
+// The desktop shell's window modes, in the order a player reads them: the
+// smaller window first, the default (borderless fullscreen) second, matching
+// the stored numbers 0 and 1 so the picker's order is the setting's order.
+const displayModeOptions: ChoiceOption[] = [
+  { value: 0, labelKey: 'hud.options.displayModeWindowed' },
+  { value: 1, labelKey: 'hud.options.displayModeBorderless' },
+];
+
+// The advanced-preset sub-setting ladders (round 10). Values are the
+// PERSISTED numbers gfx.ts maps to knob levels: the historical binary rows
+// stored 0 (Low) and 1 (High), so those keep their meaning and the new
+// levels slot in at 0.5 (Medium) and 2 (Insane). Labels reuse the preset
+// quality words so the ladders read consistently with the preset picker.
+const qualityLadderOptions: ChoiceOption[] = [
+  { value: 0, labelKey: 'hud.options.graphicsPresetLow' },
+  { value: 0.5, labelKey: 'hud.options.graphicsPresetMedium' },
+  { value: 1, labelKey: 'hud.options.graphicsPresetHigh' },
+  { value: 2, labelKey: 'hud.options.graphicsPresetInsane' },
+];
+// The High-capped three-step ladder, shared by the dials that stop at High.
+// Effects & Lighting: High is already the full high-tier post stack (the
+// ultra/insane tiers' full-res AO rides the preset, not this dial). Shadow
+// Quality: High is the 4096 map (the High TIER renders 2560; the dial's top
+// rung is the showcase allocation the ultra tiers get), and the retired
+// Insane rung's single
+// 8192x8192 shadow target was a ~256 MB-class GPU allocation redrawn every
+// frame for marginal visible gain. Particle Effects: a three-step band clamp
+// by design (see its gfx.ts mapping).
+const highCapLadderOptions: ChoiceOption[] = [
+  { value: 0, labelKey: 'hud.options.graphicsPresetLow' },
+  { value: 0.5, labelKey: 'hud.options.graphicsPresetMedium' },
+  { value: 1, labelKey: 'hud.options.graphicsPresetHigh' },
+];
+// The worn-surface layer dial (the town-street cost driver): Off sheds the
+// layer, Basic keeps grime/normals without parallax, Full runs the ultra
+// execution, Insane the everything-on walk.
+const surfaceDetailOptions: ChoiceOption[] = [
+  { value: 0, labelKey: 'hud.options.off' },
+  { value: 0.5, labelKey: 'hud.options.surfaceDetailBasic' },
+  { value: 1, labelKey: 'hud.options.surfaceDetailFull' },
+  { value: 2, labelKey: 'hud.options.graphicsPresetInsane' },
+];
+
+// ---------------------------------------------------------------------------
+// Main menu (cluster 5 routing)
+// ---------------------------------------------------------------------------
+
+/** A sub-view the main menu can route to (matches the painter's view discriminator). */
+export type OptionsPanelId =
+  | 'keybinds'
+  | 'controller'
+  | 'graphics'
+  | 'interface'
+  | 'auras'
+  | 'audio'
+  | 'performance'
+  | 'transfer'
+  | 'bugreport';
+
+export type OptionsMenuAction =
+  | { kind: 'goto'; view: OptionsPanelId }
+  | { kind: 'wiki' }
+  | { kind: 'unstuck' }
+  | { kind: 'logout' }
+  | { kind: 'close' };
+
+export interface OptionsMenuEntry {
+  labelKey: TranslationKey;
+  action: OptionsMenuAction;
+}
+
+/** The main Esc-menu button list. The "Report a Bug" row is online-only (it needs
+ *  an authoritative server to receive the report). */
+export function buildOptionsMenu(opts: { bugReportAvailable: boolean }): OptionsMenuEntry[] {
+  const entries: OptionsMenuEntry[] = [
+    { labelKey: 'hud.options.keyBindings', action: { kind: 'goto', view: 'keybinds' } },
+    { labelKey: 'hudChrome.controller.title', action: { kind: 'goto', view: 'controller' } },
+    { labelKey: 'hud.options.graphics', action: { kind: 'goto', view: 'graphics' } },
+    { labelKey: 'hud.options.interface', action: { kind: 'goto', view: 'interface' } },
+    { labelKey: 'hudChrome.auraOverlay.title', action: { kind: 'goto', view: 'auras' } },
+    { labelKey: 'hud.options.audio', action: { kind: 'goto', view: 'audio' } },
+    { labelKey: 'hudChrome.perf.title', action: { kind: 'goto', view: 'performance' } },
+    // Full settings export/import: its own sub-panel, since the code it carries
+    // spans every family (the Interface tab's rows carry only their own).
+    { labelKey: 'hudChrome.fullTransfer.menu', action: { kind: 'goto', view: 'transfer' } },
+    // The wiki row sits with the help-shaped entries (above Report a Bug /
+    // Unstuck); it opens the confirm-first external hop, never a sub-panel.
+    { labelKey: 'nav.wiki', action: { kind: 'wiki' } },
+  ];
+  if (opts.bugReportAvailable)
+    entries.push({
+      labelKey: 'hudChrome.bugReport.menuButton',
+      action: { kind: 'goto', view: 'bugreport' },
+    });
+  entries.push({ labelKey: 'hudChrome.unstuck.menuButton', action: { kind: 'unstuck' } });
+  entries.push({ labelKey: 'hud.options.logout', action: { kind: 'logout' } });
+  entries.push({ labelKey: 'hud.options.returnToGame', action: { kind: 'close' } });
+  return entries;
+}
+
+// ---------------------------------------------------------------------------
+// Graphics panel (cluster 3) -- the static WebGL preset is read as a plain
+// setting value here. This panel must NEVER read the FPS governor or define the
+// effects-quality cutoff: that resolver and per-element tiering live in their
+// own modules.
+// ---------------------------------------------------------------------------
+
+/** One titled card of the two-column Graphics sub-panel. */
+export interface GraphicsSection {
+  titleKey: TranslationKey;
+  /** Desktop placement: column 1 (left), column 2 (right), or 'full' (a card
+   *  spanning both columns below them, its rows flowing two-up). Narrow/touch
+   *  stacks everything in section order. */
+  column: 1 | 2 | 'full';
+  controls: OptionsControl[];
+}
+
+// The two-option Off/On ladder the per-effect binaries render with.
+const offOnOptions: ChoiceOption[] = [
+  { value: 0, labelKey: 'hud.options.off' },
+  { value: 1, labelKey: 'hud.options.on' },
+];
+// Ambient Occlusion's three rungs: Off, half-resolution, full-resolution
+// (Full is how an Advanced mix reaches the ultra tiers' full-res AO).
+const ambientOcclusionOptions: ChoiceOption[] = [
+  { value: 0, labelKey: 'hud.options.off' },
+  { value: 0.5, labelKey: 'hudChrome.options.gfxHalf' },
+  { value: 1, labelKey: 'hud.options.surfaceDetailFull' },
+];
+// The two-step Low/High ladder (Character Detail's distant-rig animation
+// band, Dynamic Lights' point-light pool).
+const lowHighOptions: ChoiceOption[] = [
+  { value: 0, labelKey: 'hud.options.graphicsPresetLow' },
+  { value: 1, labelKey: 'hud.options.graphicsPresetHigh' },
+];
+
+/** The Graphics sub-panel as titled cards in a two-column form (the perf
+ *  panel's categorized layout). The per-system dials render for EVERY preset
+ *  (round 12): under a fixed preset they display that preset's seeded levels
+ *  and editing one switches the staged draft to the Advanced custom mix
+ *  (graphics_rebuild_core.stageGraphicsDraftChange, wired by the painter); the
+ *  dial ladders re-render so the preset row tracks that switch. The native
+ *  shell keeps its capped preset row only (its memory profile owns most of the
+ *  dial-mapped knobs, so the dials would be dead controls there). */
+export function buildGraphicsSections(
+  s: OptionsSettingsSource,
+  env: OptionsEnv,
+): GraphicsSection[] {
+  const quality: OptionsControl[] = [];
+  const graphicsPresetOptions: ChoiceOption[] = [
+    { value: 1, labelKey: 'hud.options.graphicsPresetLow' },
+    { value: 2, labelKey: 'hud.options.graphicsPresetMedium' },
+    { value: 3, labelKey: 'hud.options.graphicsPresetHigh' },
+  ];
+  if (!env.nativeShell) {
+    // Display order runs up the quality ladder (Insane sits above Ultra) with
+    // the expert Advanced profile last; the persisted VALUES stay historical
+    // (5 = Advanced predates 6 = Insane and can never renumber).
+    graphicsPresetOptions.push(
+      { value: 4, labelKey: 'hud.options.graphicsPresetUltra' },
+      { value: 6, labelKey: 'hud.options.graphicsPresetInsane' },
+      { value: 5, labelKey: 'hud.options.graphicsPresetAdvanced' },
+    );
+  }
+  quality.push(
+    choice(s, 'graphicsPreset', 'hud.options.graphicsQuality', graphicsPresetOptions, true),
+  );
+  // The custom-switch explainer renders only under a FIXED preset: once the
+  // Advanced mix is active the dials edit in place and the note is a no-op.
+  if (!env.nativeShell && Math.round(s.num('graphicsPreset')) !== 5)
+    quality.push(note('hudChrome.options.gfxCustomNote'));
+
+  // The per-system dial cards: the world's geometry/dressing layers in one,
+  // the light-and-post passes in the other.
+  const world: OptionsControl[] = [
+    choice(s, 'terrainDetail', 'hud.options.terrainDetail', qualityLadderOptions, true),
+    choice(s, 'foliageDensity', 'hud.options.foliageDensity', qualityLadderOptions, true),
+    choice(s, 'surfaceDetail', 'hud.options.surfaceDetail', surfaceDetailOptions, true),
+    choice(s, 'viewDistance', 'hudChrome.options.gfxViewDistance', qualityLadderOptions, true),
+    choice(s, 'waterQuality', 'hudChrome.options.gfxWaterQuality', qualityLadderOptions, true),
+    choice(s, 'characterDetail', 'hudChrome.options.gfxCharacterDetail', lowHighOptions, true),
+  ];
+  const lighting: OptionsControl[] = [
+    choice(s, 'effectsQuality', 'hud.options.effectsQuality', highCapLadderOptions, true),
+    choice(s, 'shadowQuality', 'hud.options.shadowQuality', highCapLadderOptions, true),
+    choice(
+      s,
+      'ambientOcclusion',
+      'hudChrome.options.gfxAmbientOcclusion',
+      ambientOcclusionOptions,
+      true,
+    ),
+    choice(s, 'bloomQuality', 'hudChrome.options.gfxBloom', offOnOptions, true),
+    choice(s, 'antiAliasing', 'hudChrome.options.gfxAntiAliasing', offOnOptions, true),
+    choice(s, 'dynamicLights', 'hudChrome.options.gfxDynamicLights', lowHighOptions, true),
+    choice(
+      s,
+      'particleEffects',
+      'hudChrome.options.gfxParticleEffects',
+      highCapLadderOptions,
+      true,
+    ),
+    // Ambient Occlusion and Bloom ride the post chain, so Effects & Lighting on
+    // Low leaves them nothing to run on. Anti-Aliasing is the exception: the
+    // grade-only chain carries its own fused FXAA arm (gfx_aa_policy_core.ts),
+    // and this dial is the only control over it there.
+    note('hudChrome.options.gfxEffectsNote'),
+  ];
+
+  const camera: OptionsControl[] = [slider(s, 'cameraSpeed', 'hud.options.cameraSpeed')];
+  // Camera Speed only scales mouselook; touch gets a dedicated look-rate slider.
+  if (env.touch) camera.push(slider(s, 'touchLookSpeed', 'hud.options.touchLookSpeed'));
+
+  const display: OptionsControl[] = [
+    slider(s, 'renderScale', 'hud.options.renderQuality'),
+    slider(s, 'brightness', 'hud.options.brightness'),
+    slider(s, 'cameraFov', 'hud.options.fieldOfView', 'degrees', 1),
+    // One row, two meanings by host. A desktop shell that owns the window gets
+    // the mode picker (it also covers "make the window smaller", which the
+    // browser toggle cannot); every other host keeps the browser Fullscreen
+    // toggle byte for byte, so the web and mobile arms are untouched.
+    env.desktopDisplayMode
+      ? choice(s, 'displayMode', 'hud.options.displayMode', displayModeOptions)
+      : toggle(s, 'fullscreen', 'hud.options.fullscreen'),
+    toggle(s, 'weather', 'game.settings.weather'),
+    // Opt-in wake/ripple simulation on water (default off): the one water effect
+    // that runs extra GPU passes; bubbles and splashes are unaffected. It sits
+    // beside Weather in GRAPHICS rather than in Interface (Troy, 2026-08-07):
+    // it costs frames, so it belongs with the things you turn down for
+    // performance, not with the HUD comfort toggles.
+    boolToggle(s, 'waterRipples', 'hudChrome.options.waterRipples'),
+    toggle(s, 'showOverflowXp', 'game.settings.showOverflowXp'),
+  ];
+
+  const system: OptionsControl[] = [
+    choice(s, 'browserEffects', 'hudChrome.options.browserEffects', [
+      { value: 0, labelKey: 'hudChrome.options.browserEffectsAuto' },
+      { value: 1, labelKey: 'hudChrome.options.browserEffectsFull' },
+      { value: 2, labelKey: 'hudChrome.options.browserEffectsReduced' },
+      { value: 3, labelKey: 'hudChrome.options.browserEffectsMinimal' },
+    ]),
+    note('hudChrome.options.browserEffectsNote'),
+  ];
+  // iOS forces the worker off whatever the setting says, so the row would be a
+  // control that changes nothing under a note promising On is forced
+  // everywhere. Absent means yes: every other host keeps the pair byte for byte.
+  if (env.shaderWarmChoice !== false) {
+    system.push(
+      choice(s, 'shaderWarm', 'hudChrome.options.shaderWarm', shaderWarmOptions),
+      note('hudChrome.options.shaderWarmNote'),
+    );
+  }
+  // The Linux graphics backend (the Vulkan trial) sits right under the shader
+  // warm-up worker it feeds, where a player looking for it expects it. Behind
+  // its own bridge capability AND the shell's platform answer; its note carries
+  // the next-launch caveat. Not a rebuild key: it writes live, and the shell
+  // reads the stored choice at its next launch.
+  if (env.desktopGpuBackend) {
+    // The rung this launch is ACTUALLY running rides INSIDE the row, under its
+    // buttons: it is the point of the row on a machine where the choice did not
+    // take, since a player who picked Vulkan would otherwise read "Vulkan"
+    // while playing on OpenGL. Absent until the shell has judged the launch.
+    const active = env.desktopGpuBackendActive;
+    // Re-renders on a pick: the restart strip at the panel's foot reads the
+    // live value against the launch snapshot, so the panel must rebuild for
+    // the offer to appear (or withdraw) under the click.
+    const backendRow = choice(
+      s,
+      'gpuBackend',
+      'hudChrome.options.gpuBackend',
+      gpuBackendOptions,
+      true,
+    );
+    if (env.desktopGpuBackendWriteFailed) {
+      // A refused write outranks the rung this launch is on: the player's pick
+      // never reached the store, so what the row owes them is what the NEXT
+      // start will do, named off the value the shell actually holds (the apply
+      // arm has already put the local setting back on it).
+      backendRow.statusKey = 'hudChrome.options.gpuBackendSaveFailed';
+      backendRow.statusValueKeys = { backend: gpuBackendStoredNameKey(backendRow.current) };
+      backendRow.statusAlert = true;
+    } else if (active) {
+      // A choice that fell short wins over a capped Auto: the two cannot both
+      // hold (a cap only ever applies to Auto), and the order is a pin.
+      backendRow.statusKey = active.requestedUnavailable
+        ? 'hudChrome.options.gpuBackendActiveUnavailable'
+        : active.autoCapped
+          ? 'hudChrome.options.gpuBackendActiveAutoCapped'
+          : 'hudChrome.options.gpuBackendActive';
+      backendRow.statusValueKeys = { backend: gpuBackendActiveNameKey(active.active) };
+      // Only the verdict that says the choice did not take is an alert; the
+      // plain reading and the policy cap are information, not a failure.
+      if (active.requestedUnavailable) backendRow.statusAlert = true;
+    }
+    system.push(backendRow, note('hudChrome.options.gpuBackendNote'));
+  }
+  // Desktop vs on-screen touch controls. Hidden in the native shell (forces touch).
+  if (!env.nativeShell) {
+    system.push(
+      choice(
+        s,
+        'interfaceMode',
+        'hudChrome.options.interfaceMode',
+        [
+          { value: 0, labelKey: 'hudChrome.options.interfaceModeAuto' },
+          { value: 1, labelKey: 'hudChrome.options.interfaceModeDesktop' },
+          { value: 2, labelKey: 'hudChrome.options.interfaceModeTouch' },
+        ],
+        true,
+      ),
+    );
+    system.push(note('hudChrome.options.interfaceModeNote'));
+  }
+
+  // The two dial cards balance the columns (Quality + World left, Lighting +
+  // Camera right); the row-style cards (Display, System, Touch) span FULL
+  // width below them with their rows flowing two-up, so neither column ends
+  // in a ragged gap. The dial cards are omitted on the native shell (its
+  // memory profile owns the dial-mapped knobs, so they would be dead rows).
+  const sections: GraphicsSection[] = [
+    { titleKey: 'hudChrome.options.gfxSectionQuality', column: 1, controls: quality },
+  ];
+  if (!env.nativeShell) {
+    sections.push(
+      { titleKey: 'hudChrome.options.gfxSectionWorld', column: 1, controls: world },
+      { titleKey: 'hudChrome.options.gfxSectionLighting', column: 2, controls: lighting },
+    );
+  }
+  sections.push(
+    { titleKey: 'hudChrome.options.gfxSectionCamera', column: 2, controls: camera },
+    { titleKey: 'hudChrome.options.gfxSectionDisplay', column: 'full', controls: display },
+    { titleKey: 'hudChrome.options.gfxSectionSystem', column: 'full', controls: system },
+  );
+  if (env.touch) {
+    sections.push({
+      titleKey: 'hudChrome.options.gfxSectionTouch',
+      column: 'full',
+      controls: [
+        slider(s, 'touchOpacity', 'hud.options.touchOpacity'),
+        slider(s, 'joystickScale', 'hud.options.joystickSize'),
+        slider(s, 'actionButtonScale', 'hud.options.buttonSize'),
+        slider(s, 'joystickDeadzone', 'hud.options.joystickDeadzone'),
+        boolToggle(s, 'touchInvertLook', 'hud.options.invertLook'),
+        // Camera joystick is hidden/off by default (swipe-look is primary);
+        // left-handed layout already has a Key Bindings row (leftHandedTouch),
+        // but is surfaced here too since it is squarely a touch/graphics-panel
+        // concern for touch players.
+        boolToggle(s, 'mobileCameraJoystick', 'hudChrome.options.mobileCameraJoystick'),
+        boolToggle(s, 'leftHandedTouch', 'hudChrome.options.mobileLeftHanded'),
+        boolToggle(s, 'touchPreciseGroundAim', 'hudChrome.options.touchPreciseAim'),
+        note('hudChrome.options.touchPreciseAimNote'),
+        boolToggle(s, 'touchTapMenus', 'hudChrome.options.touchTapMenus'),
+        note('hudChrome.options.touchTapMenusNote'),
+      ],
+    });
+  }
+  return sections;
+}
+
+/** The one flatten both consumers share: the painter feeds the reset footer
+ *  with flattenGraphicsSections(sections) over the SAME section objects it
+ *  painted, so the card layout and the reset-key scope can never disagree. */
+export function flattenGraphicsSections(sections: GraphicsSection[]): OptionsControl[] {
+  return sections.flatMap((section) => section.controls);
+}
+
+/** The Graphics sub-panel's controls as one flat list (the card sections in
+ *  order), for the dispatch tests that pin the full set. */
+export function buildGraphicsControls(s: OptionsSettingsSource, env: OptionsEnv): OptionsControl[] {
+  return flattenGraphicsSections(buildGraphicsSections(s, env));
+}
+
+// ---------------------------------------------------------------------------
+// Audio panel (cluster 4)
+// ---------------------------------------------------------------------------
+
+/** Body control rows for the Audio sub-panel: three volume sliders, the bespoke
+ *  music on/off toggle (reads the live MusicDirector), then the three audio bool
+ *  toggles. The painter appends the footer. */
+export function buildAudioControls(s: OptionsSettingsSource): OptionsControl[] {
+  return [
+    slider(s, 'sfxVolume', 'hud.options.soundEffects'),
+    slider(s, 'musicVolume', 'hud.options.musicVolume'),
+    slider(s, 'voiceVolume', 'hud.options.voiceVolume'),
+    { control: 'musicToggle', labelKey: 'hud.options.music' },
+    boolToggle(s, 'voiceEnabled', 'hud.options.npcVoices'),
+    boolToggle(s, 'footstepSfx', 'hudChrome.options.footstepSounds'),
+    boolToggle(s, 'interfaceSfx', 'hudChrome.options.interfaceSounds'),
+    boolToggle(s, 'clickFeedback', 'hudChrome.options.clickFeedback'),
+  ];
+}
+
+// ---------------------------------------------------------------------------
+// Controller panel (cluster 5), with toggles and analog sensitivity sliders.
+// The per-button remap rows are bespoke (a dropdown per pad button) and live in
+// the painter.
+// ---------------------------------------------------------------------------
+
+export function buildControllerControls(s: OptionsSettingsSource): OptionsControl[] {
+  return [
+    choice(s, 'gamepadGlyphStyle', 'hudChrome.controller.glyphStyle', [
+      { value: 0, labelKey: 'hudChrome.controller.glyphStyleAuto' },
+      { value: 1, labelKey: 'hudChrome.controller.glyphStyleXbox' },
+      { value: 2, labelKey: 'hudChrome.controller.glyphStylePlayStation' },
+      { value: 3, labelKey: 'hudChrome.controller.glyphStyleNintendo' },
+    ]),
+    boolToggle(s, 'gamepadEnabled', 'hudChrome.controller.enable'),
+    boolToggle(s, 'gamepadCrossHotbar', 'hudChrome.controller.crossHotbarEnable'),
+    boolToggle(s, 'gamepadCrossHotbarExpand', 'hudChrome.controller.crossHotbarExpand'),
+    boolToggle(s, 'gamepadInvertY', 'hudChrome.controller.invertY'),
+    slider(s, 'gamepadStickDeadzone', 'hudChrome.controller.deadzone'),
+    slider(s, 'gamepadCameraSpeed', 'hudChrome.controller.cameraSpeed', 'oneDecimal'),
+    slider(s, 'gamepadReticleSpeed', 'hudChrome.controller.reticleSpeed', 'oneDecimal'),
+    slider(s, 'gamepadVibration', 'hudChrome.controller.vibration'),
+  ];
+}
+
+// ---------------------------------------------------------------------------
+// Interface & Comfort panel (cluster 5) -- split into four tabs (the interface
+// list grew to ~40 rows in one scroll). The declarative controls below carry a
+// `category` each; the painter renders one tab strip and filters the list per
+// tab via interfaceControlsForTab(). The bespoke rows painted alongside them
+// (language + theme in General, the chat-timestamp / chat-window-reset / deed-
+// broadcast rows in Chat, the unit-frames-reset row in Frames) live in the
+// painter and are placed by the same taxonomy. See INTERFACE_TAB_ORDER.
+// ---------------------------------------------------------------------------
+
+/** The four Interface-panel tabs, in strip order. Also the canonical set the
+ *  completeness test partitions the control list against, so a control added
+ *  without a category (or added to two tabs) fails the guard. */
+export const INTERFACE_TAB_ORDER: readonly InterfaceTab[] = ['general', 'frames', 'chat', 'combat'];
+
+/** The tab-strip label key per tab (short single words; rendered via t()). */
+export const INTERFACE_TAB_LABEL_KEY: Record<InterfaceTab, TranslationKey> = {
+  general: 'hudChrome.interfaceTabs.general',
+  frames: 'hudChrome.interfaceTabs.frames',
+  chat: 'hudChrome.interfaceTabs.chat',
+  combat: 'hudChrome.interfaceTabs.combat',
+};
+
+// Stamp a category onto each control in a per-tab sub-list. Kept pure (a plain
+// map) so the tagged list round-trips through the same determinism guard.
+const tag = (category: InterfaceTab, controls: OptionsControl[]): OptionsControl[] =>
+  controls.map((c): OptionsControl => ({ ...c, category }));
+
+export function buildInterfaceControls(
+  s: OptionsSettingsSource,
+  env?: OptionsEnv,
+): OptionsControl[] {
+  const general: OptionsControl[] = [
+    // The UI Scale slider deliberately has NO menu row (owner request): the
+    // stored uiScale setting stays applied and the General tab's Reset to
+    // Defaults still clears a saved value (renderInterface's footer).
+    slider(s, 'hudOpacity', 'hud.options.hudOpacity'),
+    slider(s, 'tooltipScale', 'hud.options.tooltipScale'),
+    boolToggle(s, 'frostedPanels', 'hud.options.frostedPanels'),
+    boolToggle(s, 'highContrastText', 'hud.options.highContrastText'),
+    boolToggle(s, 'reduceMotion', 'hud.options.reduceMotion'),
+    // Camera comfort (mouse-look direction), so it sits with the comfort
+    // toggles rather than the Combat tab's attack/action-bar cluster.
+    boolToggle(s, 'invertLookY', 'hud.options.invertLookY'),
+    boolToggle(s, 'landingHighContrast', 'hudChrome.options.highContrastBackground'),
+    boolToggle(s, 'showDevBadges', 'hudChrome.options.showDevBadges'),
+    boolToggle(s, 'showWalletOnCharacterScreen', 'hudChrome.options.showWalletOnCharacterScreen'),
+    boolToggle(s, 'showWalletOnPlayerCard', 'hudChrome.options.showWalletOnPlayerCard'),
+    boolToggle(s, 'showPlaytime', 'hudChrome.options.showPlaytime'),
+    boolToggle(s, 'showDailyRewardsChest', 'hudChrome.options.showDailyRewardsChest'),
+    boolToggle(s, 'showItemLevel', 'hudChrome.options.showItemLevel'),
+    boolToggle(s, 'showReliquaryTracker', 'hudChrome.options.showReliquaryTracker'),
+    boolToggle(s, 'showOwnNameplate', 'hudChrome.options.showOwnNameplate'),
+    boolToggle(s, 'showPlayerNameplates', 'hudChrome.options.showPlayerNameplates'),
+    boolToggle(s, 'confirmVendorSell', 'hudChrome.options.confirmVendorSell'),
+    note('hudChrome.options.confirmVendorSellNote'),
+  ];
+  // The desktop shell's GPU preference, last in the tab so the web arm's row
+  // order is untouched. Gated on the bridge CAPABILITY, so it renders only in a
+  // desktop shell that actually exposes the preference; its note carries the
+  // next-launch caveat (the shell applies the choice at startup, not live).
+  if (env?.desktopGpuPref) {
+    general.push(
+      // Re-renders on a flip: the restart strip at the tab's foot reads the
+      // live value against the launch snapshot (same reason as the backend row).
+      boolToggle(s, 'forceHighPerfGpu', 'hudChrome.options.forceHighPerfGpu', { rerender: true }),
+      note('hudChrome.options.forceHighPerfGpuNote'),
+    );
+  }
+  // Discord Rich Presence, behind its own bridge capability (an older shell has
+  // the GPU preference but not this one, so the two gates are independent). Its
+  // note carries the privacy caveat: the activity is visible to anyone who can
+  // see the player's Discord profile.
+  if (env?.desktopDiscordPresence) {
+    general.push(
+      boolToggle(s, 'discordPresence', 'hudChrome.options.discordPresence'),
+      note('hudChrome.options.discordPresenceNote'),
+    );
+  }
+  return [
+    ...tag('general', general),
+    ...tag('frames', [
+      // The player/target/party frame scale sliders deliberately have NO menu
+      // rows: Edit Frames (the unlock mode) resizes each frame directly, and a
+      // slider row beside it would fight that gesture. The settings keys stay
+      // (saved values still apply; the Frames tab's Reset to Defaults clears
+      // them, see renderInterface's footer).
+      choice(s, 'partyFrameStyle', 'hudChrome.partyFrames.style', [
+        { value: 0, labelKey: 'hudChrome.partyFrames.styleAutomatic' },
+        { value: 1, labelKey: 'hudChrome.partyFrames.styleClassic' },
+        { value: 2, labelKey: 'hudChrome.partyFrames.styleRaid' },
+      ]),
+      // partyFrameWidth/partyFrameHeight likewise have NO rows here (Edit
+      // Frames drags them directly), and partyFrameColumns +
+      // partyFrameSpacing moved into the in-editor Frames Settings dropdown
+      // beside the other frame knobs; the keys stay live and this tab's
+      // Reset to Defaults still clears them.
+      choice(s, 'partyFrameHealthText', 'hudChrome.partyFrames.healthText', HEALTH_TEXT_CHOICES),
+      choice(s, 'partyFrameSort', 'hudChrome.partyFrames.sort', [
+        { value: 0, labelKey: 'hudChrome.partyFrames.sortGroup' },
+        { value: 1, labelKey: 'hudChrome.partyFrames.sortRole' },
+        { value: 2, labelKey: 'hudChrome.partyFrames.sortName' },
+      ]),
+      boolToggle(s, 'partyFrameShowResource', 'hudChrome.partyFrames.showResource'),
+      boolToggle(s, 'partyFrameShowAbsorbs', 'hudChrome.partyFrames.showAbsorbs'),
+      boolToggle(s, 'partyFrameShowAuras', 'hudChrome.partyFrames.showAuras'),
+      boolToggle(s, 'partyFrameShowPets', 'hudChrome.partyFrames.showPets'),
+      boolToggle(s, 'partyFrameShowSelf', 'hudChrome.partyFrames.showSelf'),
+      choice(s, 'playerFrameHealthText', 'hudChrome.options.playerHealthText', HEALTH_TEXT_CHOICES),
+      choice(s, 'targetFrameHealthText', 'hudChrome.options.targetHealthText', HEALTH_TEXT_CHOICES),
+      boolToggle(s, 'aurasOnPlayerFrame', 'hudChrome.options.aurasOnPlayerFrame', {
+        rerender: true,
+      }),
+      boolToggle(s, 'auraBarBelowFrame', 'hudChrome.options.auraBarBelowFrame', {
+        disabled: !s.bool('aurasOnPlayerFrame'),
+      }),
+      boolToggle(s, 'alwaysShowAllBuffs', 'hudChrome.options.alwaysShowAllBuffs'),
+      boolToggle(s, 'showTargetOfTarget', 'hudChrome.options.showTargetOfTarget'),
+      boolToggle(s, 'showTargetSwingTimer', 'hudChrome.options.showTargetSwingTimer'),
+      boolToggle(s, 'showPetFrame', 'hudChrome.options.showPetFrame'),
+    ]),
+    ...tag('chat', [
+      slider(s, 'chatFontScale', 'hud.options.chatFontScale'),
+      slider(s, 'chatOpacity', 'hud.options.chatOpacity'),
+      boolToggle(s, 'compactChat', 'hud.options.compactChat'),
+      // A chat setting, so its switch sits with the chat rows (hud.ts maskChat reads it).
+      boolToggle(s, 'filterProfanity', 'hud.options.filterProfanity'),
+    ]),
+    ...tag('combat', [
+      boolToggle(s, 'startAttackOnAbilityUse', 'hudChrome.options.startAttackOnAbility'),
+      boolToggle(
+        s,
+        'stopAutoAttackOnTargetSwitch',
+        'hudChrome.options.stopAutoAttackOnTargetSwitch',
+      ),
+      boolToggle(s, 'showAttackButton', 'hudChrome.options.showAttackButton'),
+      boolToggle(s, 'walkByAutoloot', 'hudChrome.options.walkByAutoloot'),
+      boolToggle(s, 'groundReticle', 'hudChrome.options.groundReticle'),
+      boolToggle(s, 'stickyTarget', 'hudChrome.options.stickyTarget'),
+      // The two dot-tracking surfaces, both showing only the LOCAL player's own
+      // debuffs: the icon row on an enemy's nameplate, and the standalone Target
+      // dots frame that tracks them across every enemy at once.
+      boolToggle(s, 'showNameplateDots', 'hudChrome.options.showNameplateDots'),
+      // Directly under its toggle, because it sizes exactly that row: 100% is
+      // the plate-native size and the slider only grows it, to 300%. Percent is
+      // the default slider format, so the readout says "150%".
+      slider(s, 'nameplateDotScale', 'hudChrome.options.nameplateDotScale'),
+      boolToggle(s, 'showTargetDots', 'hudChrome.options.showTargetDots'),
+      // The six aura tracks: bars of the auras YOU have out, each its own
+      // movable frame and each opted into individually (all default off).
+      boolToggle(s, 'showDefensivesTrack', 'hudChrome.options.showDefensivesTrack'),
+      boolToggle(s, 'showSelfBuffTrack', 'hudChrome.options.showSelfBuffTrack'),
+      boolToggle(s, 'showOffensiveTrack', 'hudChrome.options.showOffensiveTrack'),
+      boolToggle(s, 'showUtilityTrack', 'hudChrome.options.showUtilityTrack'),
+      boolToggle(s, 'showUtilityModes', 'hudChrome.options.showUtilityModes'),
+      boolToggle(s, 'showFriendlyTrack', 'hudChrome.options.showFriendlyTrack'),
+      boolToggle(s, 'showShieldTrack', 'hudChrome.options.showShieldTrack'),
+      slider(s, 'fctScale', 'hud.options.fctScale'),
+      // The secondary/third bar toggles deliberately have NO menu rows: the
+      // plus/minus buttons on the primary action bar are the one control for
+      // adding and removing the optional rows (the settings and the central
+      // resolver in main.ts are unchanged; only the duplicate UI is gone).
+      // Likewise combineActionBars / hideUnusedActionSlots / mouseoverCast /
+      // lockActionBars: the edit mode's Frames Settings dropdown owns their
+      // rows now (interface_unlock.ts settingToggles), so a duplicate here
+      // would drift out of sync with it.
+    ]),
+  ];
+}
+
+/** Keys of the controls in `controls` that write a GameSettings value: sliders,
+ *  toggles, boolToggles and choices all carry a `key`. NoteControl (a display-only
+ *  line) and MusicToggleControl (reads the live MusicDirector, not a stored
+ *  setting) carry no key and are skipped. Used to scope a sub-view's "Reset to
+ *  Defaults" button to only the settings that view actually renders, instead of
+ *  resetting the whole GameSettings object (issue 2341). */
+export function optionsControlKeys(controls: OptionsControl[]): string[] {
+  const keys = new Set<string>();
+  for (const c of controls) {
+    if (c.control === 'note' || c.control === 'musicToggle') continue;
+    keys.add(c.key);
+  }
+  return [...keys];
+}
+
+/** The interface controls that belong to `tab`, in declaration order. The
+ *  painter calls this per tab; the completeness test partitions the full list
+ *  through it (union across INTERFACE_TAB_ORDER equals the full list, no dupes). */
+export function interfaceControlsForTab(
+  controls: OptionsControl[],
+  tab: InterfaceTab,
+): OptionsControl[] {
+  const seen = new Set<string>();
+  return controls.filter((c) => {
+    if (c.category !== tab) return false;
+    if (c.control === 'note' || c.control === 'musicToggle') return true;
+    if (seen.has(c.key)) return false;
+    seen.add(c.key);
+    return true;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Bug report (cluster 2) -- the ONE slice of IWorld the options window reads, so
+// it is the ClientWorld-vs-Sim parity surface. The painter formats
+// the coords; this core returns the raw values so both world shapes round-trip
+// to the same info block.
+// ---------------------------------------------------------------------------
+
+export interface BugReportPlayer {
+  name: string;
+  pos: { x: number; y: number; z: number };
+}
+
+export interface BugReportInfo {
+  /** True when the realm is known; the painter shows the 'unknown' key when false. */
+  realmKnown: boolean;
+  realm: string;
+  characterName: string;
+  pos: { x: number; y: number; z: number };
+}
+
+export function buildBugReportInfo(
+  realm: string | null | undefined,
+  player: BugReportPlayer,
+): BugReportInfo {
+  const known = !!realm;
+  return {
+    realmKnown: known,
+    realm: known ? (realm as string) : '',
+    characterName: player.name,
+    pos: { x: player.pos.x, y: player.pos.y, z: player.pos.z },
+  };
+}

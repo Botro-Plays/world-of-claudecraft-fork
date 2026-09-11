@@ -1,0 +1,237 @@
+// /dev bis: outfit the caller with the strongest observed parse loadout for the
+// selected spec so level-cap playtesting matches real players. The generic epic
+// scorer remains the fallback for a character with no spec, the friendly
+// practice dummy's reference vitals (mob/practice_dummies.ts), which run at every
+// world construction, production included, and the balance probes' reference
+// kit (equipReferenceEpicKitForDev), whose pinned DPS bands must not move when
+// a new parse capture lands. Draws no rng.
+//
+// `src/sim`-pure: no DOM/Three/render/ui/game/net imports, no Math.random or
+// Date.now (enforced by tests/architecture.test.ts).
+
+import { RIFT_GEAR_ITEM_ID_SET } from '../content/rift/items';
+import { ITEMS } from '../data';
+import { recalcPlayerStats } from '../entity';
+import {
+  canEquipItemInSlot,
+  displacedSlotForEquip,
+  MASTERWROUGHT_EQUIP_CAP,
+} from '../equipment_rules';
+import { refreshModsForEquipmentChange } from '../progression/talents';
+import { RIFT_BAND_MAX_UPGRADE } from '../rift/band_ladder';
+import { createRiftGearInstance } from '../rift/progression';
+import type { SimContext } from '../sim_context';
+import type { EquipSlot, ItemDef, PlayerClass } from '../types';
+import { ALL_EQUIP_SLOTS } from '../types';
+import { collectionFitsRole, collectionRoleForSpec } from './gear_selection';
+import { parseBisGearFor } from './parse_bis_loadouts';
+
+// Rough single-number item power: weapon dps dominates for weapons, stat
+// budget plus armor carries the rest. Only used to ORDER epics per slot.
+function score(item: ItemDef): number {
+  let total = 0;
+  if (item.kind === 'weapon' && item.weapon) {
+    total += (((item.weapon.min + item.weapon.max) / 2) * 12) / Math.max(0.1, item.weapon.speed);
+  }
+  for (const value of Object.values(item.stats ?? {})) total += value as number;
+  return total;
+}
+
+// Craven Thrust and the Duskveil openers require a mainhand dagger, so every
+// rogue gets one unless they have explicitly committed to Thuggery (the one
+// spec that never thrusts and prefers raw weapon damage). A spec-less rogue
+// running /dev bis before picking must not be locked out of half the kit.
+function wantsDaggerMainhand(cls: string, spec: string | null): boolean {
+  return cls === 'rogue' && spec !== 'combat';
+}
+
+export function bestEpicGearFor(
+  cls: string,
+  spec: string | null,
+): Partial<Record<EquipSlot, string>> {
+  const collectionRole = collectionRoleForSpec(cls as PlayerClass, spec);
+  const epics = Object.values(ITEMS).filter(
+    (item) =>
+      item.quality === 'epic' &&
+      (item.kind === 'armor' || item.kind === 'weapon') &&
+      collectionFitsRole(item, cls as PlayerClass, collectionRole),
+  );
+  const picks: Partial<Record<EquipSlot, string>> = {};
+  const used = new Set<string>();
+  const bestFor = (slot: EquipSlot, extra?: (item: ItemDef) => boolean): ItemDef | undefined => {
+    let candidates = epics.filter(
+      (item) =>
+        !used.has(item.id) &&
+        (!extra || extra(item)) &&
+        canEquipItemInSlot(cls as Parameters<typeof canEquipItemInSlot>[0], item, slot, spec),
+    );
+    // A dagger class fantasy (Craven Thrust and the Duskveil openers require
+    // one) narrows the mainhand to daggers whenever any dagger epic exists.
+    if (slot === 'mainhand' && wantsDaggerMainhand(cls, spec)) {
+      const daggers = candidates.filter(
+        (item) => item.kind === 'weapon' && item.weapon?.dagger === true,
+      );
+      if (daggers.length > 0) candidates = daggers;
+    }
+    // A mainhand two-hander would block the offhand: rogues and other
+    // dual-wielders read strictly better with two one-handers here, so keep
+    // the mainhand one-handed whenever a one-hander exists for the class.
+    if (slot === 'mainhand' || slot === 'offhand') {
+      const oneHanders = candidates.filter(
+        (item) => item.kind !== 'weapon' || item.hand !== 'twohand',
+      );
+      if (oneHanders.length > 0) candidates = oneHanders;
+    }
+    candidates.sort((a, b) => score(b) - score(a) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    return candidates[0];
+  };
+  for (const slot of ALL_EQUIP_SLOTS) {
+    const best = bestFor(slot);
+    if (!best) continue;
+    picks[slot] = best.id;
+    used.add(best.id);
+  }
+  // Masterwrought cap arm (phase 08): equipBestInSlotForDev writes equipment
+  // directly and never runs masterwroughtConflictSlot, so without this the
+  // dev outfit could silently exceed the counted-family cap the moment
+  // flagged pieces out-score their references (the pbe_boost twin,
+  // enforceMasterwroughtCap, hit exactly that). Keep the cap-highest scoring
+  // flagged picks and refill each demoted slot under the same slot rules,
+  // with every non-KEPT flagged id excluded (the twin's semantics: a refill
+  // can never re-select a different over-cap flagged item, worn or not).
+  // Like the twin, the legendary sub-cap needs no arm until a
+  // legendary-flagged def ships; unlike the twin this sort carries an
+  // explicit id tie-break (the twin leans on sort stability), both
+  // deterministic.
+  const flagged = (Object.entries(picks) as [EquipSlot, string][]).filter(
+    ([, id]) => ITEMS[id]?.masterwrought,
+  );
+  // The refill exclusion only binds after a demotion (a refill can never
+  // re-select a different over-cap flagged item); with the cap not firing
+  // there is no over-cap set to exclude, so the pair re-run below admits
+  // everything.
+  let allowedRefill: (item: ItemDef) => boolean = () => true;
+  if (flagged.length > MASTERWROUGHT_EQUIP_CAP) {
+    const scored = flagged
+      .map(([slot, id]) => ({ slot, id, s: score(ITEMS[id]) }))
+      .sort((a, b) => b.s - a.s || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    const kept = new Set(scored.slice(0, MASTERWROUGHT_EQUIP_CAP).map((entry) => entry.id));
+    allowedRefill = (item: ItemDef): boolean => !item.masterwrought || kept.has(item.id);
+    for (const demoted of scored.slice(MASTERWROUGHT_EQUIP_CAP)) {
+      used.delete(demoted.id);
+      const fallback = bestFor(demoted.slot, allowedRefill);
+      if (fallback) {
+        picks[demoted.slot] = fallback.id;
+        used.add(fallback.id);
+      } else {
+        delete picks[demoted.slot];
+      }
+    }
+  }
+  // bestFor is per-slot legality only: neither the INITIAL fill nor a
+  // demotion refill applies the two-hand/offhand exclusion, so a mainhand
+  // two-hander (picked when nothing one-handed exists for the class) can
+  // stand beside an offhand pick, and an offhand refill can land beside a
+  // kept two-hand mainhand. This check therefore runs on EVERY path, not
+  // only when the cap fired: re-validate the pair with the shared
+  // displacement rule and, when it fails, re-run the hand fill in the
+  // initial order (mainhand first, then a partner the mainhand does not
+  // displace) under the refill exclusion; kept flagged hand picks stay
+  // candidates, so the re-run re-selects them.
+  const clsKey = cls as Parameters<typeof canEquipItemInSlot>[0];
+  const lookup = (id: string) => ITEMS[id];
+  const offhandDef = picks.offhand !== undefined ? ITEMS[picks.offhand] : undefined;
+  const pairIllegal =
+    picks.mainhand !== undefined &&
+    offhandDef !== undefined &&
+    displacedSlotForEquip(offhandDef, 'offhand', picks, lookup, clsKey, spec) !== null;
+  if (pairIllegal) {
+    for (const slot of ['mainhand', 'offhand'] as const) {
+      const id = picks[slot];
+      if (id !== undefined) {
+        used.delete(id);
+        delete picks[slot];
+      }
+    }
+    const main = bestFor('mainhand', allowedRefill);
+    if (main) {
+      picks.mainhand = main.id;
+      used.add(main.id);
+    }
+    const off = bestFor(
+      'offhand',
+      (item) =>
+        allowedRefill(item) &&
+        displacedSlotForEquip(item, 'offhand', picks, lookup, clsKey, spec) === null,
+    );
+    if (off) {
+      picks.offhand = off.id;
+      used.add(off.id);
+    }
+  }
+  return picks;
+}
+
+// Applies picks to the caller: dev-only direct equipment write, cleared
+// crafted-instance payloads, one stat recalc. Returns the equipped count.
+function applyDevGear(
+  ctx: SimContext,
+  pid: number,
+  picks: Partial<Record<EquipSlot, string>>,
+  clearStaleSlots: boolean,
+): number {
+  const meta = ctx.players.get(pid);
+  const player = ctx.entities.get(pid);
+  if (!meta || !player) return 0;
+  if (clearStaleSlots) {
+    for (const slot of ALL_EQUIP_SLOTS) {
+      delete meta.equipment[slot];
+      if (meta.equipmentInstance) delete meta.equipmentInstance[slot];
+    }
+  }
+  let equipped = 0;
+  for (const [slot, itemId] of Object.entries(picks) as [EquipSlot, string][]) {
+    delete meta.equipmentInstance[slot];
+    if (RIFT_GEAR_ITEM_ID_SET.has(itemId)) {
+      // A Riftbound band is priced by its copy (rift/band_ladder.ts): the
+      // shell alone is an empty ring, so the kit mints the maxed S band the
+      // parse loadout implies (every upgrade, both sockets filled with the
+      // two DPS ratings), on the class shell the wearer would have earned.
+      const band = createRiftGearInstance('dev-bis', 'S', meta.cls, pid, RIFT_BAND_MAX_UPGRADE, [
+        'rift_gem_verdant',
+        'rift_gem_crimson',
+      ]);
+      meta.equipment[slot] = band.itemId;
+      meta.equipmentInstance[slot] = band.instance;
+    } else {
+      meta.equipment[slot] = itemId;
+    }
+    equipped++;
+  }
+  refreshModsForEquipmentChange(ctx, meta);
+  recalcPlayerStats(player, meta.cls, meta.equipment, ctx.playerMods(meta), meta.equipmentInstance);
+  player.hp = player.maxHp;
+  return equipped;
+}
+
+// The /dev bis command: the selected spec's frozen top-parse loadout, with the
+// generic epic scorer as the spec-less fallback. Clears every slot first so a
+// two-handed loadout cannot retain a stale shield or offhand.
+export function equipBestInSlotForDev(ctx: SimContext, pid: number, selectedSpec?: string): number {
+  const meta = ctx.players.get(pid);
+  if (!meta) return 0;
+  const spec = selectedSpec ?? meta.talents?.spec ?? null;
+  const picks = (spec ? parseBisGearFor(meta.cls, spec) : null) ?? bestEpicGearFor(meta.cls, spec);
+  return applyDevGear(ctx, pid, picks, true);
+}
+
+// The deterministic reference kit for the balance probes and their pinned DPS
+// bands (scripts/rogue_dps_probe.ts, scripts/druid_balance_probe.ts): always
+// the pure item-table scorer, never the parse snapshot, and no slot clearing,
+// so the accepted fixtures stay stable when a new parse capture lands.
+export function equipReferenceEpicKitForDev(ctx: SimContext, pid: number): number {
+  const meta = ctx.players.get(pid);
+  if (!meta) return 0;
+  const picks = bestEpicGearFor(meta.cls, meta.talents?.spec ?? null);
+  return applyDevGear(ctx, pid, picks, false);
+}

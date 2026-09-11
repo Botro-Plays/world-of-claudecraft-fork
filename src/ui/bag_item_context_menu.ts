@@ -1,0 +1,234 @@
+// Pure, host-agnostic core for the bag-item context menu (Professions 2.0).
+// It owns the DOM-free decisions behind the right-click / touch
+// action menu on a bag stack: which new actions (Disenchant, Salvage,
+// Apply Enchant) are eligible for an item, the full ordered menu (the classic
+// left-click action first so that binding survives, then the eligible new
+// rows), and the "would this destroy a special copy?" predicate the confirm
+// dialog escalates on. bag_item_action_menu.ts is the thin DOM consumer that
+// paints the rows and dispatches; this mirrors the player_context_menu.ts
+// family shape (state in, action list out) beside the bags_view.ts pure core.
+//
+// Eligibility is DEF-based (isDisenchantable / isSalvageable / an enchant
+// reagent id), so the menu can offer actions before a command resolves. The
+// disenchant dispatch may carry the clicked inventory slot index, but whether
+// the action exists still reasons about the item definition.
+//
+// DOM/Three-free (registered in tests/architecture.test.ts UI_PURE_CORES).
+
+import { ENCHANTS } from '../sim/content/enchants';
+import { isItemLocked } from '../sim/item_lock';
+import { isMaterialItemId } from '../sim/material_ids';
+import type { MaterialComposition } from '../sim/material_sources';
+import { isDisenchantable, isEnchantedInstance } from '../sim/professions/enchanting';
+import { isSalvageable } from '../sim/professions/salvage';
+import { isSunderable } from '../sim/professions/sundering';
+import type { ItemDef, ItemInstancePayload } from '../sim/types';
+import type { TranslationKey } from './i18n.catalog';
+import { separableMaterialSources } from './material_sources_view';
+
+// Every item id that appears in ANY enchant's reagent list: the Apply Enchant
+// action is offered on these (an enchant reagent the flow can spend). Derived
+// once from the static ENCHANTS table (data-as-code), never per call.
+const ENCHANT_REAGENT_IDS: ReadonlySet<string> = new Set(
+  Object.values(ENCHANTS).flatMap((enchant) => enchant.reagents.map((reagent) => reagent.itemId)),
+);
+
+/** Whether `itemId` is consumed by at least one enchant, so the Apply Enchant
+ *  action applies to it. */
+export function isEnchantReagentItem(itemId: string): boolean {
+  return ENCHANT_REAGENT_IDS.has(itemId);
+}
+
+export type BagItemNewActionId =
+  | 'disenchant'
+  | 'salvage'
+  | 'sunder'
+  | 'applyEnchant'
+  | 'lock'
+  | 'unlock'
+  | 'viewSources'
+  | 'separateByGatherer'
+  | 'takeChosenQuantity'
+  | 'combine';
+export type BagItemContextActionId = 'default' | 'sellAll' | BagItemNewActionId;
+
+export interface BagItemContextAction {
+  id: BagItemContextActionId;
+  labelKey: TranslationKey;
+  /** The row's interpolation count (Sell all's {count}), so the DOM consumer
+   *  knows to pass params to t() instead of rendering the bare template. */
+  count?: number;
+}
+
+const NEW_ACTION_LABEL_KEY: Record<BagItemNewActionId, TranslationKey> = {
+  disenchant: 'hudChrome.itemMenu.disenchant',
+  salvage: 'hudChrome.itemMenu.salvage',
+  sunder: 'hudChrome.itemMenu.sunder',
+  applyEnchant: 'hudChrome.itemMenu.applyEnchant',
+  lock: 'hudChrome.bags.lockItem',
+  unlock: 'hudChrome.bags.unlockItem',
+  viewSources: 'hudChrome.itemMenu.viewSources',
+  separateByGatherer: 'hudChrome.itemMenu.separateByGatherer',
+  takeChosenQuantity: 'hudChrome.itemMenu.takeChosenQuantity',
+  combine: 'hudChrome.itemMenu.combine',
+};
+
+/** The classic left-click verb for the default (first) menu row, so the menu's
+ *  top row always does exactly what a plain click does (the classic binding).
+ *  Gear equips; everything else uses. */
+function defaultActionLabelKey(def: ItemDef): TranslationKey {
+  return def.kind === 'weapon' ||
+    def.kind === 'armor' ||
+    def.kind === 'held_offhand' ||
+    def.kind === 'bag'
+    ? 'hudChrome.itemMenu.equip'
+    : 'hudChrome.itemMenu.use';
+}
+
+/** The eligible new actions for this item, in fixed order (disenchant,
+ *  salvage, sunder, apply-enchant, then the player item lock toggle last).
+ *  `instance` is the specific copy the click resolved (issue 3042): a locked
+ *  copy never offers salvage (mirrors the sim's evaluateSalvageAdmission
+ *  'locked' deny), and every item, gear or not, always offers exactly one of
+ *  lock/unlock, so the toggle is reachable from any bag cell. Disenchant,
+ *  sunder, and apply-enchant stay available on a locked copy: the lock
+ *  protects against salvage, craft consumption, and vendor sale only (the
+ *  issue's own first-pass scope), not every profession action. */
+export function bagItemNewActions(
+  def: ItemDef,
+  itemId: string,
+  instance?: ItemInstancePayload,
+  materialSources?: MaterialComposition,
+  includeMaterialActions = false,
+): BagItemNewActionId[] {
+  const out: BagItemNewActionId[] = [];
+  if (isDisenchantable(def)) out.push('disenchant');
+  if (isSalvageable(def) && !isItemLocked(instance)) out.push('salvage');
+  if (isSunderable(def)) out.push('sunder');
+  if (isEnchantReagentItem(itemId)) out.push('applyEnchant');
+  if (includeMaterialActions && isMaterialItemId(itemId)) {
+    if (materialSources !== undefined && materialSources.length > 0) {
+      out.push('viewSources');
+      if (separableMaterialSources(materialSources)) out.push('separateByGatherer');
+      out.push('takeChosenQuantity');
+    }
+    out.push('combine');
+  }
+  out.push(isItemLocked(instance) ? 'unlock' : 'lock');
+  return out;
+}
+
+/** Every item now carries at least the lock/unlock row (issue 3042), so this
+ *  is always true; kept as a named predicate so callers read intent rather
+ *  than a bare truthy array length. */
+export function bagItemHasContextActions(
+  def: ItemDef,
+  itemId: string,
+  instance?: ItemInstancePayload,
+  materialSources?: MaterialComposition,
+  includeMaterialActions = false,
+): boolean {
+  return (
+    bagItemNewActions(def, itemId, instance, materialSources, includeMaterialActions).length > 0
+  );
+}
+
+/** The full ordered menu: the classic default row first (so left-click's binding
+ *  survives as row one), then each eligible new action. */
+export function bagItemContextActions(
+  def: ItemDef,
+  itemId: string,
+  instance?: ItemInstancePayload,
+  materialSources?: MaterialComposition,
+  includeMaterialActions = false,
+): BagItemContextAction[] {
+  const rows: BagItemContextAction[] = [{ id: 'default', labelKey: defaultActionLabelKey(def) }];
+  for (const id of bagItemNewActions(
+    def,
+    itemId,
+    instance,
+    materialSources,
+    includeMaterialActions,
+  )) {
+    rows.push({ id, labelKey: NEW_ACTION_LABEL_KEY[id] });
+  }
+  return rows;
+}
+
+/** The right-click / tap menu at a vendor: the classic default row (relabeled
+ *  Sell, since that is what it runs there, not Use/Equip), plus Sell all (N)
+ *  when more than one copy is held across the bags (one copy is exactly what
+ *  the default row already sells, so the extra row would be redundant).
+ *  Deliberately distinct from bagItemContextActions: a vendor never offers the
+ *  profession rows (disenchant, salvage, sunder, apply enchant) nor the item
+ *  lock toggle (mirrors itemMenuAvailable's default-mode-only gate in
+ *  bags_window.ts, which already excludes every other special mode). */
+export function vendorSellContextActions(heldCount: number): BagItemContextAction[] {
+  const rows: BagItemContextAction[] = [{ id: 'default', labelKey: 'hudChrome.itemMenu.sell' }];
+  if (heldCount > 1) {
+    rows.push({ id: 'sellAll', labelKey: 'hudChrome.itemMenu.sellAll', count: heldCount });
+  }
+  return rows;
+}
+
+/** One held copy of an item, as the confirm predicate needs it: the count and
+ *  the optional per-copy instance payload (absent for a plain fungible stack). */
+export interface BagCopy {
+  count: number;
+  instance?: ItemInstancePayload;
+}
+
+/** Whether destroying this specific copy loses something irreplaceable: it was
+ *  signed/crafted, is a masterwork proc, is enchanted (isEnchantedInstance:
+ *  the explicit marker or a legacy bare rolled.stats without masterwork),
+ *  carries Perfecting progress or the Perfected stamp (Masterwrought phase
+ *  12: by contract, not by the signer every live Perfected copy happens to
+ *  carry), or is a Riftbound band (a personal first-clear reward priced by
+ *  its copy, rift/band_ladder.ts). A plain fungible copy is never special. */
+export function isSpecialCopy(instance: ItemInstancePayload | undefined): boolean {
+  if (!instance) return false;
+  return (
+    !!instance.signer ||
+    !!instance.rolled?.masterwork ||
+    !!instance.rift ||
+    isEnchantedInstance(instance) ||
+    instance.perfected === true ||
+    instance.perfecting !== undefined
+  );
+}
+
+/** Whether the copy the destructive action WOULD consume is special, so the
+ *  confirm escalates to the stronger warning. Both actions prefer a PLAIN
+ *  fungible copy first, so a player holding any plain copy is never warned
+ *  (that plain copy is what dies): do not scare someone holding a plain copy
+ *  plus a masterwork copy. Only when no fungible copy exists does the action
+ *  reach for an instanced copy, and we warn iff THAT copy is special. Mirrors
+ *  the sim's removal order (highest inventory index first among matching
+ *  copies):
+ *   - salvage (items.ts removePreferFungible): once fungible is exhausted the
+ *     highest-index instanced copy of ANY kind is taken (enchanted included).
+ *   - disenchant (professions/enchanting.ts resolveDisenchant): the
+ *     highest-index NON-enchanted instanced copy is taken first
+ *     (removeEnchantableItem); once every remaining copy is enchanted, the
+ *     highest-index enchanted copy is the victim (issue #2340), which is
+ *     always special, so that arm always warns.
+ *   - sunder (professions/sundering.ts): consumes through the SAME preference
+ *     helper as disenchant (consumePreferredDisenchantVictim), so it shares
+ *     the disenchant arm's skip-enchanted-first order exactly. */
+export function destroyConsumesSpecialCopy(
+  action: 'disenchant' | 'salvage' | 'sunder',
+  copies: readonly BagCopy[],
+): boolean {
+  if (copies.some((copy) => !copy.instance)) return false;
+  const skipsEnchanted = action === 'disenchant' || action === 'sunder';
+  for (let i = copies.length - 1; i >= 0; i--) {
+    const instance = copies[i].instance;
+    if (!instance) continue;
+    if (skipsEnchanted && isEnchantedInstance(instance)) continue;
+    return isSpecialCopy(instance);
+  }
+  // Reachable with held copies only on the disenchant arm with every copy
+  // enchanted (salvage returns on the first instanced copy above): the sim's
+  // fallback consumes an enchanted copy, special by definition.
+  return copies.length > 0;
+}

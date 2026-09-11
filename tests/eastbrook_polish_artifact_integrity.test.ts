@@ -1,0 +1,3080 @@
+import { createHash } from 'node:crypto';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import path from 'node:path';
+import { describe, expect, it } from 'vitest';
+
+const captureContract =
+  // @ts-expect-error The executable capture contract intentionally ships as plain Node ESM.
+  await import('../scripts/assets/eastbrook_grand_armoury/capture_contract.mjs');
+const { POLISH_SEAL_PATH, REMINT_COMMAND } = await import(
+  '../scripts/assets/eastbrook_grand_armoury/provenance_diagnostics.mjs'
+);
+const {
+  assertTownArmouryIdentity,
+  assertTownAttributionTargetState,
+  assertTownCaptureMetadata,
+  assertNoCaptureErrors,
+  assertTownPerformanceBlockState,
+  deriveTownPerformanceDeltas,
+  round: roundPerformanceValue,
+  EASTBROOK_ARMOURY_CAPTURE_SEED,
+  EASTBROOK_ARMOURY_PLAYER_STATE,
+  EASTBROOK_POLISH_BASELINE_REVISION,
+  EASTBROOK_TOWN_CAPTURE_CONTRACTS,
+  EASTBROOK_TOWN_CAPTURE_PROFILES,
+  EASTBROOK_TOWN_CAPTURE_SETTLE_MS,
+  EASTBROOK_TOWN_CAPTURE_VIEWS,
+  EASTBROOK_TOWN_POLISH_MATCHED_CAPTURE_VIEWS,
+  EASTBROOK_TOWN_PERF_SCENARIOS,
+} = captureContract;
+
+const REPO_ROOT = path.join(__dirname, '..');
+const POLISH_ROOT = path.join(__dirname, '..', 'docs/screenshots/eastbrook-vale-rebuild/polish');
+const IMG2THREE_ROOT = path.join(
+  REPO_ROOT,
+  'docs/design/eastbrook-vale-rebuild/polish-img2threejs',
+);
+const PNG_SIGNATURE = '89504e470d0a1a0a';
+const BASELINE_POLISH_PROVENANCE = {
+  schemaVersion: 1,
+  mode: 'baseline-revision',
+  baselineRevision: EASTBROOK_POLISH_BASELINE_REVISION,
+} as const;
+
+const VIEW_NAMES = [
+  'elevated-overview',
+  'planning-top-down',
+  'gate-approach',
+  'central-square',
+  'armoury-facade',
+  'armoury-relation',
+  'bank-and-chest',
+  'smithy-and-forge',
+  'inn-and-kitchens',
+  'market-and-fence',
+  'chapel-and-weaving',
+  'toolworks-service-perimeter',
+  'player-scale',
+  'interaction-collider-overlay',
+  'side-rear-proof',
+  'stall-world-market',
+  'stall-provisions',
+  'apothecary-lin',
+  'ravenpost-mailbox',
+  'noticeboard',
+  'civic-motion',
+  'ravenpost-chronicler',
+  'west-wall-quartermaster',
+] as const;
+
+const PROFILES = [
+  {
+    name: 'desktop-ultra',
+    cssWidth: 1600,
+    cssHeight: 900,
+    deviceScaleFactor: 1,
+    pixelWidth: 1600,
+    pixelHeight: 900,
+  },
+  {
+    name: 'mobile-low',
+    cssWidth: 844,
+    cssHeight: 390,
+    deviceScaleFactor: 3,
+    pixelWidth: 2532,
+    pixelHeight: 1170,
+  },
+] as const;
+
+const MOTION_MODES = ['motion-on', 'reduced-motion'] as const;
+const MOTION_PHASES = ['t0', 't1'] as const;
+
+// The full 23-view capture matrix across both profiles (plus the four civic-motion
+// frames per profile) was captured and visually accepted. After acceptance the
+// full-resolution capture PNGs were deliberately pruned to a hero subset to keep the
+// repository small; the complete per-view acceptance record still lives in the metadata
+// records (polish/metadata/*.json), the performance evidence (polish/performance/*.json),
+// and the contact sheets (polish/contacts/*.webp). The disk-inventory checks below assert
+// this retained hero subset exactly (still add-AND-delete strict), while the metadata
+// record structure is still verified against the full VIEW_NAMES matrix.
+const RETAINED_BEFORE_VIEWS: Readonly<Record<string, readonly string[]>> = {
+  'desktop-ultra': [
+    'elevated-overview',
+    'central-square',
+    'gate-approach',
+    'ravenpost-mailbox',
+    'noticeboard',
+    'planning-top-down',
+  ],
+  'mobile-low': ['elevated-overview', 'central-square'],
+};
+const RETAINED_AFTER_VIEWS: Readonly<Record<string, readonly string[]>> = {
+  'desktop-ultra': [
+    'elevated-overview',
+    'central-square',
+    'gate-approach',
+    'ravenpost-mailbox',
+    'noticeboard',
+    'planning-top-down',
+    'player-scale',
+    'side-rear-proof',
+    'armoury-relation',
+    'market-and-fence',
+  ],
+  'mobile-low': ['elevated-overview', 'central-square'],
+};
+// Civic-motion frames were retained for the desktop-ultra profile only.
+const RETAINED_MOTION_PROFILES: readonly string[] = ['desktop-ultra'];
+
+const MAILBOX_EVIDENCE = [
+  'optimized-contact.png',
+  'optimized-lookdev-contact.png',
+  'optimized-lookdev/dusk.png',
+  'optimized-lookdev/low.png',
+  'optimized-lookdev/neutral.png',
+  'optimized-lookdev/player-scale.png',
+  'optimized/back.png',
+  'optimized/front-3q.png',
+  'optimized/front.png',
+  'optimized/grazing.png',
+  'optimized/left.png',
+  'optimized/rear-3q.png',
+  'optimized/right.png',
+  'procedural-contact.png',
+  'procedural/back.png',
+  'procedural/front-3q.png',
+  'procedural/front.png',
+  'procedural/grazing.png',
+  'procedural/left.png',
+  'procedural/rear-3q.png',
+  'procedural/right.png',
+  'raw-contact.png',
+  'raw/back.png',
+  'raw/front-3q.png',
+  'raw/front.png',
+  'raw/grazing.png',
+  'raw/left.png',
+  'raw/rear-3q.png',
+  'raw/right.png',
+  'reference-vs-optimized-contact.png',
+  'stages-contact.png',
+  'stages/blockout.png',
+  'stages/form.png',
+  'stages/material.png',
+  'stages/structural.png',
+] as const;
+
+const NOTICEBOARD_EVIDENCE = [
+  'optimized-contact.png',
+  'optimized-lookdev-contact.png',
+  'optimized-lookdev/collider-overlay.png',
+  'optimized-lookdev/dusk.png',
+  'optimized-lookdev/grazing.png',
+  'optimized-lookdev/low.png',
+  'optimized-lookdev/neutral.png',
+  'optimized-lookdev/player-scale.png',
+  'optimized/back.png',
+  'optimized/front-3q.png',
+  'optimized/front.png',
+  'optimized/grazing.png',
+  'optimized/left.png',
+  'optimized/rear-3q.png',
+  'optimized/right.png',
+  'raw-contact.png',
+  'raw/back.png',
+  'raw/front-3q.png',
+  'raw/front.png',
+  'raw/grazing.png',
+  'raw/left.png',
+  'raw/rear-3q.png',
+  'raw/right.png',
+  'reference-vs-optimized-contact.png',
+  'stages-contact.png',
+  'stages/blockout/contact.png',
+  'stages/blockout/front-3q.png',
+  'stages/blockout/front.png',
+  'stages/final/collider-overlay.png',
+  'stages/final/contact.png',
+  'stages/final/dusk.png',
+  'stages/final/front-3q.png',
+  'stages/final/neutral.png',
+  'stages/final/player-scale.png',
+  'stages/final/rear-3q.png',
+  'stages/form/contact.png',
+  'stages/form/front-3q.png',
+  'stages/form/grazing.png',
+  'stages/interaction/collider-overlay.png',
+  'stages/interaction/contact.png',
+  'stages/interaction/player-scale.png',
+  'stages/lighting/contact.png',
+  'stages/lighting/dusk.png',
+  'stages/lighting/neutral.png',
+  'stages/material/contact.png',
+  'stages/material/front-3q.png',
+  'stages/material/neutral.png',
+  'stages/optimization/contact.png',
+  'stages/optimization/front-3q.png',
+  'stages/optimization/grazing.png',
+  'stages/optimization/rear-3q.png',
+  'stages/structural/back.png',
+  'stages/structural/contact.png',
+  'stages/structural/rear-3q.png',
+  'stages/surface/contact.png',
+  'stages/surface/front.png',
+  'stages/surface/grazing.png',
+] as const;
+
+type PngDimensions = readonly [width: number, height: number];
+
+const MAILBOX_NONSTANDARD_DIMENSIONS: Readonly<Record<string, PngDimensions>> = {
+  'optimized-contact.png': [1260, 1180],
+  'optimized-lookdev-contact.png': [1260, 804],
+  'procedural-contact.png': [1260, 1180],
+  'raw-contact.png': [1260, 1180],
+  'reference-vs-optimized-contact.png': [1520, 690],
+  'stages-contact.png': [1260, 804],
+};
+
+const NOTICEBOARD_NONSTANDARD_DIMENSIONS: Readonly<Record<string, PngDimensions>> = {
+  'optimized-contact.png': [1260, 1180],
+  'optimized-lookdev-contact.png': [1260, 804],
+  'raw-contact.png': [1260, 1180],
+  'reference-vs-optimized-contact.png': [1520, 690],
+  'stages-contact.png': [1260, 1180],
+  'stages/blockout/contact.png': [1260, 428],
+  'stages/final/contact.png': [1260, 804],
+  'stages/form/contact.png': [1260, 428],
+  'stages/interaction/contact.png': [1260, 428],
+  'stages/lighting/contact.png': [1260, 428],
+  'stages/material/contact.png': [1260, 428],
+  'stages/optimization/contact.png': [1260, 428],
+  'stages/structural/contact.png': [1260, 428],
+  'stages/surface/contact.png': [1260, 428],
+};
+
+function listFilesRecursive(root: string, extension: string): string[] {
+  const walk = (directory: string, prefix = ''): string[] =>
+    readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+      const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) return walk(path.join(directory, entry.name), relativePath);
+      return entry.isFile() && entry.name.endsWith(extension) ? [relativePath] : [];
+    });
+  return walk(root).sort();
+}
+
+function assertPng(
+  filePath: string,
+  [expectedWidth, expectedHeight]: PngDimensions,
+  minimumBytes: number,
+): void {
+  const bytes = readFileSync(filePath);
+  expect(statSync(filePath).size, filePath).toBeGreaterThan(minimumBytes);
+  expect(bytes.subarray(0, 8).toString('hex'), filePath).toBe(PNG_SIGNATURE);
+  expect(bytes.readUInt32BE(8), filePath).toBe(13);
+  expect(bytes.subarray(12, 16).toString('ascii'), filePath).toBe('IHDR');
+  expect(bytes.readUInt32BE(16), filePath).toBe(expectedWidth);
+  expect(bytes.readUInt32BE(20), filePath).toBe(expectedHeight);
+}
+
+function baseCaptureNames(prefix: 'before' | 'after', profile: string): string[] {
+  return VIEW_NAMES.map((view) => `${prefix}-${view}-${profile}.png`);
+}
+
+function motionCaptureNames(profile: string): string[] {
+  return MOTION_MODES.flatMap((mode) =>
+    MOTION_PHASES.map((phase) => `after-civic-motion-${profile}-${mode}-${phase}.png`),
+  );
+}
+
+function retainedBaseCaptureNames(prefix: 'before' | 'after', profile: string): string[] {
+  const views =
+    prefix === 'before' ? RETAINED_BEFORE_VIEWS[profile] : RETAINED_AFTER_VIEWS[profile];
+  return (views ?? []).map((view) => `${prefix}-${view}-${profile}.png`);
+}
+
+function retainedMotionCaptureNames(profile: string): string[] {
+  return RETAINED_MOTION_PROFILES.includes(profile) ? motionCaptureNames(profile) : [];
+}
+
+type Vec3 = { x: number; y: number; z: number };
+type NumericRecord = Record<string, number>;
+type PolishProvenance = { mode: string; [key: string]: unknown };
+type CaptureSource = { comparison: string; revision: string; fingerprint: string };
+type CaptureTownContract = {
+  id: string;
+  townTriangles: number;
+  placementInventory: { stalls: string[]; [key: string]: unknown };
+  attributionTargets: Array<{ key: string; [key: string]: unknown }>;
+  motionCapture: { frameIntervalMs: number; [key: string]: unknown };
+  [key: string]: unknown;
+};
+
+type CaptureProfileContract = {
+  name: string;
+  tier: string;
+  settings: Record<string, unknown>;
+  viewport: {
+    width: number;
+    height: number;
+    deviceScaleFactor: number;
+    isMobile?: boolean;
+    hasTouch?: boolean;
+  };
+  mobile: boolean;
+};
+
+type CaptureViewContract = { name: string; camera: Vec3; target: Vec3 };
+
+type CaptureRecord = {
+  output: string;
+  schemaVersion: number;
+  captureScope: string;
+  source: CaptureSource;
+  polishProvenance: PolishProvenance;
+  townContract: CaptureTownContract;
+  renderer: { tier: string; settings: Record<string, unknown> };
+  world: { lot: unknown };
+  viewport: {
+    physical: { width: number; height: number };
+    observed: { touch: boolean; maxTouchPoints: number };
+    touchHudVisible: boolean;
+  };
+  motionEvidence: null | {
+    modes: Array<{ frames: Array<{ output: string }> }>;
+  };
+};
+
+type CaptureMetadata = {
+  schemaVersion: number;
+  captureScope: string;
+  shotPrefix: 'before' | 'after';
+  profile: string;
+  townContractId: string;
+  sourceRevision: string;
+  sourceFingerprint: string;
+  polishProvenance: PolishProvenance;
+  records: CaptureRecord[];
+};
+
+type TownBlockState = {
+  label: string;
+  requested: { rootVisible: boolean; shadowEnabled: boolean };
+  targets: unknown[];
+};
+
+type SampledTownBlock = TownBlockState & {
+  timingBasis: string;
+  renderMedian: NumericRecord;
+  renderWorst: NumericRecord;
+  resourcesMedian: NumericRecord;
+  resourcesWorst: NumericRecord;
+  rafFrameInterval: NumericRecord;
+  rafFrameIntervalStats: NumericRecord;
+  longTasks: NumericRecord;
+  rendererCpu: NumericRecord;
+  inputToVisibleP95Ms: number | null;
+  perfReportSummary: {
+    textures: number;
+    longTaskCount: number;
+    longTaskP95: number;
+    longTaskMax: number;
+    tier: string;
+    autoGovernor: boolean;
+  };
+  context: { lost: number; restored: number };
+  assetFailures: unknown[];
+};
+
+type ConditionSummary = {
+  blocks: number;
+  renderMedian: NumericRecord;
+  renderWorst: NumericRecord;
+  resourcesMedian: NumericRecord;
+  resourcesWorst: NumericRecord;
+  rafFrameIntervalStats: NumericRecord;
+  cpuSubmitMsMedian: number;
+};
+
+type DirectTownBlock = TownBlockState & { render: NumericRecord };
+type DirectConditionSummary = { samples: number; renderMedian: NumericRecord };
+
+type PerformanceScenario = {
+  name: string;
+  view: string;
+  world: {
+    seed: number;
+    lot: unknown;
+    player: Vec3 & { facing: number };
+    camera: Vec3;
+    target: Vec3;
+  };
+  settle: { requestedMs: number; observedMs: number };
+  attributionTargets: unknown[];
+  sequence: SampledTownBlock[];
+  conditions: Record<string, ConditionSummary>;
+  sampledDeltas: unknown;
+  directRenderAttribution: {
+    sequence: DirectTownBlock[];
+    conditions: Record<string, DirectConditionSummary>;
+    deltas: unknown;
+  };
+  deltas: unknown;
+};
+
+type PerformanceEvidence = {
+  schemaVersion: number;
+  captureScope: string;
+  shotPrefix: 'before' | 'after';
+  profile: string;
+  expectedTown: boolean;
+  expectedArmoury: boolean;
+  source: CaptureSource;
+  polishProvenance: unknown;
+  townContract: { id: string };
+  timingBasis: string;
+  gl: { vendor: string; renderer: string };
+  settings: Record<string, unknown>;
+  coldStart: {
+    navigationAndBootMs: number;
+    bootSettleMs: number;
+    preloadWaitMs: number;
+    preload: { tasks: number; waitMs: number; complete: boolean };
+    rendererPrewarm: {
+      timedOut: boolean;
+      compileTimedOut: boolean;
+      manifestFailed: number;
+      manifestTimedOut: number;
+      failedEntryIds: string[];
+      timedOutEntryIds: string[];
+    };
+  };
+  sample: { phase: string; warmupMs: number; sampleMs: number; repeats: number };
+  initialResources: NumericRecord;
+  assetFailures: unknown[];
+  captureDiagnostics: { pageErrors: unknown[]; consoleErrors: unknown[]; assetFailures: unknown[] };
+  scenarios: PerformanceScenario[];
+};
+
+type ReferenceFileRecord = {
+  id?: string;
+  path: string;
+  sha256: string;
+  width: number;
+  height: number;
+  verdict?: string;
+};
+
+type ReferenceAdmission = {
+  assetId: string;
+  sourceSheet: ReferenceFileRecord;
+  admittedViews: ReferenceFileRecord[];
+  supplementaryViews?: ReferenceFileRecord[];
+};
+
+type DetailRecord = { id: string; kind: string; mapsTo: unknown };
+
+type VisualEvidenceRecord = {
+  passId: string;
+  aiVisionScore: number;
+  visualAcceptanceThreshold: number;
+  layerScores: NumericRecord;
+  featureReviews: Array<{ score?: number; visible: boolean }>;
+  referenceScreenshot: string;
+  renderScreenshot: string;
+  comparisonImage: string;
+};
+
+type SculptSpec = {
+  sourceImage: string;
+  sourceImageSha256: string;
+  referenceAdmission: string;
+  componentTree: unknown[];
+  materials: unknown[];
+  preSpecAssessment: {
+    detailInventory: {
+      scanMethod: string;
+      targetMinDetails: number;
+      details: DetailRecord[];
+    };
+  };
+  viewEvidence: Array<{ id: string; path: string; sha256: string }>;
+  performanceBudget: {
+    actualTriangles: number;
+    hardTriangleCeiling: number;
+    actualPrimitives: number;
+    maxPrimitives: number;
+    actualMaterials: number;
+    maxMaterials: number;
+    actualCompressedBytes: number;
+    maxCompressedBytes: number;
+    actualSha256: string;
+    actualSourceFingerprint: string;
+    actualBoundsMin: number[];
+    actualBoundsMax: number[];
+    usedAndRequiredExtensions: string[];
+    embeddedTextures: number;
+    animations: number;
+    skins: number;
+    cameras: number;
+  };
+  visualEvidence: VisualEvidenceRecord[];
+  reviewHistory: Array<{
+    passId: string;
+    aiVisionScore: number;
+    layerScores: NumericRecord;
+    featureReviews: Array<{ score?: number; visible: boolean }>;
+    visualEvidence: {
+      referenceScreenshot: string;
+      renderScreenshot: string;
+      comparisonImage: string;
+    };
+    evidence: string[];
+  }>;
+};
+
+type PreSpecAssessment = {
+  sourceImage: string;
+  referenceAdmission: string;
+  preSpecAssessment: {
+    detailInventory: {
+      scanMethod: string;
+      targetMinDetails: number;
+      inventoryPath: string;
+      details: DetailRecord[];
+    };
+  };
+};
+
+type DetailInventory = {
+  sourceImage: string;
+  scanMethod: string;
+  targetMinDetails: number;
+  details: DetailRecord[];
+};
+
+type ShippingOutput = {
+  triangles: number;
+  primitives: number;
+  materials: number;
+  compressedBytes: number;
+  bounds: number[];
+  embeddedTextures: number;
+  animations: number;
+  skins: number;
+  cameras: number;
+  extensions: string[];
+  sha256: string;
+  sourceFingerprint: string;
+};
+
+type ValidationRecord = {
+  assetId: string;
+  spec: string;
+  normal: { ok: boolean; errors: number; warnings: number; components: number; materials: number };
+  strictQuality: {
+    ok: boolean;
+    errors: number;
+    warnings: number;
+    components: number;
+    materials: number;
+  };
+  pipeline: { currentPass: string; completedPasses: string[] };
+  reviewAcceptance: {
+    reviews: number;
+    minimumGlobalScore: number;
+    minimumLayerScore: number;
+    minimumVisibleFeatureScore: number;
+  };
+  shippingOutput: ShippingOutput;
+};
+
+type ValidationResults = {
+  gateThresholds: {
+    globalVisualAcceptance: number;
+    criticalFeatureMinimum: number;
+    importantFeatureAverage: number;
+  };
+  referenceAdmission: {
+    mailbox: AdmissionSummary;
+    noticeboard: AdmissionSummary;
+  };
+  specValidation: ValidationRecord[];
+};
+
+type AdmissionSummary = {
+  primaryViews: number;
+  admitted: number;
+  rejected: number;
+  supplementaryRejectedAsDuplicate?: number;
+};
+
+function readJsonFile<T>(filePath: string): T {
+  return JSON.parse(readFileSync(filePath, 'utf8')) as T;
+}
+
+// FROZEN capture framing: the camera/target pairs the accepted polish captures
+// were actually taken with. The Eastbrook harbor move (layout v3, commit
+// d19aa33f76, docs/design/eastbrook-revamp/site-plan.md, re-pinned 2026-08-18)
+// re-aimed the live polish views and matched-view overrides at the new lots
+// WITHOUT retaking a capture, so the committed metadata records must keep validating
+// against the framing they were shot with, not the live one. These literals
+// move only if the captures themselves are retaken; the divergence from the
+// live views is declared as its own literal test below, mirroring how the
+// frozen townTriangles staleness is declared.
+const ACCEPTED_POLISH_V2_VIEW_OVERRIDES: Readonly<Record<string, { camera: Vec3; target: Vec3 }>> =
+  {
+    'bank-and-chest': {
+      camera: { x: 5, y: 7, z: 2 },
+      target: { x: 14.156943251329539, y: 3.2, z: 8.685223202016726 },
+    },
+    'smithy-and-forge': {
+      camera: { x: 10, y: 7, z: 8 },
+      target: { x: 3.687633548766497, y: 3, z: 15.598153967032626 },
+    },
+    'inn-and-kitchens': {
+      camera: { x: 0, y: 8, z: 8 },
+      target: { x: -10.018829436136041, y: 3, z: 13.621842145917809 },
+    },
+    'chapel-and-weaving': {
+      camera: { x: 0, y: 12, z: 4 },
+      target: { x: -13.2, y: 3, z: -10.5 },
+    },
+    'toolworks-service-perimeter': {
+      camera: { x: 4, y: 7, z: -9 },
+      target: { x: 5, y: 5, z: -14.25 },
+    },
+    'stall-world-market': {
+      camera: { x: -6, y: 6, z: 0 },
+      target: { x: -5.75, y: 2.5, z: 7 },
+    },
+  };
+const ACCEPTED_POLISH_V2_POLISH_VIEWS: ReadonlyArray<{
+  name: string;
+  camera: Vec3;
+  target: Vec3;
+}> = [
+  {
+    name: 'stall-world-market',
+    camera: { x: -2.54, y: 6, z: 5.47 },
+    target: { x: -4.55381837226296, y: 2.5, z: 8.20975183498178 },
+  },
+  {
+    name: 'stall-provisions',
+    camera: { x: -3, y: 6, z: 0 },
+    target: { x: -7.421769629642221, y: 2.5, z: 0.7630378263298812 },
+  },
+  {
+    name: 'apothecary-lin',
+    camera: { x: 1.8, y: 6, z: 6 },
+    target: { x: 2.8431593444121797, y: 2.5, z: 9.717148252611294 },
+  },
+  {
+    name: 'ravenpost-mailbox',
+    camera: { x: 0, y: 5, z: -2 },
+    target: { x: 0, y: 2, z: -6.2 },
+  },
+  {
+    name: 'noticeboard',
+    camera: { x: 5, y: 6, z: -4 },
+    target: { x: 9.010050506338834, y: 2.2, z: -7.010050506338834 },
+  },
+  {
+    name: 'civic-motion',
+    camera: { x: -10, y: 6, z: -7 },
+    target: { x: -0.75, y: 2.8, z: 0 },
+  },
+  {
+    name: 'ravenpost-chronicler',
+    camera: { x: -10, y: 6.5, z: -11 },
+    target: { x: 0, y: 2.5, z: -14.5 },
+  },
+  {
+    name: 'west-wall-quartermaster',
+    camera: { x: -16, y: 6, z: -3 },
+    target: { x: -22.5, y: 2.5, z: -7.5 },
+  },
+];
+// Composed exactly the way the live matched list is composed from its parts:
+// the immutable rebuild-v1 base views with the frozen overrides applied, then
+// the frozen polish views with the same overrides applied.
+const ACCEPTED_POLISH_V2_MATCHED_CAPTURE_VIEWS: readonly CaptureViewContract[] = [
+  ...(EASTBROOK_TOWN_CAPTURE_VIEWS as readonly CaptureViewContract[]).map((view) => ({
+    name: view.name,
+    ...(ACCEPTED_POLISH_V2_VIEW_OVERRIDES[view.name] ?? {
+      camera: view.camera,
+      target: view.target,
+    }),
+  })),
+  ...ACCEPTED_POLISH_V2_POLISH_VIEWS.map((view) => ({
+    name: view.name,
+    ...(ACCEPTED_POLISH_V2_VIEW_OVERRIDES[view.name] ?? {
+      camera: view.camera,
+      target: view.target,
+    }),
+  })),
+];
+// The views the harbor move re-aimed (13), plus armoury-relation from owner
+// refinement round 4 (the armoury retired from placement and the matched view
+// aims at the barracks garrison on its lot); every other matched view still
+// shares its live framing with the frozen records.
+const HARBOR_MOVED_VIEW_NAMES: ReadonlySet<string> = new Set([
+  'armoury-relation',
+  'bank-and-chest',
+  'smithy-and-forge',
+  'inn-and-kitchens',
+  'chapel-and-weaving',
+  'toolworks-service-perimeter',
+  'stall-world-market',
+  'stall-provisions',
+  'apothecary-lin',
+  'ravenpost-mailbox',
+  'noticeboard',
+  'civic-motion',
+  'ravenpost-chronicler',
+  'west-wall-quartermaster',
+]);
+
+// FROZEN, and no longer equal to the live town fingerprint: this is the identity of
+// the tree the v2 polish captures were taken against, not a mirror of the current
+// one. It first diverged when a lockfile-only dependency bump re-minted the town
+// fingerprint to aa0df220..., which moved the live value without retaking a single
+// screenshot. Do NOT sweep this to the live value along with the neighbouring
+// literals; it only moves if the captures themselves are retaken.
+const ACCEPTED_POLISH_V2_TOWN_SOURCE_FINGERPRINT =
+  'e15d65fda69efd04395e93dd28af8a56f2fb9bc1ff1125e3b605b07720891367';
+// Derived from the diagnostics module's one seal-path constant, so this
+// pin, the failure diagnostics, and the remint tool's printed metadata
+// authority sha can never silently point at three different files.
+const ACCEPTED_POLISH_V2_METADATA_PATH = path.join(REPO_ROOT, POLISH_SEAL_PATH);
+// Re-pinned for the merge of release/v0.34.0 into this branch. Every
+// rendererIntegration move on both sides now stacks on src/render/renderer.ts:
+// from the release, PR #2720's Eastbrook fence-removal layout evidence, the live
+// graphics rebuild (context recycle plus profile-aware Eastbrook runtime inputs,
+// PR #2799), the Bear Form quadruped rig (PR #2842), the far-field sprite
+// impostors, fog-free vista and horizon pass (PR #2793), the Blizzard timed
+// ground loop on the snowZone spellfx arm (PR #2861), and the brood
+// shout/flourish and attackByAbility wiring; from this branch, the
+// worldObjectBurning fire-burst cue. Both sides move the same leaf, so the merged
+// tree mints literals matching neither parent. The release retook the polish
+// captures and this branch adopts them verbatim: the accepted file still points
+// at the same captured view, and only its swept provenance bytes follow the
+// merged rendererIntegration and layout inputs.
+// Re-minted with scripts/assets/eastbrook_grand_armoury/remint_polish_provenance.mjs.
+// Re-pinned for the integrated v0.35 renderer on AAA-enhancements. The accepted
+// captures are unchanged; only the rendererIntegration leaf, composite, and the
+// metadata file's second-order digest are re-minted on this branch.
+// Re-pinned again for the merge of release/v0.35.0 into AAA-enhancements: both
+// sides moved the rendererIntegration leaf (this branch's integrated v0.35
+// renderer; the release's bounded ground-object reuse pool), so the merged tree
+// mints literals matching neither parent. Captures adopted verbatim from the
+// release tip; swept by remint_polish_provenance.mjs on the merged tree.
+// Re-pinned for the PR #2982 merge: the release-side weapon-skin apply queue
+// and the PR-side ability VFX warm-up both move runtimeRender provenance leaves
+// (src/render/renderer.ts and src/render/prewarm_policy.ts), so the composite
+// and metadata seal both re-mint on the merged tree. No capture was retaken.
+// Re-pinned for the PR #2983 revert: the rendererIntegration leaf moved back
+// while PR #2982's prewarm policy remains in the release. No capture was retaken.
+// Re-pinned for the PR #2983 re-land: the rendererIntegration leaf moves
+// forward again (apply queue + vfx.weapon-skins prewarm entry) over the
+// bow-aim renderer edit the release landed after the revert. No capture was
+// retaken.
+// Re-minted again for the second release/v0.35.0 merge: the release-side
+// swimming strokes PR and pr-batch move the renderer leaf again. Captures
+// still adopted verbatim; neither parent retook one.
+// Re-minted for the merge of release/v0.35.0 into this branch: both sides moved
+// the rendererIntegration leaf, so all three literals mint to values matching
+// neither parent. No capture was retaken on either side (the two parents'
+// evidence differs only in its provenance bytes).
+// Re-minted for the VFX per-frame cost work: the rendererIntegration leaf
+// follows the anchor seam, the weapon-skin fade and the census tag. No capture
+// was retaken; every measured value is adopted verbatim.
+// Re-minted for the iOS WebKit memory-profile fix (renderer.ts's
+// nativeIosMemoryProfile -> iosMemoryProfile rename) landing on top of the VFX
+// per-frame cost work already on this release branch. No capture was retaken.
+// Re-minted for the merge of release/v0.36.0 (PR 3161) into the three
+// compileAsync patch branch: the release side moved the rendererIntegration
+// and townRuntime leaves while this branch's lockfile patch moved the GLB and
+// source-fingerprint leaves, so all three literals mint to values matching
+// neither parent. No capture was retaken.
+// Re-minted on PR 3150's v0.36.0 base merge, where the branch's renderer.ts
+// prewarm changes converged with the 3165 reseal. No capture was retaken.
+// Re-minted for the merge of release/v0.36.0 into the render caches branch:
+// both sides moved the rendererIntegration leaf (the release's prewarm compile
+// and point-light reseals; this branch's bounded character-visual pool wiring),
+// so all three literals mint to values matching neither parent. No capture was
+// retaken.
+// Re-minted for the merge of release/v0.36.0 (post PR 3220/3221) into the KTX2
+// mip-release branch: both parents move renderer.ts, so all three literals mint
+// to values matching neither parent. No capture was retaken.
+// Re-minted for the merge of release/v0.36.0 (post PR 3222) into the prewarm
+// sky-unstarve branch: both parents move renderer.ts (this branch also moves
+// prewarm_policy.ts; sky.ts moved too but is not a provenance input), so all
+// three literals mint to values matching neither parent. No capture was
+// retaken.
+// Re-minted for the review fixes on the prewarm sky-unstarve PR (deadlineExempt
+// sky entry, unified view-cap trim rule, deferred-lane gate and priority
+// threading; renderer.ts edits only). No capture was retaken.
+// Re-minted for review round 2 on the prewarm sky-unstarve PR (honest
+// archetype and scene-texture counts; renderer.ts edits only). No capture
+// was retaken.
+// Re-minted for the shadow-batch PR (shadow-camera texel snapping and the
+// budget-governed shadow cadence; renderer.ts edits only). No capture was
+// retaken.
+// Re-minted for the merge of the shadow-batch PR with the iOS constrained-
+// memory zone-eviction fix: both parents move renderer.ts, so the
+// rendererIntegration leaf mints a value matching neither parent. No capture
+// was retaken.
+// Re-minted for the merge of PR #3314's rift windup telegraph school tint
+// (issue #2917) with the release branch's renderer changes. Both parents move
+// renderer.ts, so the rendererIntegration leaf mints a value matching neither
+// parent. No capture was retaken.
+// Re-minted for the Three.js audit batch (light budget seam, blob shadows, sky
+// residency lane, splat colour pack-source fix): renderer.ts edits only. No
+// capture was retaken.
+// Re-minted for the base sync of the Three.js audit batch with the release
+// branch renderer changes. Both parents move renderer.ts, so the
+// rendererIntegration leaf mints a value matching neither parent. No capture
+// was retaken.
+// Re-minted for the release base-health repair after renderer.ts changed. No
+// capture was retaken.
+// Re-minted for the v0.37.0 base sync with the login-storm base commit. The
+// merged renderer/prewarm/source bytes mint a value matching neither parent.
+// No capture was retaken.
+// Re-minted after organizing renderer imports changed the provenance inputs.
+// No capture was retaken.
+// Re-minted for the merge of the iOS constrained-memory zone-eviction fix
+// (evictFarZoneIfConstrained's rationale moved into zone_eviction_core.ts)
+// with the release branch's organized renderer imports. Both parents move
+// renderer.ts, so the rendererIntegration leaf mints a value matching neither
+// parent. No capture was retaken.
+// Re-minted after the point-light adoption seam moved the fire-light budget
+// pass out of renderer.ts into fire_light_registry.ts. renderer.ts is a
+// provenance input, so the composite moves and the swept evidence bytes follow.
+// No capture was retaken.
+// Re-minted again for the review fixes on the same PR (stranded-light reparent
+// extracted, pooled budget-pass descriptor): renderer.ts bytes only, so the
+// composite follows it and the swept evidence bytes follow the composite. No
+// capture was retaken.
+// Re-minted for the merge of release/v0.38.0 into the night-lighting branch:
+// both parents move renderer.ts, so the composite mints a value matching neither
+// parent and this metadata authority sha follows the swept bytes. No capture was
+// retaken.
+// Re-minted for PR #3339's healGlowAt view-eviction fix on the newer release
+// renderer. The rendererIntegration leaf and swept evidence bytes move; no
+// capture was retaken.
+// Re-minted for PR #3344 after removing the unused Eastbrook civic-beacon
+// preload test hook. The civicShader leaf and swept evidence bytes move; no
+// capture was retaken.
+// Re-minted after applying the PR #3339 review repair atop PR #3344. The
+// rendererIntegration and civicShader leaves both survive, and the swept
+// evidence follows the combined inputs. No capture was retaken.
+// Re-minted for final PR #3345 integration. The reviewed offscreen-heal
+// renderer bytes remain while the Three.js patch, lockfile, and accepted GLBs
+// join the provenance inputs. No capture was retaken.
+// Re-minted after extracting entity-view policy from renderer.ts to satisfy
+// the release monolith ratchet. Behavior is unchanged; no capture was retaken.
+// Re-minted again after registering the extracted policy as its own provenance
+// leaf. The captures remain unchanged and were not retaken.
+// Re-minted for the quest-collectable spawn gate: this branch's renderer.ts
+// edits (the view gate call sites and the ground-object pool key move) shift
+// the runtimeRender.renderer leaf, the only leaf that moved. No Eastbrook
+// input, geometry value, or capture moved.
+// Re-minted for the merge of PR #3359's quest-collectable spawn gate with the
+// release branch's extracted entity-view policy. Both renderer.ts and the
+// entityViewPolicy leaf are provenance inputs; no capture was retaken.
+// Re-minted for the review fixes on this branch (Soul Rend warms every rig a
+// live body can take, plus the lazy form-visual fold): the first-order
+// composite follows renderer.ts, then this seal follows the swept evidence
+// bytes. No capture was retaken.
+// Re-minted for the r185 frozen-camera aim fix: the first-order composite
+// follows renderer.ts, then this seal follows the swept evidence bytes. No
+// capture was retaken.
+// Re-minted again after extracting the delve interior build-cache scheduling
+// into src/render/delve_interior_tracker.ts (renderer.ts moved, no capture retaken).
+// Re-minted again for the login preview/self-spirit prewarm merge with the
+// delve interior tracker extraction. Renderer/prewarm bytes moved; captures
+// were adopted verbatim.
+// Re-minted for the sky KTX2 UASTC HDR conversion: the first-order composite
+// follows renderer.ts, then this seal follows the swept evidence bytes. No
+// capture was retaken.
+// Re-minted for the corrected PR #3446 merge: the v0.39 wrapper renderer and
+// prewarm repairs combine with the sky KTX2 renderer bytes, then this seal
+// follows the swept evidence bytes. No capture was retaken.
+// Re-minted for the vfx.mount-programs prewarm entry (#2571): the first-order
+// composite follows renderer.ts and prewarm_policy.ts, then this seal follows
+// the swept evidence bytes. No capture was retaken.
+// Re-minted for the vfx.mount-programs review fixes (scene-reparent bug,
+// honest desktop-path progress, depth compile, timeout-bounded fetch,
+// constrained-device removal): the first-order composite follows renderer.ts
+// and prewarm_policy.ts, then this seal follows the swept evidence bytes. No
+// capture was retaken.
+// Re-minted for the PR #3447 merge: the first-order composite follows the
+// combined v0.39 wrapper, corrected PR #3446 sky KTX2 renderer bytes, and
+// mount-program prewarm bytes, then this seal follows the swept evidence bytes.
+// No capture was retaken.
+// Re-minted for the moved-base v0.39 wrapper refresh: the first-order
+// composite follows the combined castle renderer bytes and v0.39 wrapper
+// bytes, then this seal follows the swept evidence bytes. No capture was
+// retaken.
+// Re-minted for the approved PR #3425 merge into the v0.39 wrapper: the
+// first-order composite follows the resolved renderer bytes, then this seal
+// follows the swept evidence bytes. No capture was retaken.
+// Re-minted after syncing current release/v0.39.0 into the v0.39 wrapper: the
+// first-order composite follows the retained self-spirit prewarm and delve
+// rebuild renderer bytes, then this seal follows the swept evidence bytes. No
+// capture was retaken.
+// Re-minted for the GPU-preparation scheduler batch and its second and third
+// passes: renderer.ts and prewarm_policy.ts moved again, the seals follow the
+// swept evidence bytes. No capture was retaken.
+// Re-minted for the touch tail's readiness fix (the walk no longer asks the
+// driver): renderer.ts moved, the seals follow the swept evidence bytes. No
+// capture was retaken.
+// Re-minted for the build-ledger instrumentation (timed view and zone
+// builds, the arrival mark): renderer.ts and entity_view_policy_core.ts
+// moved, the seals follow the swept evidence bytes. No capture was retaken.
+// Re-minted for the build-span sink wiring (view-part sub-spans): renderer.ts
+// moved, the seals follow the swept evidence bytes. No capture was retaken.
+// Re-minted for the composed-look pieces hold (live candidate path wiring):
+// renderer.ts moved, the seals follow the swept evidence bytes. No capture was
+// retaken.
+// Re-minted for the gc hitch cause (the heap read on the hitch sample):
+// renderer.ts moved, the seals follow the swept evidence bytes. No capture was
+// retaken.
+// Re-minted for the deferred-decal stand-in (the live candidate path builds
+// the body without its face decals): renderer.ts moved, the seals follow the
+// swept evidence bytes. No capture was retaken.
+// Re-minted for the compile gate's piece cut (one queue unit per material
+// group of the target): renderer.ts moved, the seals follow the swept evidence
+// bytes. No capture was retaken.
+// Re-minted for the hitch sample alignment (the top-of-sync reading and the
+// aligned end-of-sync sample): renderer.ts moved, the seals follow the swept
+// evidence bytes. No capture was retaken.
+// Re-minted for the compile gate's variant settle (the third piece arm) and
+// the shadow arm's every-mesh depth twin: renderer.ts moved, the seals follow
+// the swept evidence bytes. No capture was retaken.
+// Re-minted for the resume lane ordering (program debt before upload debt):
+// prewarm_policy.ts moved, the seals follow the swept evidence bytes. No
+// capture was retaken.
+// Re-minted for the three patch-hash bump in pnpm-lock.yaml: the lockfile is a
+// hashed leaf of the town fingerprint, so the seals follow the swept evidence
+// bytes. No capture was retaken.
+// Re-minted for the merge of upstream/main into the GPU-preparation
+// scheduler branch: both parents' renderer and prewarm bytes combine in one
+// tree, so the seals follow the swept evidence bytes. No capture was retaken.
+// Re-minted for the second three patch-hash bump in pnpm-lock.yaml (the count 0
+// instanced-mesh render-list skip): the lockfile is a hashed leaf of the town
+// fingerprint, so the seals follow the swept evidence bytes. No capture was
+// retaken.
+// Re-minted for the merge of the moved release/v0.40.0 tip into
+// feature/masterwrought: both sides re-minted since the common base, so the
+// merged tree mints values matching neither parent. No capture was retaken.
+// Re-minted for the farming absorb (Phase 11d): renderer.ts moved (the
+// farming runtime integration landed on the masterwrought renderer; the other
+// swept inputs, prewarm_policy.ts included, held their sealed bytes), the
+// seals follow the swept evidence bytes. No capture was retaken.
+// Upstream re-minted the same leaf on its own side for the shader-memory-probes
+// renderer instrumentation and VFX teardown extraction, calling both changes
+// behavior-neutral for the accepted visual evidence and retaking no capture.
+// RE-MINTED AGAIN at the Phase 11e QA release sync (release tip fd705304ee,
+// PR #3531): both parents re-minted since their common base, so the merged tree
+// mints values matching NEITHER parent and either side's literal would pin a
+// tree that never existed. Parent values for the record: metadata sha256 ours
+// ed4ff972 / theirs fea5b37e, composite ours 9fdb68de / theirs 87e05c78. The
+// moved input is the same renderer.ts leaf both sides edited; every other swept
+// input holds its sealed bytes. Minted from the merged WORKING TREE with
+// scripts/assets/eastbrook_grand_armoury/remint_polish_provenance.mjs and
+// committed with exactly the bytes it read. No capture was retaken.
+//
+// UPSTREAM'S OWN RE-MINT HISTORY over the same span, kept because dropping
+// either parent's half would leave the record claiming a single lineage for a
+// leaf both sides moved. The release re-minted for the shader-memory-probes
+// renderer instrumentation and VFX teardown extraction; then for the
+// fast-loading-screen-variety merge with release/v0.40.0, where the renderer
+// runtime leaf moved on both sides of THAT merge (its character asset-ready
+// wiring, the release's shader-memory probes); then for its review-fix round
+// (the nearby-view floor in prewarm_policy.ts, the weapon-skin early-out
+// wiring in renderer.ts), where both runtime leaves moved. No capture was
+// retaken in any of them.
+//
+// RE-MINTED AGAIN at the Phase 11f release sync (release tip 098372138a, PR
+// #3232's fast loading screens; prior synced release parent fd705304ee). The
+// CAUSE differs from the previous three and is worth stating, because the
+// remedy is the same but the reasoning is not: this time OURS did not re-mint
+// since the merge base (the four seal JSONs are byte-identical to fd705304ee)
+// and only the release did. The re-mint is still owed, because both parents
+// edited renderer.ts and the seal is a fingerprint OF renderer.ts: the merged
+// file is a third content (13548 base + 30 ours + 25 theirs = 13603), so the
+// release's freshly minted seal describes a tree that stops existing the
+// moment this merge lands. Parent values for the record: metadata sha256 ours
+// 9c048c5c / theirs b30ad6d9, composite ours 1c3ae800 / theirs e922918a.
+// Minted from the merged WORKING TREE with
+// scripts/assets/eastbrook_grand_armoury/remint_polish_provenance.mjs and
+// committed with exactly the bytes it read. No capture was retaken.
+//
+// RE-MINTED AGAIN at the Phase 11g QA release sync (release tip 3e49dc11b3,
+// PR #3566's rift long-session perf work; prior synced release parent
+// 098372138a). The FIFTH consecutive sync to re-mint this seal, and the
+// trigger is the one it has always been: a MOVED SWEPT INPUT, never a
+// conflicting seal.
+//
+// TWO COUNTERS RUN THROUGH THIS PACKET AND THEY COUNT DIFFERENT THINGS, said
+// here because a reader using either as evidence will otherwise trip: this one
+// counts SYNCS THAT RE-MINTED THIS SEAL (the entry above is the fourth), while
+// the packet record counts RELEASE SYNCS ATTEMPTED, of which this is the
+// eighth and only the ones that actually merged could re-mint anything. The
+// two agree; they measure different events. BOTH parents edited src/render/renderer.ts since the
+// common base (base 13573, ours 13603, theirs 13584, merged 13614), so the
+// merged renderer is a third content and NEITHER parent's literal describes
+// it. Parent values for the record: composite ours 6b9ee410 / theirs
+// 0ae18f49; metadata sha256 ours fe37c37c / theirs 1cd098ab; second-order
+// performance digest ours d3fc845b / theirs cfd7bd7e. Every other swept input
+// holds its sealed bytes.
+//
+// UPSTREAM'S NEW HALF over this span, kept rather than dropped: the release
+// re-minted for its own rift long-session perf merge with release/v0.40.0,
+// where renderer.ts moved on both sides of THAT merge (its object-view
+// material disposal and build-retry-gate wiring, the release's
+// loading-screen-variety work), and again for that branch's review round. No
+// capture was retaken in either.
+//
+// Minted from the merged WORKING TREE with the repo's own tool
+// (scripts/assets/eastbrook_grand_armoury/remint_polish_provenance.mjs) rather
+// than hand-edited, and committed with exactly the bytes it read. No capture
+// was retaken: the merged renderer delta is upstream's rift collision and
+// view-resource-disposal work plus this branch's farm-visual wiring, neither
+// of which moves the sealed pixels.
+//
+// RE-MINTED AGAIN at the Phase 11h release sync (release tip 50462dda83, PR
+// #3582). BOTH parents edited src/render/renderer.ts since the common base
+// (base 13584, ours 13614, theirs 13541, merged 13571) and the release also
+// moved src/render/prewarm_policy.ts, so the merged tree is a third content
+// and neither parent's literal describes it. Parent values for the record:
+// metadata sha256 ours bb2148e4 / theirs af5eef8b, composite ours 18bcb514 /
+// theirs 9c27fa70. Upstream's own half over this span, kept rather than
+// dropped: it re-minted after merging release/v0.40.0 into its loading-hitch
+// branch (renderer.ts combining mandatory entry admission with the rift
+// long-session resource lifecycle) and again for that branch's loading review
+// fixes. Minted from the merged WORKING TREE with the repo's own tool and
+// committed with exactly the bytes it read. No capture was retaken.
+// RE-MINTED AT THE PHASE 11k QA RELEASE SYNC (the FOURTEENTH sync,
+// release/v0.40.0 b39b16022e to efb1220e85). BOTH parents re-minted this seal
+// since their common base again, so the merged tree mints a value matching
+// NEITHER parent and taking either side's literal would pin a tree that never
+// existed. Parent values for the record: ours 6c733d41, the release 4ad25d5f.
+// Minted from the merged WORKING TREE with the repo's own tool
+// (scripts/assets/eastbrook_grand_armoury/remint_polish_provenance.mjs), never
+// hand-edited, and committed with exactly the bytes it read. No capture was
+// retaken: the merged renderer delta is this branch's farm-visual wiring plus
+// the release's own renderer work (the far-mesh swap holdout, the stale
+// remote-entity repair, the loading-review admission gates), none of which
+// moves the sealed pixels.
+//
+// UPSTREAM'S OWN RE-MINT HISTORY over this span, kept rather than dropped:
+// the shader-memory-probes instrumentation and VFX teardown extraction, the
+// fast-loading-screen-variety merge, its review-fix round (the nearby-view
+// floor in prewarm_policy.ts, the weapon-skin early-out in renderer.ts), the
+// release/v0.40.0 merge into the loading-hitch branch, the v0.40 batch
+// merge-forward, the loading review fixes (rebuild reveal gates, inactive
+// horizon fast path, display-pacing admission), the sliding-far-mob-freeze fix
+// and the stale remote-entity holdout repair. Every one of them retook no
+// capture and moved only the renderer/prewarm runtime leaves.
+//
+// UPSTREAM'S OWN RE-MINT HISTORY over the release/v0.41.0 span, kept rather
+// than dropped (the block that follows is the release's record verbatim).
+// Re-minted for shader-memory-probes renderer instrumentation and VFX teardown
+// extraction. The renderer leaf moved; no capture was retaken because both
+// changes are behavior-neutral for the accepted visual evidence.
+// Re-minted for the fast-loading-screen-variety merge with release/v0.40.0:
+// the renderer runtime leaf moved on both sides of the merge (this branch's
+// character asset-ready wiring, the release's shader-memory probes). No
+// capture was retaken.
+// Re-minted for the review-fix round (the nearby-view floor in
+// prewarm_policy.ts, the weapon-skin early-out wiring in renderer.ts):
+// both runtime leaves moved. No capture was retaken.
+// Re-minted for the Sowfield demolition: the Vale Cup removal moves
+// renderer.ts, the first-order composite follows it, and this seal follows
+// the swept evidence bytes. No capture was retaken.
+// Re-minted 2026-08-18 for the Eastbrook harbor move (layout v3, commit
+// d19aa33f76, docs/design/eastbrook-revamp/site-plan.md): the move commits
+// the authoritativeLayout, townRuntime and rendererIntegration leaves, and
+// the re-aimed polish views move the captureContract leaf, so the composite
+// mints anew and this metadata authority sha follows the swept bytes. No
+// capture was retaken; the records keep their frozen pre-move framing.
+// Re-minted for owner refinement round 6b: the chapel re-shell and the NPC
+// redistribution move the authoritativeLayout leaf and the re-aimed
+// apothecary-lin view moves the captureContract leaf, so the composite mints
+// anew and this metadata authority sha follows the swept bytes. No capture was
+// retaken; the records keep their frozen pre-move framing.
+// Re-minted again for owner round 6b's world wave: the authoritativeLayout leaf
+// moves once more (the two market stalls opened out across the square, and
+// forgemistress_darva, tinker_gizzel and FURY moved off their neighbours), so
+// the composite mints anew and this metadata authority sha follows the swept bytes. No capture was retaken: the accepted evidence keeps
+// its frozen framing and only the swept provenance bytes follow the inputs.
+// The same round re-aimed the captureContract leaf: the two market stall views
+// and FURY's portrait view follow their moved subjects, so the composite mints
+// once more on top of the layout move.
+// Re-minted for the integration merge of the eastbrook program onto the
+// release tip (spell-icon revert, sky KTX2, druid auto-unshift): both parents'
+// renderer and layout bytes combine in one tree, so the composite mints a
+// value matching neither parent. No capture was retaken.
+// Re-minted for the release/v0.39.0 base merge into feature/tutorial-island: the
+// first-order composite follows the resolved renderer.ts and prewarm_policy.ts
+// bytes, then these seals follow the swept evidence bytes. No capture was
+// retaken.
+// Re-minted for the island far-shore haze band (renderer.ts passes the camera
+// to horizonHazePlan): the first-order composite follows those bytes, then
+// these seals follow the swept evidence bytes. No capture was retaken.
+// Re-minted after merging release/v0.40.0 into the loading-hitch branch:
+// renderer.ts combines mandatory entry admission with the release's rift
+// long-session resource lifecycle changes. No capture was retaken.
+// Re-minted for the v0.40 batch merge-forward over the loading review fixes:
+// renderer.ts and prewarm_policy.ts now seal the combined release-batch tree.
+// No capture was retaken.
+// Re-minted for the loading review fixes (rebuild reveal gates, inactive
+// horizon fast path, display-pacing admission, and restored rationale): the
+// renderer integration leaf moved. No capture was retaken.
+// Re-minted for the sliding-far-mob-freeze fix (the far-mesh swap now also
+// holds out a moving entity): the renderer integration leaf moved. No
+// capture was retaken.
+// Re-minted for the stale remote-entity holdout repair (renderer.ts): the
+// renderer integration leaf moved. No capture was retaken.
+// Re-minted for the v0.40.0 sync merge into the guild pledge branch (the
+// OSSBrain v0.40 batch landed on the release arm; renderer inputs moved on
+// both sides). No capture was retaken.
+//
+// RE-MINTED AT THE MERGE OF release/v0.41.0 (tip ff2837da1f) into
+// feature/masterwrought (base 9a89e3483e). BOTH parents
+// re-minted these seals since their common base again and BOTH edited
+// src/render/renderer.ts (the release also moved the authoritativeLayout,
+// townRuntime and captureContract leaves for the harbor move and its owner
+// rounds), so the merged tree mints values matching NEITHER parent. Parent
+// values for the record: metadata sha256 ours d19d1129 / theirs
+// b7f20268, composite ours 0e27f9ad / theirs b4f994b0. The release literals
+// stood in as placeholders while the merge was mid-resolution; the values
+// below are the re-mint (node
+// scripts/assets/eastbrook_grand_armoury/remint_polish_provenance.mjs over
+// the fully resolved tree, with renderer.ts, eastbrook_town.ts and
+// eastbrook_layout.ts as the drifted inputs), committed with exactly the
+// bytes it read. No capture was retaken.
+//
+// UPSTREAM'S OWN RE-MINT HISTORY over the release/v0.41.0 span, kept rather
+// than dropped (the block that follows is the release's record verbatim).
+// Re-minted for the entry-horizon scenery cull (renderer.ts hands the four
+// reveal-gated painters the horizon-capped cull far at both frame sites): the
+// renderer integration leaf moved. No capture was retaken.
+// Re-minted for the battleground field-stream compile gate (renderer.ts
+// injects the gate at the buildBattleground site; renderer.ts is a
+// provenance input). No capture was retaken.
+// Re-minted for the v0.41.0 sync merge into the entry-fade-gate branch (the
+// compile-gate batch landed on the release arm; renderer inputs moved on
+// both sides). No capture was retaken.
+// Re-minted for the sixth v0.41.0 sync merge into the ground-aim branch: the
+// first-order composite follows the merged renderer.ts (the entry-fade arm's
+// scenery cull beside this branch's aim blocked pass-through), then these
+// seals follow the swept evidence bytes. No capture was retaken.
+//
+// Re-minted at the merge of release/v0.41.0 (tip d3f8bae369 onward) into
+// feature/masterwrought: BOTH parents edited src/render/renderer.ts (the
+// release's entry-horizon cull, compile gate and ground-aim rounds beside
+// this branch's farm-visuals prewarm guard) and the release also moved
+// src/render/eastbrook_town.ts, so the merged tree mints values matching
+// NEITHER parent. Parent values for the record: metadata sha256 ours
+// 339dc137 / theirs 9688f7dd, composite ours 01fcf59e / theirs fd58a923.
+// The values below are the re-mint over the resolved tree, committed with
+// exactly the bytes it read. No capture was retaken.
+// Re-minted at Phase 16 (2026-08-30) after the zone prewarm-group extraction
+// moved the builder family out of renderer.ts (the composite's renderer leaf
+// follows the file); REMINT_COMMAND run on the committed tree, no capture
+// retaken.
+//
+// UPSTREAM'S OWN RE-MINT HISTORY over the later release/v0.41.0 span (tip
+// 3e801dc925), kept rather than dropped (the block that follows is the
+// release's record verbatim).
+// Re-minted for the weapon-stow overlay fix (renderer.ts: single-writer
+// removal + the mount sheathe clause): the renderer integration leaf moved.
+// No capture was retaken.
+// Re-minted for the Ignivar raid consolidation (the v0.41.0 base merge plus
+// the renderer extraction round moved the renderer integration leaf). No
+// capture was retaken.
+// Re-minted for PR #3740's forge-lift room (the lift room render hookup and
+// door-portal arm moved the renderer integration leaf). No capture was
+// retaken.
+// Re-minted for the Drakelands entrance merge into the raid branch (PRs 3689
+// plus 3734: both arms had re-minted, the merged renderer and evidence inputs
+// land together). No capture was retaken.
+//
+// Re-minted at the merge of release/v0.41.0 (tip 3e801dc925) into
+// feature/masterwrought: BOTH parents edited src/render/renderer.ts again
+// (the release's Ignivar/Varkhul wiring, backface twin staging and the
+// Ignivar mechanic-visual prewarm beside this branch's farmPatchVisuals
+// dispose seam, zone_prewarm extraction and reduced-motion regalia gate), so
+// the merged tree mints values matching NEITHER parent. Parent values for
+// the record: metadata sha256 ours baf8721e / theirs 359a5b4c, composite
+// ours f2e6c8c3 / theirs 23415789. The literals below are the re-mint (node
+// scripts/assets/eastbrook_grand_armoury/remint_polish_provenance.mjs) run
+// over the fully resolved merged tree on 2026-08-30, after every renderer.ts
+// byte was final, and committed with exactly the bytes it read. No capture
+// was retaken.
+// Re-minted 2026-08-31 for the Phase 18 farm render unit (the farm compile
+// gate, the gate label parameter, the zone-prewarm host weld, the single-sited
+// farm drive, and the shadow arm extracted to shadow_depth_compile.ts): the
+// first-order composite follows renderer.ts, then the metadata authority
+// follows the swept evidence bytes. No capture was retaken.
+// The release side re-minted both of these again over its v0.42.0 span, without
+// a comment of its own: renderer.ts moved 207 lines there (the validated local
+// locomotion and client movement prediction, the self-pose frame seams pulled
+// into pure modules, the FOV slider fix, and the Bonebound Rickshaw render arm)
+// and it re-minted its four committed evidence seals to match.
+//
+// Parent values for the record: metadata sha256 ours 05909586, the release
+// a5c2116d; composite ours 161370d0, the release 89c8a62f.
+// RE-MINTED at the TENTH release sync, the merge of release/v0.42.0 (tip
+// 22e909839f) into feature/masterwrought (base e6b8edb375).
+// BOTH parents moved renderer.ts, so the merged tree is a
+// third content and neither parent's literal described it; the tool was run
+// over the fully resolved tree, LAST, after every renderer.ts byte was final
+// and after biome left the file unchanged. The four polish evidence JSONs were
+// swept by the tool in the same run and are committed with these pins. No
+// capture was retaken; ACCEPTED_POLISH_V2_TOWN_SOURCE_FINGERPRINT is untouched.
+// Re-minted at the next release/v0.42.0 sync (tip 178dfd46db): the release's
+// mount-lifecycle and rickshaw hooks moved renderer.ts against this branch's
+// Masterwrought farm integration. The final renderer sha256 is ed29e747 after
+// the semantic merge audit's mount compile-gate fixes,
+// matching neither ours (8e5722cb) nor the release (72d8b7ce); every other
+// provenance input is byte-identical between the parents. The tool swept the
+// four evidence JSONs over the resolved renderer, with no capture retaken.
+// Re-minted at the Cluckwork Mech Bird release sync (tip 1fdf0f55a3): its
+// stride-audio extraction and mounted idle-hum poll moved renderer.ts against
+// the already merged Masterwrought and mount-lifecycle integrations. The
+// resolved renderer sha256 is 36b780c6, matching neither ours (ed29e747) nor
+// the release (9b4d40e5); every other provenance input remains byte-identical.
+// The four evidence JSONs were swept again, with no capture retaken.
+// Re-minted at Masterwrought closeout after the Mech Bird transition/audio
+// sequencing fix moved renderer.ts to 7c10f934. No capture was retaken.
+// Re-minted during PR closeout after farm compile staging changed renderer.ts.
+// No capture was retaken.
+//
+// UPSTREAM'S OWN RE-MINT HISTORY over the same later release/v0.42.0 span,
+// kept rather than dropped (the block that follows is the release's record
+// verbatim).
+// Re-minted for the 2026-08-31 v0.41.0 sync into the shader-warm branch: both
+// arms had re-minted, the merged renderer, lockfile, and re-stamped GLB inputs
+// land together. No capture was retaken.
+// Re-minted for the shader-warm PR's give-up rule and its review fixes
+// (renderer.ts: the census bracket and the cast units' compile-arm host).
+// No capture was retaken.
+// Re-minted at the release/v0.42.0 sync of PR #3439: renderer.ts moved for the
+// mount lifecycle seam (mount_lifecycle.ts) and the rickshaw hooks it absorbed.
+// Re-minted for the Cluckwork Mech Bird store mount (PR #3464) on top of the
+// v0.42.0 mount-lifecycle move: the renderer's stride accumulator moved to
+// src/render/stride_audio_core.ts and the mounted audio branch gained the
+// idle-hum poll. No capture was retaken.
+// Re-minted for the 2026-09-04 release/v0.42.0 sync into the shader-warm branch:
+// both arms had re-minted, and the merged renderer (the mount lifecycle and
+// stride audio moves beside this branch's changes) and evidence inputs land
+// together. No capture was retaken.
+// Re-minted for the Realm Builder monument (PR #3695) at its release/v0.42.0
+// base merge: the civic centrepiece changed asset, subject and shader cache
+// key, so every provenance block was swept onto the merged fingerprinted
+// inputs. No capture was retaken.
+// Re-minted for the PR #3695 review fixes: the impostor fragment's fog and
+// tone-mapping tail moved realm_builder_monument_fx.ts. No capture was retaken.
+// Re-minted for the 2026-09-05 release/v0.42.0 sync into the shader-warm branch:
+// the Realm Builder monument (PR #3695) and this branch's renderer changes
+// land together on the merged tree. No capture was retaken.
+//
+// RE-MINTED for the professions/Crucible base merge into release/v0.42.0:
+// renderer.ts changed on both sides again (ours: farm/shadow compile-gate
+// churn; theirs: the shader-warm branch's own renderer moves above), so both
+// seals below mint values matching neither parent (metadata ours 9f33fa0f /
+// theirs bd53b318, composite ours d137e84a / theirs 3a5b183e). Run over the
+// fully resolved merged tree via:
+//   node scripts/assets/eastbrook_grand_armoury/remint_polish_provenance.mjs
+// No capture was retaken.
+// Re-minted for the release/v0.42.0 merge into the Nythraxis playtest-tuning
+// branch (PR #3903's Varkhul heroic add-health lands beside this branch's
+// Nythraxis hazard-color renderer change): the composite first, then this
+// seal. No capture was retaken.
+// RE-MINTED again for this worktree's own base merge of the professions
+// branch into release/v0.42.0 (both the Crucible-professions history above
+// and the Nythraxis-playtest history above land on the same merged tree): a
+// source-only historical capture reseal, run over the fully resolved merge
+// via node scripts/assets/eastbrook_grand_armoury/remint_polish_provenance.mjs.
+// No capture was retaken and no new owner acceptance is implied.
+// Re-minted at the release/v0.42.0 sync of PR #3439: renderer.ts moved for the
+// mount lifecycle seam (mount_lifecycle.ts) and the rickshaw hooks it absorbed.
+// Re-minted again for the PR #3695 review fixes (the impostor fragment tail).
+// Re-minted for the release/v0.42.0 merge into the Nythraxis playtest-tuning
+// branch (PR #3903's Varkhul heroic add-health lands beside this branch's
+// Nythraxis hazard-color renderer change): both arms had re-minted, so the
+// merged renderer.ts bytes replace either side's value. No capture was
+// retaken.
+// RE-MINTED for this worktree's own base merge of the professions branch
+// into release/v0.42.0: a source-only historical capture reseal over the
+// fully merged renderer and release tree. No capture was retaken and no new
+// owner acceptance is implied.
+//
+// UPSTREAM'S (OSSBrain candidate) OWN RE-MINT HISTORY over its own
+// shader-warm and release/v0.42.0 span, kept rather than dropped (the block
+// that follows is the candidate's record verbatim).
+// Re-minted for the release/v0.42.0 merge into the weapon-sheathe-swim-mount
+// branch (the merged renderer.ts carries this branch's mount sheathe overlay
+// beside the release's forge-lift room and Drakelands entrance render
+// integrations, so the composite matches neither parent). No capture was
+// retaken.
+// Re-minted for the v0.42.0 release batch renderer merge: runtimeRender.renderer
+// moved with the shipped renderer tree. No capture was retaken.
+// Re-minted for the release/v0.42.0 reconcile with the Realm Builder and
+// store-mount renderer leaves. No capture was retaken.
+// Re-minted for the post-chain pixel budget: the renderer's coalesced
+// viewport-resize pass moves the runtimeRender.renderer leaf. No capture
+// was retaken.
+// Re-minted again for the review answers on the same branch (the viewport
+// poll now books the coalesced pass). No capture was retaken.
+// Re-minted for the coalesced-resize flush point (the frame drains the gate
+// before it draws). No capture was retaken.
+// Re-minted for the PR #3834 merge after PR #3833: runtimeRender.renderer
+// now carries pooled VFX material cleanup beside the coalesced viewport-resize
+// pass, so the composite matches neither parent. No capture was retaken.
+// Re-minted for the compositor-surfaces batch (renderer.ts only: the opaque
+// world context, the nameplate surface-ratio and cadence wiring, the spirit
+// grade hookup and the build-diag extraction). No capture was retaken.
+// Re-minted for the PR #3844 merge after PR #3841: the candidate's render-stack
+// renderer bytes and #3844's compositor surface/nameplate/spirit-grade bytes
+// combine in one tree, so the composite matches neither parent. No capture was
+// retaken.
+// Re-minted for the v0.42.0 release candidate renderer merge: the selected
+// renderer changes move the runtimeRender.renderer leaf and the metadata
+// authority follows the swept evidence bytes. No capture was retaken.
+// Re-minted for the v0.42.0 reconcile after the release branch advanced with
+// Nythraxis renderer work: the merged runtimeRender.renderer leaf matches
+// neither parent. No capture was retaken.
+// Re-minted for the second v0.42.0 reconcile after the release branch advanced
+// with Drakelands/hotkey renderer work. No capture was retaken.
+//
+// OSSBrain PR #3781: re-sealed with the canonical remint command after
+// renderer reconciliation and the lockfile compatibility fix. Shipping GLB
+// changes are fingerprint-only; no capture or visual approval was retaken.
+// PR3941: canonical source-only reseal for mount-skin renderer prewarm.
+// Historical images, performance scores and capture identity are unchanged.
+// PR3946: remint the renderer leaf after restoring school-aware resurrection VFX.
+// Existing captures, performance measurements and capture identity are unchanged.
+// v0.42.0 dependency-floor bump (sharp, js-yaml, vitest): the lockfile is a
+// fingerprint input, so every shipping GLB was size-preserving re-minted and this
+// seal follows the swept evidence. No capture was retaken.
+const ACCEPTED_POLISH_V2_METADATA_SHA256 =
+  'e3a555a9db84a550c92bf8443df1a20a64a96748dc7bd3159490b4ab93272770';
+const ACCEPTED_POLISH_V2_COMPOSITE_PROVENANCE =
+  '5ae21044dd1b636f9c293ec628a7d316f740bb92a5962f848c6e58c80218ebbc';
+const ACCEPTED_POLISH_V2_METADATA = readJsonFile<CaptureMetadata>(ACCEPTED_POLISH_V2_METADATA_PATH);
+const ACCEPTED_POLISH_V2_PROVENANCE = ACCEPTED_POLISH_V2_METADATA.polishProvenance;
+const ACCEPTED_POLISH_V2_TOWN_CONTRACT = ACCEPTED_POLISH_V2_METADATA.records[0]?.townContract;
+if (!ACCEPTED_POLISH_V2_TOWN_CONTRACT) {
+  throw new Error('accepted polish-v2 evidence has no town contract snapshot');
+}
+
+function resolveRepoPath(relativePath: string): string {
+  expect(path.isAbsolute(relativePath), relativePath).toBe(false);
+  const resolved = path.resolve(REPO_ROOT, relativePath);
+  expect(resolved.startsWith(`${REPO_ROOT}${path.sep}`), relativePath).toBe(true);
+  return resolved;
+}
+
+function sha256File(filePath: string): string {
+  return createHash('sha256').update(readFileSync(filePath)).digest('hex');
+}
+
+function assertRecordedPng(record: ReferenceFileRecord): void {
+  const filePath = resolveRepoPath(record.path);
+  const bytes = readFileSync(filePath);
+  expect(statSync(filePath).isFile(), record.path).toBe(true);
+  expect(sha256File(filePath), record.path).toBe(record.sha256);
+  expect(bytes.subarray(0, 8).toString('hex'), record.path).toBe(PNG_SIGNATURE);
+  expect(bytes.readUInt32BE(16), `${record.path} width`).toBe(record.width);
+  expect(bytes.readUInt32BE(20), `${record.path} height`).toBe(record.height);
+}
+
+function projectDetails(details: DetailRecord[]): DetailRecord[] {
+  return details.map(({ id, kind, mapsTo }) => ({ id, kind, mapsTo }));
+}
+
+function expectFiniteNonNegative(value: number, label: string): void {
+  expect(Number.isFinite(value), label).toBe(true);
+  expect(value, label).toBeGreaterThanOrEqual(0);
+}
+
+function expectFiniteRecord(record: NumericRecord, label: string): void {
+  for (const [key, value] of Object.entries(record)) {
+    expectFiniteNonNegative(value, `${label}.${key}`);
+  }
+}
+
+function expectRafStats(stats: NumericRecord, label: string): void {
+  expectFiniteRecord(stats, label);
+  expect(stats.p50Ms, `${label}.p50Ms`).toBeLessThanOrEqual(stats.p95Ms);
+  expect(stats.p95Ms, `${label}.p95Ms`).toBeLessThanOrEqual(stats.p99Ms);
+  expect(stats.p99Ms, `${label}.p99Ms`).toBeLessThanOrEqual(stats.p999Ms);
+  expect(stats.p999Ms, `${label}.p999Ms`).toBeLessThanOrEqual(stats.maxMs);
+  expect(stats.meanMs, `${label}.meanMs`).toBeLessThanOrEqual(stats.maxMs);
+  for (const count of ['frames', 'long50', 'stutter100'] as const) {
+    expect(Number.isInteger(stats[count]), `${label}.${count} integer`).toBe(true);
+  }
+  expect(stats.long50, `${label}.long50 frame bound`).toBeLessThanOrEqual(stats.frames);
+  expect(stats.stutter100, `${label}.stutter100 frame bound`).toBeLessThanOrEqual(stats.long50);
+  expect(stats.jankPct, `${label}.jankPct`).toBeLessThanOrEqual(100);
+}
+
+function expectConditionSummary(
+  summary: ConditionSummary,
+  blocks: SampledTownBlock[],
+  label: string,
+): void {
+  expect(blocks, `${label} source blocks`).toHaveLength(2);
+  expect(summary.blocks, `${label} block count`).toBe(blocks.length);
+  for (const [summaryKey, blockKey] of [
+    ['renderMedian', 'renderMedian'],
+    ['resourcesMedian', 'resourcesMedian'],
+  ] as const) {
+    const actual = summary[summaryKey];
+    expect(Object.keys(actual).sort(), `${label} ${summaryKey} keys`).toEqual(
+      Object.keys(blocks[0][blockKey]).sort(),
+    );
+    for (const key of Object.keys(actual)) {
+      const sourceValues = blocks.map((block) => block[blockKey][key]);
+      expect(actual[key], `${label} ${summaryKey}.${key}`).toBe(
+        roundPerformanceValue((sourceValues[0] + sourceValues[1]) / 2),
+      );
+    }
+  }
+  for (const [summaryKey, blockKey] of [
+    ['renderWorst', 'renderWorst'],
+    ['resourcesWorst', 'resourcesWorst'],
+  ] as const) {
+    const actual = summary[summaryKey];
+    const summaryMedian =
+      summaryKey === 'renderWorst' ? summary.renderMedian : summary.resourcesMedian;
+    expect(Object.keys(actual).sort(), `${label} ${summaryKey} keys`).toEqual(
+      Object.keys(blocks[0][blockKey]).sort(),
+    );
+    for (const key of Object.keys(actual)) {
+      expect(actual[key], `${label} ${summaryKey}.${key}`).toBe(
+        Math.max(...blocks.map((block) => block[blockKey][key])),
+      );
+      expect(actual[key], `${label} ${summaryKey}.${key} median bound`).toBeGreaterThanOrEqual(
+        summaryMedian[key],
+      );
+    }
+  }
+  const raf = summary.rafFrameIntervalStats;
+  expectRafStats(raf, `${label}.rafFrameIntervalStats`);
+  expect(raf.frames, `${label} RAF frames`).toBe(
+    blocks.reduce((total, block) => total + block.rafFrameIntervalStats.frames, 0),
+  );
+  expect(raf.long50, `${label} RAF long50`).toBe(
+    blocks.reduce((total, block) => total + block.rafFrameIntervalStats.long50, 0),
+  );
+  expect(raf.stutter100, `${label} RAF stutter100`).toBe(
+    blocks.reduce((total, block) => total + block.rafFrameIntervalStats.stutter100, 0),
+  );
+  expect(raf.maxMs, `${label} RAF max`).toBe(
+    Math.max(...blocks.map((block) => block.rafFrameIntervalStats.maxMs)),
+  );
+  expect(summary.cpuSubmitMsMedian, `${label} submit median`).toBe(
+    summary.renderMedian.cpuSubmitMs,
+  );
+}
+
+function expectSampledBlockSummary(
+  block: SampledTownBlock,
+  profile: CaptureProfileContract,
+  timingBasis: string,
+  label: string,
+): void {
+  expect(block.timingBasis, `${label} timing basis`).toBe(timingBasis);
+  expect(block.context, `${label} context`).toEqual({ lost: 0, restored: 0 });
+  expect(block.assetFailures, `${label} asset failures`).toEqual([]);
+  for (const [key, summary] of Object.entries({
+    renderMedian: block.renderMedian,
+    renderWorst: block.renderWorst,
+    resourcesMedian: block.resourcesMedian,
+    resourcesWorst: block.resourcesWorst,
+    rafFrameInterval: block.rafFrameInterval,
+    rafFrameIntervalStats: block.rafFrameIntervalStats,
+    longTasks: block.longTasks,
+    rendererCpu: block.rendererCpu,
+  })) {
+    expectFiniteRecord(summary, `${label}.${key}`);
+  }
+  for (const key of Object.keys(block.renderMedian)) {
+    expect(block.renderWorst[key], `${label} render worst ${key}`).toBeGreaterThanOrEqual(
+      block.renderMedian[key],
+    );
+  }
+  for (const key of Object.keys(block.resourcesMedian)) {
+    expect(block.resourcesWorst[key], `${label} resource worst ${key}`).toBeGreaterThanOrEqual(
+      block.resourcesMedian[key],
+    );
+  }
+  expect(block.rafFrameInterval.samples, `${label} RAF samples`).toBeGreaterThan(0);
+  expectRafStats(block.rafFrameIntervalStats, `${label}.rafFrameIntervalStats`);
+  expect(block.rafFrameIntervalStats.frames, `${label} RAF frame attribution`).toBe(
+    block.rafFrameInterval.samples,
+  );
+  expect(block.rafFrameIntervalStats.meanMs, `${label} RAF mean attribution`).toBe(
+    block.rafFrameInterval.meanMs,
+  );
+  expect(block.rafFrameInterval.p95Ms, `${label} RAF p95`).toBeLessThanOrEqual(
+    block.rafFrameInterval.p99Ms,
+  );
+  expect(block.rafFrameInterval.p99Ms, `${label} RAF p99`).toBeLessThanOrEqual(
+    block.rafFrameInterval.maxMs,
+  );
+  expect(block.rafFrameInterval.long50, `${label} RAF long50 attribution`).toBe(
+    block.rafFrameIntervalStats.long50,
+  );
+  expect(block.rafFrameIntervalStats.long50, `${label} RAF frames above 50 ms`).toBe(0);
+  expect(block.rafFrameIntervalStats.stutter100, `${label} RAF frames above 100 ms`).toBe(0);
+  expect(block.longTasks.count, `${label} long-task count`).toBe(0);
+  expect(block.longTasks.p95Ms, `${label} long-task p95`).toBe(0);
+  expect(block.longTasks.maxMs, `${label} long-task max`).toBe(0);
+  expect(
+    block.inputToVisibleP95Ms === null ||
+      (Number.isFinite(block.inputToVisibleP95Ms) && block.inputToVisibleP95Ms >= 0),
+    `${label} input latency`,
+  ).toBe(true);
+  expect(block.perfReportSummary, `${label} report render attribution`).toMatchObject({
+    textures: block.resourcesMedian.textures,
+    longTaskCount: block.longTasks.count,
+    longTaskP95: block.longTasks.p95Ms,
+    longTaskMax: block.longTasks.maxMs,
+    autoGovernor: false,
+    tier: profile.tier,
+  });
+}
+
+function expectDirectConditionSummary(
+  summary: DirectConditionSummary,
+  blocks: DirectTownBlock[],
+  label: string,
+): void {
+  expect(blocks, `${label} direct blocks`).toHaveLength(2);
+  expect(summary.samples, `${label} direct samples`).toBe(blocks.length);
+  expect(Object.keys(summary.renderMedian).sort(), `${label} direct render keys`).toEqual(
+    Object.keys(blocks[0].render).sort(),
+  );
+  for (const key of Object.keys(summary.renderMedian)) {
+    const sourceValues = blocks.map((block) => block.render[key]);
+    expect(summary.renderMedian[key], `${label} direct render ${key}`).toBe(
+      (sourceValues[0] + sourceValues[1]) / 2,
+    );
+  }
+}
+
+describe('Eastbrook polish committed capture artifacts', () => {
+  it('pins the matched view/profile contract and every before/after PNG', () => {
+    expect(
+      EASTBROOK_TOWN_POLISH_MATCHED_CAPTURE_VIEWS.map((view: { name: string }) => view.name),
+    ).toEqual(VIEW_NAMES);
+    expect(
+      EASTBROOK_TOWN_CAPTURE_PROFILES.map(
+        (profile: {
+          name: string;
+          viewport: { width: number; height: number; deviceScaleFactor: number };
+        }) => ({
+          name: profile.name,
+          cssWidth: profile.viewport.width,
+          cssHeight: profile.viewport.height,
+          deviceScaleFactor: profile.viewport.deviceScaleFactor,
+          pixelWidth: profile.viewport.width * profile.viewport.deviceScaleFactor,
+          pixelHeight: profile.viewport.height * profile.viewport.deviceScaleFactor,
+        }),
+      ),
+    ).toEqual(PROFILES);
+
+    // Every retained hero view must be a real member of the accepted capture matrix, so
+    // a typo in the retained lists cannot silently pass by matching a stray disk file.
+    for (const profile of PROFILES) {
+      for (const view of [
+        ...RETAINED_BEFORE_VIEWS[profile.name],
+        ...RETAINED_AFTER_VIEWS[profile.name],
+      ]) {
+        expect(VIEW_NAMES, `retained view ${view}`).toContain(view);
+      }
+    }
+
+    const expectedBefore = PROFILES.flatMap((profile) =>
+      retainedBaseCaptureNames('before', profile.name),
+    ).sort();
+    const expectedAfter = PROFILES.flatMap((profile) => [
+      ...retainedBaseCaptureNames('after', profile.name),
+      ...retainedMotionCaptureNames(profile.name),
+    ]).sort();
+    expect(listFilesRecursive(path.join(POLISH_ROOT, 'before'), '.png')).toEqual(expectedBefore);
+    expect(listFilesRecursive(path.join(POLISH_ROOT, 'after'), '.png')).toEqual(expectedAfter);
+
+    for (const prefix of ['before', 'after'] as const) {
+      for (const profile of PROFILES) {
+        for (const fileName of retainedBaseCaptureNames(prefix, profile.name)) {
+          assertPng(
+            path.join(POLISH_ROOT, prefix, fileName),
+            [profile.pixelWidth, profile.pixelHeight],
+            50_000,
+          );
+        }
+      }
+    }
+    for (const profile of PROFILES) {
+      for (const fileName of retainedMotionCaptureNames(profile.name)) {
+        assertPng(
+          path.join(POLISH_ROOT, 'after', fileName),
+          [profile.pixelWidth, profile.pixelHeight],
+          50_000,
+        );
+      }
+    }
+  });
+
+  it('pins the visually accepted after-capture set byte for byte', () => {
+    const acceptedFiles = [
+      ...listFilesRecursive(path.join(POLISH_ROOT, 'after'), '.png').map(
+        (fileName) => `after/${fileName}`,
+      ),
+      'contacts/after-desktop-ultra-contact.webp',
+      'contacts/after-mobile-low-contact.webp',
+    ].sort();
+    const fingerprint = createHash('sha256');
+    for (const relativePath of acceptedFiles) {
+      fingerprint.update(relativePath);
+      fingerprint.update('\0');
+      fingerprint.update(readFileSync(path.join(POLISH_ROOT, relativePath)));
+      fingerprint.update('\0');
+    }
+    expect(acceptedFiles).toHaveLength(18);
+    expect(fingerprint.digest('hex')).toBe(
+      '031d3a72fe04c1b4b084ca6608ce137d4078f9ddff42c488efe6ca8624fcc1b4',
+    );
+  });
+
+  it('pins the historical metadata authority independently', () => {
+    // On a legitimate re-mint both literals move together with the capture
+    // contract's composite pin; the remint tool prints all three.
+    expect(
+      sha256File(ACCEPTED_POLISH_V2_METADATA_PATH),
+      `the accepted metadata authority moved; if every input moved legitimately, re-mint with: ${REMINT_COMMAND}`,
+    ).toBe(ACCEPTED_POLISH_V2_METADATA_SHA256);
+    expect(
+      ACCEPTED_POLISH_V2_PROVENANCE.fingerprint,
+      `the sealed composite fingerprint moved; if every input moved legitimately, re-mint with: ${REMINT_COMMAND}`,
+    ).toBe(ACCEPTED_POLISH_V2_COMPOSITE_PROVENANCE);
+  });
+
+  // The frozen polish-v2 evidence intentionally predates the bank rebuild: it
+  // was never recaptured, so its town contract snapshot still carries the
+  // pre-rebuild triangle count while the live capture contract carries the
+  // rebuilt one. This pair makes that divergence a literal instead of an
+  // implicit fact resting on two sha comparisons above.
+  it('declares the frozen evidence triangle count as deliberately stale against the live contract', () => {
+    expect(ACCEPTED_POLISH_V2_TOWN_CONTRACT.townTriangles).toBe(28_330);
+    expect(EASTBROOK_TOWN_CAPTURE_CONTRACTS['polish-v2'].townTriangles).toBe(28_902);
+  });
+
+  // Same pattern as the triangle declaration above: the harbor move (layout
+  // v3, commit d19aa33f76, docs/design/eastbrook-revamp/site-plan.md) re-aimed
+  // 13 live views at the new lots without retaking a capture, so the frozen
+  // framing the records validate against deliberately diverges from the live
+  // matched views for exactly those names and matches them everywhere else.
+  // If the polish captures are ever retaken at the harbor site, this test goes
+  // red first: refresh the frozen framing literals to the retake's views (and
+  // move ACCEPTED_POLISH_V2_TOWN_SOURCE_FINGERPRINT with them).
+  it('declares the frozen capture framing as deliberately stale against the re-aimed live views', () => {
+    const liveViews = EASTBROOK_TOWN_POLISH_MATCHED_CAPTURE_VIEWS as readonly CaptureViewContract[];
+    expect(ACCEPTED_POLISH_V2_MATCHED_CAPTURE_VIEWS.map((view) => view.name)).toEqual(
+      liveViews.map((view) => view.name),
+    );
+    for (const [index, frozen] of ACCEPTED_POLISH_V2_MATCHED_CAPTURE_VIEWS.entries()) {
+      const live = liveViews[index];
+      const framing = (view: CaptureViewContract) => ({ camera: view.camera, target: view.target });
+      if (HARBOR_MOVED_VIEW_NAMES.has(frozen.name)) {
+        expect(
+          framing(frozen),
+          `${frozen.name} must stay frozen at its captured framing`,
+        ).not.toEqual(framing(live));
+      } else {
+        expect(framing(frozen), `${frozen.name} still shares the live framing`).toEqual(
+          framing(live),
+        );
+      }
+    }
+  });
+
+  it('pins the exact historical metadata inventory to every base capture and motion frame', () => {
+    const expectedTownSourceFingerprint = ACCEPTED_POLISH_V2_TOWN_SOURCE_FINGERPRINT;
+    const metadataRoot = path.join(POLISH_ROOT, 'metadata');
+    const expectedMetadataFiles = [
+      'after-desktop-ultra.json',
+      'after-mobile-low.json',
+      'before-desktop-ultra.json',
+      'before-mobile-low.json',
+    ];
+    expect(listFilesRecursive(metadataRoot, '.json')).toEqual(expectedMetadataFiles);
+
+    for (const prefix of ['before', 'after'] as const) {
+      for (const profile of PROFILES) {
+        const fileName = `${prefix}-${profile.name}.json`;
+        const filePath = path.join(metadataRoot, fileName);
+        expect(statSync(filePath).size, filePath).toBeGreaterThan(100_000);
+        const metadata = readJsonFile<CaptureMetadata>(filePath);
+        const contractId = prefix === 'before' ? 'polish-baseline' : 'polish-v2';
+        const expectedPolishProvenance =
+          prefix === 'before' ? BASELINE_POLISH_PROVENANCE : ACCEPTED_POLISH_V2_PROVENANCE;
+        const captureContractSnapshot =
+          prefix === 'before' ? null : ACCEPTED_POLISH_V2_TOWN_CONTRACT;
+        const contractProfile = (
+          EASTBROOK_TOWN_CAPTURE_PROFILES as readonly CaptureProfileContract[]
+        ).find((candidate) => candidate.name === profile.name);
+        if (!contractProfile) throw new Error(`missing capture profile ${profile.name}`);
+
+        expect(metadata).toMatchObject({
+          schemaVersion: 2,
+          captureScope: 'town',
+          shotPrefix: prefix,
+          profile: profile.name,
+          townContractId: contractId,
+        });
+        expect(metadata.polishProvenance, `${fileName} independently anchored provenance`).toEqual(
+          expectedPolishProvenance,
+        );
+        expect(metadata.sourceFingerprint, `${fileName} wrapper town fingerprint`).toBe(
+          expectedTownSourceFingerprint,
+        );
+        if (prefix === 'before') {
+          expect(metadata.sourceRevision).toBe(EASTBROOK_POLISH_BASELINE_REVISION);
+        }
+        expect(metadata.records.map((record) => path.basename(record.output))).toEqual(
+          baseCaptureNames(prefix, profile.name),
+        );
+        const canonicalSource = metadata.records[0]?.source;
+        if (!canonicalSource) throw new Error(`missing canonical source for ${fileName}`);
+        for (const [index, record] of metadata.records.entries()) {
+          // Frozen framing, not the live matched views: the records were shot
+          // before the harbor move re-aimed the live cameras (see the
+          // ACCEPTED_POLISH_V2_MATCHED_CAPTURE_VIEWS header).
+          const view = ACCEPTED_POLISH_V2_MATCHED_CAPTURE_VIEWS[index];
+          if (!view) throw new Error(`missing capture view ${index} for ${fileName}`);
+          expect(record).toMatchObject({
+            schemaVersion: 2,
+            captureScope: 'town',
+            townContract: { id: contractId },
+            viewport: {
+              physical: { width: profile.pixelWidth, height: profile.pixelHeight },
+            },
+          });
+          expect(record.polishProvenance, `${fileName} record ${index} provenance`).toEqual(
+            metadata.polishProvenance,
+          );
+          expect(record.source, `${fileName} record ${index} source identity`).toEqual(
+            canonicalSource,
+          );
+          expect(record.source.revision, `${fileName} record ${index} source revision`).toBe(
+            metadata.sourceRevision,
+          );
+          expect(record.source.fingerprint, `${fileName} record ${index} town fingerprint`).toBe(
+            expectedTownSourceFingerprint,
+          );
+          expect(() =>
+            assertTownCaptureMetadata({
+              metadata: record,
+              contractId,
+              captureContractSnapshot,
+              expectedTown: true,
+              expectedArmoury: true,
+              profile: contractProfile,
+              view,
+              playerState: EASTBROOK_ARMOURY_PLAYER_STATE,
+              expectedSeed: EASTBROOK_ARMOURY_CAPTURE_SEED,
+              settleMs: EASTBROOK_TOWN_CAPTURE_SETTLE_MS,
+              expectedPolishProvenance,
+            }),
+          ).not.toThrow();
+          if (
+            prefix === 'after' &&
+            profile.name === 'desktop-ultra' &&
+            index === 0 &&
+            captureContractSnapshot
+          ) {
+            const attributionSnapshot = structuredClone(captureContractSnapshot);
+            attributionSnapshot.attributionTargets[0].key = 'historical-town-root';
+            const attributionRecord = structuredClone(record);
+            attributionRecord.townContract = attributionSnapshot;
+            expect(() =>
+              assertTownCaptureMetadata({
+                metadata: attributionRecord,
+                contractId,
+                captureContractSnapshot: attributionSnapshot,
+                expectedTown: true,
+                expectedArmoury: true,
+                profile: contractProfile,
+                view,
+                playerState: EASTBROOK_ARMOURY_PLAYER_STATE,
+                expectedSeed: EASTBROOK_ARMOURY_CAPTURE_SEED,
+                settleMs: EASTBROOK_TOWN_CAPTURE_SETTLE_MS,
+                expectedPolishProvenance,
+              }),
+            ).toThrow('stable layout ids');
+
+            const placementSnapshot = structuredClone(captureContractSnapshot);
+            placementSnapshot.placementInventory.stalls = ['historical-snapshot-stall'];
+            const placementRecord = structuredClone(record);
+            placementRecord.townContract = placementSnapshot;
+            expect(() =>
+              assertTownCaptureMetadata({
+                metadata: placementRecord,
+                contractId,
+                captureContractSnapshot: placementSnapshot,
+                expectedTown: true,
+                expectedArmoury: true,
+                profile: contractProfile,
+                view,
+                playerState: EASTBROOK_ARMOURY_PLAYER_STATE,
+                expectedSeed: EASTBROOK_ARMOURY_CAPTURE_SEED,
+                settleMs: EASTBROOK_TOWN_CAPTURE_SETTLE_MS,
+                expectedPolishProvenance,
+              }),
+            ).toThrow('expected town metadata');
+          }
+        }
+
+        const civicRecord = metadata.records.find((record) =>
+          path.basename(record.output).includes('-civic-motion-'),
+        );
+        expect(civicRecord).toBeDefined();
+        if (!civicRecord) throw new Error(`missing civic motion metadata in ${fileName}`);
+        if (prefix === 'before') {
+          expect(civicRecord.motionEvidence).toBeNull();
+        } else {
+          expect(
+            civicRecord.motionEvidence?.modes.flatMap((mode) =>
+              mode.frames.map((frame) => path.basename(frame.output)),
+            ),
+          ).toEqual(motionCaptureNames(profile.name));
+          if (profile.name === 'desktop-ultra' && captureContractSnapshot) {
+            const motionSnapshot = structuredClone(captureContractSnapshot);
+            motionSnapshot.motionCapture.frameIntervalMs += 1;
+            const motionRecord = structuredClone(civicRecord);
+            motionRecord.townContract = motionSnapshot;
+            expect(() =>
+              assertTownCaptureMetadata({
+                metadata: motionRecord,
+                contractId,
+                captureContractSnapshot: motionSnapshot,
+                expectedTown: true,
+                expectedArmoury: true,
+                profile: contractProfile,
+                view: ACCEPTED_POLISH_V2_MATCHED_CAPTURE_VIEWS.find(
+                  (candidate) => candidate.name === 'civic-motion',
+                ),
+                playerState: EASTBROOK_ARMOURY_PLAYER_STATE,
+                expectedSeed: EASTBROOK_ARMOURY_CAPTURE_SEED,
+                settleMs: EASTBROOK_TOWN_CAPTURE_SETTLE_MS,
+                expectedPolishProvenance,
+              }),
+            ).toThrow('civic motion evidence is incomplete');
+          }
+        }
+      }
+    }
+  });
+});
+
+describe('Eastbrook polish accepted asset evidence', () => {
+  it('pins every Ravenpost mailbox evidence PNG and its authored turnaround', () => {
+    const evidenceRoot = path.join(POLISH_ROOT, 'assets/ravenpost-mailbox');
+    expect(listFilesRecursive(evidenceRoot, '.png')).toEqual([...MAILBOX_EVIDENCE].sort());
+    for (const relativePath of MAILBOX_EVIDENCE) {
+      assertPng(
+        path.join(evidenceRoot, relativePath),
+        MAILBOX_NONSTANDARD_DIMENSIONS[relativePath] ?? [900, 720],
+        25_000,
+      );
+    }
+    assertPng(path.join(POLISH_ROOT, 'turnarounds/ravenpost-mailbox.png'), [1536, 1024], 250_000);
+  });
+
+  it('pins every noticeboard evidence PNG and its authored turnaround', () => {
+    const evidenceRoot = path.join(POLISH_ROOT, 'assets/noticeboard');
+    expect(listFilesRecursive(evidenceRoot, '.png')).toEqual([...NOTICEBOARD_EVIDENCE].sort());
+    for (const relativePath of NOTICEBOARD_EVIDENCE) {
+      assertPng(
+        path.join(evidenceRoot, relativePath),
+        NOTICEBOARD_NONSTANDARD_DIMENSIONS[relativePath] ?? [900, 720],
+        25_000,
+      );
+    }
+    assertPng(path.join(POLISH_ROOT, 'turnarounds/noticeboard.png'), [1536, 1024], 250_000);
+  });
+
+  it('keeps the turnaround inventory exact', () => {
+    expect(listFilesRecursive(path.join(POLISH_ROOT, 'turnarounds'), '.png')).toEqual([
+      'noticeboard.png',
+      'ravenpost-mailbox.png',
+    ]);
+  });
+});
+
+describe('Eastbrook polish img2threejs provenance', () => {
+  it('ties validation and review records to committed source evidence and shipping outputs', async () => {
+    const [mailboxFingerprint, noticeboardFingerprint] = await Promise.all([
+      import('../scripts/assets/eastbrook_mailbox/source_fingerprint.mjs'),
+      import('../scripts/assets/eastbrook_noticeboard/source_fingerprint.mjs'),
+    ]);
+    const validation = readJsonFile<ValidationResults>(
+      path.join(IMG2THREE_ROOT, 'validation-results.json'),
+    );
+    expect(validation.gateThresholds).toEqual({
+      globalVisualAcceptance: 0.7,
+      criticalFeatureMinimum: 0.7,
+      importantFeatureAverage: 0.7,
+    });
+    const expectedPassIds = [
+      'blockout',
+      'structural-pass',
+      'form-refinement',
+      'material-pass',
+      'lighting-pass',
+      'interaction-pass',
+      'optimization-pass',
+    ];
+    const assets = [
+      {
+        key: 'mailbox' as const,
+        validationAssetId: 'ravenpost-mailbox',
+        admissionAssetId: 'ravenpost-mailbox',
+        spec: 'docs/design/eastbrook-vale-rebuild/polish-img2threejs/mailbox/object-sculpt-spec.json',
+        preSpec:
+          'docs/design/eastbrook-vale-rebuild/polish-img2threejs/mailbox/pre-spec-assessment.json',
+        detailInventory:
+          'docs/design/eastbrook-vale-rebuild/polish-img2threejs/mailbox/detail-inventory.json',
+        admission:
+          'docs/design/eastbrook-vale-rebuild/polish-img2threejs/mailbox/reference-admission.json',
+        admittedViewIds: [
+          'front',
+          'right',
+          'rear-detail',
+          'left',
+          'front-three-quarter',
+          'rear-three-quarter',
+          'grazing',
+        ],
+        glb: 'public/models/props/mailbox_pillar.glb',
+        shippingCeilings: {
+          hardTriangleCeiling: 3_000,
+          maxPrimitives: 2,
+          maxMaterials: 2,
+          maxCompressedBytes: 102_400,
+        },
+        liveSourceFingerprint: mailboxFingerprint.eastbrookMailboxSourceFingerprint(),
+      },
+      {
+        key: 'noticeboard' as const,
+        validationAssetId: 'eastbrook-civic-noticeboard',
+        admissionAssetId: 'eastbrook-noticeboard',
+        spec: 'docs/design/eastbrook-vale-rebuild/polish-img2threejs/noticeboard/object-sculpt-spec.json',
+        preSpec:
+          'docs/design/eastbrook-vale-rebuild/polish-img2threejs/noticeboard/pre-spec-assessment.json',
+        detailInventory:
+          'docs/design/eastbrook-vale-rebuild/polish-img2threejs/noticeboard/detail-inventory.json',
+        admission:
+          'docs/design/eastbrook-vale-rebuild/polish-img2threejs/noticeboard/reference-admission.json',
+        admittedViewIds: [
+          'front',
+          'right',
+          'rear',
+          'left',
+          'front-three-quarter',
+          'rear-three-quarter',
+          'grazing',
+        ],
+        glb: 'public/models/props/eastbrook_noticeboard.glb',
+        shippingCeilings: {
+          hardTriangleCeiling: 2_500,
+          maxPrimitives: 2,
+          maxMaterials: 2,
+          maxCompressedBytes: 102_400,
+        },
+        liveSourceFingerprint: noticeboardFingerprint.eastbrookNoticeboardSourceFingerprint(),
+      },
+    ];
+
+    expect(validation.specValidation.map(({ assetId, spec }) => ({ assetId, spec }))).toEqual(
+      assets.map(({ validationAssetId, spec }) => ({ assetId: validationAssetId, spec })),
+    );
+
+    for (const asset of assets) {
+      const label = asset.key;
+      const record = validation.specValidation.find(
+        (candidate) => candidate.assetId === asset.validationAssetId,
+      );
+      if (!record) throw new Error(`missing ${label} validation record`);
+      const spec = readJsonFile<SculptSpec>(resolveRepoPath(record.spec));
+      const admission = readJsonFile<ReferenceAdmission>(resolveRepoPath(asset.admission));
+      const preSpec = readJsonFile<PreSpecAssessment>(resolveRepoPath(asset.preSpec));
+      const inventory = readJsonFile<DetailInventory>(resolveRepoPath(asset.detailInventory));
+
+      expect(record.spec, `${label} spec path`).toBe(asset.spec);
+      expect(admission.assetId, `${label} admission asset alias`).toBe(asset.admissionAssetId);
+      expect(spec.referenceAdmission, `${label} admission link`).toBe(asset.admission);
+      expect(preSpec.referenceAdmission, `${label} pre-spec admission link`).toBe(asset.admission);
+
+      assertRecordedPng(admission.sourceSheet);
+      expect(
+        admission.admittedViews.map(({ id }) => id),
+        `${label} admitted view inventory`,
+      ).toEqual(asset.admittedViewIds);
+      expect(
+        admission.admittedViews.every(({ verdict }) => verdict === 'pass'),
+        `${label} primary admission verdicts`,
+      ).toBe(true);
+      for (const view of [...admission.admittedViews, ...(admission.supplementaryViews ?? [])]) {
+        assertRecordedPng(view);
+      }
+      const sourceView = admission.admittedViews.find((view) => view.path === spec.sourceImage);
+      expect(sourceView, `${label} admitted source view`).toBeDefined();
+      if (!sourceView) throw new Error(`missing ${label} admitted source view`);
+      expect(sourceView.sha256, `${label} source image hash`).toBe(spec.sourceImageSha256);
+      expect(
+        spec.viewEvidence.map(({ id, path: viewPath, sha256 }) => ({
+          id,
+          path: viewPath,
+          sha256,
+        })),
+        `${label} admitted view projection`,
+      ).toEqual(
+        admission.admittedViews.map(({ id, path: viewPath, sha256 }) => ({
+          id,
+          path: viewPath,
+          sha256,
+        })),
+      );
+
+      const admissionSummary = validation.referenceAdmission[asset.key];
+      expect(admissionSummary, `${label} admission summary`).toMatchObject({
+        primaryViews: asset.admittedViewIds.length,
+        admitted: asset.admittedViewIds.length,
+        rejected: 0,
+      });
+      const supplementaryRejected = (admission.supplementaryViews ?? []).filter((view) =>
+        view.verdict?.startsWith('rejected'),
+      ).length;
+      if (supplementaryRejected > 0) {
+        expect(
+          admissionSummary.supplementaryRejectedAsDuplicate,
+          `${label} supplementary rejection count`,
+        ).toBe(supplementaryRejected);
+      } else {
+        expect(admissionSummary.supplementaryRejectedAsDuplicate).toBeUndefined();
+      }
+
+      expect(preSpec.sourceImage, `${label} pre-spec source`).toBe(spec.sourceImage);
+      expect(inventory.sourceImage, `${label} detail source`).toBe(spec.sourceImage);
+      expect(
+        preSpec.preSpecAssessment.detailInventory.inventoryPath,
+        `${label} detail inventory link`,
+      ).toBe(asset.detailInventory);
+      expect(projectDetails(preSpec.preSpecAssessment.detailInventory.details)).toEqual(
+        projectDetails(inventory.details),
+      );
+      expect(projectDetails(spec.preSpecAssessment.detailInventory.details)).toEqual(
+        projectDetails(inventory.details),
+      );
+      for (const detailSet of [
+        preSpec.preSpecAssessment.detailInventory,
+        spec.preSpecAssessment.detailInventory,
+        inventory,
+      ]) {
+        expect(detailSet.details.length, `${label} detail inventory size`).toBeGreaterThanOrEqual(
+          detailSet.targetMinDetails,
+        );
+      }
+
+      const expectedValidationCounts = {
+        ok: true,
+        errors: 0,
+        warnings: 0,
+        components: spec.componentTree.length,
+        materials: spec.materials.length,
+      };
+      expect(record.normal, `${label} normal validation`).toEqual(expectedValidationCounts);
+      expect(record.strictQuality, `${label} strict validation`).toEqual(expectedValidationCounts);
+      const visualPassIds = spec.visualEvidence.map(({ passId }) => passId);
+      expect(visualPassIds, `${label} required pass inventory`).toEqual(expectedPassIds);
+      expect(record.pipeline, `${label} pipeline`).toEqual({
+        currentPass: 'complete',
+        completedPasses: expectedPassIds,
+      });
+      expect(
+        spec.reviewHistory.map(({ passId }) => passId),
+        `${label} review history`,
+      ).toEqual(expectedPassIds);
+
+      const visibleFeatureScores = spec.visualEvidence.flatMap(({ featureReviews }) =>
+        featureReviews.flatMap((review) =>
+          review.visible && typeof review.score === 'number' ? [review.score] : [],
+        ),
+      );
+      expect(visibleFeatureScores.length, `${label} scored visible features`).toBeGreaterThan(0);
+      expect(
+        visibleFeatureScores.reduce((total, score) => total + score, 0) /
+          visibleFeatureScores.length,
+        `${label} important feature average`,
+      ).toBeGreaterThanOrEqual(validation.gateThresholds.importantFeatureAverage);
+      expect(record.reviewAcceptance, `${label} derived acceptance`).toEqual({
+        reviews: spec.visualEvidence.length,
+        minimumGlobalScore: Math.min(
+          ...spec.visualEvidence.map(({ aiVisionScore }) => aiVisionScore),
+        ),
+        minimumLayerScore: Math.min(
+          ...spec.visualEvidence.flatMap(({ layerScores }) => Object.values(layerScores)),
+        ),
+        minimumVisibleFeatureScore: Math.min(...visibleFeatureScores),
+      });
+
+      for (const visual of spec.visualEvidence) {
+        expect(visual.visualAcceptanceThreshold, `${label} ${visual.passId} threshold`).toBe(
+          validation.gateThresholds.globalVisualAcceptance,
+        );
+        expect(
+          visual.aiVisionScore,
+          `${label} ${visual.passId} accepted global score`,
+        ).toBeGreaterThanOrEqual(validation.gateThresholds.globalVisualAcceptance);
+        for (const [layer, score] of Object.entries(visual.layerScores)) {
+          expect(score, `${label} ${visual.passId} accepted layer ${layer}`).toBeGreaterThanOrEqual(
+            validation.gateThresholds.globalVisualAcceptance,
+          );
+        }
+        for (const feature of visual.featureReviews.filter(({ visible }) => visible)) {
+          if (typeof feature.score !== 'number') {
+            throw new Error(`${label} ${visual.passId} visible feature lacks a score`);
+          }
+          expect(
+            feature.score,
+            `${label} ${visual.passId} accepted visible feature`,
+          ).toBeGreaterThanOrEqual(validation.gateThresholds.criticalFeatureMinimum);
+        }
+        const review = spec.reviewHistory.find(({ passId }) => passId === visual.passId);
+        expect(review, `${label} ${visual.passId} review`).toBeDefined();
+        if (!review) throw new Error(`missing ${label} ${visual.passId} review`);
+        expect(review.aiVisionScore, `${label} ${visual.passId} global score`).toBe(
+          visual.aiVisionScore,
+        );
+        expect(review.layerScores, `${label} ${visual.passId} layer scores`).toEqual(
+          visual.layerScores,
+        );
+        expect(review.featureReviews, `${label} ${visual.passId} feature scores`).toEqual(
+          visual.featureReviews,
+        );
+        expect(review.visualEvidence, `${label} ${visual.passId} evidence identity`).toMatchObject({
+          referenceScreenshot: visual.referenceScreenshot,
+          renderScreenshot: visual.renderScreenshot,
+          comparisonImage: visual.comparisonImage,
+        });
+        expect(review.evidence, `${label} ${visual.passId} evidence links`).toEqual(
+          expect.arrayContaining([visual.renderScreenshot, visual.comparisonImage]),
+        );
+        for (const evidencePath of new Set([
+          visual.referenceScreenshot,
+          visual.renderScreenshot,
+          visual.comparisonImage,
+          ...review.evidence,
+        ])) {
+          expect(statSync(resolveRepoPath(evidencePath)).isFile(), evidencePath).toBe(true);
+        }
+      }
+
+      const budget = spec.performanceBudget;
+      expect(budget, `${label} fixed shipping ceilings`).toMatchObject(asset.shippingCeilings);
+      expect(record.shippingOutput, `${label} numeric shipping contract`).toMatchObject({
+        triangles: budget.actualTriangles,
+        primitives: budget.actualPrimitives,
+        materials: budget.actualMaterials,
+        compressedBytes: budget.actualCompressedBytes,
+        embeddedTextures: budget.embeddedTextures,
+        animations: budget.animations,
+        skins: budget.skins,
+        cameras: budget.cameras,
+        extensions: budget.usedAndRequiredExtensions,
+        sha256: budget.actualSha256,
+        sourceFingerprint: budget.actualSourceFingerprint,
+      });
+      expect(budget.actualTriangles, `${label} triangle ceiling`).toBeLessThanOrEqual(
+        budget.hardTriangleCeiling,
+      );
+      expect(budget.actualPrimitives, `${label} primitive ceiling`).toBeLessThanOrEqual(
+        budget.maxPrimitives,
+      );
+      expect(budget.actualMaterials, `${label} material ceiling`).toBeLessThanOrEqual(
+        budget.maxMaterials,
+      );
+      expect(budget.actualCompressedBytes, `${label} byte ceiling`).toBeLessThanOrEqual(
+        budget.maxCompressedBytes,
+      );
+      expect(record.shippingOutput.bounds, `${label} shipping bounds`).toHaveLength(
+        budget.actualBoundsMin.length,
+      );
+      expect(budget.actualBoundsMax, `${label} budget bound pairs`).toHaveLength(
+        budget.actualBoundsMin.length,
+      );
+      for (const [index, extent] of record.shippingOutput.bounds.entries()) {
+        expect(extent, `${label} bound ${index}`).toBeCloseTo(
+          budget.actualBoundsMax[index] - budget.actualBoundsMin[index],
+          4,
+        );
+      }
+      const glbPath = resolveRepoPath(asset.glb);
+      expect(statSync(glbPath).size, `${label} GLB bytes`).toBe(
+        record.shippingOutput.compressedBytes,
+      );
+      expect(sha256File(glbPath), `${label} GLB hash`).toBe(record.shippingOutput.sha256);
+      expect(record.shippingOutput.sourceFingerprint, `${label} live source fingerprint`).toBe(
+        asset.liveSourceFingerprint,
+      );
+    }
+  });
+});
+
+describe('Eastbrook polish performance and contact evidence', () => {
+  it('pins the accepted matched performance evidence byte for byte', () => {
+    const performanceRoot = path.join(POLISH_ROOT, 'performance');
+    const acceptedFiles = [
+      'after-desktop-ultra-town.json',
+      'after-mobile-low-town.json',
+      'before-desktop-ultra-town.json',
+      'before-mobile-low-town.json',
+    ].sort();
+    const fingerprint = createHash('sha256');
+    for (const fileName of acceptedFiles) {
+      fingerprint.update(fileName);
+      fingerprint.update('\0');
+      fingerprint.update(readFileSync(path.join(performanceRoot, fileName)));
+      fingerprint.update('\0');
+    }
+    expect(acceptedFiles).toHaveLength(4);
+    // Second-order seal, recomputed LAST in the re-mint recipe: it hashes the
+    // performance evidence files, which carry the composite polish provenance.
+    // It therefore follows the first-order composite, so this merge moves it for
+    // the same reason: every rendererIntegration move on both sides stacks in
+    // that composite (from the release, PR #2720's fence-removal layout
+    // evidence, the live graphics rebuild #2799, the Bear Form rig swap #2842,
+    // the far-field impostors, fog-free vista and horizon pass #2793, the
+    // Blizzard timed ground loop #2861, and the brood shout/flourish wiring;
+    // from this branch, the worldObjectBurning fire-burst cue), recomputed last
+    // by remint_polish_provenance.mjs. The release retook the polish captures, so
+    // every measured value (frame timings, draw stats, triangle and scenario
+    // numbers) is adopted verbatim from the base tip; no parent's literal
+    // matched the merged tree, and no capture was retaken here.
+    // Re-pinned for the integrated v0.35 renderer on AAA-enhancements and
+    // recomputed by remint_polish_provenance.mjs.
+    // Re-pinned for the PR #2982 merge: the first-order composite follows the
+    // release-side weapon-skin renderer changes and the PR-side ability VFX
+    // warm-up changes, then this second-order performance seal follows the
+    // swept evidence bytes. No capture was retaken.
+    // Re-pinned for the PR #2983 revert: the swept evidence follows the
+    // reverted renderer while preserving PR #2982's prewarm-policy leaf.
+    // Re-pinned for the PR #2983 re-land: the swept evidence follows the
+    // re-landed renderer, itself on top of the release's bow-aim edit.
+    // Re-pinned for the VFX per-frame cost work: the first-order composite
+    // follows the renderer's anchor seam, weapon-skin fade and census tag,
+    // then this second-order seal follows the swept evidence bytes. No capture
+    // was retaken.
+    // Re-pinned for the iOS WebKit memory-profile fix: the first-order composite
+    // follows renderer.ts's nativeIosMemoryProfile -> iosMemoryProfile rename,
+    // landing on top of the VFX per-frame cost work already on this release
+    // branch, then this second-order performance seal follows the swept
+    // evidence bytes. No capture was retaken.
+    // Re-pinned for the merge of release/v0.36.0 (PR 3161) into the three
+    // compileAsync patch branch: the first-order composite follows both
+    // parents' inputs, then this second-order performance seal follows the
+    // swept evidence bytes. No capture was retaken.
+    // Re-minted after pinning the three specifier exact (PR 3165 review): only
+    // the pnpm-lock.yaml specifier row moved. No capture was retaken.
+    // Re-minted for the merge of release/v0.36.0 into the render caches branch:
+    // the first-order composite follows both parents' renderer.ts and
+    // prewarm_policy.ts inputs, then this second-order performance seal follows
+    // the swept evidence bytes. No capture was retaken.
+    // Re-minted after the point-light adoption seam moved the fire-light budget
+    // pass out of renderer.ts: the first-order composite follows renderer.ts,
+    // then this second-order seal follows the swept evidence bytes. No capture
+    // was retaken.
+    // Re-pinned for the merge of release/v0.36.0 (post PR 3220/3221) into the
+    // KTX2 mip-release branch: the first-order composite follows both parents'
+    // renderer.ts inputs, then this second-order performance seal follows the
+    // swept evidence bytes. No capture was retaken.
+    // Re-pinned for the merge of release/v0.36.0 (post PR 3222) into the
+    // prewarm sky-unstarve branch: the first-order composite follows both
+    // parents' renderer.ts inputs plus this branch's prewarm_policy.ts
+    // (sky.ts moved too but is not a provenance input), then this
+    // second-order performance seal follows the swept evidence bytes. No
+    // capture was retaken.
+    // Re-pinned for the review fixes on the prewarm sky-unstarve PR: the
+    // first-order composite follows the renderer.ts edits (deadlineExempt sky
+    // entry, unified view-cap trim rule, deferred-lane gate and priority
+    // threading), then this second-order performance seal follows the swept
+    // evidence bytes. No capture was retaken.
+    // Re-minted for review round 2 on the prewarm sky-unstarve PR (honest
+    // archetype and scene-texture counts; renderer.ts edits only). No capture
+    // was retaken.
+    // Re-minted for the merge of release/v0.36.0 (post the renderer refactor,
+    // PR 3204) into the creator-appearance branch: both parents move the
+    // rendererIntegration leaf, so the merged tree mints a value matching
+    // neither parent. No capture was retaken.
+    // Re-minted for the shadow-batch PR (shadow-camera texel snapping and the
+    // budget-governed shadow cadence; renderer.ts edits only). No capture was
+    // retaken.
+    // Re-pinned for the merge of the shadow-batch PR with the iOS constrained-
+    // memory zone-eviction fix: the first-order composite follows both
+    // parents' renderer.ts edits, then this second-order performance seal
+    // follows the swept evidence bytes. No capture was retaken.
+    // Re-pinned for the merge of PR #3314's rift windup telegraph school tint
+    // (issue #2917) with the release branch's renderer changes. The
+    // first-order composite follows the merged renderer.ts bytes, then this
+    // second-order performance seal follows the swept evidence bytes. No
+    // capture was retaken.
+    // Re-minted for the Three.js audit batch (light budget seam, blob
+    // shadows, sky residency lane, splat colour pack-source fix): the
+    // first-order composite follows renderer.ts, then this second-order
+    // performance seal follows the swept evidence bytes. No capture was
+    // retaken.
+    // Re-pinned for the base sync of the Three.js audit batch with the release
+    // branch renderer changes. The first-order composite follows the merged
+    // renderer.ts bytes, then this second-order performance seal follows the
+    // swept evidence bytes. No capture was retaken.
+    // Re-pinned for the release base-health repair after renderer.ts changed.
+    // No capture was retaken.
+    // Re-pinned for the v0.37.0 base sync with the login-storm base commit.
+    // The first-order composite follows the merged input bytes, then this
+    // second-order performance seal follows the swept evidence bytes. No
+    // capture was retaken.
+    // Re-pinned after organizing renderer imports changed the provenance
+    // inputs. No capture was retaken.
+    // Re-pinned for the merge of the iOS constrained-memory zone-eviction fix
+    // with the release branch's organized renderer imports. The first-order
+    // composite follows the merged renderer.ts bytes, then this second-order
+    // performance seal follows the swept evidence bytes. No capture was
+    // retaken.
+    // Re-minted for the merge of release/v0.38.0 into the night-lighting branch:
+    // both parents move renderer.ts, so the first-order composite mints anew and
+    // this second-order seal follows the swept evidence bytes. No capture was
+    // retaken.
+    // Re-pinned for PR #3339's healGlowAt view-eviction fix on the newer release
+    // renderer. The first-order composite follows renderer.ts, then this
+    // second-order seal follows the swept evidence bytes. No capture was retaken.
+    // Re-pinned for PR #3344 after removing the unused Eastbrook civic-beacon
+    // preload test hook. The first-order composite follows the civicShader leaf,
+    // then this second-order seal follows the swept bytes. No capture was retaken.
+    // Re-pinned after applying the PR #3339 review repair atop PR #3344. The
+    // first-order composite follows both retained leaves, then this second-order
+    // seal follows the swept evidence bytes. No capture was retaken.
+    // Re-pinned for final PR #3345 integration. The first-order composite follows
+    // the combined renderer, lockfile, and GLBs, then this seal follows the swept
+    // evidence bytes. No capture was retaken.
+    // Re-pinned after extracting entity-view policy from renderer.ts for the
+    // monolith ratchet. The seal follows the swept bytes; no capture was retaken.
+    // Re-pinned again after the policy became an explicit provenance leaf. The
+    // performance records changed only in their swept provenance blocks.
+    // Re-minted for the merge of release/v0.38.0 into the Armory warming
+    // branch: the first-order composite follows the merged renderer.ts bytes,
+    // then this second-order performance seal follows the swept evidence
+    // bytes. No capture was retaken.
+    // Re-pinned for the quest-collectable spawn gate. The first-order
+    // composite follows renderer.ts, then this second-order seal follows the
+    // swept evidence bytes. No capture was retaken.
+    // Re-pinned for the merge of PR #3359's quest-collectable spawn gate with
+    // the release branch's extracted entity-view policy. The first-order
+    // composite follows renderer.ts and entityViewPolicy, then this seal
+    // follows the swept bytes. No capture was retaken.
+    // Re-minted for the review fixes on this branch (Soul Rend warms every rig
+    // a live body can take, plus the lazy form-visual fold): the first-order
+    // composite follows renderer.ts, then this seal follows the swept evidence
+    // bytes. No capture was retaken.
+    // Re-minted for the r185 frozen-camera aim fix. The first-order composite
+    // follows renderer.ts, then this second-order performance seal follows the
+    // swept evidence bytes. No capture was retaken.
+    // Re-minted again after extracting the delve interior build-cache
+    // scheduling into src/render/delve_interior_tracker.ts. No capture retaken.
+    // Re-minted again for the merged prewarm and delve-tracker runtime inputs.
+    // No capture retaken.
+    // Re-minted for the vfx.mount-programs prewarm entry (#2571). The
+    // first-order composite follows renderer.ts and prewarm_policy.ts, then
+    // this second-order performance seal follows the swept evidence bytes. No
+    // capture was retaken.
+    // Re-minted for the vfx.mount-programs review fixes (scene-reparent bug,
+    // honest desktop-path progress, depth compile, timeout-bounded fetch,
+    // constrained-device removal). The first-order composite follows
+    // renderer.ts and prewarm_policy.ts, then this second-order performance
+    // seal follows the swept evidence bytes. No capture was retaken.
+    // Re-minted for the PR #3447 merge. The first-order composite follows the
+    // combined v0.39 wrapper, corrected PR #3446 sky KTX2 renderer bytes, and
+    // mount-program prewarm bytes, then this second-order performance seal
+    // follows the swept evidence bytes. No capture was retaken.
+    // Re-minted for the moved-base v0.39 wrapper refresh. The first-order
+    // composite follows the combined castle renderer bytes and v0.39 wrapper
+    // bytes, then this second-order performance seal follows the swept
+    // evidence bytes. No capture was retaken.
+    // Re-minted for the approved PR #3425 merge into the v0.39 wrapper. The
+    // first-order composite follows the resolved renderer bytes, then this
+    // second-order performance seal follows the swept evidence bytes. No
+    // capture was retaken.
+    // Re-minted after syncing current release/v0.39.0 into the v0.39 wrapper.
+    // The first-order composite follows the retained self-spirit prewarm and
+    // delve rebuild renderer bytes, then this second-order performance seal
+    // follows the swept evidence bytes. No capture was retaken.
+    // Re-minted for the r185 frozen-camera aim fix, then for the far-bake
+    // compile gate (renderer.ts wiring). The first-order composite follows
+    // renderer.ts, then this second-order performance seal follows the swept
+    // evidence bytes. No capture was retaken.
+    // Re-minted for the touch tail's readiness fix (renderer.ts wiring): the
+    // first-order composite follows renderer.ts, then this second-order
+    // performance seal follows the swept evidence bytes. No capture was
+    // retaken.
+    // Re-minted for the build-ledger instrumentation (renderer.ts and
+    // entity_view_policy_core.ts wiring): same order, the composite first,
+    // then this seal over the swept evidence bytes. No capture was retaken.
+    // Re-minted for the build-span sink wiring (renderer.ts): same order, the
+    // composite first, then this seal. No capture was retaken.
+    // Re-minted for the composed-look pieces hold (renderer.ts): same order,
+    // the composite first, then this seal. No capture was retaken.
+    // Re-minted for the gc hitch cause (renderer.ts): same order, the
+    // composite first, then this seal. No capture was retaken.
+    // Re-minted for the deferred-decal stand-in (renderer.ts): same order, the
+    // composite first, then this seal. No capture was retaken.
+    // Re-minted for the compile gate's piece cut (renderer.ts): same order, the
+    // composite first, then this seal. No capture was retaken.
+    // Re-minted for the hitch sample alignment (renderer.ts): same order, the
+    // composite first, then this seal. No capture was retaken.
+    // Re-minted for the compile gate's variant settle and the every-mesh depth
+    // twin (renderer.ts): same order, the composite first, then this seal. No
+    // capture was retaken.
+    // Re-minted for the resume lane ordering (prewarm_policy.ts): same order,
+    // the composite first, then this seal. No capture was retaken.
+    // Re-minted for the three patch-hash bump (pnpm-lock.yaml): same order, the
+    // composite first, then this seal. No capture was retaken.
+    // Re-minted for the merge of upstream/main into the GPU-preparation
+    // scheduler branch: both parents' renderer and prewarm bytes combine in one
+    // tree, so the seals follow the swept evidence bytes. No capture was retaken.
+    // Re-minted for the second three patch-hash bump (pnpm-lock.yaml, the count
+    // 0 instanced-mesh render-list skip): same order, the composite first, then
+    // this seal. No capture was retaken.
+    // Re-minted for the merge of the moved release/v0.40.0 tip into
+    // feature/masterwrought: both sides re-minted since the common base, so
+    // the merged tree mints values matching neither parent. No capture was
+    // retaken.
+    // Re-minted for the farming absorb (Phase 11d): renderer.ts moved, the
+    // seals follow the swept evidence bytes (same order, the composite first,
+    // then this seal). No capture was retaken.
+    // Upstream's own re-mints over the same span, kept so neither parent's
+    // half of the lineage is lost: for the fast-loading-screen-variety merge
+    // with release/v0.40.0 (renderer.ts moved on both sides of that merge),
+    // and for its review-fix round (prewarm_policy.ts and renderer.ts moved).
+    // Same order both times, the composite first, then this seal, and no
+    // capture retaken.
+    // Re-minted at the Phase 11f release sync (release tip 098372138a): only
+    // the release re-minted since the merge base this time, but both parents
+    // edited renderer.ts, so the merged file is a third content and neither
+    // parent's literal describes it. Same order, the composite first, then
+    // this seal. No capture was retaken.
+
+    // RE-MINTED AT THE PHASE 11k QA RELEASE SYNC (the FOURTEENTH sync,
+    // release/v0.40.0 b39b16022e to efb1220e85). BOTH parents re-minted this seal
+    // since their common base again, so the merged tree mints a value matching
+    // NEITHER parent and taking either side's literal would pin a tree that never
+    // existed. Parent values for the record: ours 6c733d41, the release 4ad25d5f.
+    // Minted from the merged WORKING TREE with the repo's own tool
+    // (scripts/assets/eastbrook_grand_armoury/remint_polish_provenance.mjs), never
+    // hand-edited, and committed with exactly the bytes it read. No capture was
+    // retaken: the merged renderer delta is this branch's farm-visual wiring plus
+    // the release's own renderer work (the far-mesh swap holdout, the stale
+    // remote-entity repair, the loading-review admission gates), none of which
+    // moves the sealed pixels.
+    //
+    // UPSTREAM'S OWN RE-MINT HISTORY over this span, kept rather than dropped:
+    // the shader-memory-probes instrumentation and VFX teardown extraction, the
+    // fast-loading-screen-variety merge, its review-fix round (the nearby-view
+    // floor in prewarm_policy.ts, the weapon-skin early-out in renderer.ts), the
+    // release/v0.40.0 merge into the loading-hitch branch, the v0.40 batch
+    // merge-forward, the loading review fixes (rebuild reveal gates, inactive
+    // horizon fast path, display-pacing admission), the sliding-far-mob-freeze fix
+    // and the stale remote-entity holdout repair. Every one of them retook no
+    // capture and moved only the renderer/prewarm runtime leaves.
+    // Upstream's own re-mints over the release/v0.41.0 span, kept rather than
+    // dropped (the release's record verbatim):
+    // Re-minted for the review-fix round (prewarm_policy.ts and renderer.ts
+    // moved): same order, the composite first, then this seal. No capture
+    // was retaken.
+    // Re-minted for the Sowfield demolition. The first-order composite follows
+    // the Vale Cup removal in renderer.ts, then this second-order performance
+    // seal follows the swept evidence bytes. No capture was retaken.
+    // Re-minted 2026-08-18 for the Eastbrook harbor move (layout v3, commit
+    // d19aa33f76, docs/design/eastbrook-revamp/site-plan.md): the first-order
+    // composite follows the moved authoritativeLayout, townRuntime and
+    // rendererIntegration leaves plus the re-aimed captureContract leaf, then
+    // this second-order performance seal follows the swept evidence bytes. No
+    // capture was retaken.
+    // Re-minted for owner refinement round 6b: the first-order composite
+    // follows the re-shelled chapel and redistributed NPCs in the
+    // authoritativeLayout leaf plus the re-aimed apothecary-lin view in the
+    // captureContract leaf, then this second-order performance seal follows the
+    // swept evidence bytes. No capture was retaken.
+    // Re-minted again for owner round 6b's world wave: the first-order
+    // composite follows the opened-out market stalls and the moved darva,
+    // gizzel and FURY anchors in the authoritativeLayout leaf, then this
+    // second-order performance seal follows the swept evidence bytes. No
+    // capture was retaken.
+    // Re-minted for the integration merge of the eastbrook program onto the
+    // release tip. The first-order composite follows both parents' combined
+    // bytes, then this second-order performance seal follows the swept
+    // evidence bytes. No capture was retaken.
+    // Re-minted for the release/v0.39.0 base merge into feature/tutorial-island.
+    // The first-order composite follows the resolved renderer.ts and
+    // prewarm_policy.ts bytes, then this second-order performance seal follows
+    // the swept evidence bytes. No capture was retaken.
+    // Re-minted for the island far-shore haze band: the first-order composite
+    // follows renderer.ts, then this second-order performance seal follows the
+    // swept evidence bytes. No capture was retaken.
+    // Re-minted after merging release/v0.40.0 into the loading-hitch branch
+    // (renderer.ts moved on both sides): same order, the composite first,
+    // then this seal. No capture was retaken.
+    // Re-minted for the loading review fixes (renderer.ts): same order, the
+    // composite first, then this seal. No capture was retaken.
+    // Re-minted for the sliding-far-mob-freeze fix (renderer.ts): same order,
+    // the composite first, then this seal. No capture was retaken.
+    // Re-minted for the stale remote-entity holdout repair (renderer.ts):
+    // same order, the composite first, then this seal. No capture was retaken.
+    // Re-minted for the v0.40.0 sync merge into the guild pledge branch (the
+    // OSSBrain v0.40 batch landed on the release arm; renderer inputs moved on
+    // both sides): same order, the composite first, then this seal. No capture
+    // was retaken.
+    // Re-minted for the weapon-stow overlay fix (renderer.ts): same order,
+    // the composite first, then this seal. No capture was retaken.
+    // Re-minted for PR #3740's forge-lift room: the first-order composite
+    // follows the lift room's renderer.ts hookup, then this second-order
+    // performance seal follows the swept evidence bytes. No capture was
+    // retaken.
+    // Re-minted for the Drakelands entrance merge into the raid branch: the
+    // composite first, then this seal. No capture was retaken.
+    // Re-minted for the release/v0.42.0 merge into the weapon-sheathe-swim-mount
+    // branch: same order, the composite first, then this seal. No capture was
+    // retaken.
+    // Re-minted for the v0.42.0 release batch renderer merge: same order, the
+    // composite first, then this seal. No capture was retaken.
+    // Re-minted for the v0.42.0 release candidate renderer merge: same order,
+    // the composite first, then this seal. No capture was retaken.
+    expect(
+      fingerprint.digest('hex'),
+      `the second-order performance digest moved; if every input moved legitimately, re-mint with: ${REMINT_COMMAND} (it recomputes this literal LAST, from the swept files)`,
+      // Parent values at the Phase 11e QA sync: ours d4aa71b9, the release
+      // 9c8f6ca4. At the Phase 11f sync: ours b77a8880, the release 0d3ec7db.
+      // Recomputed LAST from the swept files, per REMINT_COMMAND.
+      // Re-minted at the Phase 11g QA release sync (release tip 3e49dc11b3): both
+      // parents edited renderer.ts again, so the merged file is a third content
+      // and neither parent's literal describes it. The release's own half over
+      // this span, kept rather than dropped: it re-minted for its review-fix
+      // round (prewarm_policy.ts and renderer.ts moved) and again for its rift
+      // long-session perf merge with release/v0.40.0 (renderer.ts moved on both
+      // sides of THAT merge). Same order, the composite first, then this seal.
+      // No capture was retaken.
+      // Re-minted at the Phase 11h release sync (release tip 50462dda83): both
+      // parents edited renderer.ts again and the release also moved
+      // prewarm_policy.ts, so the merged tree is a third content. Parent values
+      // for the record: ours fa94c388, the release f06481ca. The release's own
+      // half over this span, kept rather than dropped: it re-minted after
+      // merging release/v0.40.0 into its loading-hitch branch (renderer.ts
+      // moved on both sides of THAT merge) and again for its loading review
+      // fixes. Same order, the composite first, then this seal. No capture was
+      // retaken.
+      // Re-minted at the Phase 11k QA release sync (release tip efb1220e85):
+      // both parents edited renderer.ts again, so the merged tree is a third
+      // content once more. Parent values for the record: ours 2519fee9, the
+      // release 3e429f96. Same order, the composite first, then this seal.
+      // No capture was retaken.
+      // Re-minted at the merge of release/v0.41.0 (tip ff2837da1f) into
+      // feature/masterwrought (base 9a89e3483e): both parents edited
+      // renderer.ts again and the release moved the layout, town-runtime and
+      // capture-contract leaves too, so the merged tree is a third content.
+      // Parent values for the record: ours addb319d, the release
+      // 5bae1eef; the release literal stood in as a placeholder until the
+      // re-mint below, computed LAST per REMINT_COMMAND on the merged working
+      // tree. No capture was retaken.
+      // Re-pinned 2026-08-28 for the Masterwrought phase 14 farm-visuals prewarm guard:
+      // the first-order composite follows renderer.ts, then this second-order
+      // performance seal follows the swept evidence bytes. No capture was
+      // retaken.
+      // Re-minted at the merge of release/v0.41.0 (tip d3f8bae369 onward)
+      // into feature/masterwrought: both parents edited renderer.ts again and
+      // the release also moved eastbrook_town.ts, so the merged tree is a
+      // third content once more. Parent values for the record: ours 90cf6f2f,
+      // the release edc42727. Same order, the composite first, then this
+      // seal, recomputed LAST per REMINT_COMMAND on the merged working tree.
+      // No capture was retaken.
+      // Re-minted at Phase 16 (2026-08-30): the prewarm-group extraction
+      // moved renderer.ts's builder family to zone_prewarm_groups.ts, the
+      // composite followed the renderer leaf, and this second-order seal
+      // follows the swept evidence bytes. No capture was retaken.
+      // The release's own half over the later v0.41.0 span (tip 3e801dc925),
+      // kept rather than dropped: re-minted for the Drakelands entrance merge
+      // into the raid branch: the composite first, then this seal. No capture
+      // was retaken.
+      // Re-minted at the merge of release/v0.41.0 (tip 3e801dc925) into
+      // feature/masterwrought: both parents edited renderer.ts again (the
+      // release's Ignivar/Varkhul wiring, backface twin staging and mechanic
+      // prewarm beside this branch's farmPatchVisuals dispose seam, prewarm
+      // extraction and reduced-motion regalia gate), so the merged tree is a
+      // third content once more. Parent values for the record: ours 96212117,
+      // the release b01743e8. The literal below is the re-mint of 2026-08-30,
+      // recomputed LAST per REMINT_COMMAND from the swept files over the fully
+      // resolved merged tree, after every renderer.ts byte was final. No
+      // capture was retaken.
+      // Re-minted 2026-08-31 for the Phase 18 farm render unit: the
+      // first-order composite follows renderer.ts, then this second-order
+      // performance seal follows the swept evidence bytes, recomputed LAST per
+      // REMINT_COMMAND after every renderer.ts byte was final. No capture was
+      // retaken.
+      // The release's own half over the v0.42.0 span, kept rather than dropped:
+      // it re-minted this seal once more after the Drakelands entrance merge,
+      // for the client-prediction and self-pose renderer round and the rickshaw
+      // mount's render arm, sweeping its four evidence files to match. Same
+      // order there too, the composite first, then this seal.
+      // RE-MINTED at the TENTH release sync, the merge of release/v0.42.0 (tip
+      // 22e909839f) into feature/masterwrought (base e6b8edb375). Both parents
+      // moved renderer.ts and the swept evidence bytes again, so the merged
+      // tree is a third content and neither parent's literal described it.
+      // Parent values for the record: ours 8b3ee805, the release eca47332. The
+      // literal below was recomputed LAST per REMINT_COMMAND over the fully
+      // resolved tree, after the composite and after every renderer.ts byte was
+      // final. No capture was retaken.
+      // Re-minted at the next release/v0.42.0 sync after the merged renderer
+      // moved beyond both parents. Parent values were ours 18756e0a and the
+      // release b77851df; this seal was recomputed LAST from the swept files.
+      // No capture was retaken.
+      // Re-minted for the Cluckwork Mech Bird sync after the resolved renderer
+      // moved beyond both parents. Parent values were ours de96fa4e and the
+      // release 69c8bd5d; this seal was recomputed LAST from the swept files.
+      // No capture was retaken.
+      // Re-minted at Masterwrought closeout after the Mech Bird audio ordering
+      // fix changed renderer.ts. This seal was recomputed LAST; no recapture.
+      // Re-minted during PR closeout after farm compile staging changed
+      // renderer.ts. This seal was recomputed LAST; no capture was retaken.
+      //
+      // UPSTREAM'S OWN RE-MINT HISTORY over the same later release/v0.42.0
+      // span, kept rather than dropped (the block that follows is the
+      // release's record verbatim).
+      // Re-minted for the Drakelands entrance merge into the raid branch: the
+      // composite first, then this seal. No capture was retaken.
+      //
+      // UPSTREAM'S (OSSBrain candidate) OWN RE-MINT HISTORY, kept rather than
+      // dropped (the block that follows is the candidate's record verbatim).
+      // Re-minted for review round 3 of the shader-warm PR: the composite
+      // follows the moved ward walk, then this seal. No capture was retaken.
+      // Re-minted for the shader-warm PR's give-up rule and its review fixes:
+      // the composite first, then this seal. No capture was retaken.
+      // Re-minted for the 2026-09-04 release/v0.42.0 sync into the shader-warm
+      // branch: the composite first, then this seal. No capture was retaken.
+      // Re-minted for the Realm Builder monument (PR #3695) at its
+      // release/v0.42.0 base merge: the first-order composite follows the
+      // renderer, town and civicShader leaves, then this second-order seal
+      // follows the swept evidence bytes. No capture was retaken.
+      // Re-minted for the PR #3695 review fixes: the impostor fragment's fog
+      // and tone-mapping tail moved realm_builder_monument_fx.ts, the composite
+      // followed it, then this seal followed the swept bytes. No capture was
+      // retaken.
+      // Re-minted for the 2026-09-05 release/v0.42.0 sync into the shader-warm branch:
+      // the Realm Builder monument (PR #3695) and this branch's renderer changes
+      // land together on the merged tree. No capture was retaken.
+      //
+      // RE-MINTED for the professions/Crucible base merge into
+      // release/v0.42.0: renderer.ts changed on both sides again, so this
+      // seal mints a value matching neither parent (ours 09cf2684, theirs
+      // 7691517f). Run over the fully resolved merged tree via:
+      //   node scripts/assets/eastbrook_grand_armoury/remint_polish_provenance.mjs
+      // No capture was retaken.
+      // Re-minted for the release/v0.42.0 merge into the Nythraxis
+      // playtest-tuning branch (PR #3903's Varkhul heroic add-health lands
+      // beside this branch's Nythraxis hazard-color renderer change): the
+      // composite first, then this seal. No capture was retaken.
+      // Re-minted for the post-chain pixel budget: the composite first, then
+      // this seal. No capture was retaken.
+      // Re-minted for the PR #3834 merge after PR #3833: the composite first,
+      // then this seal. No capture was retaken.
+      // Re-minted for the compositor-surfaces batch: the composite follows the
+      // renderer.ts edits, then this seal follows the swept evidence bytes. No
+      // capture was retaken.
+      // Re-minted for the PR #3844 merge after PR #3841: same order, the
+      // composite first, then this seal. No capture was retaken.
+      // Re-minted for the v0.42.0 reconcile after the release branch advanced
+      // with Nythraxis renderer work: same order, the composite first, then
+      // this seal. No capture was retaken.
+      // Re-minted for the second v0.42.0 reconcile after Drakelands/hotkey
+      // renderer work: same order, the composite first, then this seal. No
+      // capture was retaken.
+      // RE-MINTED again for this worktree's own base merge of the
+      // professions branch into release/v0.42.0 (both histories above land
+      // on the same merged tree): a source-only historical capture reseal,
+      // second-order over the swept evidence bytes. No capture was retaken
+      // and no new owner acceptance is implied.
+      //
+      // OSSBrain integration: this digest was recomputed LAST from the
+      // canonical re-sealed evidence files. Capture pixels and scores did not change.
+      // v0.42.0 dependency-floor bump: recomputed LAST over the swept evidence
+      // after the lockfile-driven GLB re-mint. No capture was retaken.
+    ).toBe('eea4d7acbd5b80de9fcf51e9a24ba8218566cee1928111ef3723278b7036125b');
+  });
+
+  it('binds every historical after record to its accepted source and asset provenance', () => {
+    for (const profile of PROFILES) {
+      for (const [directory, suffix] of [
+        ['metadata', ''],
+        ['performance', '-town'],
+      ] as const) {
+        const fileName = `after-${profile.name}${suffix}.json`;
+        const filePath = path.join(POLISH_ROOT, directory, fileName);
+        const artifact = JSON.parse(readFileSync(filePath, 'utf8')) as {
+          sourceFingerprint?: string;
+          source?: CaptureSource;
+          polishProvenance: PolishProvenance;
+        };
+        expect(
+          artifact.sourceFingerprint ?? artifact.source?.fingerprint,
+          `${filePath} town fingerprint`,
+        ).toBe(ACCEPTED_POLISH_V2_TOWN_SOURCE_FINGERPRINT);
+        expect(artifact.polishProvenance, `${filePath} provenance`).toEqual(
+          ACCEPTED_POLISH_V2_PROVENANCE,
+        );
+      }
+    }
+  });
+
+  it('validates every historical performance scenario, attribution block, and summary', () => {
+    const expectedTownSourceFingerprint = ACCEPTED_POLISH_V2_TOWN_SOURCE_FINGERPRINT;
+    const performanceRoot = path.join(POLISH_ROOT, 'performance');
+    const expectedFiles = [
+      'after-desktop-ultra-town.json',
+      'after-mobile-low-town.json',
+      'before-desktop-ultra-town.json',
+      'before-mobile-low-town.json',
+    ];
+    expect(listFilesRecursive(performanceRoot, '.json')).toEqual(expectedFiles);
+
+    const conditionContracts = [
+      { key: 'visibleShadowOn', rootVisible: true, shadowEnabled: true },
+      { key: 'hiddenShadowOn', rootVisible: false, shadowEnabled: true },
+      { key: 'visibleShadowOff', rootVisible: true, shadowEnabled: false },
+      { key: 'hiddenShadowOff', rootVisible: false, shadowEnabled: false },
+    ] as const;
+    const sampledBlockContracts = [
+      { label: 'town-visible-shadow-on-1', rootVisible: true, shadowEnabled: true },
+      { label: 'town-hidden-shadow-on-1', rootVisible: false, shadowEnabled: true },
+      { label: 'town-hidden-shadow-on-2', rootVisible: false, shadowEnabled: true },
+      { label: 'town-visible-shadow-on-2', rootVisible: true, shadowEnabled: true },
+      { label: 'town-visible-shadow-off-1', rootVisible: true, shadowEnabled: false },
+      { label: 'town-hidden-shadow-off-1', rootVisible: false, shadowEnabled: false },
+      { label: 'town-hidden-shadow-off-2', rootVisible: false, shadowEnabled: false },
+      { label: 'town-visible-shadow-off-2', rootVisible: true, shadowEnabled: false },
+    ] as const;
+    const directBlockContracts = sampledBlockContracts.map(({ label, ...state }) => ({
+      label: label.replace(/-\d$/, '').replace(/^town-/, 'direct-town-'),
+      ...state,
+    }));
+    const scenarioContracts = EASTBROOK_TOWN_PERF_SCENARIOS as ReadonlyArray<{
+      name: string;
+      viewName: string;
+    }>;
+    // Frozen performance evidence validates against the ACCEPTED frozen
+    // framing, not the live matched views: a later deliberate re-aim (the
+    // round-4 armoury-relation move to the barracks garrison) diverges the
+    // live view while the recorded scenarios keep their capture-time aim.
+    // The declares-stale test above owns the divergence accounting.
+    const views = ACCEPTED_POLISH_V2_MATCHED_CAPTURE_VIEWS as readonly CaptureViewContract[];
+
+    for (const prefix of ['before', 'after'] as const) {
+      for (const profile of PROFILES) {
+        const fileName = `${prefix}-${profile.name}-town.json`;
+        const filePath = path.join(performanceRoot, fileName);
+        expect(statSync(filePath).size, filePath).toBeGreaterThan(100_000);
+        const evidence = readJsonFile<PerformanceEvidence>(filePath);
+        const metadata = readJsonFile<CaptureMetadata>(
+          path.join(POLISH_ROOT, 'metadata', `${prefix}-${profile.name}.json`),
+        );
+        const profileContract = (
+          EASTBROOK_TOWN_CAPTURE_PROFILES as readonly CaptureProfileContract[]
+        ).find((candidate) => candidate.name === profile.name);
+        if (!profileContract) throw new Error(`missing capture profile ${profile.name}`);
+        const contractId = prefix === 'before' ? 'polish-baseline' : 'polish-v2';
+        const expectedPolishProvenance =
+          prefix === 'before' ? BASELINE_POLISH_PROVENANCE : ACCEPTED_POLISH_V2_PROVENANCE;
+        const captureContractSnapshot =
+          prefix === 'before' ? null : ACCEPTED_POLISH_V2_TOWN_CONTRACT;
+        const metadataIdentity = metadata.records[0];
+        if (!metadataIdentity) throw new Error(`missing metadata identity for ${fileName}`);
+
+        expect(evidence).toMatchObject({
+          schemaVersion: 2,
+          captureScope: 'town',
+          shotPrefix: prefix,
+          profile: profile.name,
+          expectedTown: true,
+          expectedArmoury: true,
+          townContract: { id: contractId },
+          assetFailures: [],
+          captureDiagnostics: { assetFailures: [] },
+        });
+        expect(() =>
+          assertNoCaptureErrors(
+            evidence.captureDiagnostics.pageErrors,
+            evidence.captureDiagnostics.consoleErrors,
+          ),
+        ).not.toThrow();
+        for (const [recordIndex, record] of metadata.records.entries()) {
+          expect(record.source, `${fileName} metadata source ${recordIndex}`).toEqual(
+            metadataIdentity.source,
+          );
+          expect(record.source.fingerprint, `${fileName} town fingerprint ${recordIndex}`).toBe(
+            expectedTownSourceFingerprint,
+          );
+        }
+        expect(evidence.source, `${fileName} source`).toEqual(metadataIdentity.source);
+        expect(metadata.polishProvenance, `${fileName} metadata provenance`).toEqual(
+          expectedPolishProvenance,
+        );
+        expect(metadata.sourceFingerprint, `${fileName} metadata town fingerprint`).toBe(
+          expectedTownSourceFingerprint,
+        );
+        expect(evidence.polishProvenance, `${fileName} provenance`).toEqual(
+          expectedPolishProvenance,
+        );
+        expect(evidence.townContract, `${fileName} contract`).toEqual(
+          metadataIdentity.townContract,
+        );
+        expect(evidence.settings, `${fileName} settings identity`).toEqual(
+          metadataIdentity.renderer.settings,
+        );
+        expect(metadataIdentity.renderer.tier, `${fileName} profile tier`).toBe(
+          profileContract.tier,
+        );
+        for (const [key, value] of Object.entries(profileContract.settings)) {
+          expect(evidence.settings[key], `${fileName} setting ${key}`).toBe(value);
+        }
+        if (profileContract.mobile) {
+          expect(metadataIdentity.viewport, `${fileName} touch capture`).toMatchObject({
+            observed: { touch: true, maxTouchPoints: 1 },
+            touchHudVisible: true,
+          });
+        } else {
+          expect(metadataIdentity.viewport, `${fileName} desktop capture`).toMatchObject({
+            observed: { touch: false, maxTouchPoints: 0 },
+            touchHudVisible: false,
+          });
+        }
+
+        expect(evidence.gl.vendor.length, `${fileName} GL vendor`).toBeGreaterThan(0);
+        expect(evidence.gl.renderer.length, `${fileName} GL renderer`).toBeGreaterThan(0);
+        expect(evidence.coldStart.navigationAndBootMs, `${fileName} boot`).toBeGreaterThanOrEqual(
+          evidence.coldStart.bootSettleMs,
+        );
+        expect(evidence.coldStart.bootSettleMs, `${fileName} boot settle`).toBeGreaterThan(0);
+        expectFiniteNonNegative(evidence.coldStart.preloadWaitMs, `${fileName} preload wait`);
+        expect(evidence.coldStart.preload, `${fileName} preload`).toMatchObject({
+          waitMs: evidence.coldStart.preloadWaitMs,
+          complete: true,
+        });
+        expect(evidence.coldStart.preload.tasks, `${fileName} preload tasks`).toBeGreaterThan(0);
+        expect(evidence.coldStart.rendererPrewarm, `${fileName} renderer prewarm`).toMatchObject({
+          timedOut: false,
+          compileTimedOut: false,
+          manifestFailed: 0,
+          manifestTimedOut: 0,
+          failedEntryIds: [],
+          timedOutEntryIds: [],
+        });
+        expect(evidence.sample.phase, `${fileName} sample phase`).toBe('warmed');
+        expect(evidence.sample.warmupMs, `${fileName} warmup`).toBeGreaterThan(0);
+        expect(evidence.sample.sampleMs, `${fileName} sample duration`).toBeGreaterThan(0);
+        expect(Number.isInteger(evidence.sample.repeats), `${fileName} sample repeats`).toBe(true);
+        expect(evidence.sample.repeats, `${fileName} sample repeats`).toBeGreaterThan(0);
+        expectFiniteRecord(evidence.initialResources, `${fileName}.initialResources`);
+        expect(evidence.initialResources, `${fileName} initial context`).toMatchObject({
+          contextLost: 0,
+          contextRestored: 0,
+        });
+        expect(
+          evidence.scenarios.map((scenario) => ({ name: scenario.name, view: scenario.view })),
+          `${fileName} scenario contract`,
+        ).toEqual(
+          scenarioContracts.map((scenario) => ({
+            name: scenario.name,
+            view: scenario.viewName,
+          })),
+        );
+
+        for (const [scenarioIndex, scenario] of evidence.scenarios.entries()) {
+          const scenarioContract = scenarioContracts[scenarioIndex];
+          const view = views.find((candidate) => candidate.name === scenarioContract.viewName);
+          if (!view) throw new Error(`missing performance view ${scenarioContract.viewName}`);
+          const label = `${fileName} ${scenario.name}`;
+
+          expect(scenario.world, `${label} world`).toMatchObject({
+            seed: EASTBROOK_ARMOURY_CAPTURE_SEED,
+            player: EASTBROOK_ARMOURY_PLAYER_STATE,
+            camera: view.camera,
+            target: view.target,
+          });
+          expect(scenario.world.lot, `${label} metadata lot identity`).toEqual(
+            metadataIdentity.world.lot,
+          );
+          expect(() => assertTownArmouryIdentity(scenario.world.lot, true)).not.toThrow();
+          expect(scenario.settle.requestedMs, `${label} requested settle`).toBeGreaterThan(0);
+          expectFiniteNonNegative(scenario.settle.observedMs, `${label} observed settle`);
+          expect(() =>
+            assertTownAttributionTargetState({
+              targets: scenario.attributionTargets,
+              contractId,
+              requestedVisible: true,
+              captureContractSnapshot,
+            }),
+          ).not.toThrow();
+          expect(scenario.sequence[0]?.targets, `${label} initial target identity`).toEqual(
+            scenario.attributionTargets,
+          );
+          expect(
+            scenario.sequence.map((block) => ({ label: block.label, ...block.requested })),
+            `${label} sampled sequence`,
+          ).toEqual(sampledBlockContracts);
+          expect(Object.keys(scenario.conditions).sort(), `${label} condition inventory`).toEqual(
+            conditionContracts.map((condition) => condition.key).sort(),
+          );
+
+          for (const [blockIndex, block] of scenario.sequence.entries()) {
+            const expectedBlock = sampledBlockContracts[blockIndex];
+            if (!expectedBlock) throw new Error(`unexpected sampled block ${blockIndex}`);
+            const blockLabel = `${label} ${block.label}`;
+            expect(() =>
+              assertTownPerformanceBlockState({
+                raw: block,
+                label: blockLabel,
+                rootVisible: expectedBlock.rootVisible,
+                shadowEnabled: expectedBlock.shadowEnabled,
+                contractId,
+                captureContractSnapshot,
+              }),
+            ).not.toThrow();
+            expect(() =>
+              assertTownAttributionTargetState({
+                targets: block.targets,
+                contractId,
+                requestedVisible: expectedBlock.rootVisible,
+                captureContractSnapshot,
+              }),
+            ).not.toThrow();
+            expectSampledBlockSummary(block, profileContract, evidence.timingBasis, blockLabel);
+          }
+
+          for (const condition of conditionContracts) {
+            const blocks = scenario.sequence.filter(
+              (block) =>
+                block.requested.rootVisible === condition.rootVisible &&
+                block.requested.shadowEnabled === condition.shadowEnabled,
+            );
+            expectConditionSummary(
+              scenario.conditions[condition.key],
+              blocks,
+              `${label} ${condition.key}`,
+            );
+          }
+          const sampledDeltas = deriveTownPerformanceDeltas(scenario.conditions);
+          expect(scenario.sampledDeltas, `${label} sampled deltas`).toEqual(sampledDeltas);
+          for (const key of ['townWithoutShadows', 'townWithShadows'] as const) {
+            expect(sampledDeltas[key].calls, `${label} sampled ${key} calls`).toBeGreaterThan(0);
+            expect(
+              sampledDeltas[key].triangles,
+              `${label} sampled ${key} triangles`,
+            ).toBeGreaterThan(0);
+          }
+
+          const direct = scenario.directRenderAttribution;
+          expect(
+            direct.sequence.map((block) => ({ label: block.label, ...block.requested })),
+            `${label} direct sequence`,
+          ).toEqual(directBlockContracts);
+          expect(
+            Object.keys(direct.conditions).sort(),
+            `${label} direct condition inventory`,
+          ).toEqual(conditionContracts.map((condition) => condition.key).sort());
+          for (const [blockIndex, block] of direct.sequence.entries()) {
+            const expectedBlock = directBlockContracts[blockIndex];
+            if (!expectedBlock) throw new Error(`unexpected direct block ${blockIndex}`);
+            const blockLabel = `${label} ${block.label}`;
+            expect(() =>
+              assertTownPerformanceBlockState({
+                raw: block,
+                label: blockLabel,
+                rootVisible: expectedBlock.rootVisible,
+                shadowEnabled: expectedBlock.shadowEnabled,
+                contractId,
+                captureContractSnapshot,
+              }),
+            ).not.toThrow();
+            expect(() =>
+              assertTownAttributionTargetState({
+                targets: block.targets,
+                contractId,
+                requestedVisible: expectedBlock.rootVisible,
+                captureContractSnapshot,
+              }),
+            ).not.toThrow();
+            expectFiniteRecord(block.render, `${blockLabel}.render`);
+          }
+          for (const condition of conditionContracts) {
+            const blocks = direct.sequence.filter(
+              (block) =>
+                block.requested.rootVisible === condition.rootVisible &&
+                block.requested.shadowEnabled === condition.shadowEnabled,
+            );
+            expectDirectConditionSummary(
+              direct.conditions[condition.key],
+              blocks,
+              `${label} ${condition.key}`,
+            );
+          }
+          const directDeltas = deriveTownPerformanceDeltas(direct.conditions);
+          expect(direct.deltas, `${label} direct deltas`).toEqual(directDeltas);
+          expect(scenario.deltas, `${label} final deltas`).toEqual(directDeltas);
+        }
+      }
+    }
+  });
+
+  it('pins exact WebP contact sheets, RIFF integrity, dimensions, and minimum size', () => {
+    const contactsRoot = path.join(POLISH_ROOT, 'contacts');
+    const expectedFiles = [
+      'after-desktop-ultra-contact.webp',
+      'after-mobile-low-contact.webp',
+      'before-desktop-ultra-contact.webp',
+      'before-mobile-low-contact.webp',
+    ];
+    expect(listFilesRecursive(contactsRoot, '.webp')).toEqual(expectedFiles);
+
+    for (const prefix of ['before', 'after'] as const) {
+      for (const profile of PROFILES) {
+        const fileName = `${prefix}-${profile.name}-contact.webp`;
+        const filePath = path.join(contactsRoot, fileName);
+        const bytes = readFileSync(filePath);
+        const dimensions = profile.name === 'desktop-ultra' ? [1600, 1608] : [1600, 1374];
+        expect(bytes.length, filePath).toBeGreaterThan(100_000);
+        expect(bytes.subarray(0, 4).toString('ascii'), filePath).toBe('RIFF');
+        expect(bytes.readUInt32LE(4) + 8, filePath).toBe(bytes.length);
+        expect(bytes.subarray(8, 12).toString('ascii'), filePath).toBe('WEBP');
+        expect(bytes.subarray(12, 16).toString('ascii'), filePath).toBe('VP8 ');
+        expect(bytes.subarray(23, 26).toString('hex'), filePath).toBe('9d012a');
+        expect(bytes.readUInt16LE(26) & 0x3fff, filePath).toBe(dimensions[0]);
+        expect(bytes.readUInt16LE(28) & 0x3fff, filePath).toBe(dimensions[1]);
+      }
+    }
+  });
+});

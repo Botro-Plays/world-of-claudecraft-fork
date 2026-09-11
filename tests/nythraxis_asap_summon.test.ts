@@ -1,0 +1,72 @@
+import { describe, expect, it } from 'vitest';
+import { Sim } from '../src/sim/sim';
+import { type Entity, NYTHRAXIS_ADDS_ENABLED } from '../src/sim/types';
+import { EMPTY_TEST_WORLD } from './sim_shared';
+
+const HEROIC_ADD_IDS = [
+  'nythraxis_heroic_warrior_add',
+  'nythraxis_heroic_priest_add',
+  'nythraxis_heroic_rogue_add',
+];
+
+function heroicBoss(sim: Sim, pid: number): { boss: Entity; st: NonNullable<Entity['nythraxis']> } {
+  sim.chat('/dev raid heroic', pid);
+  sim.chat('/dev god', pid); // survive the Deathless Rage nuke so the encounter runs on
+  const boss = [...sim.entities.values()].find(
+    (e) => e.kind === 'mob' && e.templateId === 'nythraxis_scourge_of_thornpeak',
+  ) as Entity;
+  boss.inCombat = true;
+  boss.aggroTargetId = pid;
+  boss.threat.set(pid, 1000);
+  sim.tick(); // spin up encounter state
+  return { boss, st: boss.nythraxis! };
+}
+
+// Drop the boss into phase 2 with an imminent, uncontested Deathless Rage, then
+// tick until it lands and any summon channel would have resolved. The Rage is a
+// body-owning major, so the other majors and the 6 s gap after the last one are
+// parked too: this suite is about the court, not the scheduler
+// (tests/nythraxis_sigil_gravefire.test.ts owns that).
+function forcePillarCast(sim: Sim, st: NonNullable<Entity['nythraxis']>): void {
+  st.phase = 2;
+  st.deathlessTimer = 0;
+  st.soulRendTimer = 100;
+  st.soulRendMarks = [];
+  st.soulRendLockout = 0;
+  st.sigilTimer = 999;
+  st.sigil = null;
+  st.majorGapTimer = 0;
+  for (let i = 0; i < 20 * 16; i++) sim.tick();
+}
+
+// Owner playtest call 2026-09-04 (NYTHRAXIS_ADDS_ENABLED in types.ts): the redo
+// fields no adds, so the heroic court never rises behind a landed Deathless
+// Rage. The summon channel and spawn helpers stay authored for the day the
+// switch flips back; this suite pins that the encounter loop never reaches them.
+describe('heroic Nythraxis fields no court while the redo runs without adds', () => {
+  const countHeroicAdds = (sim: Sim) =>
+    [...sim.entities.values()].filter(
+      (e) => e.kind === 'mob' && !e.dead && HEROIC_ADD_IDS.includes(e.templateId),
+    ).length;
+
+  it('raises no court after an uninterrupted Deathless Rage lands, on engage or later', () => {
+    expect(NYTHRAXIS_ADDS_ENABLED).toBe(false);
+    const sim = new Sim({
+      seed: 4,
+      playerClass: 'warrior',
+      autoEquip: true,
+      devCommands: true,
+      world: EMPTY_TEST_WORLD,
+    });
+    sim.setPlayerLevel(20);
+    const { boss, st } = heroicBoss(sim, sim.playerId);
+    expect(countHeroicAdds(sim)).toBe(0); // phase 1: no court
+    forcePillarCast(sim, st);
+    expect(countHeroicAdds(sim)).toBe(0); // the landed Rage raises nobody
+    expect(st.heroicSummonChannelRemaining ?? 0).toBe(0);
+    expect(boss.castingAbility).not.toBe('nythraxis_heroic_summon');
+    // A second Deathless Rage cycle changes nothing either.
+    forcePillarCast(sim, st);
+    expect(countHeroicAdds(sim)).toBe(0);
+  });
+});

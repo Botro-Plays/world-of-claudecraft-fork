@@ -1,0 +1,216 @@
+import type { MaterialSourceTransferSelection } from '../sim/material_source_transfer_selection';
+import type { InvSlot } from '../sim/types';
+
+// ---------------------------------------------------------------------------
+// The Guild Bank: a shared, guild-owned treasury plus pooled item store, the
+// guild-scale sibling of the personal bank (bank.ts). Every guild member can
+// SEE it (the snapshot streams to any stamped member at a banker, `canEdit`
+// false), but only officer-plus (leader included) can EDIT: every op (deposit,
+// withdraw, gold moves, slot purchases) refuses a plain member server-side, and
+// the client renders the member view read-only. guildBankInfo streams only
+// while a member stands at a banker NPC (the bankInfo pattern); offline
+// play never has a guild, so the offline Sim reads null and every command is
+// inert. A new guild's bank is UNOPENED (0 item slots; treasury gold ops work
+// from day one): ladder rung 0 opens it for 24 slots, paid from the clicking
+// officer's own purse, and rungs 1+ are treasury-bought 6-slot expansions
+// (GUILD_BANK_RUNG_PRICES in src/sim/guild_bank.ts); the treasury is
+// capped and deposits beyond the cap are refused, never truncated.
+//
+// The guild_bank_* wire tokens, dispatch, and the snapshot mirror are live:
+// ClientWorld sends them and the server acts through the sim's pid-first
+// guildBank*For entry points. The offline Sim arm is inert forever (offline
+// play never has a guild). Books are not persisted until Phase 3.
+// ---------------------------------------------------------------------------
+
+export interface GuildBankInfo {
+  treasury: number; // copper the guild holds, within [0, GUILD_BANK_TREASURY_CAP]
+  slots: InvSlot[]; // the pooled contents (a boundary clone, never a live sim reference)
+  capacity: number; // total slot budget: the granted slots of every bought rung
+  // Granted slots across bought ladder rungs, always a value from
+  // GUILD_BANK_LADDER_POSITIONS: 0 while the bank is UNOPENED (the client
+  // derives the open-the-bank pane from this), 24 once opened, +6 per expansion.
+  purchasedSlots: number;
+  // Copper price of the NEXT ladder rung (table lookup, never client-supplied;
+  // rung 0 is purse-paid, rungs 1+ treasury-paid), null once the ladder is done.
+  nextExpansionPrice: number | null;
+  // True for officer-plus (leader included), the ranks the op gate accepts;
+  // false for a plain member, whose view is READ-ONLY. Server-computed from the
+  // membership stamp, never client-derived: the UI renders from this flag, and
+  // the sim refuses every op regardless of what a tampered client sends.
+  canEdit: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// The guild bank ACTIVITY LOG: the social trust mechanism the officer-only
+// EDIT design rests on. Every guild bank op already writes an append-only
+// `bank_ledger` row; this read is what lets the guild SEE those rows, so a
+// quiet drain by one officer is visible to the rest instead of being knowledge
+// that exists only in the operator's database. Readable by EVERY guild member
+// (the same membership gate as the bank view itself), which is the point:
+// the members whose pooled goods the officers steward can see what moved.
+//
+// COLD DATA. It is fetched on demand when the log view opens (the
+// guildBankLog() read requests it), never on the 20 Hz snapshot stream: it is
+// identical for every member of a guild, it changes only when the book does,
+// and 50 rows of prose have no business riding a movement frame.
+//
+// What a player is shown is deliberately NARROWER than what the ledger holds:
+// the internal anomaly ops (`escrow_deficit`, `counterparty_orphan`) are
+// operator forensics, not guild history, and never reach the client at all.
+// ---------------------------------------------------------------------------
+
+/**
+ * How many rows one read returns: the window the server answers with, the hard
+ * bound the client decoder truncates at, AND the number the pane's scope line
+ * says out loud. It lives on the SEAM because all three of those are the same
+ * fact: with the constant duplicated per layer, raising the cap would have left
+ * the copy lying in every language while the decoder silently dropped rows.
+ *
+ * A short recent history rather than an archive, which is what a guild actually
+ * reads after "who took the ore?"; it also bounds the frame and the index scan.
+ * The full history stays in bank_ledger forever for the audit.
+ */
+export const GUILD_BANK_LOG_LIMIT = 50;
+
+/** The ops a guild can SEE. A strict subset of the `bank_ledger` op vocabulary
+ *  (server/db.ts BankLedgerRow['op']): the two diagnostic anomaly ops are never
+ *  projected here, so a client can never render one. */
+export type GuildBankLogOp =
+  | 'deposit' // an item went into the book
+  | 'withdraw' // an item came out of it
+  | 'deposit_gold' // copper into the treasury
+  | 'withdraw_gold' // copper out of it
+  | 'buy_slots' // a treasury-paid expansion rung
+  | 'open_bank' // ladder rung 0, opened from the officer's own purse
+  | 'create_fee' // the founder's charter fee (a purse payment, not a treasury move)
+  | 'admin_purge'; // an operator removed a stuck item; NEVER a guildmate's doing
+
+/**
+ * The TRANSACTION HISTORY filter: which slice of the visible ops one read asks
+ * for. `all` is every visible op; `items` is the two item moves plus the
+ * operator purge (the three ops that change the book's contents); `money` is
+ * every copper movement (treasury moves and the purse-paid ladder/charter
+ * payments). A CLOSED vocabulary on the seam because the server turns it into
+ * the SQL op predicate: the client never names ops on the wire, only a kind,
+ * so a tampered request can widen nothing (a kind outside this set is read as
+ * `all`, which is the widest thing a member may see anyway).
+ */
+export type GuildBankLogKind = 'all' | 'items' | 'money';
+
+/** The filter vocabulary in display order (the pane's chip strip). */
+export const GUILD_BANK_LOG_KINDS: readonly GuildBankLogKind[] = ['all', 'items', 'money'];
+
+/**
+ * Which filter slice one visible op belongs to. Exhaustive by construction
+ * (the Record type), so a new visible op cannot ship without being classified,
+ * and the server's SQL predicate and the client's chip strip read the SAME
+ * classification rather than two lists that could drift.
+ */
+export const GUILD_BANK_LOG_OP_KIND: Readonly<
+  Record<GuildBankLogOp, Exclude<GuildBankLogKind, 'all'>>
+> = {
+  deposit: 'items',
+  withdraw: 'items',
+  admin_purge: 'items',
+  deposit_gold: 'money',
+  withdraw_gold: 'money',
+  buy_slots: 'money',
+  open_bank: 'money',
+  create_fee: 'money',
+};
+
+/** Coerce anything (a wire field, a remembered setting) to a kind, `all` when
+ *  it is not one: the widest slice a member may read is the safe default. */
+export function guildBankLogKindOf(raw: unknown): GuildBankLogKind {
+  return raw === 'items' || raw === 'money' ? raw : 'all';
+}
+
+/** One rendered line of guild bank history. Carries no account id, no character
+ *  id, no realm, and no IP: an actor is a DISPLAY NAME or nothing at all. */
+export interface GuildBankLogEntry {
+  /** The `bank_ledger` row id: monotonic, the stable ordering and de-dupe key.
+   *  Not an account-scoped identifier and not addressable by any other route. */
+  id: number;
+  /** Epoch milliseconds the row was written; rendered through the i18n
+   *  date formatter at the painter boundary, never pre-formatted server-side. */
+  at: number;
+  /** The acting character's display name (player-authored text: the painter
+   *  splices it verbatim into an escaping sink, never through t()).
+   *  NULL means no guildmate acted, which has exactly two shapes: an
+   *  `admin_purge` (whose ledger character column is only the escrow CARRIER, a
+   *  bystander who did not order the removal, so naming them would be a lie),
+   *  and the unreachable-in-practice deleted-character row. */
+  actor: string | null;
+  op: GuildBankLogOp;
+  /** The item id the op moved, or null for a money/ladder op. */
+  itemId: string | null;
+  /** How many copies moved (a positive magnitude; the op names the direction). */
+  count: number | null;
+  /** RAW copper the op moved, a positive magnitude (the op names the
+   *  direction); null for an item op. Formatted through the i18n formatMoney at
+   *  the painter boundary, never here. */
+  copper: number | null;
+}
+
+/** The whole log read. `loading` is the in-flight state (entries hold whatever
+ *  the last successful response carried, so a refresh never blanks the pane);
+ *  `refused` means the server declined the read (a lost guild, a kick
+ *  mid-view, a walk-away), which the pane must say out loud rather than showing
+ *  an empty list that reads as "no officer has ever done anything".
+ *
+ *  The TRANSACTION HISTORY shape: `entries` is every page loaded so far for
+ *  `kind` (the newest window plus any older pages the viewer asked for,
+ *  contiguous, newest first), `more` says whether the server holds rows older
+ *  than the oldest one loaded, and `olderPending` says an older page is in
+ *  flight. `more` is a server FACT (the page reader fetches one row past the
+ *  window to learn it), never inferred from a full page, so "that is the whole
+ *  history" is only ever said when it is true. */
+export interface GuildBankLogView {
+  state: 'loading' | 'ready' | 'refused';
+  kind: GuildBankLogKind;
+  entries: readonly GuildBankLogEntry[];
+  more: boolean;
+  olderPending: boolean;
+}
+
+export interface IWorldGuildBank {
+  // Non-null only while a guild member (any rank) stands at a banker NPC;
+  // `canEdit` says whether the viewer may act on it or only look.
+  guildBankInfo: GuildBankInfo | null;
+  /** The guild bank activity log, fetched ON DEMAND: calling this is what
+   *  REQUESTS it (there is no snapshot key for it), so a caller must only call
+   *  it while the log view is actually on screen.
+   *
+   *  Two things bound the traffic, and they are different: this call is
+   *  IDEMPOTENT inside its TTL, so a per-frame repaint of an open log view
+   *  sends at most one request per TTL rather than one per frame; and while the
+   *  view is CLOSED nobody calls it at all, so nothing is sent. Neither alone
+   *  is enough (the second is the one a caller can get wrong), which is why the
+   *  UI gates on the pane being visible rather than on its remembered sub-view.
+   *  The offline Sim has no guild and always answers an empty ready view.
+   *
+   *  `kind` selects the history slice (default `all`). Reading a DIFFERENT
+   *  kind than the last read drops the loaded pages and requests that kind's
+   *  newest window at once: the pages belong to one filter, and a row set
+   *  built under another must never be shown under this label. */
+  guildBankLog(kind?: GuildBankLogKind): GuildBankLogView;
+  /** Request the next OLDER page of the history slice last read (rows older
+   *  than the oldest loaded one). A no-op while nothing is loaded, while an
+   *  older page is already in flight, or once the view reports no `more`: the
+   *  view is what says whether this has anything to ask for, so a caller
+   *  never has to guard it. Offline: inert (no guild, nothing to page). */
+  guildBankLogOlder(): void;
+  guildBankDepositGold(amount: number): void;
+  guildBankWithdrawGold(amount: number): void;
+  guildBankDeposit(
+    slotIndex: number,
+    count?: number,
+    selection?: MaterialSourceTransferSelection,
+  ): void;
+  guildBankWithdraw(
+    slotIndex: number,
+    count?: number,
+    selection?: MaterialSourceTransferSelection,
+  ): void;
+  guildBankBuySlots(): void;
+}

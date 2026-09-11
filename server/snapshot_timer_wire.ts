@@ -1,0 +1,574 @@
+import { isPersistentEngineAura } from '../src/sim/persistent_aura';
+import type { Aura, Entity } from '../src/sim/types';
+import type { StableCooldownWire } from '../src/world_api';
+
+export interface SerializedTimerWire {
+  json: string;
+  revision: number;
+}
+
+export function jsonWithField(objectJson: string, key: string, valueJson: string): string {
+  const separator = objectJson === '{}' ? '' : ',';
+  return `${objectJson.slice(0, -1)}${separator}"${key}":${valueJson}}`;
+}
+
+type CooldownDeadline = StableCooldownWire;
+
+interface StableAuraRecord {
+  id: string;
+  name: string;
+  kind: string;
+  duration: number;
+  value: number;
+  value2: number | undefined;
+  value3: number | undefined;
+  tickInterval: number | undefined;
+  school: string;
+  stacks: number | undefined;
+  charges: number | undefined;
+  empowerAbilities: readonly string[] | undefined;
+  sourceId: number;
+  unbreakableControl: boolean;
+  undispellable: boolean;
+  // A FLASK-sourced buff (src/sim/items.ts stamps Aura.flask on the flask arm
+  // alone). Presence-only, like undispellable beside it: the client reads it to
+  // paint the flask glyph, and never to decide an outcome. It is a stable
+  // property of the aura for its whole life, so it costs this cache no churn.
+  flask: boolean;
+  // Presence of a break threshold (Lingering Dread), never the live soak value
+  // - that decrements per hit and would churn this cache (see WireAura.bt below).
+  breakArmed: boolean;
+  paused: boolean;
+  permanent: boolean;
+  deadline: number;
+}
+
+interface StableAuraWire {
+  id: string;
+  name: string;
+  kind: string;
+  dur: number;
+  perm?: 1;
+  exp?: number;
+  rem?: number;
+  value?: number;
+  value2?: number;
+  value3?: number;
+  tickInterval?: number;
+  school?: string;
+  stacks?: number;
+  charges?: number;
+  emp?: readonly string[];
+  src?: number;
+  ub?: 1;
+  und?: 1;
+  bt?: 1;
+  /** Flask-sourced buff marker; see StableAuraRecord.flask. */
+  fl?: 1;
+}
+
+function round2(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function sameStringList(
+  a: readonly string[] | undefined,
+  b: readonly string[] | undefined,
+): boolean {
+  if (a === b) return true;
+  if (!a || !b || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+// Stacks are omitted below 2 as a sparsity rule, EXCEPT for the persistent
+// engine banks (druid/shaman/hunter spec engines): their badge and tooltip
+// teach the live stage including 0 and 1, and the decode side cannot tell
+// "absent because 1" from "absent because 0", so the count is always sent.
+// Mirrors the legacy wireAura stacks rule (wireAura below) exactly, so both
+// encoders cannot drift.
+function wireStacks(aura: Aura): number | undefined {
+  if (isPersistentEngineAura(aura.id)) return aura.stacks ?? 0;
+  return aura.stacks && aura.stacks > 1 ? aura.stacks : undefined;
+}
+
+function auraMatches(
+  record: StableAuraRecord,
+  aura: Aura,
+  simTime: number,
+  paused: boolean,
+): boolean {
+  const wirePaused = paused || isPersistentEngineAura(aura.id);
+  const permanent = aura.permanent === true;
+  const deadline = permanent ? 0 : round2(wirePaused ? aura.remaining : simTime + aura.remaining);
+  return (
+    record.id === aura.id &&
+    record.name === aura.name &&
+    record.kind === aura.kind &&
+    record.duration === aura.duration &&
+    record.value === aura.value &&
+    record.value2 === aura.value2 &&
+    record.value3 === aura.value3 &&
+    record.tickInterval === aura.tickInterval &&
+    record.school === aura.school &&
+    record.stacks === wireStacks(aura) &&
+    record.charges === aura.charges &&
+    sameStringList(record.empowerAbilities, aura.empowerAbilities) &&
+    record.sourceId === aura.sourceId &&
+    record.unbreakableControl === (aura.unbreakableControl === true) &&
+    record.undispellable === (aura.undispellable === true) &&
+    record.flask === (aura.flask === true) &&
+    record.breakArmed === (aura.breakThreshold !== undefined) &&
+    record.paused === wirePaused &&
+    record.permanent === permanent &&
+    record.deadline === deadline
+  );
+}
+
+function auraRecord(aura: Aura, simTime: number, paused: boolean): StableAuraRecord {
+  const wirePaused = paused || isPersistentEngineAura(aura.id);
+  return {
+    id: aura.id,
+    name: aura.name,
+    kind: aura.kind,
+    duration: aura.duration,
+    value: aura.value,
+    value2: aura.value2,
+    value3: aura.value3,
+    tickInterval: aura.tickInterval,
+    school: aura.school,
+    stacks: wireStacks(aura),
+    charges: aura.charges,
+    empowerAbilities: aura.empowerAbilities ? [...aura.empowerAbilities] : undefined,
+    sourceId: aura.sourceId,
+    unbreakableControl: aura.unbreakableControl === true,
+    undispellable: aura.undispellable === true,
+    flask: aura.flask === true,
+    breakArmed: aura.breakThreshold !== undefined,
+    paused: wirePaused,
+    permanent: aura.permanent === true,
+    deadline: aura.permanent ? 0 : round2(wirePaused ? aura.remaining : simTime + aura.remaining),
+  };
+}
+
+function auraWire(record: StableAuraRecord): StableAuraWire {
+  const wire: StableAuraWire = {
+    id: record.id,
+    name: record.name,
+    kind: record.kind,
+    dur: record.permanent ? 0 : record.duration,
+  };
+  if (record.permanent) wire.perm = 1;
+  else if (record.paused) wire.rem = record.deadline;
+  else wire.exp = record.deadline;
+  if (record.value !== 0) wire.value = record.value;
+  if (record.value2 !== undefined) wire.value2 = record.value2;
+  if (record.value3 !== undefined) wire.value3 = record.value3;
+  if (record.tickInterval !== undefined) wire.tickInterval = record.tickInterval;
+  if (record.school !== 'physical') wire.school = record.school;
+  if (record.stacks !== undefined) wire.stacks = record.stacks;
+  if (record.charges !== undefined) wire.charges = record.charges;
+  if (record.empowerAbilities !== undefined) wire.emp = record.empowerAbilities;
+  if (record.sourceId) wire.src = record.sourceId;
+  if (record.unbreakableControl) wire.ub = 1;
+  if (record.undispellable) wire.und = 1;
+  if (record.flask) wire.fl = 1;
+  if (record.breakArmed) wire.bt = 1;
+  return wire;
+}
+
+/**
+ * Per-entity stable aura cache. Live countdowns are represented as absolute expiry
+ * times, so an ordinary tick does not allocate or stringify a new aura list.
+ */
+export class StableAuraWireCache {
+  private records: StableAuraRecord[] = [];
+  private result: SerializedTimerWire | null = null;
+  rebuilds = 0;
+
+  encode(auras: readonly Aura[], simTime: number, paused: boolean): SerializedTimerWire {
+    let changed = this.records.length !== auras.length;
+    if (!changed) {
+      for (let i = 0; i < auras.length; i++) {
+        if (!auraMatches(this.records[i], auras[i], simTime, paused)) {
+          changed = true;
+          break;
+        }
+      }
+    }
+    if (!changed && this.result) return this.result;
+
+    this.records = auras.map((aura) => auraRecord(aura, simTime, paused));
+    this.rebuilds++;
+    this.result = {
+      json: JSON.stringify(this.records.map(auraWire)),
+      revision: this.rebuilds,
+    };
+    return this.result;
+  }
+}
+
+function findProtectiveHourglass(auras: readonly Aura[]): Aura | null {
+  for (const aura of auras) {
+    if (
+      aura.id === 'temporal_hourglass' &&
+      aura.kind === 'stasis' &&
+      aura.remaining > 0 &&
+      aura.value > 1
+    ) {
+      return aura;
+    }
+  }
+  return null;
+}
+
+function cooldownDeadline(
+  abilityId: string,
+  remaining: number,
+  simTime: number,
+  hourglass: Aura | null,
+  dead: boolean,
+): CooldownDeadline {
+  if (abilityId === 'temporal_hourglass' || !hourglass) return round2(simTime + remaining);
+  const rate = hourglass.value;
+  const acceleratedFor = dead ? remaining / rate : Math.min(hourglass.remaining, remaining / rate);
+  const normalWork = Math.max(0, remaining - acceleratedFor * rate);
+  return [round2(simTime + acceleratedFor + normalWork), rate, round2(simTime + acceleratedFor)];
+}
+
+function cooldownDeadlineMatches(
+  prior: CooldownDeadline | undefined,
+  abilityId: string,
+  remaining: number,
+  simTime: number,
+  hourglass: Aura | null,
+  dead: boolean,
+): boolean {
+  if (abilityId === 'temporal_hourglass' || !hourglass) {
+    return prior === round2(simTime + remaining);
+  }
+  if (!Array.isArray(prior)) return false;
+  const rate = hourglass.value;
+  const acceleratedFor = dead ? remaining / rate : Math.min(hourglass.remaining, remaining / rate);
+  const normalWork = Math.max(0, remaining - acceleratedFor * rate);
+  return (
+    prior[0] === round2(simTime + acceleratedFor + normalWork) &&
+    prior[1] === rate &&
+    prior[2] === round2(simTime + acceleratedFor)
+  );
+}
+
+function deadlineMapJson(deadlines: ReadonlyMap<string, CooldownDeadline>): string {
+  return JSON.stringify(Object.fromEntries(deadlines));
+}
+
+/** Per-recipient cache for v2 self timers. A spectator owner change resets it. */
+export class StableSelfTimerWireCache {
+  private ownerId: number | null = null;
+  private cooldowns = new Map<string, CooldownDeadline>();
+  private cooldownResult: SerializedTimerWire | null = null;
+  private nodes = new Map<string, number>();
+  private nodeResult: SerializedTimerWire | null = null;
+  private charges = new Map<string, number>();
+  private chargeResult: SerializedTimerWire | null = null;
+  private chargeRecharges = new Map<string, readonly [number, number]>();
+  private chargeRechargeResult: SerializedTimerWire | null = null;
+  cooldownRebuilds = 0;
+  nodeCooldownRebuilds = 0;
+  chargeRebuilds = 0;
+  chargeRechargeRebuilds = 0;
+
+  private setOwner(ownerId: number): void {
+    if (this.ownerId === ownerId) return;
+    this.ownerId = ownerId;
+    this.cooldowns.clear();
+    this.cooldownResult = null;
+    this.nodes.clear();
+    this.nodeResult = null;
+    this.charges.clear();
+    this.chargeResult = null;
+    this.chargeRecharges.clear();
+    this.chargeRechargeResult = null;
+  }
+
+  encodeCooldowns(
+    ownerId: number,
+    entity: Pick<Entity, 'cooldowns' | 'auras' | 'dead'>,
+    simTime: number,
+  ): SerializedTimerWire {
+    this.setOwner(ownerId);
+    const hourglass = findProtectiveHourglass(entity.auras);
+    let count = 0;
+    let changed = false;
+    for (const [abilityId, remaining] of entity.cooldowns) {
+      if (!(remaining > 0) || !Number.isFinite(remaining)) continue;
+      count++;
+      if (
+        !cooldownDeadlineMatches(
+          this.cooldowns.get(abilityId),
+          abilityId,
+          remaining,
+          simTime,
+          hourglass,
+          entity.dead,
+        )
+      ) {
+        changed = true;
+      }
+    }
+    if (count !== this.cooldowns.size) changed = true;
+    if (!changed && this.cooldownResult) return this.cooldownResult;
+
+    const next = new Map<string, CooldownDeadline>();
+    for (const [abilityId, remaining] of entity.cooldowns) {
+      if (!(remaining > 0) || !Number.isFinite(remaining)) continue;
+      next.set(abilityId, cooldownDeadline(abilityId, remaining, simTime, hourglass, entity.dead));
+    }
+    this.cooldowns = next;
+    this.cooldownRebuilds++;
+    this.cooldownResult = {
+      json: deadlineMapJson(next),
+      revision: this.cooldownRebuilds,
+    };
+    return this.cooldownResult;
+  }
+
+  encodeNodeCooldowns(
+    ownerId: number,
+    readyAt: Readonly<Record<string, number>>,
+    simTime: number,
+  ): SerializedTimerWire {
+    this.setOwner(ownerId);
+    let count = 0;
+    let changed = false;
+    for (const key in readyAt) {
+      const value = readyAt[key];
+      if (!(value > simTime) || !Number.isFinite(value)) continue;
+      count++;
+      if (this.nodes.get(key) !== round2(value)) changed = true;
+    }
+    if (count !== this.nodes.size) changed = true;
+    if (!changed && this.nodeResult) return this.nodeResult;
+
+    const next = new Map<string, number>();
+    for (const key in readyAt) {
+      const value = readyAt[key];
+      if (value > simTime && Number.isFinite(value)) next.set(key, round2(value));
+    }
+    this.nodes = next;
+    this.nodeCooldownRebuilds++;
+    this.nodeResult = {
+      json: JSON.stringify(Object.fromEntries(next)),
+      revision: this.nodeCooldownRebuilds,
+    };
+    return this.nodeResult;
+  }
+
+  encodeCharges(ownerId: number, abilityCharges: Entity['abilityCharges']): SerializedTimerWire {
+    this.setOwner(ownerId);
+    let count = 0;
+    let changed = false;
+    if (abilityCharges) {
+      for (const key in abilityCharges) {
+        count++;
+        if (this.charges.get(key) !== abilityCharges[key].charges) changed = true;
+      }
+    }
+    if (count !== this.charges.size) changed = true;
+    if (!changed && this.chargeResult) return this.chargeResult;
+
+    const next = new Map<string, number>();
+    if (abilityCharges) {
+      for (const key in abilityCharges) next.set(key, abilityCharges[key].charges);
+    }
+    this.charges = next;
+    this.chargeRebuilds++;
+    this.chargeResult = {
+      json: JSON.stringify(Object.fromEntries(next)),
+      revision: this.chargeRebuilds,
+    };
+    return this.chargeResult;
+  }
+
+  /** The `achr` companion to `achg`: per ability, the SOONEST running recharge
+   *  timer as a stable [deadline, length] pair (deadline = simTime + remaining,
+   *  fixed while that timer runs, so the JSON only rebuilds on charge events:
+   *  a spend, a refund, or a length change). Entries exist only while a charge
+   *  is actually regenerating; a full pool serializes as {}. Recharge timers
+   *  ARE hourglass-accelerated (auras.ts ticks them via
+   *  temporalHourglassCooldownDelta), which shifts the deadline each tick of an
+   *  hourglass window: the cache then rebuilds per tick (bandwidth only, the
+   *  re-sent deadline keeps the client exact at snapshot cadence). The
+   *  encodeCooldowns [deadline, rate, until] tuple is deliberately NOT
+   *  replicated here for that rare dev/chronomancy window, and neither is the
+   *  aura encoder's paused branch: nothing in the sim pauses a charge-pool
+   *  recharge today, so a plain deadline is always live. If a pause mechanic
+   *  ever reaches recharges, this encoder needs the aura treatment. */
+  encodeChargeRecharges(
+    ownerId: number,
+    abilityCharges: Entity['abilityCharges'],
+    simTime: number,
+  ): SerializedTimerWire {
+    this.setOwner(ownerId);
+    let count = 0;
+    let changed = false;
+    if (abilityCharges) {
+      for (const key in abilityCharges) {
+        const state = abilityCharges[key];
+        if (!(state.recharge > 0) || !Number.isFinite(state.recharge)) continue;
+        count++;
+        const prior = this.chargeRecharges.get(key);
+        if (
+          !prior ||
+          prior[0] !== round2(simTime + state.recharge) ||
+          prior[1] !== round2(state.rechargeLength)
+        ) {
+          changed = true;
+        }
+      }
+    }
+    if (count !== this.chargeRecharges.size) changed = true;
+    if (!changed && this.chargeRechargeResult) return this.chargeRechargeResult;
+
+    const next = new Map<string, readonly [number, number]>();
+    if (abilityCharges) {
+      for (const key in abilityCharges) {
+        const state = abilityCharges[key];
+        if (!(state.recharge > 0) || !Number.isFinite(state.recharge)) continue;
+        next.set(key, [round2(simTime + state.recharge), round2(state.rechargeLength)]);
+      }
+    }
+    this.chargeRecharges = next;
+    this.chargeRechargeRebuilds++;
+    this.chargeRechargeResult = {
+      json: JSON.stringify(Object.fromEntries(next)),
+      revision: this.chargeRechargeRebuilds,
+    };
+    return this.chargeRechargeResult;
+  }
+}
+
+export interface WireAura {
+  id: string;
+  name: string;
+  kind: string;
+  rem: number;
+  dur: number;
+  perm?: 1;
+  // The aura's magnitude, so buff/debuff hover tooltips show the REAL numbers online, exactly
+  // as offline (the descriptor in src/ui/aura_effect.ts reads value per kind: flat stat amount,
+  // slow/haste multiplier, dot/hot per-tick, absorb remaining, ...). Sent RAW (like `dur`, not
+  // round2) so the exact number and its sign survive JSON: round2 could turn a tiny negative
+  // into -0 -> 0 and flip a stat-sap's isAuraDebuff classification. Omitted only when exactly 0,
+  // which decodes back to 0, so value-less auras and an old server are unchanged.
+  value?: number;
+  // Optional secondary aura values: imbue judgement's min/max damage range and
+  // Greater Invisibility's reduction/aftereffect duration.
+  value2?: number;
+  value3?: number;
+  // dot/hot tick cadence in seconds, so the tooltip's "every N sec" is right online.
+  tickInterval?: number;
+  // damage/heal school for dot/absorb/thorns tooltips. Physical is the client's decode default,
+  // so only a non-physical school needs to ride the wire.
+  school?: string;
+  stacks?: number;
+  // Remaining charges on a charge-limited aura (Lightning Shield's reflect count). Sent only
+  // when defined, so ordinary auras stay off the wire and decode to undefined as before; the
+  // client badge prefers this over stacks (auras_view). A pure cosmetic count, not actionable
+  // information a graphics preset could hide, so it rides the wire unconditionally when present.
+  charges?: number;
+  // Next-cast empowerment scope. Omitted for unscoped empowerment auras, which match any
+  // eligible cast just like the sim helper.
+  emp?: string[];
+  // The caster's entity id, so the client's target strip can lead with and enlarge the
+  // viewer's OWN dots/hots (auras_view ownFirst). A shared per-entity value (never
+  // per-viewer), so the per-entity dyn cache keeps eliding; an old client ignores it and
+  // an old server's omission decodes to 0, which matches no player id.
+  src?: number;
+  // Encounter-owned control marker. Omitted for ordinary auras.
+  ub?: 1;
+  // No-player-counter-may-shed marker (the recovery sicknesses). Presence only: the
+  // client reads it through the same isPlayerRemovableAura predicate the sim uses, so
+  // the buff bar never offers a right-click cancel the server would refuse. Omitted for
+  // ordinary auras, and an old server's omission decodes to undefined, as before.
+  und?: 1;
+  // FLASK-sourced buff marker (src/sim/items.ts stamps Aura.flask on the flask
+  // arm alone). Presence only, like `und` above: the client reads it to paint a
+  // distinct glyph for a flask, which otherwise renders identically to the
+  // elixir and scroll sources of the same aura id, and never to decide an
+  // outcome. A stable property of the aura for its whole life, so the per-entity
+  // cache keeps eliding; omitted for every other aura, and an old server's
+  // omission decodes to undefined, leaving the shared glyph exactly as before.
+  fl?: 1;
+  // Break-threshold ARMED marker (Lingering Dread's soak-before-snap fear):
+  // presence only, never the live soak value - the number decrements per hit
+  // and would churn the stable aura cache, while the client (the victim-worn
+  // dread band in src/render/ability_vfx) only keys on whether the talent
+  // armed the fear at all. Omitted for ordinary auras.
+  bt?: 1;
+}
+
+// Builds one aura's wire record via direct assignment rather than chained
+// conditional spreads (`...(cond ? {...} : {})`), which allocated a throwaway
+// object literal per branch regardless of which side taken. This runs for
+// every aura on every entity every tick (dynamicFields in server/game.ts is unconditional
+// per-entity, per-tick, even when wireCacheFor's diff ends up eliding the
+// result), so at raid-sized entity/aura counts and 20 Hz the spread form was a
+// measurable source of short-lived garbage. Output is byte-identical to the
+// prior spread chain; only the allocation shape changed.
+// A pre-v3 recipient ignores `perm`. Give it a large finite timer that is
+// refreshed by ordinary legacy aura snapshots, so rolling deploys keep the
+// aura visible instead of decoding the v3 sentinel as already expired.
+const LEGACY_PERMANENT_AURA_SECONDS = 7 * 24 * 60 * 60;
+
+export function wireAura(a: Aura): WireAura {
+  const permanent = a.permanent === true;
+  const w: WireAura = {
+    id: a.id,
+    name: a.name,
+    kind: a.kind,
+    rem: permanent ? LEGACY_PERMANENT_AURA_SECONDS : round2(a.remaining),
+    dur: permanent ? LEGACY_PERMANENT_AURA_SECONDS : a.duration,
+  };
+  if (permanent) w.perm = 1;
+  // Carry the aura's magnitude so buff/debuff hover tooltips show the real numbers online,
+  // not 0 (the descriptor in src/ui/aura_effect.ts reads value per kind). Sent RAW (like
+  // `dur`, not round2) so the exact number and its sign survive JSON, keeping a negative
+  // stat-sap's isAuraDebuff classification intact (round2 could turn a tiny negative into
+  // -0 -> 0). Omitted only when exactly 0, which decodes back to 0, so value-less auras and
+  // an old server are unchanged. A hover tooltip magnitude is non-actionable cosmetic text,
+  // so sending it cannot let a graphics preset hide anything (graphics-settings fairness).
+  if (a.value !== 0) w.value = a.value;
+  // Optional secondary aura values (imbue range or Greater Invisibility aftereffect);
+  // dot/hot cadence; non-physical school. Each rides only when it carries meaning, so
+  // ordinary auras stay lean and decode to their defaults.
+  if (a.value2 !== undefined) w.value2 = a.value2;
+  if (a.value3 !== undefined) w.value3 = a.value3;
+  if (a.tickInterval !== undefined) w.tickInterval = a.tickInterval;
+  if (a.school !== 'physical') w.school = a.school;
+  // Stacks are omitted below 2 as a sparsity rule, EXCEPT for the persistent
+  // engine banks (druid/shaman/hunter spec engines): their badge and tooltip
+  // teach the live stage including 0 and 1, and the decode side cannot tell
+  // "absent because 1" from "absent because 0", so the count is always sent.
+  if (isPersistentEngineAura(a.id)) w.stacks = a.stacks ?? 0;
+  else if (a.stacks && a.stacks > 1) w.stacks = a.stacks;
+  // Carry the remaining charges only for a charge-limited aura (Lightning Shield), so the
+  // buff icon can badge the count online exactly as offline; undefined for every other aura.
+  if (a.charges !== undefined) w.charges = a.charges;
+  // Next-cast empowerment scope. Omitted for unscoped empowerment auras, which match any
+  // eligible cast just like the sim helper.
+  if (a.empowerAbilities !== undefined) w.emp = a.empowerAbilities;
+  // The caster's entity id, for the client's own-aura prominence on the target strip
+  // (auras_view ownFirst). Omitted for the rare 0/absent source, which decodes to 0.
+  if (a.sourceId) w.src = a.sourceId;
+  if (a.unbreakableControl) w.ub = 1;
+  if (a.undispellable) w.und = 1;
+  // The flask marker, presence-only: the client paints a distinct glyph for a
+  // flask-sourced buff, which otherwise renders identically to the elixir and
+  // scroll sources of the same aura id.
+  if (a.flask) w.fl = 1;
+  if (a.breakThreshold !== undefined) w.bt = 1;
+  return w;
+}

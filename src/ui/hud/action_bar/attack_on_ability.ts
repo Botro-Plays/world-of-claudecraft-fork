@@ -1,0 +1,286 @@
+// Pure predicates for the optional "Auto-Attack on Ability Use" QoL setting: given
+// an ability's (rank-resolved) effects, decide whether using it should also engage
+// the player's white-swing auto-attack, and given the player's current target, decide
+// whether engaging would actually connect (rather than error). Host-agnostic (type-only
+// sim import), so a Vitest drives them directly; the HUD gates on the player's setting.
+
+import type { AbilityEffect, Entity } from '../../../sim/types';
+import type { BgInfo } from '../../../world_api/battleground';
+import type { ArenaInfo, DuelInfo } from '../../../world_api/duel_arena';
+
+// Auto-attack classification of EVERY AbilityEffect type. Because this is a Record over
+// the discriminant union, adding a new effect to `AbilityEffect` (src/sim/types.ts) is a
+// COMPILE error here until it is classified, which is what keeps the sets below honest:
+//   'damage'  - deals damage to a target, so the ability is an "attack" (Sinister Strike,
+//               Fireball, Mortal Strike, Eviscerate, the AOEs) and should start auto-attack.
+//   'breakCC' - crowd control that BREAKS when the target takes damage. The sim flags these
+//               auras `breaksOnDamage` at their emit sites (`incapacitate`/`polymorph`/`aoeFear` in
+//               combat/effect_dispatch.ts); a swing would shatter the CC, so an ability
+//               applying one must NEVER start auto-attack even when it also deals damage
+//               (gouge does both). A future break-on-damage CC effect MUST be classified
+//               here, not 'other', or handled from its effect data as `aoeRoot` is below,
+//               or a damage+CC ability built on it would break its own CC.
+//   'other'   - heal/buff/utility/non-breaking CC (stun, root, slow): irrelevant either way.
+type AutoAttackClass = 'damage' | 'breakCC' | 'other';
+
+const EFFECT_CLASS: Record<AbilityEffect['type'], AutoAttackClass> = {
+  weaponDamage: 'damage',
+  weaponStrike: 'damage',
+  directDamage: 'damage',
+  interrupt: 'other',
+  dispel: 'other',
+  // Silence locks the school but does not break on damage, so it never blocks the engage.
+  silence: 'other',
+  aoeFear: 'breakCC',
+  clearCooldowns: 'other',
+  aoeAllyAbsorb: 'other',
+  greaterInvisibility: 'other',
+  breakRoots: 'other',
+  breakControl: 'other',
+  cleanseSelf: 'other',
+  cleanseMovement: 'other',
+  divineAscension: 'other',
+  grantDevotion: 'other',
+  veilboundMarch: 'damage',
+  valkyrsCalling: 'damage',
+  repositionToAim: 'other',
+  blinkForward: 'other',
+  finisherDamage: 'damage',
+  dot: 'damage',
+  extendDot: 'other',
+  // Detonate-style: the consumed DoT's remaining damage lands immediately.
+  consumeDot: 'damage',
+  druidMarrowbreakGuard: 'other',
+  druidOverbloom: 'other',
+  aoeDamage: 'damage',
+  chainDamage: 'damage',
+  aoeHeal: 'other',
+  chainHeal: 'other',
+  groundAoE: 'damage',
+  frozenOrb: 'damage',
+  aoeRoot: 'damage',
+  empoweredCone: 'damage',
+  consumeAura: 'other',
+  drainTick: 'damage',
+  incapacitate: 'breakCC',
+  polymorph: 'breakCC',
+  heal: 'other',
+  // Chronomancy Temporal Echo: places a friendly mark (its Arcane-damage-to-heal
+  // conversion is separate); the ability itself deals no damage and breaks no CC.
+  temporalEcho: 'other',
+  beaconOfLight: 'other',
+  paladinAegis: 'other',
+  // Applies a hostile mark; its later detonation is triggered by other attacks.
+  sunGodVerdict: 'other',
+  massTemporalEcho: 'other',
+  resurrectAlly: 'other',
+  massResurrectGroup: 'other',
+  perfectMoment: 'other',
+  temporalHourglass: 'breakCC',
+  rewind: 'other',
+  feralCharge: 'other',
+  hot: 'other',
+  absorb: 'other',
+  imbue: 'other',
+  lifeTap: 'other',
+  buffTarget: 'other',
+  debuffTargetSource: 'other',
+  slow: 'other',
+  pullTarget: 'other',
+  threatPulse: 'other',
+  root: 'other',
+  stun: 'other',
+  aoeAttackSpeed: 'other',
+  aoeAttackPower: 'other',
+  // Choice-row talents: an AoE slow is a non-breaking snare.
+  aoeSlow: 'other',
+  aoeAllyAttackPower: 'other',
+  aoeAllyHaste: 'other',
+  aoeAllySureCrit: 'other',
+  aoeKnockback: 'other',
+  aoeAllyDamage: 'other',
+  selfBuff: 'other',
+  petBuff: 'other',
+  applyDebuff: 'other',
+  finisherHaste: 'other',
+  enrageChance: 'other',
+  finisherStun: 'other',
+  gainResource: 'other',
+  hunterStampede: 'damage',
+  selfDamagePctMax: 'other',
+  selfDamagePctCurrent: 'other',
+  selfHealPctMax: 'other',
+  selfAbsorbPctMax: 'other',
+  gainSoulFragments: 'other',
+  summonUndead: 'other',
+  commandUndead: 'other',
+  sacrificeUndead: 'other',
+  reapingCommand: 'damage',
+  armyOfDead: 'other',
+  empowerUndeadArmy: 'other',
+  necromancyOssuaryMark: 'other',
+  afflictionEvilEye: 'other',
+  afflictionNeedle: 'other',
+  afflictionLitany: 'damage',
+  afflictionSentence: 'damage',
+  afflictionAccomplice: 'other',
+  afflictionViolence: 'damage',
+  afflictionCruelPact: 'other',
+  afflictionVicarious: 'other',
+  warlockUmbralAnchor: 'other',
+  afflictionCoven: 'other',
+  afflictionPossession: 'other',
+  afflictionJudgment: 'other',
+  selfHotPctMax: 'other',
+  aoeAllyMaxHp: 'other',
+  partyMeleeBuff: 'other',
+  charge: 'other',
+  sunder: 'other',
+  faerieFire: 'other',
+  absorbSpentResource: 'other',
+  aoeTaunt: 'other',
+  taunt: 'other',
+  tamePet: 'other',
+  dismissPet: 'other',
+  summonPet: 'other',
+  summonDemon: 'other',
+  summonSoulwell: 'other',
+  destructionConflagrate: 'damage',
+  ruinousBrand: 'other',
+  duskfireClaim: 'other',
+  summonPyreColossus: 'other',
+  packCommand: 'damage',
+  unleashBeast: 'damage',
+  howlingRage: 'other',
+  hunterBloodhook: 'damage',
+  hunterShrapnel: 'damage',
+  hunterTrailbreak: 'other',
+  hunterPackRally: 'other',
+  frostjawTrap: 'other',
+};
+
+/**
+ * Whether using an ability with these effects should engage auto-attack: it deals
+ * damage and applies no damage-breakable CC. The caller is responsible for gating
+ * this on the player's `startAttackOnAbilityUse` setting AND on `hasAutoAttackTarget`
+ * (some damaging abilities are requiresTarget:false self/ground AOEs that cast with no
+ * hostile target, where an unconditional engage would error).
+ */
+export function abilityStartsAutoAttack(effects: AbilityEffect[]): boolean {
+  let damaging = false;
+  for (const e of effects) {
+    if (e.type === 'aoeRoot' && e.breakOnDamage !== undefined) return false;
+    // A groundAoE with allyBuffPct is a FRIENDLY zone (Rune of Power): its min/max
+    // are ignored by the sim (see the AbilityEffect comment), so it deals no damage
+    // and must not be classified as an attack.
+    if (e.type === 'groundAoE' && e.allyBuffPct !== undefined) continue;
+    const cls = EFFECT_CLASS[e.type];
+    if (cls === 'breakCC') return false;
+    if (
+      cls === 'damage' ||
+      (e.type === 'consumeAura' && e.deal !== undefined) ||
+      (e.type === 'repositionToAim' && e.landingAoe !== undefined)
+    ) {
+      damaging = true;
+    }
+  }
+  return damaging;
+}
+
+/**
+ * Whether the player's current target is a live target a white swing would actually
+ * engage: either a hostile MOB (`hostile:true`; players/NPCs default false, and the
+ * server mirrors the flag onto the wire, so the same read holds for the offline Sim and
+ * the online ClientWorld), or a player who is PvP-hostile right now per
+ * `isPvpHostileTarget` (an active duel/arena opponent). Gating the auto-attack
+ * convenience on this keeps a targetless AOE (Arcane Explosion, Frost Nova, Thunder
+ * Clap, ...) from flashing a spurious "Invalid attack target." toast on every cast.
+ *
+ * `pvpHostile` mirrors the sim's `isHostileTo`, which also treats an enemy player in an
+ * active duel/arena as hostile (players are otherwise always `hostile:false`, since this
+ * game has no open-world FFA PvP): the caller computes it via `isPvpHostileTarget` from
+ * the already-mirrored `IWorld.duelInfo`/`IWorld.arenaInfo`, so no new wire state is
+ * needed. Defaults to false so an omitted argument keeps the original PvE-only behavior.
+ */
+export function hasAutoAttackTarget(
+  target: Entity | null | undefined,
+  pvpHostile = false,
+): boolean {
+  return !!target && !target.dead && (target.hostile || pvpHostile);
+}
+
+/**
+ * Whether a player target is PvP-hostile right now: an active duel opponent, an
+ * active-arena opponent/enemy, or an opposing-team fighter in a live Thornhollow
+ * Fields battleground match. Mirrors the private `isHostilePlayer` the renderer
+ * already computes for nameplate coloring (`src/render/renderer.ts`), so the "Auto-Attack
+ * on Ability Use" QoL setting recognizes the same PvP-hostile state instead of gating on
+ * the mob-only `hostile` flag, which a player target never carries. The battleground
+ * arm is the one the renderer grew and this gate did not: a hostile cast at a
+ * battleground enemy then never engaged the white swing, while the identical cast in a
+ * duel or arena did.
+ *
+ * Deliberately narrower than the sim's `isHostileTo`: it does not cover the jail brawl,
+ * the warden arm, an enemy player's PET (resolved through `pvpController`), or the Vale
+ * Cup cross-team arm. That matches the renderer's own nameplate predicate (a parity
+ * choice, not a defect); if a third copy of this verdict shows up, extract one shared
+ * pure module both the renderer and this file consume.
+ */
+export function isPvpHostileTarget(
+  targetId: number | null | undefined,
+  duelInfo: DuelInfo | null | undefined,
+  arenaInfo: ArenaInfo | null | undefined,
+  bgInfo?: BgInfo | null,
+): boolean {
+  if (targetId === null || targetId === undefined) return false;
+  if (duelInfo?.state === 'active' && duelInfo.otherPid === targetId) return true;
+  // Thornhollow Fields: the opposing TEAM is hostile for the whole live match
+  // (the countdown and the ended hold are combat-off, so neither engages).
+  const bg = bgInfo?.match;
+  if (bg?.state === 'active') {
+    const row = bg.players.find((p) => p.pid === targetId);
+    if (row && row.team !== bg.myTeam) return true;
+  }
+  const match = arenaInfo?.match;
+  return (
+    !!match &&
+    match.state === 'active' &&
+    (match.oppPid === targetId || match.enemies.some((e) => e.pid === targetId))
+  );
+}
+
+/**
+ * Whether the auto-attack engage must WAIT for the cast to finish instead of
+ * firing at cast start. Starting auto-attack aggros the target immediately
+ * (sim startAutoAttack: aggroMob + threat + combat), so engaging at the START
+ * of a timed cast (Smite, Fireball, ...) pulled the mob before any damage
+ * existed, an aggro-before-damage bug. A timed cast therefore defers the
+ * engage to its successful castStop (the moment its damage lands, when aggro
+ * is legitimate); an instant ability keeps engaging at once, since its damage
+ * applies in the same tick anyway.
+ */
+export function deferAutoAttackUntilCastEnd(castTime: number): boolean {
+  return castTime > 0;
+}
+
+/**
+ * A deferred engage is RECORDED (by ability id) at button-press time, before the
+ * sim has validated anything: range, cost, cooldown, and gates such as Soulwell's
+ * `requiresOutOfCombat` can all still refuse the cast, and a refused cast never
+ * reaches `castStart` at all. Recording it unconditionally and clearing it only at
+ * a matching castStop would leave it armed forever after a refusal, so it fires on
+ * whatever unrelated cast completes next: an earlier damaging cast getting refused
+ * left this armed, and casting Soulwell (which never engages auto-attack on its
+ * own; see `summonSoulwell: 'other'` above) right after pulled the player's current
+ * target when Soulwell's own castStop found the stale request still set.
+ *
+ * Call this on EVERY castStart for the player: it keeps the request only while it
+ * is still confirmed to be the SAME cast, dropping it the moment a different
+ * ability (or none) is the one that actually started.
+ */
+export function confirmPendingAutoAttackEngage(
+  pendingAbilityId: string | null,
+  startedAbilityId: string,
+): string | null {
+  return pendingAbilityId === startedAbilityId ? pendingAbilityId : null;
+}

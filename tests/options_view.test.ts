@@ -1,0 +1,1462 @@
+import { describe, expect, it } from 'vitest';
+import {
+  GRAPHICS_REBUILD_KEYS,
+  normalizeGraphicsSettingsSnapshot,
+} from '../src/game/graphics_rebuild_core';
+import { BOOL_SETTINGS, SETTING_RANGES } from '../src/game/settings';
+import { AURA_TRACKS } from '../src/ui/hud/aura_tracks';
+import {
+  boolToggleNextValue,
+  buildAudioControls,
+  buildBugReportInfo,
+  buildControllerControls,
+  buildGraphicsControls,
+  buildGraphicsSections,
+  buildInterfaceControls,
+  buildOptionsMenu,
+  copyGraphicsDraft,
+  flattenGraphicsSections,
+  graphicsDraftDirty,
+  INTERFACE_TAB_LABEL_KEY,
+  INTERFACE_TAB_ORDER,
+  type InterfaceTab,
+  interfaceControlsForTab,
+  type OptionsControl,
+  type OptionsEnv,
+  type OptionsSettingsSource,
+  optionsControlKeys,
+  sliderDispatchValue,
+  toggleIsOn,
+  toggleNextValue,
+  withGraphicsDraft,
+} from '../src/ui/options_view';
+
+// A fake settings projection over plain records, with the real numeric ranges so
+// slider descriptors carry the true min/max. The painter builds the same shape
+// from the live Settings store.
+function makeSource(
+  num: Record<string, number> = {},
+  bool: Record<string, boolean> = {},
+): OptionsSettingsSource {
+  return {
+    num: (k) => num[k] ?? 0,
+    bool: (k) => bool[k] ?? false,
+    range: (k) => {
+      const r = (SETTING_RANGES as Record<string, { min: number; max: number }>)[k];
+      return r ? { min: r.min, max: r.max } : { min: 0, max: 1 };
+    },
+  };
+}
+
+// Render-order signature for a control list: a slider/toggle/boolToggle/choice
+// shows as its setting key, a note as note:<key>, the music toggle as musicToggle.
+function keysOf(controls: OptionsControl[]): string[] {
+  return controls.map((c) => {
+    if (c.control === 'note') return `note:${c.textKey}`;
+    if (c.control === 'musicToggle') return 'musicToggle';
+    return c.key;
+  });
+}
+
+function find(controls: OptionsControl[], key: string): OptionsControl | undefined {
+  return controls.find((c) => c.control !== 'note' && c.control !== 'musicToggle' && c.key === key);
+}
+
+// ---------------------------------------------------------------------------
+// Cluster 1: the four control primitives + their dispatch-value coercion
+// ---------------------------------------------------------------------------
+describe('options_view: control primitive dispatch (cluster 1)', () => {
+  it('settingSlider dispatches the raw input value coerced to a Number', () => {
+    expect(sliderDispatchValue('0.35')).toBe(0.35);
+    expect(sliderDispatchValue('60')).toBe(60);
+    // identical coercion regardless of formatting kind
+    expect(sliderDispatchValue('1')).toBe(1);
+  });
+
+  it('settingToggle flips 0<->1 off the stored value and reads on at >=0.5', () => {
+    expect(toggleNextValue(0)).toBe(1);
+    expect(toggleNextValue(1)).toBe(0);
+    expect(toggleNextValue(0.6)).toBe(0);
+    expect(toggleNextValue(0.4)).toBe(1);
+    expect(toggleIsOn(0.5)).toBe(true);
+    expect(toggleIsOn(0.49)).toBe(false);
+    expect(toggleIsOn(0)).toBe(false);
+  });
+
+  it('settingBoolToggle flips the stored boolean', () => {
+    expect(boolToggleNextValue(true)).toBe(false);
+    expect(boolToggleNextValue(false)).toBe(true);
+  });
+
+  it('a slider descriptor carries the live value, range, step and format', () => {
+    const controls = buildGraphicsControls(makeSource({ cameraSpeed: 0.9, cameraFov: 75 }), {
+      touch: false,
+      nativeShell: false,
+    });
+    const cam = find(controls, 'cameraSpeed');
+    expect(cam).toMatchObject({ control: 'slider', value: 0.9, step: 0.05, fmt: 'percent' });
+    expect(cam).toMatchObject({
+      min: SETTING_RANGES.cameraSpeed.min,
+      max: SETTING_RANGES.cameraSpeed.max,
+    });
+    const fov = find(controls, 'cameraFov');
+    expect(fov).toMatchObject({ control: 'slider', value: 75, step: 1, fmt: 'degrees' });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cluster 3: graphics. Static preset read as a plain value; advanced/touch/
+// native-shell gating preserved; the preset + interfaceMode choices re-render.
+// ---------------------------------------------------------------------------
+describe('options_view: graphics dispatch matrix (cluster 3)', () => {
+  it('stages exactly the twelve renderer-bound settings over the live projection', () => {
+    expect(GRAPHICS_REBUILD_KEYS).toEqual([
+      'graphicsPreset',
+      'terrainDetail',
+      'foliageDensity',
+      'surfaceDetail',
+      'effectsQuality',
+      'shadowQuality',
+      'antiAliasing',
+      'bloomQuality',
+      'ambientOcclusion',
+      'viewDistance',
+      'waterQuality',
+      'characterDetail',
+      'dynamicLights',
+      'particleEffects',
+    ]);
+    const live = makeSource({ graphicsPreset: 2, terrainDetail: 0, renderScale: 0.75 });
+    const draft = normalizeGraphicsSettingsSnapshot({ graphicsPreset: 5, terrainDetail: 2 });
+    const staged = withGraphicsDraft(live, GRAPHICS_REBUILD_KEYS, draft);
+    expect(staged.num('graphicsPreset')).toBe(5);
+    expect(staged.num('terrainDetail')).toBe(2);
+    expect(staged.num('renderScale')).toBe(0.75);
+  });
+
+  it('tracks raw change and exact revert without mutating the applied snapshot', () => {
+    const applied = normalizeGraphicsSettingsSnapshot({
+      graphicsPreset: 5,
+      terrainDetail: 0.5,
+    });
+    const draft = copyGraphicsDraft(applied);
+    expect(graphicsDraftDirty(GRAPHICS_REBUILD_KEYS, draft, applied)).toBe(false);
+    draft.terrainDetail = 1;
+    expect(graphicsDraftDirty(GRAPHICS_REBUILD_KEYS, draft, applied)).toBe(true);
+    expect(applied.terrainDetail).toBe(0.5);
+    draft.terrainDetail = 0.5;
+    expect(graphicsDraftDirty(GRAPHICS_REBUILD_KEYS, draft, applied)).toBe(false);
+  });
+
+  it('renders the staged (not live) preset and dial values before apply', () => {
+    const live = makeSource({ graphicsPreset: 2, terrainDetail: 0 });
+    const draft = normalizeGraphicsSettingsSnapshot({ graphicsPreset: 5, terrainDetail: 2 });
+    const controls = buildGraphicsControls(withGraphicsDraft(live, GRAPHICS_REBUILD_KEYS, draft), {
+      touch: false,
+      nativeShell: false,
+    });
+    expect(find(controls, 'graphicsPreset')).toMatchObject({ control: 'choice', current: 5 });
+    expect(find(controls, 'terrainDetail')).toMatchObject({ control: 'choice', current: 2 });
+  });
+
+  it('lists the base desktop controls in card order, dials always present', () => {
+    const controls = buildGraphicsControls(makeSource({ graphicsPreset: 4 }), {
+      touch: false,
+      nativeShell: false,
+    });
+    expect(keysOf(controls)).toEqual([
+      // Quality card: the preset row and the custom-switch note (round 12:
+      // the dials are no longer gated behind the Advanced preset).
+      'graphicsPreset',
+      'note:hudChrome.options.gfxCustomNote',
+      // World Detail card: the world's geometry and dressing layers.
+      'terrainDetail',
+      'foliageDensity',
+      'surfaceDetail',
+      'viewDistance',
+      'waterQuality',
+      'characterDetail',
+      // Lighting & Effects card: the light and post passes.
+      'effectsQuality',
+      'shadowQuality',
+      'ambientOcclusion',
+      'bloomQuality',
+      'antiAliasing',
+      'dynamicLights',
+      'particleEffects',
+      'note:hudChrome.options.gfxEffectsNote',
+      // Camera card (column 2 under Lighting).
+      'cameraSpeed',
+      // Display card (full width).
+      'renderScale',
+      'brightness',
+      'cameraFov',
+      'fullscreen',
+      'weather',
+      // The wake/ripple field is a GPU cost, so it sits with Weather in the
+      // Display card rather than with the HUD comfort toggles.
+      'waterRipples',
+      'showOverflowXp',
+      // System card (full width).
+      'browserEffects',
+      'note:hudChrome.options.browserEffectsNote',
+      'shaderWarm',
+      'note:hudChrome.options.shaderWarmNote',
+      'interfaceMode',
+      'note:hudChrome.options.interfaceModeNote',
+    ]);
+  });
+
+  it('the graphics preset picker is an enumerated choice that re-renders, insane above ultra', () => {
+    const controls = buildGraphicsControls(makeSource({ graphicsPreset: 3 }), {
+      touch: false,
+      nativeShell: false,
+    });
+    const preset = find(controls, 'graphicsPreset');
+    expect(preset).toMatchObject({ control: 'choice', current: 3, rerender: true });
+    // Display order climbs the quality ladder (6 = Insane sits above 4 =
+    // Ultra) with the expert Advanced profile (5) last; the VALUES are the
+    // persisted historical numbers and never renumber.
+    if (preset?.control === 'choice')
+      expect(preset.options.map((o) => o.value)).toEqual([1, 2, 3, 4, 6, 5]);
+  });
+
+  it('lists the per-system dials for every preset, as re-rendering level ladders', () => {
+    // Round 12: the dials are no longer gated behind the Advanced preset; under
+    // a fixed preset they display that preset's seeded levels (the painter's
+    // graphicsDisplaySnapshot projection) and editing one switches the staged
+    // draft to the Advanced mix, so every dial re-renders (the preset row must
+    // repaint to track that switch). The persisted values are still
+    // backward-compatible: the historical binary rows stored 0 (Low) and 1
+    // (High), which keep their meaning on the four-step ladder (0 / 0.5 / 1 / 2).
+    const controls = buildGraphicsControls(makeSource({ graphicsPreset: 3 }), {
+      touch: false,
+      nativeShell: false,
+    });
+    const dialKeys = GRAPHICS_REBUILD_KEYS.filter((key) => key !== 'graphicsPreset');
+    for (const key of dialKeys) {
+      const dial = find(controls, key);
+      expect(dial, key).toMatchObject({ control: 'choice', rerender: true });
+    }
+    for (const key of ['terrainDetail', 'foliageDensity', 'surfaceDetail']) {
+      const dial = find(controls, key);
+      if (dial?.control === 'choice')
+        expect(
+          dial.options.map((o) => o.value),
+          key,
+        ).toEqual([0, 0.5, 1, 2]);
+    }
+    // The whole-tier ladders reuse the same four-step scale.
+    for (const key of ['viewDistance', 'waterQuality']) {
+      const dial = find(controls, key);
+      if (dial?.control === 'choice')
+        expect(
+          dial.options.map((o) => o.value),
+          key,
+        ).toEqual([0, 0.5, 1, 2]);
+    }
+    // Effects & Lighting stops at High (the full high-tier post stack), and
+    // so does Shadow Quality (High is the dial's 4096 map, above the High
+    // tier's own 2560 base; the 8192 Insane rung is retired, so the dial no
+    // longer offers it).
+    for (const key of ['effectsQuality', 'shadowQuality']) {
+      const dial = find(controls, key);
+      if (dial?.control === 'choice')
+        expect(
+          dial.options.map((o) => o.value),
+          key,
+        ).toEqual([0, 0.5, 1]);
+    }
+    // The per-effect switches: Off/On binaries, AO with the half-res middle,
+    // the Low/High pairs (Character Detail, Dynamic Lights), and Particle
+    // Effects on the three-step ladder.
+    for (const key of ['antiAliasing', 'bloomQuality']) {
+      const dial = find(controls, key);
+      if (dial?.control === 'choice')
+        expect(
+          dial.options.map((o) => o.value),
+          key,
+        ).toEqual([0, 1]);
+    }
+    const ao = find(controls, 'ambientOcclusion');
+    if (ao?.control === 'choice') expect(ao.options.map((o) => o.value)).toEqual([0, 0.5, 1]);
+    for (const key of ['characterDetail', 'dynamicLights']) {
+      const dial = find(controls, key);
+      if (dial?.control === 'choice')
+        expect(
+          dial.options.map((o) => o.value),
+          key,
+        ).toEqual([0, 1]);
+    }
+    const particles = find(controls, 'particleEffects');
+    if (particles?.control === 'choice')
+      expect(particles.options.map((o) => o.value)).toEqual([0, 0.5, 1]);
+    // Nearest-option select: a stored 0.5 highlights Medium, never High.
+    const stored = buildGraphicsControls(makeSource({ graphicsPreset: 5, terrainDetail: 0.5 }), {
+      touch: false,
+      nativeShell: false,
+    });
+    const storedTerrain = find(stored, 'terrainDetail');
+    if (storedTerrain?.control === 'choice') expect(storedTerrain.current).toBe(0.5);
+    // The custom-switch note renders only under a fixed preset; once the
+    // Advanced mix is active the dials edit in place and the note would be a
+    // no-op instruction.
+    expect(keysOf(controls)).toContain('note:hudChrome.options.gfxCustomNote');
+    expect(keysOf(stored)).not.toContain('note:hudChrome.options.gfxCustomNote');
+  });
+
+  it('puts the graphics backend row + note in the System card, under the shader worker, ONLY with its capability', () => {
+    // The capability is the bridge methods AND the shell's platform answer,
+    // folded into one env flag by the options window; the GPU preference
+    // flag never stands in for it (Windows and macOS shells have the first
+    // and not the second).
+    const system = (env: OptionsEnv) =>
+      buildGraphicsSections(makeSource({ graphicsPreset: 4 }), env).find(
+        (section) => section.titleKey === 'hudChrome.options.gfxSectionSystem',
+      );
+    const withBackend = system({ ...WEB_ENV, desktopGpuBackend: true });
+    expect(withBackend).toBeTruthy();
+    const keys = keysOf(withBackend?.controls ?? []);
+    expect(keys.slice(keys.indexOf('shaderWarm'), keys.indexOf('shaderWarm') + 5)).toEqual([
+      'shaderWarm',
+      'note:hudChrome.options.shaderWarmNote',
+      'gpuBackend',
+      'note:hudChrome.options.gpuBackendNote',
+      'interfaceMode',
+    ]);
+    expect(find(withBackend?.controls ?? [], 'gpuBackend')?.control).toBe('choice');
+    // Its keys are not rebuild keys: the row writes live, never through Apply.
+    expect(GRAPHICS_REBUILD_KEYS).not.toContain('gpuBackend');
+    for (const env of [WEB_ENV, DESKTOP_ENV, { touch: true, nativeShell: true }]) {
+      expect(find(system(env)?.controls ?? [], 'gpuBackend')).toBeUndefined();
+    }
+  });
+
+  it('shows the rung the launch is really on, under the buttons, once the shell has judged', () => {
+    // The point of the row on a machine where the choice did not take: a player
+    // who picked Vulkan must not read "Vulkan" while playing on OpenGL.
+    const system = (env: OptionsEnv) =>
+      buildGraphicsSections(makeSource({ graphicsPreset: 4 }), env).find(
+        (section) => section.titleKey === 'hudChrome.options.gfxSectionSystem',
+      );
+    const backendRow = (active: OptionsEnv['desktopGpuBackendActive']) =>
+      find(
+        system({ ...WEB_ENV, desktopGpuBackend: true, desktopGpuBackendActive: active })
+          ?.controls ?? [],
+        'gpuBackend',
+      );
+
+    // The reading rides INSIDE the row, never as a note beside it: the wide
+    // graphics cards flow their children two-up (control, note, control, note),
+    // so a third child for one control shifts every row after it by a cell.
+    // That is a real layout break, not a nicety.
+    const running = system({
+      ...WEB_ENV,
+      desktopGpuBackend: true,
+      desktopGpuBackendActive: { active: 'vulkan-parallel-compile', requestedUnavailable: false },
+    });
+    const keys = keysOf(running?.controls ?? []);
+    expect(keys.slice(keys.indexOf('gpuBackend'), keys.indexOf('gpuBackend') + 2)).toEqual([
+      'gpuBackend',
+      'note:hudChrome.options.gpuBackendNote',
+    ]);
+    const row = find(running?.controls ?? [], 'gpuBackend');
+    expect(row?.control === 'choice' && row.statusKey).toBe('hudChrome.options.gpuBackendActive');
+    // The name is a placeholder KEY the painter resolves, never a concatenation
+    // and never a raw rung: both Vulkan rungs read as the one name the picker
+    // offered.
+    expect(row?.control === 'choice' && row.statusValueKeys).toEqual({
+      backend: 'hudChrome.options.gpuBackendActiveNameVulkan',
+    });
+
+    const plain = backendRow({ active: 'vulkan-plain', requestedUnavailable: false });
+    expect(plain?.control === 'choice' && plain.statusValueKeys).toEqual({
+      backend: 'hudChrome.options.gpuBackendActiveNameVulkan',
+    });
+
+    // Fell short of the setting: its own sentence, and the OpenGL name.
+    const fallen = backendRow({ active: 'opengl', requestedUnavailable: true });
+    expect(fallen?.control === 'choice' && fallen.statusKey).toBe(
+      'hudChrome.options.gpuBackendActiveUnavailable',
+    );
+    expect(fallen?.control === 'choice' && fallen.statusValueKeys).toEqual({
+      backend: 'hudChrome.options.gpuBackendActiveNameOpenGL',
+    });
+
+    // Only the verdict that says the choice did not take is an alert: the row
+    // is a live region either way, but a plain reading is information, not a
+    // failure a player has to act on.
+    expect(fallen?.control === 'choice' && fallen.statusAlert).toBe(true);
+    expect(row?.control === 'choice' && row.statusAlert).toBeUndefined();
+
+    // Auto held at OpenGL by the shell's GPU policy: its own sentence (why the
+    // player is not on Vulkan, and that it is theirs to pick), the OpenGL name.
+    const capped = backendRow({ active: 'opengl', requestedUnavailable: false, autoCapped: true });
+    expect(capped?.control === 'choice' && capped.statusKey).toBe(
+      'hudChrome.options.gpuBackendActiveAutoCapped',
+    );
+    expect(capped?.control === 'choice' && capped.statusValueKeys).toEqual({
+      backend: 'hudChrome.options.gpuBackendActiveNameOpenGL',
+    });
+    // A choice that fell short wins over the cap (the two never both hold; the
+    // order is pinned so a future shell cannot make the row say the wrong thing).
+    const both = backendRow({ active: 'opengl', requestedUnavailable: true, autoCapped: true });
+    expect(both?.control === 'choice' && both.statusKey).toBe(
+      'hudChrome.options.gpuBackendActiveUnavailable',
+    );
+
+    // Nothing to say yet: no reading at all rather than a guessed one, and the
+    // row keeps its description and its single note.
+    for (const active of [null, undefined]) {
+      const quiet = backendRow(active);
+      expect(quiet?.control === 'choice' && quiet.statusKey).toBeUndefined();
+      expect(quiet?.control === 'choice' && quiet.statusValueKeys).toBeUndefined();
+      const quietKeys = keysOf(
+        system({ ...WEB_ENV, desktopGpuBackend: true, desktopGpuBackendActive: active })
+          ?.controls ?? [],
+      );
+      expect(quietKeys).toContain('note:hudChrome.options.gpuBackendNote');
+    }
+  });
+
+  it('says the write did not save, over the rung this launch is on', () => {
+    // The shell refused the write, so the STORED choice never moved and the
+    // next start keeps it. A row that went on reporting the running rung would
+    // let a player leave believing their pick took.
+    const system = (env: OptionsEnv, gpuBackend: number) =>
+      buildGraphicsSections(makeSource({ graphicsPreset: 4, gpuBackend }), env).find(
+        (section) => section.titleKey === 'hudChrome.options.gfxSectionSystem',
+      );
+    const backendRow = (env: OptionsEnv, gpuBackend: number) =>
+      find(system(env, gpuBackend)?.controls ?? [], 'gpuBackend');
+
+    const failedEnv: OptionsEnv = {
+      ...WEB_ENV,
+      desktopGpuBackend: true,
+      desktopGpuBackendWriteFailed: true,
+      // The launch is running Vulkan and says so; the refusal outranks it.
+      desktopGpuBackendActive: { active: 'vulkan-parallel-compile', requestedUnavailable: false },
+    };
+    const failed = backendRow(failedEnv, 2);
+    expect(failed?.control === 'choice' && failed.statusKey).toBe(
+      'hudChrome.options.gpuBackendSaveFailed',
+    );
+    // The name is the STORED choice's (the apply arm has already put the local
+    // value back on it), and the active-reading name, never the picker's
+    // "OpenGL (slow)".
+    expect(failed?.control === 'choice' && failed.statusValueKeys).toEqual({
+      backend: 'hudChrome.options.gpuBackendActiveNameOpenGL',
+    });
+    // A verdict a player must act on: an assertive live region, not a polite one.
+    expect(failed?.control === 'choice' && failed.statusAlert).toBe(true);
+
+    const vulkanStored = backendRow(failedEnv, 1);
+    expect(vulkanStored?.control === 'choice' && vulkanStored.statusValueKeys).toEqual({
+      backend: 'hudChrome.options.gpuBackendActiveNameVulkan',
+    });
+    // Auto is a stored choice too, and keeps the picker's own Auto label.
+    const autoStored = backendRow(failedEnv, 0);
+    expect(autoStored?.control === 'choice' && autoStored.statusValueKeys).toEqual({
+      backend: 'hudChrome.options.gpuBackendAuto',
+    });
+
+    // Flag down: the active reading again, unchanged.
+    const settled = backendRow({ ...failedEnv, desktopGpuBackendWriteFailed: false }, 2);
+    expect(settled?.control === 'choice' && settled.statusKey).toBe(
+      'hudChrome.options.gpuBackendActive',
+    );
+    expect(settled?.control === 'choice' && settled.statusAlert).toBeUndefined();
+  });
+
+  it('drops the shader warm-up worker row and its note where the worker is forced off', () => {
+    // iOS resolves the worker to off whatever the setting says
+    // (shaderWarmModeFor), so the row would change nothing under a note
+    // promising On is forced everywhere.
+    const system = (env: OptionsEnv) =>
+      buildGraphicsSections(makeSource({ graphicsPreset: 4 }), env).find(
+        (section) => section.titleKey === 'hudChrome.options.gfxSectionSystem',
+      );
+    const withoutChoice = keysOf(system({ ...WEB_ENV, shaderWarmChoice: false })?.controls ?? []);
+    expect(withoutChoice.length).toBeGreaterThan(0);
+    expect(withoutChoice).not.toContain('shaderWarm');
+    expect(withoutChoice).not.toContain('note:hudChrome.options.shaderWarmNote');
+    // The card keeps everything else it had, in order (the pair leaves together).
+    expect(withoutChoice).toEqual(
+      keysOf(system(WEB_ENV)?.controls ?? []).filter(
+        (key) => key !== 'shaderWarm' && key !== 'note:hudChrome.options.shaderWarmNote',
+      ),
+    );
+    // Absent means yes, and so does true: every non-iOS caller keeps the pair.
+    for (const env of [WEB_ENV, { ...WEB_ENV, shaderWarmChoice: true }]) {
+      const keys = keysOf(system(env)?.controls ?? []);
+      expect(keys.slice(keys.indexOf('shaderWarm'), keys.indexOf('shaderWarm') + 2)).toEqual([
+        'shaderWarm',
+        'note:hudChrome.options.shaderWarmNote',
+      ]);
+    }
+  });
+
+  it('keeps every wide-card control paired with exactly one note', () => {
+    // The wide graphics cards lay their children out two-up, control then note,
+    // so the whole card depends on that alternation: one extra note for one row
+    // pushes every row after it into the wrong cell (seen in the System card
+    // when the backend reading was first added as a note of its own).
+    const env = { ...WEB_ENV, desktopGpuBackend: true, desktopDisplayMode: true };
+    for (const section of buildGraphicsSections(makeSource({ graphicsPreset: 4 }), env)) {
+      if (section.column !== 'full') continue;
+      let noteRun = 0;
+      for (const control of section.controls) {
+        if (control.control === 'note') {
+          noteRun += 1;
+          expect(
+            noteRun,
+            `${section.titleKey} has two notes in a row, which shifts the card's grid`,
+          ).toBeLessThan(2);
+        } else {
+          noteRun = 0;
+        }
+      }
+    }
+  });
+
+  it('groups the panel into titled two-column cards whose flatten IS the control list', () => {
+    const env = { touch: true, nativeShell: false };
+    const sections = buildGraphicsSections(makeSource({ graphicsPreset: 4 }), env);
+    expect(sections.map((s) => s.titleKey)).toEqual([
+      'hudChrome.options.gfxSectionQuality',
+      'hudChrome.options.gfxSectionWorld',
+      'hudChrome.options.gfxSectionLighting',
+      'hudChrome.options.gfxSectionCamera',
+      'hudChrome.options.gfxSectionDisplay',
+      'hudChrome.options.gfxSectionSystem',
+      'hudChrome.options.gfxSectionTouch',
+    ]);
+    // The dial cards balance the two columns; the row-style cards span full
+    // width below them so neither column ends in a ragged gap.
+    expect(sections.map((s) => s.column)).toEqual([1, 1, 2, 2, 'full', 'full', 'full']);
+    for (const section of sections) expect(section.controls.length).toBeGreaterThan(0);
+    // buildGraphicsControls is exactly the sections flattened in order: the
+    // reset footer's key scope and the card layout can never disagree.
+    expect(keysOf(buildGraphicsControls(makeSource({ graphicsPreset: 4 }), env))).toEqual(
+      sections.flatMap((s) => keysOf(s.controls)),
+    );
+    // The Touch Controls card exists only on a touch interface.
+    const desktop = buildGraphicsSections(makeSource({ graphicsPreset: 4 }), {
+      touch: false,
+      nativeShell: false,
+    });
+    expect(desktop.map((s) => s.titleKey)).not.toContain('hudChrome.options.gfxSectionTouch');
+  });
+
+  it('keeps the native shell dial-free (its memory profile owns the dial-mapped knobs)', () => {
+    const shell = buildGraphicsSections(makeSource({ graphicsPreset: 3 }), {
+      touch: true,
+      nativeShell: true,
+    });
+    // The two dial cards are omitted wholesale, and no dial key leaks in
+    // through another card.
+    expect(shell.map((s) => s.titleKey)).not.toContain('hudChrome.options.gfxSectionWorld');
+    expect(shell.map((s) => s.titleKey)).not.toContain('hudChrome.options.gfxSectionLighting');
+    const keys = keysOf(flattenGraphicsSections(shell));
+    for (const key of GRAPHICS_REBUILD_KEYS.filter((k) => k !== 'graphicsPreset'))
+      expect(keys, key).not.toContain(key);
+    expect(keys).not.toContain('note:hudChrome.options.gfxCustomNote');
+  });
+
+  it('the interfaceMode choice re-renders; browserEffects does not', () => {
+    const controls = buildGraphicsControls(makeSource(), { touch: false, nativeShell: false });
+    expect(find(controls, 'interfaceMode')).toMatchObject({ control: 'choice', rerender: true });
+    expect(find(controls, 'browserEffects')).toMatchObject({ control: 'choice', rerender: false });
+  });
+
+  it('hides Interface Mode + its note in the native app shell', () => {
+    const controls = buildGraphicsControls(makeSource(), { touch: false, nativeShell: true });
+    expect(find(controls, 'interfaceMode')).toBeUndefined();
+    expect(keysOf(controls)).not.toContain('note:hudChrome.options.interfaceModeNote');
+  });
+
+  it('caps native graphics presets at High for the native app shell', () => {
+    const controls = buildGraphicsControls(makeSource({ graphicsPreset: 3 }), {
+      touch: true,
+      nativeShell: true,
+    });
+    const preset = find(controls, 'graphicsPreset');
+    expect(preset).toMatchObject({ control: 'choice', current: 3, rerender: true });
+    if (preset?.control === 'choice') expect(preset.options.map((o) => o.value)).toEqual([1, 2, 3]);
+  });
+
+  it('reveals the touch-only sliders only on a touch interface, in order', () => {
+    const controls = buildGraphicsControls(makeSource({ graphicsPreset: 4 }), {
+      touch: true,
+      nativeShell: false,
+    });
+    const keys = keysOf(controls);
+    expect(keys).toContain('touchLookSpeed');
+    expect(keys).toContain('touchOpacity');
+    expect(keys).toContain('joystickScale');
+    expect(keys).toContain('actionButtonScale');
+    expect(keys).toContain('joystickDeadzone');
+    expect(keys).toContain('touchInvertLook');
+    expect(keys).toContain('mobileCameraJoystick');
+    expect(keys).toContain('leftHandedTouch');
+    expect(keys).toContain('touchPreciseGroundAim');
+    // touchLookSpeed sits right after cameraSpeed
+    expect(keys[keys.indexOf('cameraSpeed') + 1]).toBe('touchLookSpeed');
+    // The boolean touch rows follow touchInvertLook in their rendered order.
+    const touchInvertIdx = keys.indexOf('touchInvertLook');
+    expect(keys[touchInvertIdx + 1]).toBe('mobileCameraJoystick');
+    expect(keys[touchInvertIdx + 2]).toBe('leftHandedTouch');
+    expect(keys[touchInvertIdx + 3]).toBe('touchPreciseGroundAim');
+    expect(keys[touchInvertIdx + 4]).toBe('note:hudChrome.options.touchPreciseAimNote');
+  });
+
+  it('hides mobile touch toggles on a desktop interface', () => {
+    const controls = buildGraphicsControls(makeSource({ graphicsPreset: 4 }), {
+      touch: false,
+      nativeShell: false,
+    });
+    const keys = keysOf(controls);
+    expect(keys).not.toContain('mobileCameraJoystick');
+    expect(keys).not.toContain('leftHandedTouch');
+    expect(keys).not.toContain('touchPreciseGroundAim');
+    expect(keys).not.toContain('note:hudChrome.options.touchPreciseAimNote');
+  });
+
+  it('gives mobile touch toggles their correct i18n keys', () => {
+    const controls = buildGraphicsControls(
+      makeSource({ graphicsPreset: 4 }, { touchPreciseGroundAim: true }),
+      {
+        touch: true,
+        nativeShell: false,
+      },
+    );
+    expect(find(controls, 'mobileCameraJoystick')).toMatchObject({
+      control: 'boolToggle',
+      labelKey: 'hudChrome.options.mobileCameraJoystick',
+    });
+    expect(find(controls, 'leftHandedTouch')).toMatchObject({
+      control: 'boolToggle',
+      labelKey: 'hudChrome.options.mobileLeftHanded',
+    });
+    expect(find(controls, 'touchPreciseGroundAim')).toMatchObject({
+      control: 'boolToggle',
+      labelKey: 'hudChrome.options.touchPreciseAim',
+      on: true,
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cluster 4: audio
+// ---------------------------------------------------------------------------
+describe('options_view: audio dispatch matrix (cluster 4)', () => {
+  it('lists three volume sliders, the bespoke music toggle, then the audio bool toggles', () => {
+    const controls = buildAudioControls(makeSource());
+    expect(keysOf(controls)).toEqual([
+      'sfxVolume',
+      'musicVolume',
+      'voiceVolume',
+      'musicToggle',
+      'voiceEnabled',
+      'footstepSfx',
+      'interfaceSfx',
+      'clickFeedback',
+    ]);
+    expect(find(controls, 'sfxVolume')).toMatchObject({ control: 'slider' });
+    expect(find(controls, 'voiceEnabled')).toMatchObject({ control: 'boolToggle' });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cluster 5: controller + the remaining interface toggles
+// ---------------------------------------------------------------------------
+describe('options_view: controller dispatch matrix (cluster 5)', () => {
+  it('lists the glyph family, enable, cross hotbar and invert controls then the sliders', () => {
+    const controls = buildControllerControls(makeSource());
+    expect(keysOf(controls)).toEqual([
+      'gamepadGlyphStyle',
+      'gamepadEnabled',
+      'gamepadCrossHotbar',
+      'gamepadCrossHotbarExpand',
+      'gamepadInvertY',
+      'gamepadStickDeadzone',
+      'gamepadCameraSpeed',
+      'gamepadReticleSpeed',
+      'gamepadVibration',
+    ]);
+    expect(find(controls, 'gamepadGlyphStyle')).toMatchObject({
+      control: 'choice',
+      current: 0,
+      rerender: false,
+      options: [
+        { value: 0, labelKey: 'hudChrome.controller.glyphStyleAuto' },
+        { value: 1, labelKey: 'hudChrome.controller.glyphStyleXbox' },
+        { value: 2, labelKey: 'hudChrome.controller.glyphStylePlayStation' },
+        { value: 3, labelKey: 'hudChrome.controller.glyphStyleNintendo' },
+      ],
+    });
+    expect(find(controls, 'gamepadEnabled')).toMatchObject({ control: 'boolToggle' });
+    // camera speed renders with a one-decimal readout, not a percent
+    expect(find(controls, 'gamepadCameraSpeed')).toMatchObject({
+      control: 'slider',
+      fmt: 'oneDecimal',
+    });
+    expect(find(controls, 'gamepadReticleSpeed')).toMatchObject({
+      control: 'slider',
+      fmt: 'oneDecimal',
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// optionsControlKeys: scopes a sub-view's "Reset to Defaults" to only the
+// setting keys it actually renders (issue 2341: resetting Audio must not wipe
+// Graphics/Controller/Interface too).
+// ---------------------------------------------------------------------------
+describe('options_view: optionsControlKeys (issue 2341 scoped reset)', () => {
+  it('extracts the setting key from every keyed control, in order, deduped', () => {
+    const controls = buildControllerControls(makeSource());
+    expect(optionsControlKeys(controls)).toEqual([
+      'gamepadGlyphStyle',
+      'gamepadEnabled',
+      'gamepadCrossHotbar',
+      'gamepadCrossHotbarExpand',
+      'gamepadInvertY',
+      'gamepadStickDeadzone',
+      'gamepadCameraSpeed',
+      'gamepadReticleSpeed',
+      'gamepadVibration',
+    ]);
+  });
+
+  it('drops NoteControl and MusicToggleControl, which carry no setting key', () => {
+    const controls = buildAudioControls(makeSource());
+    // buildAudioControls includes the bespoke musicToggle marker alongside the
+    // real setting-backed sliders/toggles.
+    expect(controls.some((c) => c.control === 'musicToggle')).toBe(true);
+    const keys = optionsControlKeys(controls);
+    expect(keys).not.toContain('musicToggle');
+    expect(keys).toEqual([
+      'sfxVolume',
+      'musicVolume',
+      'voiceVolume',
+      'voiceEnabled',
+      'footstepSfx',
+      'interfaceSfx',
+      'clickFeedback',
+    ]);
+
+    const graphics = buildGraphicsControls(makeSource(), { touch: false, nativeShell: false });
+    expect(graphics.some((c) => c.control === 'note')).toBe(true);
+    expect(optionsControlKeys(graphics)).not.toContain(undefined);
+    expect(optionsControlKeys(graphics).length).toBe(
+      graphics.filter((c) => c.control !== 'note').length,
+    );
+  });
+});
+
+// The declarative interface controls, grouped by tab in their painted order.
+// interfaceControlsForTab(all, tab) must return exactly these, in order; the
+// concatenation (in INTERFACE_TAB_ORDER) is the whole deduped list.
+const GENERAL_KEYS = [
+  'hudOpacity',
+  'tooltipScale',
+  'frostedPanels',
+  'highContrastText',
+  'reduceMotion',
+  'invertLookY',
+  'landingHighContrast',
+  'showDevBadges',
+  'showWalletOnCharacterScreen',
+  'showWalletOnPlayerCard',
+  'showPlaytime',
+  'showDailyRewardsChest',
+  'showItemLevel',
+  'showReliquaryTracker',
+  'showOwnNameplate',
+  'showPlayerNameplates',
+  'confirmVendorSell',
+  'note:hudChrome.options.confirmVendorSellNote',
+];
+const FRAMES_KEYS = [
+  'partyFrameStyle',
+  // partyFrameWidth/Height have no rows (Edit Frames drags them directly);
+  // partyFrameColumns and partyFrameSpacing moved into the in-editor Frames
+  // Settings dropdown.
+  'partyFrameHealthText',
+  'partyFrameSort',
+  'partyFrameShowResource',
+  'partyFrameShowAbsorbs',
+  'partyFrameShowAuras',
+  'partyFrameShowPets',
+  'partyFrameShowSelf',
+  'playerFrameHealthText',
+  'targetFrameHealthText',
+  'aurasOnPlayerFrame',
+  'auraBarBelowFrame',
+  'alwaysShowAllBuffs',
+  'showTargetOfTarget',
+  'showTargetSwingTimer',
+  'showPetFrame',
+];
+const CHAT_KEYS = ['chatFontScale', 'chatOpacity', 'compactChat', 'filterProfanity'];
+const COMBAT_KEYS = [
+  'startAttackOnAbilityUse',
+  'stopAutoAttackOnTargetSwitch',
+  'showAttackButton',
+  'walkByAutoloot',
+  'groundReticle',
+  'stickyTarget',
+  // The two dot-tracking surfaces, with the nameplate row's size slider pinned
+  // directly under the toggle it sizes.
+  'showNameplateDots',
+  'nameplateDotScale',
+  'showTargetDots',
+  // The six aura tracks, in the order the descriptor table declares them, plus
+  // the mode sub-option that rides with the utility track.
+  'showDefensivesTrack',
+  'showSelfBuffTrack',
+  'showOffensiveTrack',
+  'showUtilityTrack',
+  'showUtilityModes',
+  'showFriendlyTrack',
+  'showShieldTrack',
+  'fctScale',
+];
+const INTERFACE_KEYS_BY_TAB: Record<InterfaceTab, string[]> = {
+  general: GENERAL_KEYS,
+  frames: FRAMES_KEYS,
+  chat: CHAT_KEYS,
+  combat: COMBAT_KEYS,
+};
+// The desktop-shell arm: the GPU preference toggle and its next-launch note
+// close the General tab, and appear ONLY when the shell exposes the bridge
+// capability. Every list above is the web/mobile arm, which must stay byte-for-
+// byte what it was, so the row can never leak onto a build that cannot serve it.
+const DESKTOP_GPU_KEYS = ['forceHighPerfGpu', 'note:hudChrome.options.forceHighPerfGpuNote'];
+// The Discord Rich Presence row, behind its OWN capability: a shell can expose
+// the GPU preference without presence (it shipped first), so the two gates are
+// independent and the row order is gpu block then presence block.
+const DESKTOP_DISCORD_KEYS = ['discordPresence', 'note:hudChrome.options.discordPresenceNote'];
+const GENERAL_KEYS_DESKTOP = [...GENERAL_KEYS, ...DESKTOP_GPU_KEYS];
+const INTERFACE_KEYS_BY_TAB_DESKTOP: Record<InterfaceTab, string[]> = {
+  ...INTERFACE_KEYS_BY_TAB,
+  general: GENERAL_KEYS_DESKTOP,
+};
+// The gate is the CAPABILITY flag, never nativeShell (true in the mobile shells
+// too), so the two envs below differ in exactly that one field.
+const WEB_ENV: OptionsEnv = { touch: false, nativeShell: false };
+const DESKTOP_ENV: OptionsEnv = { touch: false, nativeShell: false, desktopGpuPref: true };
+
+describe('options_view: interface dispatch matrix (cluster 5)', () => {
+  it('lists the four tabs concatenated in order (deduped, partyFrames note dropped)', () => {
+    const controls = buildInterfaceControls(makeSource());
+    expect(keysOf(controls)).toEqual([
+      ...GENERAL_KEYS,
+      ...FRAMES_KEYS,
+      ...CHAT_KEYS,
+      ...COMBAT_KEYS,
+    ]);
+    // the redundant partyFrames.section note is gone now that Frames is its own tab
+    expect(keysOf(controls)).not.toContain('note:hudChrome.partyFrames.section');
+    expect(find(controls, 'partyFrameStyle')).toMatchObject({
+      control: 'choice',
+      options: [
+        { value: 0, labelKey: 'hudChrome.partyFrames.styleAutomatic' },
+        { value: 1, labelKey: 'hudChrome.partyFrames.styleClassic' },
+        { value: 2, labelKey: 'hudChrome.partyFrames.styleRaid' },
+      ],
+    });
+    expect(find(controls, 'reduceMotion')).toMatchObject({ control: 'boolToggle' });
+    // The sticky-target opt-in renders in the Combat tab with its label key, so
+    // the toggle cannot silently drop out of the options window.
+    expect(find(controls, 'stickyTarget')).toMatchObject({
+      control: 'boolToggle',
+      category: 'combat',
+      labelKey: 'hudChrome.options.stickyTarget',
+    });
+  });
+
+  it('renders one Combat toggle per aura track, each labelled by its own key', () => {
+    // Six frames need six independent opt-ins: a single "show aura tracks"
+    // switch would put roughly twenty rows on a healer at once, which is the
+    // thing the per-track defaults exist to prevent. Pinned by KEY rather than
+    // by count so a track that loses its row fails here, and pinned against the
+    // descriptor table so the two can never drift.
+    const controls = buildInterfaceControls(makeSource());
+    for (const track of AURA_TRACKS) {
+      expect(find(controls, track.settingKey)).toMatchObject({
+        control: 'boolToggle',
+        category: 'combat',
+        labelKey: `hudChrome.options.${track.settingKey}`,
+      });
+    }
+    // Every track is OFF until asked for, and the mode sub-option rides on.
+    for (const track of AURA_TRACKS) {
+      expect(BOOL_SETTINGS[track.settingKey as keyof typeof BOOL_SETTINGS]).toEqual({
+        def: false,
+      });
+    }
+    expect(BOOL_SETTINGS.showUtilityModes).toEqual({ def: true });
+  });
+
+  it('renders NO menu rows for the optional action bars (the on-bar toggle owns them)', () => {
+    // The plus/minus buttons on the primary action bar are the one control for
+    // the secondary/third rows; duplicate checkboxes here would fight them.
+    // The settings and the main.ts dependency resolver are unchanged.
+    const all = buildInterfaceControls(makeSource());
+    expect(find(all, 'showSecondaryActionBar')).toBeUndefined();
+    expect(find(all, 'showThirdActionBar')).toBeUndefined();
+  });
+
+  it('appends the desktop GPU row + note ONLY with the bridge capability', () => {
+    // With the capability: the row and its next-launch note close the General
+    // tab, leaving every other row exactly where it was.
+    const desktop = buildInterfaceControls(makeSource(), DESKTOP_ENV);
+    expect(keysOf(desktop)).toEqual([
+      ...GENERAL_KEYS_DESKTOP,
+      ...FRAMES_KEYS,
+      ...CHAT_KEYS,
+      ...COMBAT_KEYS,
+    ]);
+    expect(find(desktop, 'forceHighPerfGpu')).toMatchObject({
+      control: 'boolToggle',
+      category: 'general',
+      labelKey: 'hudChrome.options.forceHighPerfGpu',
+    });
+    expect(desktop.filter((c) => c.control === 'note')).toEqual([
+      { control: 'note', textKey: 'hudChrome.options.confirmVendorSellNote', category: 'general' },
+      { control: 'note', textKey: 'hudChrome.options.forceHighPerfGpuNote', category: 'general' },
+    ]);
+
+    // Without it: the exact pre-existing list, with no GPU-preference row or
+    // note (the keysOf equality below already pins the whole set exactly,
+    // confirmVendorSellNote included since it is unconditional). A plain
+    // browser and a mobile Capacitor shell both land here.
+    for (const env of [undefined, WEB_ENV, { touch: true, nativeShell: true }]) {
+      const withoutCapability = buildInterfaceControls(makeSource(), env);
+      expect(keysOf(withoutCapability)).toEqual([
+        ...GENERAL_KEYS,
+        ...FRAMES_KEYS,
+        ...CHAT_KEYS,
+        ...COMBAT_KEYS,
+      ]);
+      expect(find(withoutCapability, 'forceHighPerfGpu')).toBeUndefined();
+      expect(find(withoutCapability, 'discordPresence')).toBeUndefined();
+    }
+
+    // nativeShell alone never reveals it, and the capability alone always does:
+    // the two flags are independent, so neither can stand in for the other.
+    const desktopShellFlagged = buildInterfaceControls(makeSource(), {
+      touch: false,
+      nativeShell: true,
+      desktopGpuPref: true,
+    });
+    expect(find(desktopShellFlagged, 'forceHighPerfGpu')).toBeTruthy();
+    expect(
+      find(
+        buildInterfaceControls(makeSource(), { ...WEB_ENV, desktopGpuPref: false }),
+        'forceHighPerfGpu',
+      ),
+    ).toBeUndefined();
+  });
+
+  it('keeps the graphics backend row OUT of the Interface panel (it lives under Graphics)', () => {
+    // A player looks for the backend next to the shader warm-up worker, in
+    // the Graphics panel's System card; the Interface tail keeps only the GPU
+    // preference and Discord, even when the shell has the backend capability.
+    const allKeys = keysOf(
+      buildInterfaceControls(makeSource(), {
+        ...WEB_ENV,
+        desktopGpuPref: true,
+        desktopGpuBackend: true,
+        desktopDiscordPresence: true,
+      }),
+    );
+    expect(allKeys).not.toContain('gpuBackend');
+    expect(allKeys).not.toContain('note:hudChrome.options.gpuBackendNote');
+    const tail = allKeys.slice(
+      allKeys.indexOf('forceHighPerfGpu'),
+      allKeys.indexOf('forceHighPerfGpu') + 4,
+    );
+    expect(tail).toEqual([
+      'forceHighPerfGpu',
+      'note:hudChrome.options.forceHighPerfGpuNote',
+      'discordPresence',
+      'note:hudChrome.options.discordPresenceNote',
+    ]);
+  });
+
+  it('appends the Discord presence row + note ONLY with its own bridge capability', () => {
+    // Alone (a shell with presence but no GPU preference): the presence block
+    // closes the General tab and the GPU row is nowhere.
+    const presenceOnly = buildInterfaceControls(makeSource(), {
+      touch: false,
+      nativeShell: false,
+      desktopDiscordPresence: true,
+    });
+    expect(keysOf(presenceOnly)).toEqual([
+      ...GENERAL_KEYS,
+      ...DESKTOP_DISCORD_KEYS,
+      ...FRAMES_KEYS,
+      ...CHAT_KEYS,
+      ...COMBAT_KEYS,
+    ]);
+    expect(find(presenceOnly, 'forceHighPerfGpu')).toBeUndefined();
+    expect(find(presenceOnly, 'discordPresence')).toMatchObject({
+      control: 'boolToggle',
+      category: 'general',
+      labelKey: 'hudChrome.options.discordPresence',
+    });
+
+    // Both capabilities: the GPU block first, then presence, matching the code.
+    const both = buildInterfaceControls(makeSource(), {
+      ...DESKTOP_ENV,
+      desktopDiscordPresence: true,
+    });
+    expect(keysOf(both)).toEqual([
+      ...GENERAL_KEYS,
+      ...DESKTOP_GPU_KEYS,
+      ...DESKTOP_DISCORD_KEYS,
+      ...FRAMES_KEYS,
+      ...CHAT_KEYS,
+      ...COMBAT_KEYS,
+    ]);
+
+    // The capability alone always reveals it and nativeShell alone never does:
+    // the mobile shells cannot publish a presence at all.
+    expect(
+      find(
+        buildInterfaceControls(makeSource(), {
+          touch: true,
+          nativeShell: true,
+          desktopDiscordPresence: true,
+        }),
+        'discordPresence',
+      ),
+    ).toBeTruthy();
+    expect(
+      find(
+        buildInterfaceControls(makeSource(), { touch: false, nativeShell: true }),
+        'discordPresence',
+      ),
+    ).toBeUndefined();
+    expect(
+      find(
+        buildInterfaceControls(makeSource(), { ...WEB_ENV, desktopDiscordPresence: false }),
+        'discordPresence',
+      ),
+    ).toBeUndefined();
+  });
+
+  it('reads the stored presence choice straight through (no inversion at this seam)', () => {
+    const env: OptionsEnv = { touch: false, nativeShell: false, desktopDiscordPresence: true };
+    expect(
+      find(
+        buildInterfaceControls(makeSource({}, { discordPresence: true }), env),
+        'discordPresence',
+      ),
+    ).toMatchObject({ control: 'boolToggle', on: true });
+    expect(
+      find(
+        buildInterfaceControls(makeSource({}, { discordPresence: false }), env),
+        'discordPresence',
+      ),
+    ).toMatchObject({ control: 'boolToggle', on: false });
+  });
+
+  it('reflects the stored GPU preference in BOTH directions (no inversion at this seam)', () => {
+    // The setting is the player-facing "force the dedicated GPU"; the shell
+    // store holds the inverse opt-out. The inversion happens at the bridge
+    // crossings (boot reflection + the options write arm), NOT here, so the
+    // toggle must read the stored value straight through.
+    const on = buildInterfaceControls(makeSource({}, { forceHighPerfGpu: true }), DESKTOP_ENV);
+    expect(find(on, 'forceHighPerfGpu')).toMatchObject({ control: 'boolToggle', on: true });
+
+    const off = buildInterfaceControls(makeSource({}, { forceHighPerfGpu: false }), DESKTOP_ENV);
+    expect(find(off, 'forceHighPerfGpu')).toMatchObject({ control: 'boolToggle', on: false });
+  });
+
+  // Regression pin for the buff-placement bug (issue: buffs on the player
+  // frame flip above/below unpredictably): the above/below choice is now the
+  // player's OWN setting (auraBarBelowFrame), gated on aurasOnPlayerFrame the
+  // same way a dependent BoolToggleControl always gates on its parent
+  // (disabled until the parent is on, rebuilt immediately via rerender: true
+  // so the disabled state never goes stale).
+  it('enables the below-frame buff placement toggle only while buffs anchor to the player frame', () => {
+    const hidden = buildInterfaceControls(makeSource());
+    expect(find(hidden, 'aurasOnPlayerFrame')).toMatchObject({
+      control: 'boolToggle',
+      rerender: true,
+    });
+    expect(find(hidden, 'auraBarBelowFrame')).toMatchObject({
+      control: 'boolToggle',
+      disabled: true,
+    });
+
+    const visible = buildInterfaceControls(makeSource({}, { aurasOnPlayerFrame: true }));
+    expect(find(visible, 'auraBarBelowFrame')).toMatchObject({ disabled: false });
+  });
+
+  it('reads the stored buff-placement choice straight through, independent of aurasOnPlayerFrame', () => {
+    const on = buildInterfaceControls(
+      makeSource({}, { aurasOnPlayerFrame: true, auraBarBelowFrame: true }),
+    );
+    expect(find(on, 'auraBarBelowFrame')).toMatchObject({ control: 'boolToggle', on: true });
+
+    const off = buildInterfaceControls(
+      makeSource({}, { aurasOnPlayerFrame: true, auraBarBelowFrame: false }),
+    );
+    expect(find(off, 'auraBarBelowFrame')).toMatchObject({ control: 'boolToggle', on: false });
+  });
+
+  it('renders NO uiScale row (owner request); the comfort sliders stay live', () => {
+    const controls = buildInterfaceControls(makeSource());
+    // The UI Scale slider is retired from the menu: the stored setting still
+    // applies at boot and the General tab's Reset to Defaults still clears it
+    // (renderInterface's off-menu key list).
+    expect(find(controls, 'uiScale')).toBeUndefined();
+    // Sibling sliders keep their live preview (no commitOnChange flag).
+    expect(find(controls, 'chatFontScale')).not.toHaveProperty('commitOnChange');
+    expect(find(controls, 'tooltipScale')).not.toHaveProperty('commitOnChange');
+    expect(find(controls, 'fctScale')).not.toHaveProperty('commitOnChange');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Interface tab taxonomy (the four-tab split): every control has exactly one
+// category, the union of the tabs is the whole list with no duplicates, and each
+// tab filters to its mapped controls in order. The no-duplicate assertion is what
+// catches the historical showAttackButton dupe (and any future control added
+// without a category, which would land uncategorized / drop out of the union).
+// ---------------------------------------------------------------------------
+describe('options_view: interface tab taxonomy', () => {
+  it('declares the four tabs, in strip order, each with a label key', () => {
+    expect([...INTERFACE_TAB_ORDER]).toEqual(['general', 'frames', 'chat', 'combat']);
+    for (const tab of INTERFACE_TAB_ORDER) {
+      expect(INTERFACE_TAB_LABEL_KEY[tab]).toBe(`hudChrome.interfaceTabs.${tab}`);
+    }
+  });
+
+  // Both arms: the desktop-capability build adds a row AND the panel's only note
+  // control, so the taxonomy has to hold with a keyless control in the list.
+  it.each([
+    ['web', undefined],
+    ['desktop shell', DESKTOP_ENV],
+  ] as const)(
+    'assigns every interface control (%s) to exactly one of the four tabs',
+    (_arm, env) => {
+      const all = buildInterfaceControls(makeSource(), env);
+      for (const c of all) {
+        // an uncategorized control (someone added a setting without a category)
+        // fails here: undefined is not one of the four tabs
+        expect(INTERFACE_TAB_ORDER).toContain(c.category);
+      }
+    },
+  );
+
+  it.each([
+    ['web', undefined],
+    ['desktop shell', DESKTOP_ENV],
+  ] as const)(
+    'partitions the full list (%s): the union of the tabs equals it, with NO duplicate keys',
+    (_arm, env) => {
+      const all = buildInterfaceControls(makeSource(), env);
+      const union = INTERFACE_TAB_ORDER.flatMap((tab) => interfaceControlsForTab(all, tab));
+      // every control lands in exactly one tab: the union is the same objects, same size
+      expect(union).toHaveLength(all.length);
+      expect(new Set(union)).toEqual(new Set(all));
+      // no setting key appears twice across the whole interface list. This is RED
+      // while the showAttackButton duplicate is present and GREEN once deduped.
+      // (the desktop arm's next-launch note is the one keyless control; every
+      // other row must still carry a key, so a keyless toggle still fails here)
+      // the audio panel's bespoke music toggle never belongs to this panel
+      expect(all.some((c) => c.control === 'musicToggle')).toBe(false);
+      const keyed = all.filter((c) => c.control !== 'note' && c.control !== 'musicToggle');
+      expect(keyed).toHaveLength(all.length - all.filter((c) => c.control === 'note').length);
+      const keys = keyed.map((c) => c.key);
+      expect(keys).not.toContain('');
+      expect(new Set(keys).size).toBe(keys.length);
+      // showAttackButton in particular resolves to a single combat-tab control
+      expect(all.filter((c) => 'key' in c && c.key === 'showAttackButton')).toHaveLength(1);
+      expect(find(all, 'showAttackButton')?.category).toBe('combat');
+    },
+  );
+
+  it.each([
+    ['web', undefined, INTERFACE_KEYS_BY_TAB],
+    ['desktop shell', DESKTOP_ENV, INTERFACE_KEYS_BY_TAB_DESKTOP],
+  ] as const)('filters each tab (%s) to its mapped controls, in order', (_arm, env, expected) => {
+    const all = buildInterfaceControls(makeSource(), env);
+    for (const tab of INTERFACE_TAB_ORDER) {
+      expect(keysOf(interfaceControlsForTab(all, tab))).toEqual(expected[tab]);
+    }
+  });
+
+  it('renders one control per setting in a tab when a duplicate descriptor is present', () => {
+    const all = buildInterfaceControls(makeSource({}, { showAttackButton: true }));
+    const attack = find(all, 'showAttackButton');
+    expect(attack).toBeTruthy();
+    const withDuplicate = attack ? [...all, { ...attack }] : all;
+
+    const combat = interfaceControlsForTab(withDuplicate, 'combat');
+    expect(combat.filter((c) => 'key' in c && c.key === 'showAttackButton')).toHaveLength(1);
+    expect(find(combat, 'showAttackButton')).toMatchObject({
+      category: 'combat',
+      control: 'boolToggle',
+      key: 'showAttackButton',
+      labelKey: 'hudChrome.options.showAttackButton',
+      on: true,
+    });
+  });
+
+  it('renders NO menu rows for the settings the Frames Settings dropdown owns', () => {
+    // combineActionBars / hideUnusedActionSlots / mouseoverCast /
+    // lockActionBars moved into the edit mode's Frames Settings dropdown
+    // (interface_unlock.ts settingToggles); a duplicate row here would drift
+    // out of sync with it. The frame-scale sliders are likewise gone: Edit
+    // Frames resizes each frame directly. The settings keys all remain.
+    const all = buildInterfaceControls(makeSource());
+    for (const key of [
+      'combineActionBars',
+      'hideUnusedActionSlots',
+      'mouseoverCast',
+      'lockActionBars',
+      'playerFrameScale',
+      'targetFrameScale',
+      'partyFrameScale',
+    ]) {
+      expect(find(all, key), `${key} should have no options row`).toBeUndefined();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Main menu routing (cluster 5)
+// ---------------------------------------------------------------------------
+describe('options_view: main menu routing', () => {
+  it('routes each row to its sub-view, with unstuck before logout + close, omitting bug report offline', () => {
+    const offline = buildOptionsMenu({ bugReportAvailable: false });
+    expect(offline.map((e) => e.labelKey)).toEqual([
+      'hud.options.keyBindings',
+      'hudChrome.controller.title',
+      'hud.options.graphics',
+      'hud.options.interface',
+      'hudChrome.auraOverlay.title',
+      'hud.options.audio',
+      'hudChrome.perf.title',
+      'hudChrome.fullTransfer.menu',
+      'nav.wiki',
+      'hudChrome.unstuck.menuButton',
+      'hud.options.logout',
+      'hud.options.returnToGame',
+    ]);
+    expect(offline.at(-3)?.action).toEqual({ kind: 'unstuck' });
+    expect(offline.at(-2)?.action).toEqual({ kind: 'logout' });
+    expect(offline.at(-1)?.action).toEqual({ kind: 'close' });
+    // exactly one interface entry (no duplicates), routing to the interface view
+    const interfaceRows = offline.filter((e) => e.labelKey === 'hud.options.interface');
+    expect(interfaceRows).toHaveLength(1);
+    expect(interfaceRows[0].action).toEqual({ kind: 'goto', view: 'interface' });
+    expect(offline.find((e) => e.labelKey === 'hudChrome.auraOverlay.title')?.action).toEqual({
+      kind: 'goto',
+      view: 'auras',
+    });
+    // The Wiki row is unconditional (offline play has a wiki too) and routes to
+    // the confirm-first external hop, never a sub-view.
+    const wikiRows = offline.filter((e) => e.labelKey === 'nav.wiki');
+    expect(wikiRows).toHaveLength(1);
+    expect(wikiRows[0].action).toEqual({ kind: 'wiki' });
+    // The full-settings Import / Export row routes to its own sub-view.
+    expect(offline.find((e) => e.labelKey === 'hudChrome.fullTransfer.menu')?.action).toEqual({
+      kind: 'goto',
+      view: 'transfer',
+    });
+  });
+
+  it('adds the online-only Report a Bug row when bug reporting is available', () => {
+    const online = buildOptionsMenu({ bugReportAvailable: true });
+    const bug = online.find((e) => e.labelKey === 'hudChrome.bugReport.menuButton');
+    expect(bug?.action).toEqual({ kind: 'goto', view: 'bugreport' });
+    // The Wiki row keeps its place above the report row in both modes.
+    expect(online.find((e) => e.labelKey === 'nav.wiki')?.action).toEqual({ kind: 'wiki' });
+    expect(online.slice(-4)).toEqual([
+      { labelKey: 'hudChrome.bugReport.menuButton', action: { kind: 'goto', view: 'bugreport' } },
+      { labelKey: 'hudChrome.unstuck.menuButton', action: { kind: 'unstuck' } },
+      { labelKey: 'hud.options.logout', action: { kind: 'logout' } },
+      { labelKey: 'hud.options.returnToGame', action: { kind: 'close' } },
+    ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cluster 2: bug report. The ONE IWorld slice the window reads, so it is the
+// ClientWorld-vs-Sim parity surface.
+// ---------------------------------------------------------------------------
+describe('options_view: bug report info (cluster 2)', () => {
+  it('derives realm/character/coords; unknown realm flagged when blank', () => {
+    const info = buildBugReportInfo('Stormrend', {
+      name: 'Tharos',
+      pos: { x: 12.6, y: -3.1, z: 88.9 },
+    });
+    expect(info).toEqual({
+      realmKnown: true,
+      realm: 'Stormrend',
+      characterName: 'Tharos',
+      pos: { x: 12.6, y: -3.1, z: 88.9 },
+    });
+    const offline = buildBugReportInfo('', { name: 'Tharos', pos: { x: 0, y: 0, z: 0 } });
+    expect(offline.realmKnown).toBe(false);
+    expect(offline.realm).toBe('');
+    const nullRealm = buildBugReportInfo(null, { name: 'Tharos', pos: { x: 0, y: 0, z: 0 } });
+    expect(nullRealm.realmKnown).toBe(false);
+  });
+
+  it('derives the documented info from BOTH a Sim shape and a ClientWorld-mirror shape (parity)', () => {
+    // Two GENUINELY different world shapes, not a self-clone: the offline Sim hands
+    // the window a live player Entity (a prototyped instance carrying extra offline
+    // fields the window must ignore) and an empty realm string (IWorld.realm is ''
+    // in offline play); the online ClientWorld hands it a plain wire-mirrored object
+    // and a populated realm. The slice the window reads (name + pos) must come out
+    // identical from both, so an offline-only field shape can't silently misrender
+    // online; only realm (a documented online/offline difference) differs.
+    const simPlayer = Object.assign(Object.create({ speed: 7 }), {
+      name: 'Tharos',
+      pos: { x: 5.5, y: 2.25, z: -7.75 },
+      hp: 120, // offline-only field the bug-report slice must not read
+    });
+    const simInfo = buildBugReportInfo('', simPlayer);
+    expect(simInfo).toEqual({
+      realmKnown: false,
+      realm: '',
+      characterName: 'Tharos',
+      pos: { x: 5.5, y: 2.25, z: -7.75 },
+    });
+
+    const clientInfo = buildBugReportInfo('Stormrend', {
+      name: 'Tharos',
+      pos: { x: 5.5, y: 2.25, z: -7.75 },
+    });
+    expect(clientInfo).toEqual({
+      realmKnown: true,
+      realm: 'Stormrend',
+      characterName: 'Tharos',
+      pos: { x: 5.5, y: 2.25, z: -7.75 },
+    });
+
+    // The read slice is identical across the two shapes; realm is the only divergence.
+    expect(clientInfo.characterName).toBe(simInfo.characterName);
+    expect(clientInfo.pos).toEqual(simInfo.pos);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Determinism: same input -> same output (deterministic pure core)
+// ---------------------------------------------------------------------------
+describe('options_view: determinism', () => {
+  it('produces identical control lists for identical inputs', () => {
+    const src = makeSource({ graphicsPreset: 5, cameraSpeed: 0.8 }, { reduceMotion: true });
+    const env = { touch: true, nativeShell: false };
+    expect(buildGraphicsControls(src, env)).toEqual(buildGraphicsControls(src, env));
+    expect(buildAudioControls(src)).toEqual(buildAudioControls(src));
+    expect(buildInterfaceControls(src)).toEqual(buildInterfaceControls(src));
+    expect(buildInterfaceControls(src, DESKTOP_ENV)).toEqual(
+      buildInterfaceControls(src, DESKTOP_ENV),
+    );
+    expect(buildControllerControls(src)).toEqual(buildControllerControls(src));
+    expect(buildOptionsMenu({ bugReportAvailable: true })).toEqual(
+      buildOptionsMenu({ bugReportAvailable: true }),
+    );
+  });
+});
+
+// The Display card is the one card whose shape changes by HOST: a desktop shell
+// that owns its window gets a real window-mode picker, every other host keeps
+// the browser Fullscreen toggle. Both arms are pinned, because a capability
+// leaking onto the web build would render a control nothing can serve, and a
+// capability that failed to swap would leave the desktop player asking the
+// browser for fullscreen inside an already-fullscreen window.
+describe('options_view: the desktop display-mode picker replaces the fullscreen toggle', () => {
+  const DISPLAY_ENV: OptionsEnv = { touch: false, nativeShell: false, desktopDisplayMode: true };
+  const displayCardKeys = (env: OptionsEnv): string[] => {
+    const card = buildGraphicsSections(makeSource({ graphicsPreset: 4 }), env).find(
+      (s) => s.titleKey === 'hudChrome.options.gfxSectionDisplay',
+    );
+    expect(card, 'the Display card must exist on every host').toBeTruthy();
+    return keysOf(card?.controls ?? []);
+  };
+
+  it('swaps the toggle for the picker IN PLACE when the shell owns the window', () => {
+    // The whole ordered run, not just a membership check: the picker takes the
+    // toggle's slot, so the card's row order is byte-for-byte the web order.
+    expect(displayCardKeys(DISPLAY_ENV)).toEqual([
+      'renderScale',
+      'brightness',
+      'cameraFov',
+      'displayMode',
+      'weather',
+      'waterRipples',
+      'showOverflowXp',
+    ]);
+    expect(displayCardKeys(DISPLAY_ENV)).not.toContain('fullscreen');
+    const controls = buildGraphicsControls(makeSource({ graphicsPreset: 4 }), DISPLAY_ENV);
+    expect(find(controls, 'displayMode')).toMatchObject({
+      control: 'choice',
+      labelKey: 'hud.options.displayMode',
+      // Windowed first, borderless second: the picker's order IS the setting's
+      // numeric order, so a reordering here cannot silently re-map the values.
+      options: [
+        { value: 0, labelKey: 'hud.options.displayModeWindowed' },
+        { value: 1, labelKey: 'hud.options.displayModeBorderless' },
+      ],
+    });
+  });
+
+  it('reflects the stored mode in BOTH directions (no mapping at this seam)', () => {
+    // The numeric <-> string mapping happens at the bridge crossings
+    // (desktop_display_mode_sync), never here, so the picker reads straight
+    // through: 1 selects Borderless Fullscreen, 0 selects Windowed.
+    const borderless = buildGraphicsControls(
+      makeSource({ graphicsPreset: 4, displayMode: 1 }),
+      DISPLAY_ENV,
+    );
+    expect(find(borderless, 'displayMode')).toMatchObject({ control: 'choice', current: 1 });
+    const windowed = buildGraphicsControls(
+      makeSource({ graphicsPreset: 4, displayMode: 0 }),
+      DISPLAY_ENV,
+    );
+    expect(find(windowed, 'displayMode')).toMatchObject({ control: 'choice', current: 0 });
+  });
+
+  it('never renders on the web, a mobile shell, or a desktop shell without the bridge', () => {
+    // Every host that is not a display-mode-capable desktop shell keeps the
+    // pre-existing toggle, byte for byte. nativeShell is true in the mobile
+    // shells and desktopGpuPref is a DIFFERENT capability: neither may stand in
+    // for this one.
+    const envs: OptionsEnv[] = [
+      { touch: false, nativeShell: false },
+      { touch: true, nativeShell: true },
+      { touch: false, nativeShell: false, desktopDisplayMode: false },
+      { touch: false, nativeShell: true, desktopGpuPref: true },
+    ];
+    for (const env of envs) {
+      const keys = displayCardKeys(env);
+      // The whole ordered run, mirroring the desktop arm's pin: "byte for
+      // byte" means the toggle holds the exact slot the picker would take,
+      // not merely membership somewhere in the card.
+      expect(keys).toEqual([
+        'renderScale',
+        'brightness',
+        'cameraFov',
+        'fullscreen',
+        'weather',
+        'waterRipples',
+        'showOverflowXp',
+      ]);
+      expect(keys).not.toContain('displayMode');
+      const controls = buildGraphicsControls(makeSource({ graphicsPreset: 4 }), env);
+      expect(find(controls, 'displayMode')).toBeUndefined();
+      expect(find(controls, 'fullscreen')).toMatchObject({ control: 'toggle' });
+    }
+  });
+});

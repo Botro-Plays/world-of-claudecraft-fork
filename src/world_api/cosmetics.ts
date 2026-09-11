@@ -1,0 +1,41 @@
+import type { WeaponSkinType } from '../sim/types';
+
+export interface AccountCosmetics {
+  completedQuestIds: string[];
+  mechChromaIds: string[];
+  // Season 1 Armory weapon skins: account-wide ownership (economy-service grants
+  // mirrored into accounts.cosmetics) and the applied-skin-per-weapon-type
+  // loadout. Both are account state: every character on the account shares them.
+  weaponSkinIds: string[];
+  weaponSkinLoadout: Record<string, string>;
+  // Mount skins (src/sim/content/mount_skins.ts): account-wide ownership,
+  // mirrored from the economy service's grant ledger. The WORN skin is per
+  // character (Entity.mountSkinId), not account state, so it is not here.
+  mountSkinIds: string[];
+}
+
+export interface IWorldCosmetics {
+  accountCosmetics: AccountCosmetics;
+  changeSkin(skin: number, catalog?: 'class' | 'mech'): void;
+  // Lock in a skin from the cosmetic skin-select event overlay. The server
+  // re-validates the choice against the rank it rolled (skinEvent) and consumes
+  // the event token; the offline Sim resolves it directly.
+  claimEventSkin(skin: number): void;
+  unequipMechChroma(chromaId: string): void;
+  // Apply (skinId) or detach (null + weaponType) a purchased weapon skin. The
+  // server enforces account ownership and the equipped-weapon-type match; the
+  // offline Sim enforces the type match only (the paid store is online-only).
+  changeWeaponSkin(skinId: string | null, weaponType?: WeaponSkinType): void;
+  // Wear (skinId) or take off (null) a mount skin on THIS character. The server
+  // enforces account ownership (accountCosmetics.mountSkinIds); the offline Sim
+  // gates on its own mirror. Cosmetic only: the ridden mount keeps its stats.
+  changeMountSkin(skinId: string | null): void;
+  // Z-key sheathe toggle: held weapons render stowed on the back (cosmetic; the
+  // sim clears it on any deliberate combat action, WoW-style).
+  toggleWeaponStow(): void;
+  // Paperdoll eye toggle: render the composed body without its kit's head piece.
+  // A standing wardrobe preference that rides the entity wire (`hh`) so peers
+  // and portraits present the chosen look, and persists per character through
+  // the sim's own save. Explicit boolean, not a toggle, so it is idempotent.
+  setHelmHidden(hidden: boolean): void;
+}

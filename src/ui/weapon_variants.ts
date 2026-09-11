@@ -1,0 +1,174 @@
+// Item id -> held-weapon variant key. This registry selects the 3D model attached by
+// src/render/characters/manifest.ts as models/weapons/<key>.glb. Inventory identity is
+// deliberately independent: every authored weapon now ships bespoke painted art at
+// public/ui/items/<item-id>.webp, while Heroic copies inherit their base painting.
+//
+// Pure data, no imports, no DOM: safe to import from both the ui icon layer and
+// the render character layer (and from node unit tests). Add a base weapon here and add its
+// painted item WebP in the same change. Values name both the GLBs and their legacy JPG previews
+// under public/ui/weapons/, which remain useful to Armory and asset-pipeline tooling.
+export const ITEM_WEAPON_VARIANTS: Record<string, string> = {
+  // ---- swords (sword_a..g + the adv set; legendary/epic kept distinct) --------
+  worn_sword: 'sword_a',
+  eastbrook_arming_sword: 'sword_b',
+  ironedge_longsword: 'sword_b', // crafted (weaponcrafting tier 2)
+  thorium_warblade: 'adv_sword_1handed', // crafted; warblades share adv_sword_1handed
+  gravecaller_blade: 'sword_c',
+  emberfang_warblade: 'sword_c',
+  redbrook_blade: 'sword_d',
+  crossroads_saber: 'sword_d',
+  mistcallers_edge: 'sword_e',
+  zealotsbane_blade: 'sword_e',
+  hoarfrost_edge: 'sword_e', // rift rare 1H sword (heroic clone rides heroicOf)
+  veilsteel_blade: 'sword_b', // realm uncommon 1H sword (arming-sword sibling)
+  kingsbane_last_oath: 'sword_f', // LEGENDARY: the flaming blade (exclusive)
+  valeborn_spellblade: 'sword_g', // crystalline
+  maldrecs_soulbinder: 'sword_g',
+  highwatch_warblade: 'adv_sword_1handed',
+  duskforged_warblade: 'adv_sword_1handed', // crafted apex 1H (masterwrought); warblades share adv_sword_1handed
+  eastbrook_greatsword: 'adv_sword_2handed',
+  highwatch_greatsword: 'adv_sword_2handed',
+  verlans_oathblade: 'adv_sword_2handed',
+  moonscale_saber: 'adv_sword_2handed',
+  wyrmfang_greatblade: 'adv_sword_2handed_color', // EPIC: gold greatblade
+  deathless_greatblade: 'adv_sword_2handed_color', // EPIC: Heroic Nythraxis greatblade
+  final_argument_greatblade: 'adv_sword_2handed_color', // WARFARE Strength main hand
+  bonewrought_greatsword: 'adv_sword_2handed_color', // EPIC: Nythraxis raid 2H
+  direfang_greatblade: 'adv_sword_2handed_color', // EPIC: Nythraxis hunter 2H
+  wildheart_tuskblade: 'adv_sword_2handed_color',
+  greatfang_of_the_basin: 'adv_sword_2handed_color', // EPIC: Heroic Zulgar 2H
+
+  // ---- daggers (only 4 models for ~21 daggers; spread as evenly as art allows)-
+  rusty_dagger: 'dagger_a',
+  vale_carving_knife: 'dagger_a',
+  mirefen_skinner: 'dagger_a',
+  ironvein_pickblade: 'dagger_a',
+  caravan_warden_dirk: 'dagger_a',
+  icevein_dirk: 'dagger_b',
+  keen_dirk: 'dagger_b',
+  whetted_iron_dirk: 'dagger_b', // crafted; dirks share dagger_b
+  mistbinder_kris: 'dagger_b',
+  mirejaw_biteblade: 'dagger_b',
+  cultist_flayer: 'dagger_b',
+  tideglass_dirk: 'dagger_b',
+  duskfang_dirk: 'dagger_b', // realm uncommon dirk (dirks share dagger_b)
+  moggers_shiv: 'dagger_c',
+  widowfang_dirk: 'dagger_c',
+  nhalias_dirgeblade: 'dagger_c',
+  riptide_dirk: 'dagger_c',
+  gutripper_shiv: 'dagger_c',
+  fang_of_korzul: 'dagger_c',
+  gravewardens_shiv: 'adv_dagger',
+  drownedmoon_kris: 'adv_dagger',
+  sloomtooth_tidefang: 'adv_dagger',
+  skullsplitter_dirk: 'adv_dagger',
+  first_blood_razor: 'adv_dagger', // WARFARE Agility main hand
+  mirejaw_fang_knife: 'dagger_a', // knives share dagger_a (vale_carving_knife)
+  drowned_choir_fang: 'dagger_c', // fangs share dagger_c (fang_of_korzul)
+  mistcallers_fang: 'adv_dagger', // EPIC: Heroic Vael dagger
+  wildheart_fangknife: 'adv_dagger',
+  voidsong_dirk: 'adv_dagger', // LEGENDARY: the S-rift caster dirk
+  // New rogue epics/rare, each a distinct unused dagger model (not adv_dagger)
+  rimefang: 'ice_fang', // EPIC: Rift frost dagger
+  marrowpoint: 'redskull_dagger', // EPIC: Cindraleth (Drakelands) bone dagger
+  duskwhisper: 'purple_dagger', // EPIC: Wildheart Beastmaster shadow dagger
+  // heroic_duskwhisper inherits the base variant via heroicOf (auto-generated);
+  // it must NOT have its own entry here (held_weapon_models pins that).
+  boneglass_shiv: 'whittler_s_knife', // RARE: Basin Lv17-19 filler
+
+  // ---- staves (staff_a..d + adv_staff + adv_druid_staff) ----------------------
+  gnarled_staff: 'staff_a',
+  hickory_shortstaff: 'staff_a',
+  fenreed_staff: 'staff_a',
+  craghorn_staff: 'staff_b',
+  apprentice_staff: 'staff_b',
+  staff_of_drowned_prayers: 'staff_b',
+  gravecaller_staff: 'staff_c', // "Staff of the Hollow"
+  mirejaw_oracle_staff: 'staff_c',
+  hollow_vigil_staff: 'staff_c',
+  emberwood_staff: 'staff_d',
+  ironvein_lantern_staff: 'staff_d',
+  elderwood_battle_staff: 'staff_d', // crafted (weaponcrafting tier 3)
+  staff_of_velkhar: 'staff_d',
+  vaels_mist_staff: 'adv_staff',
+  ogre_bonecharm_staff: 'adv_staff',
+  briarroot_staff: 'staff_b', // feral ladder, zone-1 rung
+  cragthorn_greatstaff: 'staff_c', // feral ladder, zone-3 rung
+  nightfangs_greatstaff: 'adv_staff', // feral ladder, Korzul epic rung
+  gleamwood_stave: 'staff_b', // realm uncommon caster stave (apprentice-tier)
+  staff_of_the_gravewyrm: 'adv_druid_staff',
+  deathless_heartwood: 'adv_druid_staff', // LEGENDARY druid relic (antler staff)
+  drovers_staff: 'adv_druid_staff',
+  emberglass_warstaff: 'adv_staff', // WARFARE caster main hand
+  lunar_tide_greatstaff: 'adv_staff', // EPIC: Heroic Ysolei staff
+  wildheart_hexwood_staff: 'adv_druid_staff',
+
+  // ---- wands (1H caster: scepters / rods / foci) ------------------------------
+  drowned_tide_scepter: 'wand_a',
+  drownedmoon_scepter: 'wand_b',
+  palecoil_rod: 'adv_wand',
+  corpse_candle_focus: 'wand_a',
+  nhalias_litany_rod: 'wand_b',
+  stormcallers_focus: 'wand_b', // EPIC: Nythraxis raid caster focus
+  scepter_of_the_deathless_court: 'adv_wand', // EPIC: Nythraxis raid scepter
+
+  // ---- maces (only 4 hammer models for ~9 maces) -----------------------------
+  training_mace: 'hammer_a',
+  bronzework_mace: 'hammer_a',
+  copper_flanged_mace: 'hammer_a', // crafted (weaponcrafting tier 1)
+  moggers_copper_cudgel: 'hammer_b',
+  crag_warden_cudgel: 'hammer_b',
+  voss_sanctified_mace: 'hammer_c',
+  bogiron_mace: 'hammer_c',
+  bristleback_maul: 'hammer_d',
+  brutoks_maul: 'hammer_d',
+  drownedmoon_maul: 'hammer_d',
+  nhalias_bell_maul: 'hammer_d', // mauls share hammer_d
+  ironshod_maul: 'hammer_d', // crafted 2H maul
+  fenshadow_maul: 'hammer_d', // feral ladder maul
+  gravewyrm_thornmaul: 'hammer_d', // feral ladder maul
+  maul_of_the_scourged_wilds: 'hammer_d', // feral ladder, Nythraxis raid rung
+  wildsoul_maul: 'hammer_d', // feral ladder, heroic-only ilvl 31 rung
+  ridgebreaker: 'hammer_d', // crafted apex 2H maul (masterwrought); mauls share hammer_d
+  varkhul_forgebreaker: 'hammer_varkhul', // LEGENDARY: Ignivar raid (animated engine maul)
+
+  // ---- axes (axe_a..d + adv axes) --------------------------------------------
+  rusty_hatchet: 'axe_a',
+  copper_bearded_axe: 'axe_a', // crafted (weaponcrafting tier 1)
+  drogmars_skullcleaver: 'axe_b',
+  deacons_cleaver: 'axe_c',
+  gorraks_cruel_chopper: 'axe_d',
+  arcanite_war_axe: 'axe_d', // crafted (weaponcrafting tier 3)
+  gorraks_cleaver: 'adv_axe_1handed',
+  tradesman_hatchet: 'adv_axe_1handed',
+  gravewyrm_cleaver: 'adv_axe_1handed', // EPIC: Heroic Korzul axe
+  // Nythraxis gap-fill one-handers (content/zone3.ts): the violet-gem KayKit
+  // set, the Deathless Court's bone-and-violet palette in hand (purple_dagger
+  // is shared with Duskwhisper; the sword and axe were unused). Their
+  // inventory icons are in-engine stills of these models
+  // (scripts/render_weapon_still_icons.mjs over the jobs table in
+  // docs/achievements/nythraxis-gap-weapon-renders-2026-09-04/).
+  courtiers_bonefang: 'purple_dagger',
+  thornpeak_wardblade: 'purple_sword',
+  gravecourt_hewer: 'purple_axe',
+  pitlords_cleaver: 'adv_axe_1handed', // rift rare cleaver (heroic clone rides heroicOf)
+  tunnelkings_spade: 'adv_axe_2handed',
+
+  // ---- polearms --------------------------------------------------------------
+  fen_reaver_glaive: 'scythe', // "Reaver" -> reaper scythe
+  tidereaver_gaff: 'spear_a', // a gaff is a hooked spear
+  ironbark_boar_spear: 'spear_a', // crafted 2H spear
+  fanglords_beastspear: 'spear_a', // RARE: the basin Beastmaster's boar spear
+
+  // ---- Crucible of the Last Spring raid weapons (ignivar_loot.ts) -------------
+  // Held models reuse shipped GLBs.
+  forgefathers_warhammer: 'hammer_c',
+  springtouched_crozier: 'hammer_c',
+  cinderfang_kris: 'adv_dagger',
+  slagrender_cleaver: 'adv_axe_1handed',
+  anvilguard_blade: 'adv_sword_1handed',
+  heart_of_the_end_greatblade: 'adv_sword_2handed_color',
+  staff_of_the_last_spring: 'adv_staff',
+  forgefire_spire: 'adv_staff',
+  wand_of_quenched_sparks: 'adv_wand',
+};

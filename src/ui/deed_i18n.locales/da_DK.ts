@@ -1,0 +1,1084 @@
+// Deed name / desc / title locale table for da_DK (data-as-code, size-exempt).
+// One per-base-locale chunk behind DEED_LOCALE_LOADERS in deed_i18n.ts, so a
+// visitor downloads only their own locale's deed strings. Split verbatim from
+// the former deed_i18n.newlocales.ts single chunk; values carry no em or en
+// dashes (repo copy rule). English (en / en_CA) resolves to the authored
+// source before this table is consulted.
+import type { DeedLocaleTable } from '../deed_i18n';
+
+export const table: DeedLocaleTable = {
+  prog_ready_for_an_adventure: {
+    name: 'Klar til et Eventyr',
+    desc: 'Dimitter fra Prøvestranden: fuldfør hver lektie på øen, og ring så på færgeklokken hjem til Østbæk.',
+  },
+  exp_dawnhold_castle: {
+    name: 'En Åben Dør i Haven',
+    desc: 'Besøg Dawnhold Slot og vandr gennem dets solbeskinnede havesale.',
+  },
+  exp_the_last_keep: {
+    name: 'De Stille Sale',
+    desc: 'Træd ind ad Den Sidste Borgs døre og gå gennem dens tavse sale.',
+  },
+  pvp_bg_first_capture: {
+    name: 'Banner i Hånden',
+    desc: 'Erobr et flag i Tornehulemarkerne.',
+  },
+  pvp_bg_first_win: {
+    name: 'Den Hule Holder Stand',
+    desc: 'Vind en Tornehulemarkerne-slagmark.',
+  },
+  pvp_bg_wins_25: {
+    name: 'Hulens Vogter',
+    desc: 'Vind 25 Tornehulemarkerne-slagmarke.',
+    title: 'Flagbærer',
+  },
+  pvp_bg_captures_100: {
+    name: 'Hundrede Bannere',
+    desc: 'Erobr 100 flag i Tornehulemarkerne i løbet af din karriere.',
+  },
+  dgn_rift: {
+    name: 'Riftvandrer',
+    desc: 'Ryd en Rift ved at besejre dens etageboss.',
+  },
+  dgn_rift_s_rank: {
+    name: 'Riftsuveræn',
+    desc: 'Ryd en S-rangs Rift, det hårdeste niveau en Rift-portal kan spawne.',
+  },
+  pvp_honor_sergeant: {
+    name: 'Linjebryder',
+    desc: 'Optjen 10.000 Ære i din levetid. At bruge den koster dig aldrig rangen.',
+    title: 'Linjebryder',
+  },
+  pvp_honor_knight_lieutenant: {
+    name: 'Markhærger',
+    desc: 'Optjen 40.000 Ære i din levetid, en hel sæsons rigtig krig bag dig.',
+    title: 'Markhærger',
+  },
+  pvp_honor_field_marshal: {
+    name: 'Krigskronet',
+    desc: 'Optjen 150.000 Ære i din levetid. Sjælden på ethvert rige, og sådan bør det være.',
+    title: 'Krigskronet',
+  },
+  chr_drakemaw_broodlord: {
+    name: 'Yngelknuseren',
+    desc: 'Dræb en Dragegabets Yngelherre midt blandt dens æg, gennem brølet, kløvningen og ilden.',
+  },
+  chr_maw_matriarch: {
+    name: 'Himlen Bliver Stille',
+    desc: 'Dræb Cindraleth Gabmatriarken i hendes kraterrede over Dragegabet.',
+  },
+  chr_frostveil_gatherer: {
+    name: 'Host pa terrasserne',
+    desc: 'Host en malmare, en traestand og et urtebed i Frostveil.',
+  },
+  chr_frostveil_first_cast: {
+    name: 'Forste is pa tarnen',
+    desc: 'Fang en fisk i Frostveils vande.',
+  },
+  chr_amberfall_gatherer: {
+    name: 'Amberfalls host',
+    desc: 'Host en malmare, en traestand og et urtebed i Amberfall.',
+  },
+  chr_amberfall_first_cast: {
+    name: 'En fangst fra den store mose',
+    desc: 'Fang en fisk i Amberfalls vande.',
+  },
+  chr_nightbloom_gatherer: {
+    name: 'Den drommende host',
+    desc: 'Host en malmare, en traestand og et urtebed i Nightbloom.',
+  },
+  chr_nightbloom_first_cast: {
+    desc: 'Fang en fisk i Nightblooms vande.',
+
+    name: 'En krusning i Månekilden',
+  },
+  chr_wraithwood_gatherer: {
+    name: 'Host under kronerne',
+    desc: 'Host en malmare, en traestand og et urtebed i Wraithwood.',
+  },
+  chr_wraithwood_first_cast: {
+    name: 'Et kast i spejlbugten',
+    desc: 'Fang en fisk i Wraithwoods vande.',
+  },
+  chr_palmreach_gatherer: {
+    name: 'Host pa palmstranden',
+    desc: 'Host en malmare, en traestand og et urtebed i Palmreach.',
+  },
+  chr_palmreach_first_cast: {
+    name: 'Kast i safirlagunen',
+    desc: 'Fang en fisk i Palmreachs vande.',
+  },
+  chr_evergarden_gatherer: {
+    name: 'Parterrets rigdom',
+    desc: 'Host en malmare, en traestand og et urtebed i Evergarden.',
+  },
+  chr_evergarden_first_cast: {
+    name: 'Et kast pa kronbladsdammen',
+    desc: 'Fang en fisk i Evergardens vande.',
+  },
+  pvp_card_duel_first_win: {
+    name: 'Husets Regler',
+    desc: 'Vind en Kortduel hos Kortmesteren.',
+  },
+  prog_first_steps: {
+    name: 'De Første Skridt',
+    desc: 'Nå niveau 2, og tag dit første skridt på en lang vej.',
+  },
+  prog_finding_your_feet: {
+    name: 'Fast Grund under Fødderne',
+    desc: 'Nå niveau 5; vildmarken ser allerede en smule mindre ud.',
+  },
+  prog_double_digits: { name: 'Tocifret', desc: 'Nå niveau 10, og lås dine talenter op.' },
+  prog_the_long_middle: { name: 'Den Lange Midte', desc: 'Nå niveau 15.' },
+  prog_level_cap: { name: 'Udsigten fra Toppen', desc: 'Nå niveau 20, det højeste niveau.' },
+  prog_well_rested: {
+    name: 'Veludhvilet',
+    desc: 'Slå dig til ro på en kro, indtil du har optjent udhvilet erfaring.',
+  },
+  prog_talented: { name: 'Godt Givet Ud', desc: 'Brug dit første talentpoint.' },
+  prog_specialized: {
+    name: 'En Klar Hensigt',
+    desc: 'Vælg en specialisering, og lær dens signaturevne.',
+  },
+  prog_deep_roots: {
+    name: 'Dybe Rødder',
+    desc: 'Brug et talentpoint på et talent i nederste række.',
+  },
+  prog_full_build: {
+    name: 'Alle Seks',
+    desc: 'Vælg én mulighed i alle seks talentrækker i ét build.',
+  },
+  prog_veteran: {
+    name: 'Veteranen',
+    desc: 'Optjen sammenlagt 250.000 erfaring.',
+    title: 'Veteranen',
+  },
+  prog_champion: { name: 'Mester', desc: 'Optjen sammenlagt 500.000 erfaring.', title: 'Mester' },
+  prog_paragon: {
+    name: 'Forbillede',
+    desc: 'Optjen sammenlagt 1.000.000 erfaring.',
+    title: 'Forbillede',
+  },
+  prog_mythic: { name: 'Mytisk', desc: 'Optjen sammenlagt 2.500.000 erfaring.', title: 'Mytisk' },
+  prog_eternal: { name: 'Evig', desc: 'Optjen sammenlagt 5.000.000 erfaring.', title: 'Evig' },
+  prog_prestige: {
+    name: 'Begynd Forfra',
+    desc: 'Nå det højeste niveau, fyld bjælken endnu en gang, og gør krav på prestigerang 1.',
+  },
+  prog_prestige_5: { name: 'Gamle Vaner', desc: 'Nå prestigerang 5.' },
+  prog_prestige_10: { name: 'Evighedsmaskinen', desc: 'Nå prestigerang 10.' },
+  prog_first_harvest: { name: 'Markens Frugter', desc: 'Høst din første indsamlingsforekomst.' },
+  prog_mining_100: { name: 'Malm i Blodet', desc: 'Nå 100 i færdigheden Minedrift.' },
+  prog_logging_100: { name: 'Kernevedshugger', desc: 'Nå 100 i færdigheden Skovhugst.' },
+  prog_herbalism_100: { name: 'Engens Mester', desc: 'Nå 100 i færdigheden Urtekundskab.' },
+  prog_master_gatherer: {
+    name: 'Mestersamler',
+
+    desc: 'Nå 100 færdighed i tre valgfrie indsamlingsfag.',
+  },
+  prog_first_craft: { name: 'Håndlavet', desc: 'Fuldfør din første vellykkede fremstilling.' },
+  prog_craft_specialist: {
+    name: 'Fagets Hemmeligheder',
+    desc: 'Nå 75 i færdighed i ét enkelt håndværk, og lås dets specialiseringsfordele op.',
+  },
+  prog_around_the_ring: {
+    name: 'Ringen Rundt',
+    desc: 'Nå 25 i færdighed i fem forskellige håndværk.',
+  },
+  cmb_first_blood: { name: 'Første Blod', desc: 'Besejr din første fjende.' },
+  cmb_slayer: { name: 'Dræber', desc: 'Besejr 1.000 fjender.' },
+  cmb_legion_of_one: { name: 'Én Mands Legion', desc: 'Besejr 10.000 fjender.' },
+  cmb_heavy_hitter: { name: 'Hårdtslående', desc: 'Uddel 500.000 skade i alt.' },
+  cmb_critical_eye: { name: 'Kritisk Blik', desc: 'Uddel 500 kritiske træf.' },
+  cmb_giantslayer: {
+    name: 'Kæmpedræber',
+    desc: 'Giv dødsstødet til en fjende mindst fem niveauer over dig.',
+  },
+  cmb_first_fall: {
+    name: 'Børst Støvet Af',
+    desc: 'Dø for første gang; det sker for de bedste af os.',
+  },
+  dgn_hollow_crypt: { name: 'Kryptbryder', desc: 'Besejr Morthen Gravkalderen i Den Hule Krypt.' },
+  dgn_sunken_bastion: {
+    name: 'Fogbinderen Ubundet',
+    desc: 'Besejr Vael Fogbinderen i Den Sunkne Bastion.',
+  },
+  dgn_drowned_temple: {
+    name: 'Månen Druknes',
+    desc: 'Besejr Ysolei, den Druknede Månes Avatar, i Det Druknede Tempel.',
+  },
+  dgn_gravewyrm_sanctum: {
+    name: 'Ormen Dernede',
+    desc: 'Besejr Korzul Gravormen i Gravormens Helligdom.',
+  },
+  dgn_hollow_crypt_heroic: {
+    name: 'Heroisk: Den Hule Krypt',
+    desc: 'Besejr Morthen Gravkalderen i Den Hule Krypt på heroisk sværhedsgrad.',
+  },
+  dgn_sunken_bastion_heroic: {
+    name: 'Heroisk: Den Sunkne Bastion',
+    desc: 'Besejr Vael Fogbinderen i Den Sunkne Bastion på heroisk sværhedsgrad.',
+  },
+  dgn_drowned_temple_heroic: {
+    name: 'Heroisk: Det Druknede Tempel',
+    desc: 'Besejr Ysolei, den Druknede Månes Avatar, i Det Druknede Tempel på heroisk sværhedsgrad.',
+  },
+  dgn_gravewyrm_sanctum_heroic: {
+    name: 'Heroisk: Gravormens Helligdom',
+    desc: 'Besejr Korzul Gravormen i Gravormens Helligdom på heroisk sværhedsgrad.',
+  },
+  dgn_nythraxis: {
+    name: 'Svøbens Endeligt',
+    desc: 'Besejr Nythraxis, Tornetops Svøbe, bag den forseglede kongelige dør.',
+  },
+  dgn_nythraxis_heroic: {
+    name: 'Heroisk: Svøbens Endeligt',
+    desc: 'Besejr Nythraxis, Tornetops Svøbe, på heroisk sværhedsgrad.',
+  },
+  dgn_thornpeak_rounds: {
+    name: 'På Runde',
+    desc: 'Ryd Den Hule Krypt, Den Sunkne Bastion, Det Druknede Tempel og Gravormens Helligdom.',
+  },
+  dgn_deepward: {
+    name: 'Dybets Værge',
+    desc: 'Betving hver eneste fangekælder, raidet og begge delves på heroisk sværhedsgrad.',
+  },
+  dgn_mark_circuit: {
+    name: 'Hele Turen Rundt',
+    desc: 'Optjen Heroiske Mærker fra alle fire heroiske fangekældre på en og samme dag.',
+  },
+  dgn_boss_clears_50: {
+    name: 'Halvtreds Døre Nede',
+    desc: 'Besejr 50 slutbosser i fangekældrene.',
+  },
+  dgn_morthen_flawless: {
+    name: 'Ikke en Knogle at Rafle om',
+    desc: 'Besejr Morthen Gravkalderen på heroisk sværhedsgrad, uden at noget gruppemedlem dør.',
+  },
+  dgn_morthen_trio: {
+    name: 'Tre mod Graven',
+    desc: 'Besejr Morthen Gravkalderen med tre eller færre spillere.',
+  },
+  dgn_olen_arc: {
+    name: 'Et Skridt foran Leen',
+    desc: 'Besejr Ridderkommandør Olen, uden at hans Mejende Bue rammer andre end hans aktuelle mål.',
+  },
+  dgn_vael_thralls: {
+    name: 'Trællefri',
+    desc: 'Besejr Vael Fogbinderen, mens samtlige Druknede Trælle, han hidkalder, allerede er fældet.',
+  },
+  dgn_ysolei_moonspawn: {
+    name: 'Hver Eneste Måneyngel',
+    desc: 'Besejr Ysolei, mens al den Måneyngel, hun hidkalder, allerede er fældet.',
+  },
+  dgn_ysolei_flawless: {
+    name: 'Tørre Øjne',
+    desc: 'Besejr Ysolei, den Druknede Månes Avatar, på heroisk sværhedsgrad, uden at noget gruppemedlem dør.',
+  },
+  dgn_velkhar_bonewalkers: {
+    name: 'Bliv i Graven',
+    desc: 'Besejr Stornekromantør Velkhar med samtlige Genopvakte Benvandrere tilintetgjort, før han falder.',
+  },
+  dgn_korzul_flawless: {
+    name: 'Ormefælder',
+    desc: 'Besejr Korzul Gravormen på heroisk sværhedsgrad, uden at noget gruppemedlem dør.',
+    title: 'Ormefælder',
+  },
+  dgn_sanctum_speed: {
+    desc: 'Besejr Korzul Gravormen inden for 15 minutter efter, at din gruppe har gjort krav på Gravormens Helligdom.',
+
+    name: 'Kapløb i Helligdommen',
+  },
+  dgn_nythraxis_gravebreaker: {
+    name: 'Knæl for Ingen Konge',
+    desc: 'Besejr Nythraxis, uden at Gravbryder nogensinde rammer andre end hans aktuelle mål.',
+  },
+  dgn_nythraxis_wardens: {
+    name: 'Værgestenenes Vogtere',
+    desc: 'Besejr Nythraxis med hvert Udødeligt Raseri brudt, før det rammer.',
+  },
+  dgn_nythraxis_deathless: {
+    name: 'Ingen Mere Udødelig',
+    desc: 'Besejr Nythraxis, Tornetops Svøbe, på heroisk sværhedsgrad, uden at en eneste raider dør.',
+    title: 'den Udødelige',
+  },
+  cmb_thunzharr: {
+    name: 'Bjerget Faldt',
+    desc: 'Fæld Thunzharr, den Vågnende Tinde, ved Stormklippen.',
+  },
+  cmb_thunzharr_unbroken: {
+    name: 'Tindebryder',
+    desc: 'Fæld Thunzharr, den Vågnende Tinde, uden at dø fra dit første slag til hans sidste åndedrag.',
+    title: 'Tindebryder',
+  },
+  cmb_thunzharr_ten: {
+    name: 'Bjerge som Vane',
+    desc: 'Fæld Thunzharr, den Vågnende Tinde, ti gange.',
+  },
+  dlv_reliquary: { name: 'Relikvarieløber', desc: 'Ryd Det Sammenstyrtede Relikvarium.' },
+  dlv_reliquary_heroic: {
+    name: 'Heroisk: Det Sammenstyrtede Relikvarium',
+    desc: 'Ryd Det Sammenstyrtede Relikvarium på heroisk niveau.',
+  },
+  dlv_litany: { name: 'Tys på Litaniet', desc: 'Ryd Det Druknede Litani.' },
+  dlv_litany_heroic: {
+    name: 'Heroisk: Det Druknede Litani',
+    desc: 'Ryd Det Druknede Litani på heroisk niveau.',
+  },
+  dlv_lore_journal: { name: 'Randnoter', desc: 'Lås alle fem optegnelser i delve-dagbogen op.' },
+  dlv_companion_max: {
+    name: 'En Ven i Dybet',
+    desc: 'Optræn en delve-følgesvend til hendes højeste rang.',
+  },
+  dlv_companions_both: {
+    name: 'Begge Lygter Tændt',
+    desc: 'Optræn begge delve-følgesvende, Akolyt Tessa og Edda Sivhånd, til deres højeste rang.',
+  },
+  dlv_clears_50: { name: 'Halvtreds Favne', desc: 'Gennemfør 50 delve-ture.' },
+  dlv_solo_heroic: {
+    name: 'To er en Hel Flok',
+    desc: 'Ryd en delve på heroisk niveau uden nogen anden spiller, kun dig og din følgesvend.',
+  },
+  dlv_tumbler_premium: {
+    name: 'Stifternes Sti, Mestret',
+    desc: 'Åbn en værnet relikvariekiste ved højeste indsats, fejlfrit i dit eneste forsøg.',
+  },
+  dlv_rite_flawless: {
+    name: 'Til Punkt og Prikke',
+    desc: 'Gennemfør Det Druknede Relikvarieritual uden en eneste fejl.',
+  },
+  dlv_varric_ringers: {
+    name: 'Klokkerne Forstummer',
+    desc: 'Fæld hver Ligklokkeringer, Diakon Vandric genopvækker, før han selv falder.',
+  },
+  dlv_nhalia_bells: {
+    name: 'Klokkestiller',
+    desc: 'Besejr Søster Nhalia, den Druknede Kantikel, uden at noget gruppemedlem bliver ramt af en Klemtende Klokke.',
+    title: 'Klokkestiller',
+  },
+  chr_vale_chapter_i: {
+    name: 'Dalens Krønike, Kapitel I',
+    desc: 'Afslut første kapitel af Sauls krønike: Østbæks første ærinder, overblik over Dalen og en første smag på dens håndværk.',
+  },
+  chr_vale_chapter_ii: {
+    name: 'Dalens Krønike, Kapitel II',
+  },
+  chr_vale_chapter_iii: {
+    name: 'Krøniken om Dalen',
+    desc: 'Følg Dalens fulde fortælling til ende: Gravkalderen afsløret, Den Hule Krypt renset og hver navngiven rædsel i Dalen fældet.',
+    title: 'af Dalen',
+  },
+  chr_vale_gatherer: {
+    name: 'Leve af Landet',
+    desc: 'Høst en malmåre, en skovbevoksning og et urtebed i Østbæk Dal.',
+  },
+  chr_vale_first_cast: { name: 'Noget i Spejlsøen', desc: 'Fang en fisk i Østbæk Dals vande.' },
+  chr_vale_packbreaker: { name: 'Flokbryder', desc: 'Dræb 3 Skovulve inden for 10 sekunder.' },
+  chr_vale_cup_debut: {
+    name: 'Kobberspandens Kandidat',
+  },
+  chr_vale_rares: {
+    name: 'Dalens Rædsler',
+    desc: 'Dræb de fem navngivne rædsler i Østbæk Dal: Gamle Gråkæft, Mogger, Grix Tunnelkongen, Kaptajn Verlan og Genfærdsbinder Maldrec.',
+  },
+  chr_marsh_chapter_i: {
+    name: 'Sumpens Krønike, Kapitel I',
+    desc: 'Afslut første kapitel af Osric Fenns krønike: besvar mønstringen ved Sumpbroen, sikr dæmningsvejen og lær kærets form at kende.',
+  },
+  chr_marsh_chapter_ii: {
+    name: 'Sumpens Krønike, Kapitel II',
+    desc: 'Afslut andet kapitel af Osric Fenns krønike: enkerne røget ud, de druknede stedt til hvile, Torskefaderen halet i land og Litaniet trodset.',
+  },
+  chr_marsh_chapter_iii: {
+    name: 'Krøniken om Mosekæret',
+    desc: 'Følg kærets fulde fortælling til ende: kultlejren knust, Fogbinderen bragt til tavshed i Den Sunkne Bastion og hver navngiven rædsel i tågen fældet.',
+    title: 'af Mosekæret',
+  },
+  chr_marsh_gatherer: {
+    name: 'Sanketur ved Sumpbroen',
+    desc: 'Høst en malmåre, en skovbevoksning og et urtebed i Mosekær Sump.',
+  },
+  chr_marsh_unburst: {
+    name: 'Stå Ikke i Sporerne',
+    desc: 'Dræb 8 Sumpopsvulmere uden at blive fanget i deres udbrud af Ætsende Sporer.',
+  },
+  chr_marsh_hush_the_mending: {
+    name: 'Bring Helingen til Tavshed',
+    desc: 'Fæld en Gravkalder-Heler i Gravkaldernes Lejr, inden nogen af de kultister, den plejer, falder.',
+  },
+  chr_marsh_rares: {
+    name: 'Navne i Tågen',
+    desc: 'Dræb de tre navngivne rædsler i Mosekær Sump: Sumpkæft den Glubske, Sloomtand den Druknede og Søster Nhalia.',
+  },
+  chr_peaks_chapter_i: {
+    name: 'Tindernes Krønike, Kapitel I',
+    desc: 'Afslut første kapitel af Zenzies krønike: ryd vejen over bjergkammen, tøm hulerne og lær hver sti, Højvagten vogter.',
+  },
+  chr_peaks_chapter_ii: {
+    name: 'Tindernes Krønike, Kapitel II',
+    desc: 'Afslut andet kapitel af Zenzies krønike: knus Drogmars Krigslejr, tyd den vågnende storm og stå, hvor Glimmersøen gløder.',
+  },
+  chr_peaks_chapter_iii: {
+    name: 'Krøniken om Tornetop',
+    title: 'af Tornetop',
+
+    desc: 'Se hele bjergets historie til ende: Broodsworn knust, Helligdommen gjort tavs, den Vågnende Tinde fældet og hver navngivne rædsel i klipperne lagt ned.',
+  },
+  chr_peaks_sparring: {
+    name: 'Øvelser på Muren',
+    desc: 'Tilføj en træningsdukke 1.000 skade i alt.',
+  },
+  chr_peaks_glimmer_cast: { name: 'Koldt Vand, Koldere Lys', desc: 'Fang en fisk i Glimmersøen.' },
+  chr_peaks_moongate: {
+    name: 'Gennem den Kolde Port',
+    desc: 'Træd gennem måneporten ved Glimmersøens bred.',
+  },
+  chr_peaks_waking_witness: {
+    name: 'Bjerget der Vandrer',
+    desc: 'Få øje på Thunzharr, den Vågnende Tinde, mens han skrider hen over bjerget.',
+  },
+  chr_peaks_rares: {
+    name: 'Navne Hugget i Klippen',
+    desc: 'Dræb de fire navngivne rædsler i Tornetop Højder: Jernåre-Formanden, Brutok Kranieknuser, Voskar Glødevinge og Margherre Varkas.',
+  },
+  col_discovery_25: {
+    name: 'Hamstrer',
+    desc: 'Opdag 25 forskellige genstande (en genstand tæller første gang, den nogensinde kommer i din besiddelse).',
+  },
+  col_discovery_75: { name: 'Husskade', desc: 'Opdag 75 forskellige genstande.' },
+  col_discovery_150: {
+    name: 'Raritetskabinet',
+    desc: 'Opdag 150 forskellige genstande.',
+    title: 'Kuratoren',
+  },
+  col_discovery_250: { name: 'Det Store Katalog', desc: 'Opdag 250 forskellige genstande.' },
+  col_first_rare: { name: 'Noget Blåt', desc: 'Skaf din første genstand af sjælden kvalitet.' },
+  col_first_epic: { name: 'Født i Purpur', desc: 'Skaf din første genstand af episk kvalitet.' },
+  col_first_legendary: {
+    name: 'Appelsinen i Turbanen',
+    desc: 'Skaf din første genstand af legendarisk kvalitet.',
+  },
+  col_set_vale_arcanist: {
+    name: 'Dalarkanistens Skrud',
+    desc: 'Opdag hver del af Dalarkanistens Skrud.',
+  },
+  col_set_boundstone_vanguard: {
+    name: 'Bundstens-Fortroppen',
+    desc: 'Opdag hver del af Bundstens-Fortroppen.',
+  },
+  col_set_greyjaw_stalker: {
+    name: 'Gråkæbe-Luskerens Udstyr',
+    desc: 'Opdag hver del af Gråkæbe-Luskerens Udstyr.',
+  },
+  col_set_deathlord: {
+    name: 'Barrowlord-Krigsudstyr',
+    desc: 'Opdag hver del af Barrowlord-Krigsudstyret.',
+  },
+  col_set_wyrmshadow: { name: 'Nightfang-Ornat', desc: 'Opdag hver del af Nightfang-Ornatet.' },
+  col_set_necromancers: { name: 'Mournweave-Dragt', desc: 'Opdag hver del af Mournweave-Dragten.' },
+  col_set_crownforged: {
+    name: 'Bonewrought-Skrud',
+    desc: 'Opdag hver del af Bonewrought-Skruddet.',
+  },
+  col_set_nighttalon: { name: 'Direfang-Pels', desc: 'Opdag hver del af Direfang-Pelsen.' },
+  col_set_soulflame: { name: 'Wraithfire-Skrud', desc: 'Opdag hver del af Wraithfire-Skruddet.' },
+  col_set_stormcallers: { name: 'Galecall-Ornat', desc: 'Opdag hver del af Galecall-Ornatet.' },
+  col_seven_regalia: {
+    name: 'Den Syvfoldige Garderobe',
+    desc: 'Opdag hver del af alle syv episke rustningsfamilier.',
+    title: 'den Prægtige',
+  },
+  col_true_colors: {
+    name: 'Bekend Kulør',
+    desc: 'Gå på banen iført et hvilket som helst andet udseende end din klasses standard.',
+  },
+  col_all_slots: {
+    name: 'Klædt På til Elleve',
+    desc: 'Hav en genstand udrustet i alle elleve udstyrspladser på samme tid.',
+  },
+  col_quartermaster_buyout: {
+    name: 'Stamkunde',
+    desc: 'Opdag alle ti udstyrsdele fra den Heroiske Kvartermesters lager.',
+  },
+  col_glimmerfin: {
+    name: 'Et Glimt af Håb',
+    desc: 'Fang en Solglimt-Koikarpe.',
+  },
+  col_full_creel: {
+    name: 'Fyldt Fiskekurv',
+    desc: 'Opdag alle seks almindelige fangster fra Dalens, Sumpens og Højdernes vande.',
+  },
+  col_junk_drawer: {
+    name: 'Rodeskuffen',
+    desc: 'Opdag 10 forskellige genstande af ringe kvalitet.',
+  },
+  pvp_arena_first_match: {
+    name: 'Sand i Støvlerne',
+    desc: 'Kæmp en ranglistekamp i Askekolosseet, i en af rækkerne.',
+  },
+  pvp_arena_first_win: {
+    name: 'Publikum Brøler',
+    desc: 'Vind en ranglistekamp i arenaen, i en af rækkerne.',
+  },
+  pvp_arena_1v1_1600: { name: 'Kolosseets Udfordrer', desc: 'Nå 1600 i rating i 1v1-arenarækken.' },
+  pvp_arena_1v1_1750: { name: 'Kolosseets Rival', desc: 'Nå 1750 i rating i 1v1-arenarækken.' },
+  pvp_arena_1v1_1900: {
+    name: 'Arenaens gladiator',
+    desc: 'Nå 1900 i rating i 1v1-arenarækken.',
+    title: 'Arenaens gladiator',
+  },
+  pvp_arena_2v2_1600: { name: 'To Mand Høj', desc: 'Nå 1600 i rating i 2v2-arenarækken.' },
+  pvp_arena_2v2_1750: { name: 'Frygtet Makkerpar', desc: 'Nå 1750 i rating i 2v2-arenarækken.' },
+  pvp_arena_2v2_1900: { name: 'Perfekt Parløb', desc: 'Nå 1900 i rating i 2v2-arenarækken.' },
+  pvp_duel_first_win: { name: 'Vi Tager Den Udenfor', desc: 'Vind en duel.' },
+  pvp_duel_grace: {
+    name: 'En Lektion i Ydmyghed',
+    desc: 'Tab en duel med værdigheden nogenlunde i behold.',
+  },
+  pvp_vcup_first_match: {
+    name: 'Støvler på Banen',
+  },
+  pvp_vcup_first_win: { name: 'Det Første Sølvtøj' },
+  pvp_vcup_wins_10: {
+    name: 'Garvet Vildsvineboldspiller',
+  },
+  pvp_vcup_wins_25: {
+    name: 'Vildsvinebold-Legende',
+    title: 'Vildsvinebold-Legende',
+  },
+  pvp_vcup_first_goal: { name: 'På Måltavlen' },
+  pvp_vcup_hat_trick: {
+    name: 'Hattrick-Helt',
+  },
+  pvp_vcup_golden_goal: {
+    name: 'Gyldent Øjeblik',
+  },
+  pvp_vcup_first_save: {
+    name: 'Sikre Hænder',
+  },
+  pvp_vcup_clean_sheet: {
+    name: 'Intet Slipper Forbi Mig',
+  },
+  pvp_vcup_guild_win: {
+    name: 'For Banneret',
+  },
+  pvp_fiesta_first_bout: {
+    name: 'Ubuden Gæst',
+  },
+  pvp_fiesta_first_win: { name: 'Festens Midtpunkt' },
+  pvp_fiesta_double: {
+    name: 'Dobbelt Ballade',
+  },
+  pvp_fiesta_shutdown: {
+    name: 'Lyseslukker',
+  },
+  pvp_fiesta_full_build: {
+    name: 'Klædt på til Lejligheden',
+  },
+  pvp_fiesta_powerups: {
+    name: 'En af Hver',
+  },
+  pvp_fiesta_five_kills: {
+    name: 'Bærer Hele Festen',
+  },
+  soc_first_party: { name: 'Bedre Sammen', desc: 'Slut dig til en gruppe med en anden spiller.' },
+  soc_full_house: {
+    name: 'Fuldt Hus',
+    desc: 'Gennemfør en fangekælder med en fuld gruppe på fem.',
+  },
+  soc_guild_joined: { name: 'Under Samme Banner', desc: 'Bliv medlem af et gilde.' },
+  soc_guild_founded: { name: 'Stifterens Fjerpen', desc: 'Stift dit eget gilde.' },
+  soc_first_trade: {
+    name: 'En Ærlig Handel',
+    desc: 'Gennemfør en byttehandel med en anden spiller.',
+  },
+  soc_first_sale: {
+    name: 'Åbent for Handel',
+    desc: 'Indkassér mønterne fra dit første salg på Verdensmarkedet.',
+  },
+  soc_steady_custom: {
+    name: 'Fast Kundekreds',
+    desc: 'Indkassér en samlet livstidssum på 10 guld fra dine salg på Verdensmarkedet.',
+  },
+  soc_market_magnate: {
+    name: 'Markedsmagnat',
+    desc: 'Indkassér en samlet livstidssum på 100 guld fra dine salg på Verdensmarkedet.',
+    title: 'Magnat',
+  },
+  soc_by_ravens_wing: {
+    name: 'På Ravnevinger',
+    desc: 'Send et Ravnepost-brev med mønter eller en pakke.',
+  },
+  soc_room_for_more: { name: 'Plads til Mere', desc: 'Køb din første bankudvidelse.' },
+  soc_gilded_strongbox: {
+    name: 'Det Forgyldte Pengeskrin',
+    desc: 'Køb hver eneste bankudvidelse, som skatmestrene vil sælge dig.',
+  },
+  soc_meet_bursar: {
+    name: 'Fernando Være Lovet',
+    desc: 'Vis din ærbødighed for Skatmester Fernando, vogter af Det Forgyldte Pengeskrin i Østbæk.',
+  },
+  soc_pocket_money: {
+    name: 'Lommepenge',
+    desc: 'Saml en samlet livstidssum på 1 guld i mønt som bytte.',
+  },
+  soc_heavy_purse: {
+    name: 'Tung Pung',
+    desc: 'Saml en samlet livstidssum på 10 guld i mønt som bytte.',
+  },
+  soc_wyrms_hoard: {
+    name: 'En Orms Skat',
+    desc: 'Saml en samlet livstidssum på 100 guld i mønt som bytte.',
+  },
+  soc_civic_duty: { name: 'Borgerpligt', desc: 'Tildel dit første byfokus-point.' },
+  exp_long_road_north: {
+    name: 'Den Lange Vej mod Nord',
+    desc: 'Besøg alle tre hovedbyer: Østbæk, Sumpbroen og Højvagten.',
+  },
+  exp_vale_wayfarer: {
+    name: 'Dalens Vejfarer',
+    desc: 'Besøg alle elleve navngivne steder i Østbæk Dal.',
+  },
+  exp_marsh_wayfarer: {
+    name: 'Sumpens Vejfarer',
+    desc: 'Besøg alle otte navngivne steder i Mosekær Sump.',
+  },
+  exp_peaks_wayfarer: {
+    name: 'Højdernes Vejfarer',
+    desc: 'Besøg alle ti navngivne steder i Tornetop Højder.',
+  },
+  exp_world_traveler: {
+    name: 'Verdensrejsende',
+    desc: 'Opnå vejfarer-bedriften i alle tre zoner.',
+    title: 'Vejfareren',
+  },
+  exp_something_shiny: {
+    name: 'Noget, der Glimter',
+    desc: 'Saml en funklende genstand op fra jorden.',
+  },
+  exp_first_ore: {
+    name: 'Hakken Moder Klippen',
+    desc: 'Høst din første malmforekomst.',
+  },
+  exp_first_timber: { name: 'Træet Falder!', desc: 'Høst din første træforekomst.' },
+  exp_first_herb: { name: 'Grønne Fingre', desc: 'Høst din første urteforekomst.' },
+  feat_era_cap: {
+    name: 'Barn af Den Første Æra',
+    desc: 'Nåede niveau 20, mens Den Første Æra stod på.',
+  },
+  feat_book_complete: { name: 'Hele Bogen', desc: 'Opnå hver eneste bedrift i Bedrifternes Bog.' },
+  feat_brightwood_relic: {
+    name: 'Til Minde om Lysskoven',
+    desc: 'Gem et relikvie fra den gamle Lysskov: Tornehude-Vams eller Monarkens Krone.',
+  },
+  hid_saul_footnote: {
+    name: 'En Fodnote i Historien',
+    desc: 'Plagede krønikeskriveren Saul ni gange uden ophold.',
+    title: 'Fodnoten',
+  },
+  hid_gilded_tour: {
+    name: 'Den Forgyldte Rundtur',
+    desc: 'Gjorde forretninger med alle tre filialer af Det Forgyldte Pengeskrin.',
+  },
+  hid_fall_death: {
+    name: 'Tyngdekraften Vinder Altid',
+    desc: 'Døde af en lang samtale med jorden.',
+  },
+  hid_keepers_toll_twice: {
+    name: 'Vogteren Opkræver To Gange',
+    desc: 'Døde, mens Vogterens Told stadig tyngede dig.',
+  },
+  hid_roll_hundred: {
+    name: 'Et Rent Hundrede',
+    desc: "Slog en perfekt 100'er med et almindeligt /roll.",
+  },
+  hid_yumi_cheer: {
+    name: 'Yumis Største Fan',
+    desc: 'Jublede for Yumi midt under en dyst, hvor hun kunne høre dig.',
+  },
+  hid_bountiful_coffer: {
+    name: 'Det Purpurne Skrin',
+    desc: 'Knækkede et Gavmildt Skrin, før det nåede at gå i baglås.',
+  },
+  hid_companion_save: {
+    name: 'Ikke på Hendes Vagt',
+    desc: 'Din delve-følgesvend halede en falden gruppefælle tilbage på benene.',
+  },
+  hid_codfather: {
+    name: 'Optaget i Familien',
+    desc: 'Halede Torskefaderen op af Dybmosens Lavvande.',
+  },
+  prog_crown_below: {
+    name: 'Kronen Dernede',
+    desc: "Følg kronen fra de rastløse knoglemarker til Kong Nythraxis' gravkammer, og fuldfør Svøbens Ende.",
+  },
+  prog_mere_at_rest: {
+    name: 'Søen Falder til Ro',
+    desc: 'Følg Ondrel Vanes vagt til vejs ende: koret bragt til tavshed, Blegslyngen fældet og den Druknede Måne stedt til hvile.',
+  },
+  prog_callused_hands: {
+    name: 'Barkede Næver',
+    desc: 'Fuldfør Et Håndværk til Hver Hånd, og slid dig til din første hårde hud i Østbæks håndværk.',
+  },
+  prog_tools_of_the_trade: {
+    name: 'Fagets Redskaber',
+    desc: 'Fuldfør en fremstilling ved en håndværksstation.',
+  },
+  dgn_nythraxis_crypt: {
+    name: 'Hvad Krypten Gemte',
+    desc: 'Vov dig ind i Den Forladte Krypt, og hent begge halvdele af nøglestenen og den ældgamle dagbog fra dens vogtere.',
+  },
+  chr_marsh_first_cast: { name: 'Ål i Sivene', desc: 'Fang en fisk i Mosekær Sumps vande.' },
+  prog_guildsworn: {
+    name: 'Håndværkssvoren',
+    desc: 'Stem dig ind på et arketypepar og tag dets håndværk op i fuldt alvor.',
+    title: 'Håndværkssvoren',
+  },
+  prog_masterwright: {
+    name: 'Mesterbygger',
+    desc: 'Skab dit første mesterværk, et stykke så fint at hele zonen hører om det.',
+    title: 'Mesterbygger',
+  },
+  prog_fishing_100: {
+    name: 'Gammel Søulk',
+    desc: 'Nå 100 i færdighed i Fiskeri.',
+  },
+  prog_master_angler: {
+    name: 'Mesterangler',
+    desc: 'Nå 200 i færdighed i Fiskeri, selve toppen af fiskerkunsten.',
+    title: 'Mesterangler',
+  },
+  prog_engineering_50: {
+    name: 'Tandhjul og Drivaksler',
+    desc: 'Nå 50 i færdighed i Ingeniørkunst.',
+  },
+  prog_alchemy_50: {
+    name: 'Sælsomme Bryggerier',
+    desc: 'Nå 50 i færdighed i Alkymi.',
+  },
+  prog_cooking_50: {
+    name: 'Krydret Hånd',
+    desc: 'Nå 50 i færdighed i Madlavning.',
+  },
+  prog_leatherworking_50: {
+    name: 'Garverens Laerdom',
+    desc: 'Nå 50 i færdighed i Læderhåndværk.',
+  },
+  prog_tailoring_50: {
+    name: 'Et Præcist Søm',
+    desc: 'Nå 50 i færdighed i Skræderi.',
+  },
+  prog_enchanting_50: {
+    name: 'Et Glimt af Arkan',
+    desc: 'Nå 50 i færdighed i Fortryllelse.',
+  },
+  prog_weaponcrafting_50: {
+    name: 'Æg og Hærde',
+    desc: 'Nå 50 i færdighed i Våbenfremstilling.',
+  },
+  prog_armorcrafting_50: {
+    name: 'Hammer og Plade',
+    desc: 'Nå 50 i færdighed i Rustningsfremstilling.',
+  },
+  prog_grandmaster_engineering: {
+    name: 'Grandmester i Ingeniørkunst',
+    desc: 'Nå 125 i færdighed i Ingeniørkunst, selve toppen af fagets mæstring.',
+    title: 'Grandmester i Ingeniørkunst',
+  },
+  prog_grandmaster_alchemy: {
+    name: 'Grandmester i Alkymi',
+    desc: 'Nå 125 i færdighed i Alkymi, selve toppen af fagets mæstring.',
+    title: 'Grandmester i Alkymi',
+  },
+  prog_grandmaster_cooking: {
+    name: 'Grandmester i Madlavning',
+    desc: 'Nå 125 i færdighed i Madlavning, selve toppen af fagets mæstring.',
+    title: 'Grandmester i Madlavning',
+  },
+  prog_grandmaster_leatherworking: {
+    name: 'Grandmester i Læderhåndværk',
+    desc: 'Nå 125 i færdighed i Læderhåndværk, selve toppen af fagets mæstring.',
+    title: 'Grandmester i Læderhåndværk',
+  },
+  prog_grandmaster_tailoring: {
+    name: 'Grandmester i Skræderi',
+    desc: 'Nå 125 i færdighed i Skræderi, selve toppen af fagets mæstring.',
+    title: 'Grandmester i Skræderi',
+  },
+  prog_grandmaster_enchanting: {
+    name: 'Grandmester i Fortryllelse',
+    desc: 'Nå 125 i færdighed i Fortryllelse, selve toppen af fagets mæstring.',
+    title: 'Grandmester i Fortryllelse',
+  },
+  prog_grandmaster_weaponcrafting: {
+    name: 'Grandmester i Våbenfremstilling',
+    desc: 'Nå 125 i færdighed i Våbenfremstilling, selve toppen af fagets mæstring.',
+    title: 'Grandmester i Våbenfremstilling',
+  },
+  prog_grandmaster_armorcrafting: {
+    name: 'Grandmester i Rustningsfremstilling',
+    desc: 'Nå 125 i færdighed i Rustningsfremstilling, selve toppen af fagets mæstring.',
+    title: 'Grandmester i Rustningsfremstilling',
+  },
+  col_pristine_vein: {
+    name: 'Uberørt Åre',
+    desc: 'Knæk en uberørt åre, og lad hele zonen høre om det.',
+  },
+  col_ancient_heartwood: {
+    name: 'Gammelt Kernetræ',
+    desc: 'Lok et stykke gammelt kernetræ ud af en fældet stamme.',
+  },
+  col_moonlit_bloom: {
+    name: 'Måneskinsblomst',
+    desc: 'Høst en måneskinsblomst i det øjeblik den åbner sig.',
+  },
+  col_perfect_specimen: {
+    name: 'Et Perfekt Eksemplar',
+    desc: 'Tag et perfekt eksemplar fra et høstet dyr, uden en skramme eller en plet.',
+  },
+  soc_first_salvage: {
+    name: 'Ingenting Spildes',
+    desc: 'Bjærg et stykke udstyr tilbage til råmaterialer.',
+  },
+  soc_salvage_50: {
+    name: 'Ophuggerens Plads',
+    desc: 'Bjærg 50 stykker udstyr tilbage til råmaterialer.',
+  },
+  dgn_wildheart_basin: {
+    name: 'Bassinet Bider Igen',
+    desc: 'Besejr Zulgar, Bassinets Stemme, i Vildhjertebassinet.',
+  },
+  dgn_wildheart_basin_heroic: {
+    name: 'Heroisk: Vildhjertebassinet',
+    desc: 'Besejr Zulgar, Bassinets Stemme, i Vildhjertebassinet på heroisk sværhedsgrad.',
+  },
+  chr_peaks_gatherer: {
+    name: 'Høst fra Højderne',
+    desc: 'Høst en malmåre, en skovbevoksning og et urtebed i Tornetop Højder.',
+  },
+  chr_marsh_rares_ii: {
+    name: 'Den Grådige, Gjort Op',
+    desc: 'Dræb Gravekæft den Grådige, en fjerde navngiven rædsel i Mosekær Sump, som blev glemt i den første optælling.',
+  },
+  chr_peaks_rares_ii: {
+    name: 'Flere Navne Hugget i Klippen',
+    desc: 'Dræb Gamle Klippekæft og Skårherre Kazzix, to navngivne rædsler mere i Tornetop Højder, som blev glemt i den første optælling.',
+  },
+  chr_gleamstag: {
+    name: 'Legenden Der Aldrig Slog Først',
+    desc: 'Dræb Glimmerhjorten, en sjælden og sky elite, der kun angriber, når den trænges op i en krog.',
+  },
+  chr_hollow_rares: {
+    name: 'Flokken Husker',
+    desc: 'Dræb Gamle Marvskal og Aurelhorn, Første af Flokken, de to omstrejfende sjældne bosser i Den Tilslørede Hule.',
+  },
+  chr_willowfen_gatherer: {
+    name: 'Kærets Overflod',
+    desc: 'Høst en malmåre, en skovbevoksning og et urtebed i Pilekæret.',
+  },
+  chr_willowfen_first_cast: {
+    name: 'Ringe i Liljemoserne',
+    desc: 'Fang en fisk i Pilekærets vande.',
+  },
+  chr_galecrest_gatherer: {
+    name: 'Høst på Næsset',
+    desc: 'Høst en malmåre, en skovbevoksning og et urtebed i Stormkammen.',
+  },
+  chr_galecrest_first_cast: {
+    name: 'En Snøre i Spejltjørnet',
+    desc: 'Fang en fisk i Stormkammens vande.',
+  },
+  chr_farshore_gatherer: {
+    name: 'Øens Proviant',
+    desc: 'Høst en malmåre, en skovbevoksning og et urtebed på Fjernkysten.',
+  },
+  chr_farshore_first_cast: {
+    name: 'Hvad Mågerne Ved',
+    desc: 'Fang en fisk i Fjernkystens vande.',
+  },
+  prog_engineering_rare: {
+    name: 'Præcisionsingeniørkunst',
+    desc: 'Skab dit første sjældne udstyrsstykke i Ingeniørkunst.',
+  },
+  prog_alchemy_rare: {
+    name: 'En sjælden årgang',
+    desc: 'Skab dit første sjældne udstyrsstykke i Alkymi.',
+  },
+  prog_cooking_rare: {
+    name: 'En ret at huske',
+    desc: 'Skab dit første sjældne udstyrsstykke i Madlavning.',
+  },
+  prog_leatherworking_rare: {
+    name: 'Fin garvning',
+    desc: 'Skab dit første sjældne udstyrsstykke i Læderhåndværk.',
+  },
+  prog_tailoring_rare: {
+    name: 'Et mesterligt sting',
+    desc: 'Skab dit første sjældne udstyrsstykke i Skræderi.',
+  },
+  prog_weaponcrafting_rare: {
+    name: 'Hærdet til glans',
+    desc: 'Skab dit første sjældne udstyrsstykke i Våbenfremstilling.',
+  },
+  prog_armorcrafting_rare: {
+    name: 'Pladet til perfektion',
+    desc: 'Skab dit første sjældne udstyrsstykke i Rustningsfremstilling.',
+  },
+  col_reliquary_rank_2: {
+    name: 'Byttevogter',
+    desc: 'Nå Kurator-rang 2 i Relikvariet (10 enestående katalogiserede relikvier).',
+    title: 'Byttevogter',
+  },
+  col_reliquary_rank_3: {
+    name: 'Katalogisatoren',
+    desc: 'Nå Kurator-rang 3 i Relikvariet (25 enestående katalogiserede relikvier).',
+    title: 'Katalogisatoren',
+  },
+  col_reliquary_rank_4: {
+    name: 'Ærkekurator',
+    desc: 'Nå Kurator-rang 4 i Relikvariet (50 enestående katalogiserede relikvier).',
+    title: 'Ærkekurator',
+  },
+  col_reliquary_rank_5: {
+    name: 'Evigt bytte',
+    desc: 'Nå Kurator-rang 5 i Relikvariet (100 enestående katalogiserede relikvier).',
+  },
+  col_reliquary_complete: {
+    name: 'Det Store Relikvarium',
+    desc: 'Katalogiser hver relikvie i Relikvariet, som en figur kan beholde. At kataloget vokser senere, tager det aldrig fra dig.',
+    title: 'Hvælvingens kurator',
+  },
+  col_reliquary_conquerors: {
+    name: 'Erobrernes hylde',
+    desc: 'Katalogiser hver relikvie på Relikvariets hylde Erobrere. At kataloget vokser senere, tager det aldrig fra dig.',
+    title: 'Hvælvingsbryder',
+  },
+  col_reliquary_illum_nythraxis_heroic: {
+    name: 'Nythraxis illumineret',
+    desc: 'Illuminer siden Heroisk: Nythraxis-raid i Relikvariet.',
+    title: "Nythraxis' lys",
+  },
+  col_reliquary_illum_thunzharr: {
+    name: 'Thunzharr illumineret',
+    desc: 'Illuminer siden Thunzharr, den Vågnende Tinde i Relikvariet.',
+    title: 'Thunzharrs lys',
+  },
+  col_reliquary_illum_gravewyrm_heroic: {
+    name: 'Helligdommen illumineret',
+    desc: 'Illuminer siden Heroisk: Gravormens Helligdom i Relikvariet.',
+    title: 'Helligdommens lys',
+  },
+  soc_strongbox_outfitter: {
+    name: 'Udstyrer af Pengeskrinet',
+    desc: 'Lås din første banktaskeplads op.',
+  },
+  soc_four_bags_deep: {
+    name: 'Alle Fire Tasker',
+    desc: 'Lås alle fire banktaskepladser op.',
+  },
+  dgn_ignivar: {
+    name: 'Herolden Falder',
+    desc: 'Besejr Ignivar, den Sidste Flammes Herold, i Den Sidste Kildes Digel.',
+  },
+  dgn_ignivar_heroic: {
+    name: 'Heroisk: Herolden Falder',
+    desc: 'Besejr Ignivar, den Sidste Flammes Herold, på heroisk sværhedsgrad.',
+  },
+  dgn_varkhul: {
+    name: 'Essen Bliver Kold',
+    desc: 'Besejr Varkhul, den Sidste Flammes Smedefader, i Den Indre Digel.',
+  },
+  dgn_varkhul_heroic: {
+    name: 'Heroisk: Essen Bliver Kold',
+    desc: 'Besejr Varkhul, den Sidste Flammes Smedefader, på heroisk sværhedsgrad.',
+  },
+  dgn_varkhul_flawless: {
+    name: 'Ingen Glød Gik Tabt',
+    desc: 'Besejr Varkhul, den Sidste Flammes Smedefader, på heroisk sværhedsgrad uden at et eneste raidmedlem dør.',
+    title: 'den Uskadte',
+  },
+  col_set_bramblehide: {
+    name: "Roots' Tornehud",
+    desc: "Opdag hver del af Roots' Tornehud.",
+  },
+  prog_jewelcrafting_rare: {
+    desc: 'Skab dit første sjældne udstyrsstykke i Juvelkunst.',
+
+    name: 'Poleret til glans',
+  },
+  prog_jewelcrafting_50: { desc: 'Nå 50 i færdighed i Juvelkunst.', name: 'Facet og filigran' },
+  prog_grandmaster_jewelcrafting: {
+    desc: 'Nå 125 i færdighed i Juvelkunst, selve toppen af fagets mæstring.',
+
+    name: 'Stormester i juvelkunst',
+    title: 'Stormester i juvelkunst',
+  },
+  prog_inscription_rare: {
+    desc: 'Skab dit første sjældne udstyrsstykke i Inskription.',
+
+    name: 'Skrevet med fin blæk',
+  },
+  prog_inscription_50: { desc: 'Nå 50 i færdighed i Inskription.', name: 'Pen og pigment' },
+  prog_grandmaster_inscription: {
+    desc: 'Nå 125 i færdighed i Inskription, selve toppen af fagets mæstring.',
+
+    name: 'Stormester i skriftkunst',
+    title: 'Stormester i skriftkunst',
+  },
+  col_deepest_cast: {
+    desc: 'Få en Clockreel-fiskestang, den eneste stang, der når de dybeste fangster.',
+
+    name: 'Det dybeste kast',
+  },
+  prog_first_planting: { desc: 'Plant din første afgrøde i et havebed.', name: 'Såning begynder' },
+  chr_vale_first_harvest: {
+    desc: 'Høst din første frodige afgrøde fra et havebed i Østbæk Dal.',
+
+    name: 'Dalens første frugter',
+  },
+  chr_marsh_first_harvest: {
+    desc: 'Høst din første frodige afgrøde fra et havebed i Mosekær Sump.',
+
+    name: 'Spirer i tørven',
+  },
+  chr_peaks_first_harvest: {
+    desc: 'Høst din første frodige afgrøde fra et havebed i Tornetop Højder.',
+
+    name: 'En afgrøde mellem klipperne',
+  },
+  chr_evergarden_first_harvest: {
+    desc: 'Høst din første frodige afgrøde fra et havebed i Evergarden.',
+
+    name: 'Et bed i paradiset',
+  },
+  col_golden_harvest: {
+    desc: 'Høst en gylden afgrøde, og lad hele zonen høre om det.',
+
+    name: 'Gylden høst',
+  },
+  prog_farming_100: {
+    desc: 'Nå 100 i færdighed i Landbrug.',
+    name: 'Høstmester',
+    title: 'Høstmester',
+  },
+  col_farm_roster: {
+    desc: 'Høst hver afgrøde, som de fire haver dyrker.',
+
+    name: 'Alle furer fyldt',
+  },
+  prog_field_to_feast: {
+    desc: 'Tilbered et topmåltid, som et helt raid kan spise fra.',
+
+    name: 'Fra mark til festmåltid',
+  },
+  prog_legendmaker: {
+    desc: 'Hæv et Perfektioneret værk til legende med en Skabelsesgerning, og giv det et navn helt for sig selv.',
+
+    name: 'Legendemageren',
+  },
+  hid_forgebreaker: {
+    desc: 'Form Smedjebryderen selv, og vend tilbage til Maelin med den færdige hammer.',
+
+    name: 'En kilde ubundet',
+  },
+};

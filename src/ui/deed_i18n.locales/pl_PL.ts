@@ -1,0 +1,1143 @@
+// Deed name / desc / title locale table for pl_PL (data-as-code, size-exempt).
+// One per-base-locale chunk behind DEED_LOCALE_LOADERS in deed_i18n.ts, so a
+// visitor downloads only their own locale's deed strings. Split verbatim from
+// the former deed_i18n.newlocales.ts single chunk; values carry no em or en
+// dashes (repo copy rule). English (en / en_CA) resolves to the authored
+// source before this table is consulted.
+import type { DeedLocaleTable } from '../deed_i18n';
+
+export const table: DeedLocaleTable = {
+  prog_ready_for_an_adventure: {
+    name: 'Gotowy na Przygodę',
+    desc: 'Ukończ Wybrzeże Prób: wykonaj każdą lekcję na wyspie, a potem uderz w dzwon promu, by wrócić do domu, do Eastbrook.',
+  },
+  exp_dawnhold_castle: {
+    name: 'Otwarte drzwi w ogrodzie',
+    desc: 'Odwiedź zamek Dawnhold i przespaceruj się po jego słonecznych ogrodowych komnatach.',
+  },
+  exp_the_last_keep: {
+    name: 'Ciche komnaty',
+    desc: 'Przekrocz progi Ostatniej Twierdzy i przejdź się jej cichymi komnatami.',
+  },
+  pvp_bg_first_capture: {
+    name: 'Sztandar w dłoni',
+    desc: 'Przechwyć flagę na Polach Ciernistej Kotliny.',
+  },
+  pvp_bg_first_win: {
+    name: 'Kotlina się broni',
+    desc: 'Wygraj bitwę na Polach Ciernistej Kotliny.',
+  },
+  pvp_bg_wins_25: {
+    name: 'Strażnik Kotliny',
+    desc: 'Wygraj 25 bitew na Polach Ciernistej Kotliny.',
+    title: 'Chorąży',
+  },
+  pvp_bg_captures_100: {
+    name: 'Sto Sztandarów',
+    desc: 'Przechwyć 100 flag na Polach Ciernistej Kotliny w ciągu swojej kariery.',
+  },
+  dgn_rift: {
+    name: 'Wędrowiec Szczelin',
+    desc: 'Oczyść Szczelinę, pokonując jej bossa piętra.',
+  },
+  dgn_rift_s_rank: {
+    name: 'Władca Szczelin',
+    desc: 'Oczyść Szczelinę rangi S, najtrudniejszy poziom, jaki może wygenerować portal Szczeliny.',
+  },
+  pvp_honor_sergeant: {
+    name: 'Łamacz szyków',
+    desc: 'Zdobądź 10 000 Honoru w ciągu całej kariery. Wydawanie go nigdy nie kosztuje cię rangi.',
+    title: 'Łamacz szyków',
+  },
+  pvp_honor_knight_lieutenant: {
+    name: 'Pustoszyciel pól',
+    desc: 'Zdobądź 40 000 Honoru w ciągu całej kariery, mając za sobą sezon prawdziwej wojny.',
+    title: 'Pustoszyciel pól',
+  },
+  pvp_honor_field_marshal: {
+    name: 'Ukoronowany wojną',
+    desc: 'Zdobądź 150 000 Honoru w ciągu całej kariery. Rzadkość na każdym królestwie, i tak powinno być.',
+    title: 'Ukoronowany wojną',
+  },
+  chr_drakemaw_broodlord: {
+    name: 'Pogromca Wylęgu',
+    desc: 'Zgładź Władcę Wylęgu Smoczej Paszczy pośród jego jaj, przez ryk, rozcinający cios i ogień.',
+  },
+  chr_maw_matriarch: {
+    name: 'Niebo Milknie',
+    desc: 'Zgładź Cindraleth, Matriarchinię Paszczy, w jej kraterowym gnieździe nad Smoczą Paszczą.',
+  },
+  chr_frostveil_gatherer: {
+    name: 'Zbiory na tarasach',
+    desc: 'Zbierz zyle rudy, kepke drewna i grzadke ziol we Frostveilu.',
+  },
+  chr_frostveil_first_cast: {
+    name: 'Pierwszy lod na jeziorze',
+    desc: 'Zlow rybe w wodach Frostveilu.',
+  },
+  chr_amberfall_gatherer: {
+    name: 'Zbiory Amberfallu',
+    desc: 'Zbierz zyle rudy, kepke drewna i grzadke ziol w Amberfallu.',
+  },
+  chr_amberfall_first_cast: {
+    name: 'Polow z wielkich mokradel',
+    desc: 'Zlow rybe w wodach Amberfallu.',
+  },
+  chr_nightbloom_gatherer: {
+    name: 'Sniace zbiory',
+    desc: 'Zbierz zyle rudy, kepke drewna i grzadke ziol w Nightbloomie.',
+  },
+  chr_nightbloom_first_cast: {
+    desc: 'Zlow rybe w wodach Nightbloomu.',
+
+    name: 'Fala na Księżycowym Źródle',
+  },
+  chr_wraithwood_gatherer: {
+    name: 'Zbiory pod koronami',
+    desc: 'Zbierz zyle rudy, kepke drewna i grzadke ziol w Wraithwoodzie.',
+  },
+  chr_wraithwood_first_cast: {
+    name: 'Rzut w lustrzanej zatoce',
+    desc: 'Zlow rybe w wodach Wraithwoodu.',
+  },
+  chr_palmreach_gatherer: {
+    name: 'Zbiory na palmowej plazy',
+    desc: 'Zbierz zyle rudy, kepke drewna i grzadke ziol w Palmreachu.',
+  },
+  chr_palmreach_first_cast: {
+    name: 'Rzut w szafirowej lagunie',
+    desc: 'Zlow rybe w wodach Palmreachu.',
+  },
+  chr_evergarden_gatherer: {
+    name: 'Dar parteru',
+    desc: 'Zbierz zyle rudy, kepke drewna i grzadke ziol w Evergardenie.',
+  },
+  chr_evergarden_first_cast: {
+    name: 'Rzut na platkowym stawie',
+    desc: 'Zlow rybe w wodach Evergardenu.',
+  },
+  pvp_card_duel_first_win: {
+    name: 'Zasady Domu',
+    desc: 'Wygraj Pojedynek Karciany u Mistrza Kart.',
+  },
+  prog_first_steps: {
+    name: 'Pierwsze Kroki',
+    desc: 'Osiągnij poziom 2 i postaw pierwszy krok na długiej drodze.',
+  },
+  prog_finding_your_feet: {
+    name: 'Pewny Grunt',
+    desc: 'Osiągnij poziom 5; dzicz wydaje się już odrobinę mniejsza.',
+  },
+  prog_double_digits: { name: 'Dwie Cyfry', desc: 'Osiągnij poziom 10 i odblokuj swoje talenty.' },
+  prog_the_long_middle: { name: 'Długi Środek Drogi', desc: 'Osiągnij poziom 15.' },
+  prog_level_cap: { name: 'Widok ze Szczytu', desc: 'Osiągnij poziom 20, maksymalny poziom.' },
+  prog_well_rested: {
+    name: 'Dobrze Wypoczęty',
+    desc: 'Zatrzymaj się w gospodzie, aż zdobędziesz doświadczenie za wypoczynek.',
+  },
+  prog_talented: { name: 'Dobrze Wydany Punkt', desc: 'Wydaj swój pierwszy punkt talentu.' },
+  prog_specialized: {
+    name: 'Deklaracja Zamiarów',
+    desc: 'Wybierz specjalizację i naucz się jej sztandarowej zdolności.',
+  },
+  prog_deep_roots: {
+    name: 'Głębokie Korzenie',
+    desc: 'Wydaj punkt talentu na talent z ostatniego rzędu.',
+  },
+  prog_full_build: {
+    name: 'Pełna Szóstka',
+    desc: 'Wybierz po jednej opcji we wszystkich sześciu rzędach talentów w jednej konfiguracji.',
+  },
+  prog_veteran: {
+    name: 'Weteran',
+    desc: 'Zdobądź łącznie 250 000 punktów doświadczenia.',
+    title: 'Weteran',
+  },
+  prog_champion: {
+    name: 'Mistrz',
+    desc: 'Zdobądź łącznie 500 000 punktów doświadczenia.',
+    title: 'Mistrz',
+  },
+  prog_paragon: {
+    name: 'Wzór cnót',
+    desc: 'Zdobądź łącznie 1 000 000 punktów doświadczenia.',
+    title: 'Wzór cnót',
+  },
+  prog_mythic: {
+    name: 'Mityczny',
+    desc: 'Zdobądź łącznie 2 500 000 punktów doświadczenia.',
+    title: 'Mityczny',
+  },
+  prog_eternal: {
+    name: 'Wieczny',
+    desc: 'Zdobądź łącznie 5 000 000 punktów doświadczenia.',
+    title: 'Wieczny',
+  },
+  prog_prestige: {
+    name: 'Od Nowa',
+    desc: 'Osiągnij maksymalny poziom, zapełnij pasek raz jeszcze i odbierz rangę prestiżu 1.',
+  },
+  prog_prestige_5: { name: 'Stare Nawyki', desc: 'Osiągnij rangę prestiżu 5.' },
+  prog_prestige_10: { name: 'Perpetuum Mobile', desc: 'Osiągnij rangę prestiżu 10.' },
+  prog_first_harvest: {
+    name: 'Plony Pola',
+    desc: 'Zbierz plon ze swojego pierwszego źródła surowców.',
+  },
+  prog_mining_100: { name: 'Ruda we Krwi', desc: 'Osiągnij 100 biegłości w Górnictwie.' },
+  prog_logging_100: { name: 'Rębacz Twardzieli', desc: 'Osiągnij 100 biegłości w Drwalnictwie.' },
+  prog_herbalism_100: { name: 'Mistrz Łąk', desc: 'Osiągnij 100 biegłości w Zielarstwie.' },
+  prog_master_gatherer: {
+    name: 'Mistrz Zbieractwa',
+
+    desc: 'Osiągnij biegłość 100 w dowolnych trzech profesjach zbierackich.',
+  },
+  prog_first_craft: { name: 'Własnoręczna Robota', desc: 'Ukończ swój pierwszy udany wyrób.' },
+  prog_craft_specialist: {
+    name: 'Tajniki Fachu',
+    desc: 'Osiągnij 75 umiejętności w dowolnym rzemiośle i odblokuj atuty jego specjalizacji.',
+  },
+  prog_around_the_ring: {
+    name: 'Dookoła Kręgu',
+    desc: 'Osiągnij 25 umiejętności w pięciu różnych rzemiosłach.',
+  },
+  cmb_first_blood: { name: 'Pierwsza Krew', desc: 'Pokonaj swojego pierwszego wroga.' },
+  cmb_slayer: { name: 'Pogromca', desc: 'Pokonaj 1000 wrogów.' },
+  cmb_legion_of_one: { name: 'Jednoosobowy Legion', desc: 'Pokonaj 10 000 wrogów.' },
+  cmb_heavy_hitter: { name: 'Ciężka Ręka', desc: 'Zadaj łącznie 500 000 obrażeń.' },
+  cmb_critical_eye: { name: 'Krytyczne Oko', desc: 'Zadaj 500 trafień krytycznych.' },
+  cmb_giantslayer: {
+    name: 'Pogromca Olbrzymów',
+    desc: 'Zadaj ostateczny cios wrogowi o co najmniej pięć poziomów wyższemu od ciebie.',
+  },
+  cmb_first_fall: {
+    name: 'Otrzep Się i Wstań',
+    desc: 'Zgiń po raz pierwszy; zdarza się najlepszym.',
+  },
+  dgn_hollow_crypt: {
+    name: 'Łamacz Krypt',
+    desc: 'Pokonaj Morthena Grobowego Wołacza w Wydrążonej Krypcie.',
+  },
+  dgn_sunken_bastion: {
+    name: 'Fogbinder Rozpętany',
+    desc: 'Pokonaj Vaela Fogbindera w Zatopionym Bastionie.',
+  },
+  dgn_drowned_temple: {
+    name: 'Utopić Księżyc',
+    desc: 'Pokonaj Ysolei, Awatara Utopionego Księżyca, w Zatopionej Świątyni.',
+  },
+  dgn_gravewyrm_sanctum: {
+    name: 'Żmij z Głębin',
+    desc: 'Pokonaj Korzula Grobowego Żmija w Sanktuarium Grobowego Żmija.',
+  },
+  dgn_hollow_crypt_heroic: {
+    name: 'Heroiczna: Wydrążona Krypta',
+    desc: 'Pokonaj Morthena Grobowego Wołacza w Wydrążonej Krypcie na heroicznym poziomie trudności.',
+  },
+  dgn_sunken_bastion_heroic: {
+    name: 'Heroiczny: Zatopiony Bastion',
+    desc: 'Pokonaj Vaela Fogbindera w Zatopionym Bastionie na heroicznym poziomie trudności.',
+  },
+  dgn_drowned_temple_heroic: {
+    name: 'Heroiczna: Zatopiona Świątynia',
+    desc: 'Pokonaj Ysolei, Awatara Utopionego Księżyca, w Zatopionej Świątyni na heroicznym poziomie trudności.',
+  },
+  dgn_gravewyrm_sanctum_heroic: {
+    name: 'Heroiczne: Sanktuarium Grobowego Żmija',
+    desc: 'Pokonaj Korzula Grobowego Żmija w Sanktuarium Grobowego Żmija na heroicznym poziomie trudności.',
+  },
+  dgn_nythraxis: {
+    name: 'Koniec Plagi',
+    desc: 'Pokonaj Nythraxisa, Plagę Ciernistego Szczytu, za zapieczętowanymi królewskimi wrotami.',
+  },
+  dgn_nythraxis_heroic: {
+    name: 'Heroiczny: Koniec Plagi',
+    desc: 'Pokonaj Nythraxisa, Plagę Ciernistego Szczytu, na heroicznym poziomie trudności.',
+  },
+  dgn_thornpeak_rounds: {
+    name: 'Wielki Obchód',
+    desc: 'Oczyść Wydrążoną Kryptę, Zatopiony Bastion, Zatopioną Świątynię i Sanktuarium Grobowego Żmija.',
+  },
+  dgn_deepward: {
+    name: 'Strażnik Głębin',
+    desc: 'Zdobądź każdy loch, rajd i obie wyprawy na heroicznym poziomie trudności.',
+  },
+  dgn_mark_circuit: {
+    name: 'Pełny Obieg',
+    desc: 'Zdobądź znaki heroiczne ze wszystkich czterech heroicznych lochów w ciągu jednego dnia.',
+  },
+  dgn_boss_clears_50: {
+    name: 'Za Pięćdziesiątymi Drzwiami',
+    desc: 'Pokonaj 50 finałowych bossów lochów.',
+  },
+  dgn_morthen_flawless: {
+    name: 'Poszło Jak po Kościach',
+    desc: 'Pokonaj Morthena Grobowego Wołacza na heroicznym poziomie trudności tak, by nikt z drużyny nie zginął.',
+  },
+  dgn_morthen_trio: {
+    name: 'W Trójkę Przeciw Mogile',
+    desc: 'Pokonaj Morthena Grobowego Wołacza w składzie liczącym najwyżej trzech graczy.',
+  },
+  dgn_olen_arc: {
+    name: 'Wymiń Żniwiarza',
+    desc: 'Pokonaj Komandora Rycerzy Olena tak, by jego Kosiący łuk nie trafił nikogo poza jego bieżącym celem.',
+  },
+  dgn_vael_thralls: {
+    name: 'Niczyj Niewolnik',
+    desc: 'Pokonaj Vaela Fogbindera, gdy wszyscy przyzwani przez niego Utopieni Niewolnicy zostali już zgładzeni.',
+  },
+  dgn_ysolei_moonspawn: {
+    name: 'Pomioty, Co do Jednego',
+    desc: 'Pokonaj Ysolei, gdy wszystkie przyzwane przez nią Księżycowe Pomioty zostały już zgładzone.',
+  },
+  dgn_ysolei_flawless: {
+    name: 'Suche Oczy',
+    desc: 'Pokonaj Ysolei, Awatara Utopionego Księżyca, na heroicznym poziomie trudności tak, by nikt z drużyny nie zginął.',
+  },
+  dgn_velkhar_bonewalkers: {
+    name: 'Zostańcie w Grobach',
+    desc: 'Pokonaj Wielkiego Nekromantę Velkhara tak, by każdy Wskrzeszony Kościochód został zniszczony, zanim on sam padnie.',
+  },
+  dgn_korzul_flawless: {
+    name: 'Żmijobójca',
+    desc: 'Pokonaj Korzula Grobowego Żmija na heroicznym poziomie trudności tak, by nikt z drużyny nie zginął.',
+    title: 'Żmijobójca',
+  },
+  dgn_sanctum_speed: {
+    desc: 'Pokonaj Korzula Grobowego Żmija w ciągu 15 minut od zajęcia Sanktuarium Grobowego Żmija przez twoją drużynę.',
+
+    name: 'Bieg przez Sanktuarium',
+  },
+  dgn_nythraxis_gravebreaker: {
+    name: 'Przed Królem Nie Klękamy',
+    desc: 'Pokonaj Nythraxisa tak, by Grobołam nie trafił nikogo poza jego bieżącym celem.',
+  },
+  dgn_nythraxis_wardens: {
+    name: 'Strażnicy Kamieni Ochronnych',
+    desc: 'Pokonaj Nythraxisa tak, by każdy Nieśmiertelny Szał został przerwany, zanim uderzy.',
+  },
+  dgn_nythraxis_deathless: {
+    name: 'Nikt Bardziej Nieśmiertelny',
+    desc: 'Pokonaj Nythraxisa, Plagę Ciernistego Szczytu, na heroicznym poziomie trudności tak, by ani jeden rajdowiec nie zginął.',
+    title: 'Nieśmiertelny',
+  },
+  cmb_thunzharr: {
+    name: 'Góra Runęła',
+    desc: 'Powal Thunzharra, Budzący się Szczyt, przy Burzowej Turni.',
+  },
+  cmb_thunzharr_unbroken: {
+    name: 'Łamacz Szczytów',
+    desc: 'Powal Thunzharra, Budzący się Szczyt, nie ginąc od twojego pierwszego ciosu aż po jego ostatni oddech.',
+    title: 'Łamacz Szczytów',
+  },
+  cmb_thunzharr_ten: {
+    name: 'Górski Nawyk',
+    desc: 'Powal Thunzharra, Budzący się Szczyt, dziesięć razy.',
+  },
+  dlv_reliquary: { name: 'Goniec z Relikwiarza', desc: 'Oczyść Zawalony Relikwiarz.' },
+  dlv_reliquary_heroic: {
+    name: 'Heroiczny: Zawalony Relikwiarz',
+    desc: 'Oczyść Zawalony Relikwiarz na poziomie heroicznym.',
+  },
+  dlv_litany: { name: 'Uciszyć Litanię', desc: 'Oczyść Utopioną Litanię.' },
+  dlv_litany_heroic: {
+    name: 'Heroiczna: Utopiona Litania',
+    desc: 'Oczyść Utopioną Litanię na poziomie heroicznym.',
+  },
+  dlv_lore_journal: {
+    name: 'Notatki na marginesie',
+    desc: 'Odblokuj wszystkie pięć wpisów w dzienniku wypraw.',
+  },
+  dlv_companion_max: {
+    name: 'Prawdziwych przyjaciół poznaje się w głębinie',
+    desc: 'Doprowadź towarzyszkę wypraw do najwyższej rangi.',
+  },
+  dlv_companions_both: {
+    name: 'Obie latarnie płoną',
+    desc: 'Doprowadź obie towarzyszki wypraw, Akolitkę Tessę i Eddę Trzcinoręką, do najwyższej rangi.',
+  },
+  dlv_clears_50: { name: 'Pięćdziesiąt sążni', desc: 'Ukończ 50 wypraw.' },
+  dlv_solo_heroic: {
+    name: 'Dwoje to już tłum',
+    desc: 'Oczyść wyprawę na poziomie heroicznym bez żadnego innego gracza, tylko ty i twoja towarzyszka.',
+  },
+  dlv_tumbler_premium: {
+    name: 'Ścieżka Zastawek, opanowana',
+    desc: 'Otwórz strzeżoną skrzynię relikwiarza przy najwyższej stawce, bezbłędnie i za jednym jedynym podejściem.',
+  },
+  dlv_rite_flawless: {
+    name: 'Co do słowa',
+    desc: 'Ukończ Obrzęd Utopionego Relikwiarza, nie popełniając ani jednego błędu.',
+  },
+  dlv_varric_ringers: {
+    name: 'Dzwony milkną',
+    desc: 'Pokonaj Diakona Vandrica tak, aby każdy wskrzeszony przez niego Pogrzebowy Dzwonnik poległ przed nim.',
+  },
+  dlv_nhalia_bells: {
+    name: 'Uciszyciel Dzwonów',
+    desc: 'Pokonaj Siostrę Nhalię, Utopiony Kantyk, nie pozwalając, by Bijący Dzwon trafił kogokolwiek z drużyny.',
+    title: 'Uciszyciel Dzwonów',
+  },
+  chr_vale_chapter_i: {
+    name: 'Kronika Doliny, rozdział I',
+    desc: 'Ukończ pierwszy rozdział kroniki Saula: pierwsze posługi w Eastbrook, rozeznanie w Dolinie i pierwszy smak tutejszych rzemiosł.',
+  },
+  chr_vale_chapter_ii: {
+    name: 'Kronika Doliny, rozdział II',
+  },
+  chr_vale_chapter_iii: {
+    name: 'Kronika Doliny',
+    desc: 'Doprowadź historię Doliny do końca: Grobowy Wołacz zdemaskowany, Wydrążona Krypta oczyszczona, a każda z osławionych zgróz Doliny powalona.',
+    title: 'z Doliny',
+  },
+  chr_vale_gatherer: {
+    name: 'Z darów ziemi',
+    desc: 'Pozyskaj żyłę rudy, drzewostan i kępę ziół w Dolinie Wschodniego Strumienia.',
+  },
+  chr_vale_first_cast: {
+    name: 'Coś siedzi w Jeziorze Lustrzanym',
+    desc: 'Złów rybę w wodach Doliny Wschodniego Strumienia.',
+  },
+  chr_vale_packbreaker: { name: 'Pogromca Watahy', desc: 'Zabij 3 Leśne Wilki w ciągu 10 sekund.' },
+  chr_vale_cup_debut: {
+    name: 'Pretendent do Miedzianego Wiadra',
+  },
+  chr_vale_rares: {
+    name: 'Zgrozy Doliny',
+    desc: 'Zabij pięć osławionych zgróz Doliny Wschodniego Strumienia: Starego Szaropaszczego, Moggera, Grixa Tunelowego Króla, Kapitana Verlana i Widmowiąża Maldreca.',
+  },
+  chr_marsh_chapter_i: {
+    name: 'Kronika Trzęsawiska, rozdział I',
+    desc: 'Ukończ pierwszy rozdział kroniki Osrica Fenna: odpowiedz na zbiórkę przy Moście na Trzęsawisku, zabezpiecz groblę i poznaj kształt mokradeł.',
+  },
+  chr_marsh_chapter_ii: {
+    name: 'Kronika Trzęsawiska, rozdział II',
+    desc: 'Ukończ drugi rozdział kroniki Osrica Fenna: wypal gniazda wdów, złóż utopionych na spoczynek, wyciągnij Dorsznego Ojca z wody i staw czoła Litanii.',
+  },
+  chr_marsh_chapter_iii: {
+    name: 'Kronika Mokrzawia',
+    desc: 'Doprowadź historię mokradeł do końca: obóz kultu rozbity, Fogbinder uciszony w Zatopionym Bastionie, a każda z osławionych zgróz mgły powalona.',
+    title: 'z Mokrzawia',
+  },
+  chr_marsh_gatherer: {
+    name: 'Bagienne zbiory',
+    desc: 'Pozyskaj żyłę rudy, drzewostan i kępę ziół na Trzęsawisku Mokrzawia.',
+  },
+  chr_marsh_unburst: {
+    name: 'Nie stój w zarodnikach',
+    desc: 'Zabij 8 Bagiennych obrzęklaków i ani razu nie daj się złapać w wybuch ich Żrących Zarodników.',
+  },
+  chr_marsh_hush_the_mending: {
+    name: 'Najpierw uzdrowiciel',
+    desc: 'W Obozowisku Grobowych Przyzywaczy zabij Grobowego Uzdrowiciela, zanim zginie którykolwiek z kultystów pod jego opieką.',
+  },
+  chr_marsh_rares: {
+    name: 'Imiona we mgle',
+    desc: 'Zabij trzy osławione zgrozy Trzęsawiska Mokrzawia: Bagnopaszczego Nienasyconego, Mulzęba Utopionego i Siostrę Nhalię.',
+  },
+  chr_peaks_chapter_i: {
+    name: 'Kronika Wyżyn, rozdział I',
+    desc: 'Ukończ pierwszy rozdział kroniki Zenzie: oczyść trakt na grani, opróżnij nory i poznaj każdą ścieżkę, której strzeże Wysoka Strażnica.',
+  },
+  chr_peaks_chapter_ii: {
+    name: 'Kronika Wyżyn, rozdział II',
+    desc: 'Ukończ drugi rozdział kroniki Zenzie: rozbij Obóz Wojenny Drogmara, odczytaj budzącą się burzę i stań tam, gdzie jarzy się Migotliwa Toń.',
+  },
+  chr_peaks_chapter_iii: {
+    name: 'Kronika Ciernistego Szczytu',
+    title: 'z Ciernistego Szczytu',
+
+    desc: 'Poznaj całą historię gór: Związani z Potomstwem rozbici, Sanktuarium uciszone, Budzący się Szczyt powalony, a każdy nazwany postrach urwisk pokonany.',
+  },
+  chr_peaks_sparring: {
+    name: 'Musztra na murach',
+    desc: 'Zadaj łącznie 1000 punktów obrażeń manekinowi treningowemu.',
+  },
+  chr_peaks_glimmer_cast: {
+    name: 'Zimna woda, zimniejsze światło',
+    desc: 'Złów rybę z Migotliwej Toni.',
+  },
+  chr_peaks_moongate: {
+    name: 'Przez zimną bramę',
+    desc: 'Przejdź przez księżycową bramę na brzegu Migotliwej Toni.',
+  },
+  chr_peaks_waking_witness: {
+    name: 'Góra, która chodzi',
+    desc: 'Ujrzyj na własne oczy Thunzharra, Budzący się Szczyt, gdy przemierza górę.',
+  },
+  chr_peaks_rares: {
+    name: 'Imiona wyryte w skale',
+    desc: 'Zabij cztery osławione zgrozy Wyżyn Ciernistego Szczytu: Sztygara z Żelaznej Żyły, Brutoka Czaszkokrusza, Voskara Żaroskrzydłego i Szpikowładcę Varkasa.',
+  },
+  col_discovery_25: {
+    name: 'Chomik',
+    desc: 'Odkryj 25 różnych przedmiotów (przedmiot liczy się, gdy po raz pierwszy trafi w twoje posiadanie).',
+  },
+  col_discovery_75: { name: 'Sroka', desc: 'Odkryj 75 różnych przedmiotów.' },
+  col_discovery_150: {
+    name: 'Gabinet osobliwości',
+    desc: 'Odkryj 150 różnych przedmiotów.',
+    title: 'Kustosz',
+  },
+  col_discovery_250: { name: 'Wielki katalog', desc: 'Odkryj 250 różnych przedmiotów.' },
+  col_first_rare: {
+    name: 'Coś niebieskiego',
+    desc: 'Zdobądź swój pierwszy przedmiot rzadkiej jakości.',
+  },
+  col_first_epic: {
+    name: 'Zrodzony w purpurze',
+    desc: 'Zdobądź swój pierwszy przedmiot epickiej jakości.',
+  },
+  col_first_legendary: {
+    name: 'Szczęście w kolorze pomarańczy',
+    desc: 'Zdobądź swój pierwszy przedmiot legendarnej jakości.',
+  },
+  col_set_vale_arcanist: {
+    name: 'Regalia Arkanisty z Doliny',
+    desc: 'Odkryj każdą część Regaliów Arkanisty z Doliny.',
+  },
+  col_set_boundstone_vanguard: {
+    name: 'Awangarda Spętanego Kamienia',
+    desc: 'Odkryj każdą część Awangardy Spętanego Kamienia.',
+  },
+  col_set_greyjaw_stalker: {
+    name: 'Oporządzenie Tropiciela Szaroszczękiego',
+    desc: 'Odkryj każdą część Oporządzenia Tropiciela Szaroszczękiego.',
+  },
+  col_set_deathlord: {
+    name: 'Rynsztunek Bojowy Barrowlorda',
+    desc: 'Odkryj każdą część Rynsztunku Bojowego Barrowlorda.',
+  },
+  col_set_wyrmshadow: { name: 'Szaty Nightfang', desc: 'Odkryj każdą część Szat Nightfang.' },
+  col_set_necromancers: {
+    name: 'Odzienie Mournweave',
+    desc: 'Odkryj każdą część Odzienia Mournweave.',
+  },
+  col_set_crownforged: {
+    name: 'Regalia Bonewrought',
+    desc: 'Odkryj każdą część Regaliów Bonewrought.',
+  },
+  col_set_nighttalon: { name: 'Futro Direfang', desc: 'Odkryj każdą część Futra Direfang.' },
+  col_set_soulflame: {
+    name: 'Regalia Wraithfire',
+    desc: 'Odkryj każdą część Regaliów Wraithfire.',
+  },
+  col_set_stormcallers: { name: 'Szaty Galecall', desc: 'Odkryj każdą część Szat Galecall.' },
+  col_seven_regalia: {
+    name: 'Siedmioraka garderoba',
+    desc: 'Odkryj każdą część wszystkich siedmiu epickich rodzin pancerzy.',
+    title: 'Olśniewający',
+  },
+  col_true_colors: {
+    name: 'Prawdziwe barwy',
+    desc: 'Stań do boju w dowolnym wyglądzie innym niż domyślny dla twojej klasy.',
+  },
+  col_all_slots: {
+    name: 'Wystrojony na jedenastkę',
+    desc: 'Miej jednocześnie założony przedmiot w każdym z jedenastu miejsc ekwipunku.',
+  },
+  col_quartermaster_buyout: {
+    name: 'Stały klient',
+    desc: 'Odkryj wszystkie dziesięć części ekwipunku z zapasów Kwatermistrza Vexa.',
+  },
+  col_glimmerfin: {
+    name: 'Promyk nadziei',
+    desc: 'Złów Karpika Słonecznoblask.',
+  },
+  col_full_creel: {
+    name: 'Pełen kosz',
+    desc: 'Odkryj wszystkie sześć pospolitych ryb z wód Doliny, Trzęsawiska i Wyżyn.',
+  },
+  col_junk_drawer: {
+    name: 'Szuflada z rupieciami',
+    desc: 'Odkryj 10 różnych przedmiotów lichej jakości.',
+  },
+  pvp_arena_first_match: {
+    name: 'Piasek w butach',
+    desc: 'Stocz rankingowe starcie w Popielnym Koloseum, w dowolnej z lig.',
+  },
+  pvp_arena_first_win: {
+    name: 'Ryk trybun',
+    desc: 'Wygraj rankingowe starcie na arenie, w dowolnej z lig.',
+  },
+  pvp_arena_1v1_1600: {
+    name: 'Pretendent Koloseum',
+    desc: 'Osiągnij 1600 punktów rankingowych w arenowej lidze 1v1.',
+  },
+  pvp_arena_1v1_1750: {
+    name: 'Rywal Koloseum',
+    desc: 'Osiągnij 1750 punktów rankingowych w arenowej lidze 1v1.',
+  },
+  pvp_arena_1v1_1900: {
+    name: 'Gladiator areny',
+    desc: 'Osiągnij 1900 punktów rankingowych w arenowej lidze 1v1.',
+    title: 'Gladiator areny',
+  },
+  pvp_arena_2v2_1600: {
+    name: 'W dwójce siła',
+    desc: 'Osiągnij 1600 punktów rankingowych w arenowej lidze 2v2.',
+  },
+  pvp_arena_2v2_1750: {
+    name: 'Groźny duet',
+    desc: 'Osiągnij 1750 punktów rankingowych w arenowej lidze 2v2.',
+  },
+  pvp_arena_2v2_1900: {
+    name: 'Zgranie doskonałe',
+    desc: 'Osiągnij 1900 punktów rankingowych w arenowej lidze 2v2.',
+  },
+  pvp_duel_first_win: { name: 'Załatwmy to na zewnątrz', desc: 'Wygraj pojedynek.' },
+  pvp_duel_grace: {
+    name: 'Lekcja pokory',
+    desc: 'Przegraj pojedynek, ocalając niemal całą godność.',
+  },
+  pvp_vcup_first_match: {
+    name: 'Buty na murawie',
+  },
+  pvp_vcup_first_win: { name: 'Pierwsze trofeum' },
+  pvp_vcup_wins_10: {
+    name: 'Wyjadacz dziczego balonu',
+  },
+  pvp_vcup_wins_25: {
+    name: 'Legenda dziczego balonu',
+    title: 'Legenda dziczego balonu',
+  },
+  pvp_vcup_first_goal: {
+    name: 'Na listę strzelców',
+  },
+  pvp_vcup_hat_trick: {
+    name: 'Bohater hat-tricka',
+  },
+  pvp_vcup_golden_goal: {
+    name: 'Złota chwila',
+  },
+  pvp_vcup_first_save: {
+    name: 'Pewne ręce',
+  },
+  pvp_vcup_clean_sheet: {
+    name: 'Mur nie do przebicia',
+  },
+  pvp_vcup_guild_win: {
+    name: 'Za sztandar!',
+  },
+  pvp_fiesta_first_bout: {
+    name: 'Nieproszony gość',
+  },
+  pvp_fiesta_first_win: { name: 'Dusza Fiesty' },
+  pvp_fiesta_double: {
+    name: 'Podwójny kłopot',
+  },
+  pvp_fiesta_shutdown: {
+    name: 'Koniec imprezy',
+  },
+  pvp_fiesta_full_build: {
+    name: 'Strój na okazję',
+  },
+  pvp_fiesta_powerups: {
+    name: 'Po jednym z każdego',
+  },
+  pvp_fiesta_five_kills: {
+    name: 'Cała impreza na barkach',
+  },
+  soc_first_party: { name: 'Razem raźniej', desc: 'Dołącz do drużyny z innym graczem.' },
+  soc_full_house: { name: 'Pełen skład', desc: 'Ukończ loch w pełnej, pięcioosobowej drużynie.' },
+  soc_guild_joined: { name: 'Pod jednym sztandarem', desc: 'Zostań członkiem gildii.' },
+  soc_guild_founded: { name: 'Pióro założyciela', desc: 'Załóż własną gildię.' },
+  soc_first_trade: { name: 'Uczciwa wymiana', desc: 'Dokonaj wymiany z innym graczem.' },
+  soc_first_sale: {
+    name: 'Otwarcie interesu',
+    desc: 'Odbierz monety ze swojej pierwszej sprzedaży na Światowym Rynku.',
+  },
+  soc_steady_custom: {
+    name: 'Stały utarg',
+    desc: 'Zgromadź łącznie 10 sztuk złota ze swoich sprzedaży na Światowym Rynku.',
+  },
+  soc_market_magnate: {
+    name: 'Magnat rynku',
+    desc: 'Zgromadź łącznie 100 sztuk złota ze swoich sprzedaży na Światowym Rynku.',
+    title: 'Magnat',
+  },
+  soc_by_ravens_wing: {
+    name: 'Na kruczych skrzydłach',
+    desc: 'Wyślij Kruczą Pocztą list z monetami lub paczką.',
+  },
+  soc_room_for_more: {
+    name: 'Miejsce się znajdzie',
+    desc: 'Kup swoje pierwsze rozszerzenie skarbca.',
+  },
+  soc_gilded_strongbox: {
+    name: 'Złocona Szkatuła',
+    desc: 'Wykup każde rozszerzenie skarbca, jakie tylko skarbnicy zgodzą się ci sprzedać.',
+  },
+  soc_meet_bursar: {
+    name: 'Ufamy Fernandowi',
+    desc: 'Złóż uszanowanie Skarbnikowi Fernandowi, opiekunowi Złoconej Szkatuły w Eastbrook.',
+  },
+  soc_pocket_money: {
+    name: 'Kieszonkowe',
+    desc: 'Zdobądź z łupów łącznie 1 sztukę złota w monetach.',
+  },
+  soc_heavy_purse: {
+    name: 'Ciężka sakiewka',
+    desc: 'Zdobądź z łupów łącznie 10 sztuk złota w monetach.',
+  },
+  soc_wyrms_hoard: {
+    name: 'Skarb żmija',
+    desc: 'Zdobądź z łupów łącznie 100 sztuk złota w monetach.',
+  },
+  soc_civic_duty: {
+    name: 'Obywatelski obowiązek',
+    desc: 'Przydziel swój pierwszy punkt rozwoju miasta.',
+  },
+  exp_long_road_north: {
+    name: 'Długa droga na północ',
+    desc: 'Odwiedź wszystkie trzy główne osady: Eastbrook, Most na Trzęsawisku i Wysoką Strażnicę.',
+  },
+  exp_vale_wayfarer: {
+    name: 'Wędrowiec Doliny',
+    desc: 'Odwiedź wszystkie jedenaście nazwanych miejsc Doliny Wschodniego Strumienia.',
+  },
+  exp_marsh_wayfarer: {
+    name: 'Wędrowiec Trzęsawiska',
+    desc: 'Odwiedź wszystkie osiem nazwanych miejsc Trzęsawiska Mokrzawia.',
+  },
+  exp_peaks_wayfarer: {
+    name: 'Wędrowiec Wyżyn',
+    desc: 'Odwiedź wszystkie dziesięć nazwanych miejsc Wyżyn Ciernistego Szczytu.',
+  },
+  exp_world_traveler: {
+    name: 'Obieżyświat',
+    desc: 'Zdobądź czyn wędrowca każdej z trzech krain.',
+    title: 'Wędrowiec',
+  },
+  exp_something_shiny: { name: 'Błyskotka', desc: 'Podnieś z ziemi migoczący przedmiot.' },
+  exp_first_ore: {
+    name: 'Kilof spotyka Kamień',
+    desc: 'Wydobądź surowce ze swojego pierwszego złoża rudy.',
+  },
+  exp_first_timber: { name: 'Uwaga, drzewo!', desc: 'Pozyskaj swoje pierwsze stanowisko drewna.' },
+  exp_first_herb: { name: 'Ręka do zieleni', desc: 'Zbierz swoją pierwszą kępę ziół.' },
+  feat_era_cap: {
+    name: 'Dziecię Pierwszej Ery',
+    desc: 'Poziom 20 osiągnięty, gdy trwała jeszcze Pierwsza Era.',
+  },
+  feat_book_complete: { name: 'Od deski do deski', desc: 'Zdobądź każdy czyn w Księdze Czynów.' },
+  feat_brightwood_relic: {
+    name: 'Pamięci Jasnego Boru',
+    desc: 'Zachowaj relikt dawnego Jasnego Boru: Kaftan z ciernistej skóry lub Koronę monarchy.',
+  },
+  hid_saul_footnote: {
+    name: 'Przypis do historii',
+    desc: 'Saul Kronikarz zniósł od ciebie dziewięć zaczepek bez chwili przerwy.',
+    title: 'Przypis',
+  },
+  hid_gilded_tour: {
+    name: 'Złocona wycieczka',
+    desc: 'Interesy załatwione we wszystkich trzech oddziałach Złoconej Szkatuły.',
+  },
+  hid_fall_death: {
+    name: 'Grawitacja zawsze wygrywa',
+    desc: 'Śmierć po długiej rozmowie z ziemią.',
+  },
+  hid_keepers_toll_twice: {
+    name: 'Strażnik pobiera dwa razy',
+    desc: 'Śmierć, gdy Myto Strażnika wciąż na tobie ciążyło.',
+  },
+  hid_roll_hundred: { name: 'Czysta setka', desc: 'Wyrzucone idealne 100 na zwykłym /roll.' },
+  hid_yumi_cheer: {
+    name: 'Fanklub Yumi',
+    desc: 'Wiwaty dla Yumi w samym środku walki, tam gdzie mogła cię usłyszeć.',
+  },
+  hid_bountiful_coffer: {
+    name: 'Purpurowy kufer',
+    desc: 'Obfity Kufer rozpracowany, nim zdążył się zaciąć.',
+  },
+  hid_companion_save: {
+    name: 'Nie na jej warcie',
+    desc: 'Twoja towarzyszka wyprawy postawiła powalonego kompana z powrotem na nogi.',
+  },
+  hid_codfather: {
+    name: 'Witamy w rodzinie',
+    desc: 'Dorszny Ojciec wyciągnięty z Płycizn Głębokiego Trzęsawiska.',
+  },
+  prog_crown_below: {
+    name: 'Korona w Głębi',
+    desc: 'Podążaj za koroną od niespokojnych pól kości aż do grobowca króla Nythraxisa i doprowadź Kres Plagi do końca.',
+  },
+  prog_mere_at_rest: {
+    name: 'Toń Ukojona',
+    desc: "Dotrwaj do końca warty Ondrela Vane'a: chór uciszony, Bladozwój zgładzony, a Utopiony Księżyc złożony do snu.",
+  },
+  prog_callused_hands: {
+    name: 'Spracowane Dłonie',
+    desc: 'Ukończ Fach dla Każdej Ręki i zarób pierwszy odcisk w fachach Eastbrook.',
+  },
+  prog_tools_of_the_trade: {
+    name: 'Narzędzia Fachu',
+    desc: 'Ukończ wytwarzanie przy stacji rzemieślniczej.',
+  },
+  dgn_nythraxis_crypt: {
+    name: 'Co Kryła Krypta',
+    desc: 'Zapuść się do Opuszczonej Krypty i odzyskaj od jej strażników obie połowy zwornika oraz starożytny pamiętnik.',
+  },
+  chr_marsh_first_cast: {
+    name: 'Węgorze w trzcinach',
+    desc: 'Złów rybę w wodach Trzęsawiska Mokrzawia.',
+  },
+  prog_guildsworn: {
+    name: 'Zaprzysiężony Rzemiosłu',
+    desc: 'Dostroić się do pary archetypów i podjąć na serio jej rzemiosła.',
+    title: 'Zaprzysiężony Rzemiosłu',
+  },
+  prog_masterwright: {
+    name: 'Mistrz Wyrobu',
+    desc: 'Wykonać swoje pierwsze arcydzieło, coś tak znakomitego, że sława o nim rozlega się po całej strefie.',
+    title: 'Mistrz Wyrobu',
+  },
+  prog_fishing_100: {
+    name: 'Stary Solony',
+    desc: 'Osiągnij 100 biegłości w Wędkarstwie.',
+  },
+  prog_master_angler: {
+    name: 'Mistrz Wędkarstwa',
+    desc: 'Osiągnij 200 biegłości w Wędkarstwie, sam szczyt sztuki wędkarskiej.',
+    title: 'Mistrz Wędkarstwa',
+  },
+  prog_engineering_50: {
+    name: 'Tryby i Sprężyny',
+    desc: 'Osiągnij 50 umiejętności w Inżynierii.',
+  },
+  prog_alchemy_50: {
+    name: 'Dziwne Wywary',
+    desc: 'Osiągnij 50 umiejętności w Alchemii.',
+  },
+  prog_cooking_50: {
+    name: 'Doświadczony Kucharz',
+    desc: 'Osiągnij 50 umiejętności w Gotowaniu.',
+  },
+  prog_leatherworking_50: {
+    name: 'Rzemiosło Garbarza',
+    desc: 'Osiągnij 50 umiejętności w Garbarstwie.',
+  },
+  prog_tailoring_50: {
+    name: 'Dobre Szycie',
+    desc: 'Osiągnij 50 umiejętności w Krawiectwie.',
+  },
+  prog_enchanting_50: {
+    name: 'Blask Arkany',
+    desc: 'Osiągnij 50 umiejętności w Czarodziejstwie.',
+  },
+  prog_weaponcrafting_50: {
+    name: 'Ostrze i Zahartowanie',
+    desc: 'Osiągnij 50 umiejętności w Wytwarzaniu Broni.',
+  },
+  prog_armorcrafting_50: {
+    name: 'Młot i Płyta',
+    desc: 'Osiągnij 50 umiejętności w Wytwarzaniu Pancerzy.',
+  },
+  prog_grandmaster_engineering: {
+    name: 'Arcymistrzostwo Inżynierii',
+    desc: 'Osiągnij 125 umiejętności w Inżynierii, sam szczyt rzemiosła.',
+    title: 'Arcymistrzostwo Inżynierii',
+  },
+  prog_grandmaster_alchemy: {
+    name: 'Arcymistrzostwo Alchemii',
+    desc: 'Osiągnij 125 umiejętności w Alchemii, sam szczyt rzemiosła.',
+    title: 'Arcymistrzostwo Alchemii',
+  },
+  prog_grandmaster_cooking: {
+    name: 'Arcymistrzostwo Gotowania',
+    desc: 'Osiągnij 125 umiejętności w Gotowaniu, sam szczyt rzemiosła.',
+    title: 'Arcymistrzostwo Gotowania',
+  },
+  prog_grandmaster_leatherworking: {
+    name: 'Arcymistrzostwo Garbarstwa',
+    desc: 'Osiągnij 125 umiejętności w Garbarstwie, sam szczyt rzemiosła.',
+    title: 'Arcymistrzostwo Garbarstwa',
+  },
+  prog_grandmaster_tailoring: {
+    name: 'Arcymistrzostwo Krawiectwa',
+    desc: 'Osiągnij 125 umiejętności w Krawiectwie, sam szczyt rzemiosła.',
+    title: 'Arcymistrzostwo Krawiectwa',
+  },
+  prog_grandmaster_enchanting: {
+    name: 'Arcymistrzostwo Czarodziejstwa',
+    desc: 'Osiągnij 125 umiejętności w Czarodziejstwie, sam szczyt rzemiosła.',
+    title: 'Arcymistrzostwo Czarodziejstwa',
+  },
+  prog_grandmaster_weaponcrafting: {
+    name: 'Arcymistrzostwo Wytwarzania Broni',
+    desc: 'Osiągnij 125 umiejętności w Wytwarzaniu Broni, sam szczyt rzemiosła.',
+    title: 'Wielki Mistrz Wytwarzania Broni',
+  },
+  prog_grandmaster_armorcrafting: {
+    name: 'Arcymistrzostwo Wytwarzania Pancerzy',
+    desc: 'Osiągnij 125 umiejętności w Wytwarzaniu Pancerzy, sam szczyt rzemiosła.',
+    title: 'Arcymistrzostwo Wytwarzania Pancerzy',
+  },
+  col_pristine_vein: {
+    name: 'Nieskazitelna Żyła',
+    desc: 'Rozbij nieskazitelną żyłę i niech cała strefa się o tym dowie.',
+  },
+  col_ancient_heartwood: {
+    name: 'Starożytna Twardziel',
+    desc: 'Wydobyć polano starożytnej twardzieli z powalonego drzewostanu.',
+  },
+  col_moonlit_bloom: {
+    name: 'Rozkwit w Blasku Księżyca',
+    desc: 'Zebrać rozkwit w blasku księżyca w chwili, gdy się rozchyla.',
+  },
+  col_perfect_specimen: {
+    name: 'Nieskazitelny Okaz',
+    desc: 'Wydobyć nieskazitelny okaz z upolowanej bestii, bez żadnej rysy ani skazy.',
+  },
+  soc_first_salvage: {
+    name: 'Nic Się Nie Marnuje',
+    desc: 'Odzyskaj część ekwipunku, rozkładając ją na surowce.',
+  },
+  soc_salvage_50: {
+    name: 'Dziedziniec Rozbieraczy',
+    desc: 'Odzyskaj 50 sztuk ekwipunku, rozkładając je na surowce.',
+  },
+  dgn_wildheart_basin: {
+    name: 'Kotlina Odgryza Się',
+    desc: 'Pokonaj Zulgara, Głos Kotliny, w Kotlinie Dzikiego Serca.',
+  },
+  dgn_wildheart_basin_heroic: {
+    name: 'Heroiczna: Kotlina Dzikiego Serca',
+    desc: 'Pokonaj Zulgara, Głos Kotliny, w Kotlinie Dzikiego Serca na heroicznym poziomie trudności.',
+  },
+  chr_peaks_gatherer: {
+    name: 'Plon z wyżyn',
+    desc: 'Pozyskaj żyłę rudy, drzewostan i kępę ziół na Wyżynach Ciernistego Szczytu.',
+  },
+  chr_marsh_rares_ii: {
+    name: 'Żarłok, doliczony',
+    desc: 'Zabij Robakopaszczego Żarłoka, czwartą osławioną zgrozę Trzęsawiska Mokrzawia pominiętą w pierwszym rachunku.',
+  },
+  chr_peaks_rares_ii: {
+    name: 'Więcej imion wyrytych w skale',
+    desc: 'Zabij Starego Skalnopaszczego i Odłamkowładcę Kazzixa, dwie kolejne osławione zgrozy Wyżyn Ciernistego Szczytu pominięte w pierwszym rachunku.',
+  },
+  chr_gleamstag: {
+    name: 'Legenda, która nigdy nie uderzała pierwsza',
+    desc: 'Zabij Lśniącego Jelenia, rzadkiego i płochliwego elitarnego przeciwnika, który atakuje tylko osaczony.',
+  },
+  chr_hollow_rares: {
+    name: 'Stado pamięta',
+    desc: 'Zabij Starego Szpikoskorupa i Aurelhorna, Pierwszego ze Stada, dwóch wędrownych rzadkich bossów Zasłoniętej Kotliny.',
+  },
+  chr_willowfen_gatherer: {
+    name: 'Obfitość mokradeł',
+    desc: 'Pozyskaj żyłę rudy, drzewostan i kępę ziół na Wierzbowych Mokradłach.',
+  },
+  chr_willowfen_first_cast: {
+    name: 'Kręgi na Liliowych Wrzosowiskach',
+    desc: 'Złów rybę w wodach Wierzbowych Mokradeł.',
+  },
+  chr_galecrest_gatherer: {
+    name: 'Zbiory na przylądku',
+    desc: 'Pozyskaj żyłę rudy, drzewostan i kępę ziół na Wichrowym Grzbiecie.',
+  },
+  chr_galecrest_first_cast: {
+    name: 'Żyłka w Lustrzanym Jeziorku',
+    desc: 'Złów rybę w wodach Wichrowego Grzbietu.',
+  },
+  chr_farshore_gatherer: {
+    name: 'Wyspiarskie zapasy',
+    desc: 'Pozyskaj żyłę rudy, drzewostan i kępę ziół na Dalekim Wybrzeżu.',
+  },
+  chr_farshore_first_cast: {
+    name: 'Co wiedzą mewy',
+    desc: 'Złów rybę w wodach Dalekiego Wybrzeża.',
+  },
+  prog_engineering_rare: {
+    name: 'Precyzyjna inżynieria',
+    desc: 'Wykonaj swój pierwszy przedmiot rzadkiej jakości w Inżynierii.',
+  },
+  prog_alchemy_rare: {
+    name: 'Rzadki rocznik',
+    desc: 'Wykonaj swój pierwszy przedmiot rzadkiej jakości w Alchemii.',
+  },
+  prog_cooking_rare: {
+    name: 'Danie do zapamiętania',
+    desc: 'Wykonaj swój pierwszy przedmiot rzadkiej jakości w Gotowaniu.',
+  },
+  prog_leatherworking_rare: {
+    name: 'Precyzyjne garbowanie',
+    desc: 'Wykonaj swój pierwszy przedmiot rzadkiej jakości w Garbarstwie.',
+  },
+  prog_tailoring_rare: {
+    name: 'Mistrzowski ścieg',
+    desc: 'Wykonaj swój pierwszy przedmiot rzadkiej jakości w Krawiectwie.',
+  },
+  prog_weaponcrafting_rare: {
+    name: 'Hartowane na połysk',
+    desc: 'Wykonaj swój pierwszy przedmiot rzadkiej jakości w Wytwarzaniu Broni.',
+  },
+  prog_armorcrafting_rare: {
+    name: 'Opancerzone do perfekcji',
+    desc: 'Wykonaj swój pierwszy przedmiot rzadkiej jakości w Wytwarzaniu Pancerzy.',
+  },
+  col_reliquary_rank_2: {
+    name: 'Strażnik Łupów',
+    desc: 'Osiągnij rangę Kustosza 2 w Relikwiarzu (10 wyjątkowych skatalogowanych relikwii).',
+    title: 'Strażnik Łupów',
+  },
+  col_reliquary_rank_3: {
+    name: 'Katalogista',
+    desc: 'Osiągnij rangę Kustosza 3 w Relikwiarzu (25 wyjątkowych skatalogowanych relikwii).',
+    title: 'Katalogista',
+  },
+  col_reliquary_rank_4: {
+    name: 'Arcykustosz',
+    desc: 'Osiągnij rangę Kustosza 4 w Relikwiarzu (50 wyjątkowych skatalogowanych relikwii).',
+    title: 'Arcykustosz',
+  },
+  col_reliquary_rank_5: {
+    name: 'Wieczne Łupy',
+    desc: 'Osiągnij rangę Kustosza 5 w Relikwiarzu (100 wyjątkowych skatalogowanych relikwii).',
+  },
+  col_reliquary_complete: {
+    name: 'Wielki Relikwiarz',
+    desc: 'Skataloguj w Relikwiarzu każdą relikwię, którą postać może zachować. Późniejszy rozrost katalogu nigdy ci tego nie odbierze.',
+    title: 'Kustosz Skarbca',
+  },
+  col_reliquary_conquerors: {
+    name: 'Półka Zdobywców',
+    desc: 'Skataloguj każdą relikwię z półki Zdobywcy w Relikwiarzu. Późniejszy rozrost katalogu nigdy ci tego nie odbierze.',
+    title: 'Łamacz Skarbca',
+  },
+  col_reliquary_illum_nythraxis_heroic: {
+    name: 'Nythraxis iluminowany',
+    desc: 'Iluminuj w Relikwiarzu kartę Heroiczny: Rajd Nythraxis.',
+    title: 'Światło Nythraxis',
+  },
+  col_reliquary_illum_thunzharr: {
+    name: 'Thunzharr iluminowany',
+    desc: 'Iluminuj w Relikwiarzu kartę Thunzharr, Budzący się Szczyt.',
+    title: 'Światło Thunzharru',
+  },
+  col_reliquary_illum_gravewyrm_heroic: {
+    name: 'Sanktuarium iluminowane',
+    desc: 'Iluminuj w Relikwiarzu kartę Heroiczne: Sanktuarium Grobowego Żmija.',
+    title: 'Światło Sanktuarium',
+  },
+  soc_strongbox_outfitter: {
+    name: 'Pierwszy Slot',
+    desc: 'Odblokuj swój pierwszy slot na torbę bankową.',
+  },
+  soc_four_bags_deep: {
+    name: 'Wszystkie Sloty',
+    desc: 'Odblokuj wszystkie cztery sloty na torby bankowe.',
+  },
+  dgn_ignivar: {
+    name: 'Herold Upada',
+    desc: 'Pokonaj Ignivara, Herolda Ostatniego Płomienia, w Tyglu Ostatniego Źródła.',
+  },
+  dgn_ignivar_heroic: {
+    name: 'Heroiczny: Herold Upada',
+    desc: 'Pokonaj Ignivara, Herolda Ostatniego Płomienia, na heroicznym poziomie trudności.',
+  },
+  dgn_varkhul: {
+    name: 'Kuźnia Stygnie',
+    desc: 'Pokonaj Varkhula, Ojca Kuźni Ostatniego Płomienia, w Wewnętrznym Tyglu.',
+  },
+  dgn_varkhul_heroic: {
+    name: 'Heroiczna: Kuźnia Stygnie',
+    desc: 'Pokonaj Varkhula, Ojca Kuźni Ostatniego Płomienia, na heroicznym poziomie trudności.',
+  },
+  dgn_varkhul_flawless: {
+    name: 'Ani Jednej Zgasłej Iskry',
+    desc: 'Pokonaj Varkhula, Ojca Kuźni Ostatniego Płomienia, na heroicznym poziomie trudności tak, by ani jeden rajdowiec nie zginął.',
+    title: 'Niespalony',
+  },
+  col_set_bramblehide: {
+    name: 'Cierniowa Skóra Rootsa',
+    desc: 'Odkryj każdą część Cierniowej Skóry Rootsa.',
+  },
+  prog_jewelcrafting_rare: {
+    desc: 'Wykonaj swój pierwszy przedmiot rzadkiej jakości w Jubilerstwie.',
+
+    name: 'Wypolerowane do blasku',
+  },
+  prog_jewelcrafting_50: {
+    desc: 'Osiągnij 50 umiejętności w Jubilerstwie.',
+    name: 'Faset i filigran',
+  },
+  prog_grandmaster_jewelcrafting: {
+    desc: 'Osiągnij 125 umiejętności w Jubilerstwie, sam szczyt tego rzemiosła.',
+
+    name: 'Arcymistrzowskie jubilerstwo',
+    title: 'Arcymistrzowskie jubilerstwo',
+  },
+  prog_inscription_rare: {
+    desc: 'Wykonaj swój pierwszy przedmiot rzadkiej jakości w Inskrypcji.',
+
+    name: 'Zapisane szlachetnym atramentem',
+  },
+  prog_inscription_50: { desc: 'Osiągnij 50 umiejętności w Inskrypcji.', name: 'Pióro i pigment' },
+  prog_grandmaster_inscription: {
+    desc: 'Osiągnij 125 umiejętności w Inskrypcji, sam szczyt tego rzemiosła.',
+
+    name: 'Arcymistrzowska inskrypcja',
+    title: 'Arcymistrzowska inskrypcja',
+  },
+  col_deepest_cast: {
+    desc: 'Zdobądź wędkę Clockreel, jedyną, która sięga do najgłębszych połowów.',
+
+    name: 'Najgłębszy rzut',
+  },
+  prog_first_planting: {
+    desc: 'Posadź pierwszą uprawę na grządce ogrodowej.',
+    name: 'Od siewu się zaczyna',
+  },
+  chr_vale_first_harvest: {
+    desc: 'Zbierz pierwszą bujną uprawę z grządki w Dolinie Eastbrook.',
+
+    name: 'Pierwsze plony doliny',
+  },
+  chr_marsh_first_harvest: {
+    desc: 'Zbierz pierwszą bujną uprawę z grządki na Mokrzawym Bagnie.',
+
+    name: 'Pędy w torfie',
+  },
+  chr_peaks_first_harvest: {
+    desc: 'Zbierz pierwszą bujną uprawę z grządki na Wyżynach Ciernistego Szczytu.',
+
+    name: 'Uprawa wśród urwisk',
+  },
+  chr_evergarden_first_harvest: {
+    desc: 'Zbierz pierwszą bujną uprawę z grządki w Evergardenie.',
+
+    name: 'Działka w raju',
+  },
+  col_golden_harvest: {
+    desc: 'Zbierz złoty plon i pozwól, by usłyszała o nim cała strefa.',
+
+    name: 'Złote żniwa',
+  },
+  prog_farming_100: {
+    desc: 'Osiągnij biegłość 100 w Rolnictwie.',
+    name: 'Mistrz żniw',
+    title: 'Mistrz żniw',
+  },
+  col_farm_roster: {
+    desc: 'Zbierz każdą uprawę, którą rodzą cztery ogrody.',
+
+    name: 'Każda bruzda wypełniona',
+  },
+  prog_field_to_feast: {
+    desc: 'Ugotuj szczytową ucztę, stół, przy którym je cały rajd.',
+
+    name: 'Od pola do uczty',
+  },
+  prog_legendmaker: {
+    desc: 'Podnieś dzieło Perfected do rangi legendy za pomocą Czynu Tworzenia i nadaj mu własną nazwę.',
+
+    name: 'Twórca legend',
+  },
+  hid_forgebreaker: {
+    desc: 'Samodzielnie ukształtuj Łamacza Kuźni i wróć do Maelin z gotowym młotem.',
+
+    name: 'Źródło bez kajdan',
+  },
+};

@@ -1,0 +1,247 @@
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import { HUD_FRAME_SPECS } from '../src/ui/interface_unlock_core';
+import type { PainterHostWriters } from '../src/ui/painter_host';
+import { PaladinDevotionPainter } from '../src/ui/paladin_devotion_painter';
+import type { PaladinDevotionState } from '../src/ui/paladin_devotion_view';
+
+type Call = { method: keyof PainterHostWriters; args: unknown[] };
+
+function recordingWriters(): { calls: Call[]; writers: PainterHostWriters } {
+  const calls: Call[] = [];
+  const record =
+    (method: keyof PainterHostWriters) =>
+    (...args: unknown[]) => {
+      calls.push({ method, args });
+    };
+  return {
+    calls,
+    writers: {
+      setText: record('setText') as PainterHostWriters['setText'],
+      setDisplay: record('setDisplay') as PainterHostWriters['setDisplay'],
+      setTransform: record('setTransform') as PainterHostWriters['setTransform'],
+      setWidth: record('setWidth') as PainterHostWriters['setWidth'],
+      setStyleProp: record('setStyleProp') as PainterHostWriters['setStyleProp'],
+      toggleClass: record('toggleClass') as PainterHostWriters['toggleClass'],
+      setAttr: record('setAttr') as PainterHostWriters['setAttr'],
+    },
+  };
+}
+
+const ROOT = { id: 'root' } as unknown as HTMLElement;
+const FRAME = { id: 'frame' } as unknown as HTMLElement;
+const FILL = { id: 'fill' } as unknown as HTMLElement;
+const LABEL = { id: 'label' } as unknown as HTMLElement;
+const STATUS = { id: 'status' } as unknown as HTMLElement;
+const CHARGES = Array.from(
+  { length: 7 },
+  (_, index) => ({ id: `charge-${index}` }) as unknown as HTMLElement,
+) as unknown as HTMLCollection;
+
+function paint(state: PaladinDevotionState): Call[] {
+  const { calls, writers } = recordingWriters();
+  new PaladinDevotionPainter(writers, FRAME, ROOT, FILL, LABEL, CHARGES, STATUS).paint(state);
+  return calls;
+}
+
+describe('PaladinDevotionPainter', () => {
+  it('paints a ready Devotion bar without active Ascension charges', () => {
+    const calls = paint({
+      visible: true,
+      value: 20,
+      fillFrac: 1,
+      ready: true,
+      ascended: false,
+      charges: 0,
+      lastCharge: false,
+      label: '20 / 20',
+      ariaValueText: 'Devotion 20 of 20',
+      announcement: '',
+    });
+
+    expect(calls.slice(0, 9)).toEqual([
+      { method: 'setDisplay', args: [FRAME, 'flex'] },
+      { method: 'setStyleProp', args: [FILL, '--devotion-scale', '1.000'] },
+      { method: 'setText', args: [LABEL, '20 / 20'] },
+      { method: 'setAttr', args: [ROOT, 'aria-valuenow', '20'] },
+      { method: 'setAttr', args: [ROOT, 'aria-valuetext', 'Devotion 20 of 20'] },
+      { method: 'setText', args: [STATUS, ''] },
+      { method: 'toggleClass', args: [ROOT, 'ready', true] },
+      { method: 'toggleClass', args: [ROOT, 'ascended', false] },
+      { method: 'toggleClass', args: [ROOT, 'last-charge', false] },
+    ]);
+    expect(calls.slice(9)).toEqual(
+      CHARGES_ARRAY.map((charge) => ({
+        method: 'toggleClass',
+        args: [charge, 'on', false],
+      })),
+    );
+  });
+
+  it('lights exactly the remaining Ascension charges', () => {
+    const calls = paint({
+      visible: true,
+      value: 6,
+      fillFrac: 0.3,
+      ready: false,
+      ascended: true,
+      charges: 3,
+      lastCharge: false,
+      label: '6 / 20',
+      ariaValueText: 'Devotion 6 of 20. Ascension 3 charges.',
+      announcement: '',
+    });
+
+    expect(calls).toContainEqual({
+      method: 'setStyleProp',
+      args: [FILL, '--devotion-scale', '0.300'],
+    });
+    expect(calls).toContainEqual({ method: 'toggleClass', args: [ROOT, 'ascended', true] });
+    expect(calls.slice(9).map((call) => call.args[2])).toEqual([
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+    ]);
+  });
+
+  it('lights all 7 charges once Extended Dawn raises the cap past the base 5', () => {
+    const calls = paint({
+      visible: true,
+      value: 0,
+      fillFrac: 0,
+      ready: false,
+      ascended: true,
+      charges: 7,
+      lastCharge: false,
+      label: '0 / 20',
+      ariaValueText: 'Devotion 0 of 20. Ascension 7 charges.',
+      announcement: '',
+    });
+
+    expect(calls.slice(9).map((call) => call.args[2])).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+    ]);
+  });
+
+  it('marks the final Ascension charge as a visual warning', () => {
+    const calls = paint({
+      visible: true,
+      value: 2,
+      fillFrac: 0.1,
+      ready: false,
+      ascended: true,
+      charges: 1,
+      lastCharge: true,
+      label: '2 / 20',
+      ariaValueText: 'Devotion 2 of 20. Ascension final charge.',
+      announcement: 'Ascension final charge',
+    });
+
+    expect(calls).toContainEqual({
+      method: 'toggleClass',
+      args: [ROOT, 'last-charge', true],
+    });
+  });
+
+  it('routes all DOM changes through PainterHost writers', () => {
+    const source = readFileSync(
+      new URL('../src/ui/paladin_devotion_painter.ts', import.meta.url),
+      'utf8',
+    );
+    expect(source).not.toMatch(/\.style\b|\.textContent\b|\.classList\b|\.setAttribute\b/);
+  });
+
+  it('styles Devotion as a bottom-up liquid medallion with a distinct full state', () => {
+    const css = readFileSync(new URL('../src/styles/hud.css', import.meta.url), 'utf8');
+    const mobileCss = readFileSync(
+      new URL('../src/styles/hud.mobile.css', import.meta.url),
+      'utf8',
+    );
+    const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+    const playHtml = readFileSync(new URL('../play.html', import.meta.url), 'utf8');
+    const hud = readFileSync(new URL('../src/ui/hud.ts', import.meta.url), 'utf8');
+
+    expect(css).toMatch(/\.paladin-devotion::before[\s\S]*clip-path:\s*polygon\(/);
+    expect(css).toMatch(
+      /\.paladin-devotion-fill::before[\s\S]*transform:\s*scaleY\(var\(--devotion-scale\)\)/,
+    );
+    expect(css).toMatch(/\.paladin-devotion\.ready \.paladin-devotion-fill::after/);
+    expect(css).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.paladin-devotion-fill::before/,
+    );
+    expect(css).toMatch(
+      /\.paladin-devotion-frame\s*\{[\s\S]*position:\s*fixed;[\s\S]*width:\s*96px/,
+    );
+    expect(mobileCss).toMatch(/body\.mobile-touch \.paladin-devotion-frame[\s\S]*width:\s*72px/);
+
+    const devotionAt = html.indexOf('id="paladin-devotion"');
+    const playerFrameAt = html.indexOf('id="player-frame"');
+    const bottomBarAt = html.indexOf('id="bottom-bar"');
+    expect(devotionAt).toBeGreaterThan(-1);
+    expect(devotionAt).toBeLessThan(bottomBarAt);
+    expect(playerFrameAt).toBeGreaterThan(bottomBarAt);
+    for (const entry of [html, playHtml]) {
+      expect(entry.match(/id="paladin-devotion-frame"/g)).toHaveLength(1);
+      expect(entry.match(/id="paladin-devotion"/g)).toHaveLength(1);
+      // No tabindex: the frame is not its own drag surface any more, so a
+      // focusable-but-inert group would be a dead tab stop. The registry
+      // mover's corner button carries the keyboard path.
+      expect(entry).not.toMatch(/id="paladin-devotion-frame"[^>]*tabindex/);
+    }
+    // Movement is the "Unlock interface" registry's (HUD_FRAME_SPECS row
+    // 'paladinDevotion'), not the old always-on overlay grab-drag: locked, the
+    // medallion is click-through; its centering translate drops while a custom
+    // position applies so the saved top-left lands where it was dropped.
+    expect(hud).not.toContain('attachOverlayDrag(this.paladinDevotionFrameEl');
+    const devotionSpec = HUD_FRAME_SPECS.find((s) => s.id === 'paladinDevotion');
+    expect(devotionSpec?.elementId).toBe('paladin-devotion-frame');
+    // Extract the frame's own rule body (the same-file necromancy idiom), so
+    // the negative below is scoped to THIS rule rather than a 400-char window
+    // that could cross into a neighbor; the positive pointer-events pin
+    // doubles as proof the extraction found the rule at all.
+    const devotionRule = css.match(/\.paladin-devotion-frame\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(devotionRule).toContain('pointer-events: none');
+    expect(devotionRule).not.toContain('cursor: grab');
+    // The detached rule is a selector GROUP (the proc overlay shares its
+    // translate reset), so allow list members between selector and brace.
+    expect(css).toMatch(
+      /\.paladin-devotion-frame\.hud-frame-detached[^{}]*\{[^}]*translate:\s*none/,
+    );
+  });
+
+  it('renders 7 charge pips so Extended Dawn (5 base + 2) can fully light up', () => {
+    const css = readFileSync(new URL('../src/styles/hud.css', import.meta.url), 'utf8');
+    const tokensCss = readFileSync(new URL('../src/styles/tokens.css', import.meta.url), 'utf8');
+    const mobileCss = readFileSync(
+      new URL('../src/styles/hud.mobile.css', import.meta.url),
+      'utf8',
+    );
+    const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+    const playHtml = readFileSync(new URL('../play.html', import.meta.url), 'utf8');
+
+    for (const entry of [html, playHtml]) {
+      const block = entry.match(/class="paladin-ascension-charges"[\s\S]*?<\/div>/)?.[0] ?? '';
+      expect(block.match(/<span><\/span>/g)).toHaveLength(7);
+    }
+    expect(css).toMatch(/\.paladin-ascension-charges\s*\{[\s\S]*width:\s*94px/);
+    expect(mobileCss).toMatch(
+      /body\.mobile-touch \.paladin-ascension-charges\s*\{[\s\S]*width:\s*78px/,
+    );
+    expect(tokensCss).toContain('--color-ascension-bonus');
+    expect(css).toMatch(
+      /\.paladin-ascension-charges span:nth-child\(n \+ 6\)\.on\s*\{[\s\S]*var\(--color-ascension-bonus\)/,
+    );
+  });
+});
+
+const CHARGES_ARRAY = Array.from(CHARGES) as HTMLElement[];

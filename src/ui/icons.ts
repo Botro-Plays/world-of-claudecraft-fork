@@ -1,0 +1,6007 @@
+// Procedural painted icons for abilities, items and auras.
+//
+// Every icon is composed on a small canvas from layered parts: a rounded
+// bevelled frame, a radial background tinted by spell school / item category,
+// 1-2 vector "primitives" (sword, flame, skull, ...) and optional fx
+// (glow, sparkle, motion lines, ...). Known ids get hand-assigned recipes;
+// unknown ids (content added later) fall back to a procedural recipe derived
+// from the ability school / item kind + name keywords, so everything always
+// has a proper icon. Results are cached as data URLs.
+
+import { IGNIVAR_ART_PENDING_ITEM_IDS } from '../sim/content/ignivar_loot';
+import { isRawCookingCatch } from '../sim/content/items';
+import {
+  BRAMBLEHIDE_ART_PENDING_ITEM_IDS,
+  NYTHRAXIS_GAP_ART_PENDING_ITEM_IDS,
+} from '../sim/content/zone3';
+import { ABILITIES, ITEMS } from '../sim/data';
+import { crestIconUrl } from './crest_icon_art';
+import { currencyImageUrl } from './currency_art';
+import { DEED_IMAGE_IDS } from './deed_image_ids';
+import { professionImageUrl } from './hud/professions/profession_art';
+import { MOB_AURA_IMAGE_IDS } from './mob_aura_icon_art';
+import { PET_ACTION_IMAGE_IDS } from './pet_action_icons';
+import { ITEM_WEAPON_VARIANTS } from './weapon_variants';
+
+export { PROFESSION_IMAGE_IDS, professionImageUrl } from './hud/professions/profession_art';
+
+export type IconKind = 'ability' | 'item' | 'aura' | 'crest';
+
+type Ctx = CanvasRenderingContext2D;
+
+export interface IconPalette {
+  base: string;
+  light: string;
+  dark: string;
+  glow: string;
+  accent: string;
+}
+
+const TAU = Math.PI * 2;
+
+// ---------------------------------------------------------------------------
+// Colour tables
+// ---------------------------------------------------------------------------
+
+const PALETTES = {
+  steel: {
+    base: '#aebdc8',
+    light: '#eef4f8',
+    dark: '#4e5a66',
+    glow: '#cfe4ff',
+    accent: '#2b333c',
+  },
+  gold: {
+    base: '#e8b33a',
+    light: '#ffe9a8',
+    dark: '#8a5f12',
+    glow: '#ffd97a',
+    accent: '#5c3e08',
+  },
+  blood: {
+    base: '#c0392b',
+    light: '#ff8a70',
+    dark: '#5e120c',
+    glow: '#ff5533',
+    accent: '#2e0805',
+  },
+  bone: {
+    base: '#e8e0cc',
+    light: '#fffaf0',
+    dark: '#8f8468',
+    glow: '#fff8d8',
+    accent: '#4a4334',
+  },
+  ember: {
+    base: '#ff7a1a',
+    light: '#ffd9a0',
+    dark: '#8a2a08',
+    glow: '#ffb45e',
+    accent: '#401004',
+  },
+  ice: {
+    base: '#9fd8ff',
+    light: '#eafaff',
+    dark: '#2a6ea8',
+    glow: '#c8f0ff',
+    accent: '#123c5e',
+  },
+  venom: {
+    base: '#7ad94a',
+    light: '#d8ffb0',
+    dark: '#2a6e18',
+    glow: '#a8ff70',
+    accent: '#0d330a',
+  },
+  arcanePink: {
+    base: '#c66ee8',
+    light: '#f0c8ff',
+    dark: '#5e2a78',
+    glow: '#e0a0ff',
+    accent: '#2a0e38',
+  },
+  shadowPurple: {
+    base: '#8a5fb0',
+    light: '#cdaae8',
+    dark: '#38204e',
+    glow: '#b48ad0',
+    accent: '#150a20',
+  },
+  holyGold: {
+    base: '#ffe080',
+    light: '#fff7d0',
+    dark: '#a8761a',
+    glow: '#fff0b0',
+    accent: '#5e3f08',
+  },
+  leafGreen: {
+    base: '#5fb544',
+    light: '#c4f0a0',
+    dark: '#225e18',
+    glow: '#9fe070',
+    accent: '#0d2e0a',
+  },
+  sky: {
+    base: '#6fb6ff',
+    light: '#d4ecff',
+    dark: '#1f5a9e',
+    glow: '#a0d4ff',
+    accent: '#0c2c50',
+  },
+  earthBrown: {
+    base: '#a8703c',
+    light: '#e0b070',
+    dark: '#5a3414',
+    glow: '#d89a50',
+    accent: '#2a1608',
+  },
+  silverWhite: {
+    base: '#e8eef2',
+    light: '#ffffff',
+    dark: '#8a98a4',
+    glow: '#f0f8ff',
+    accent: '#3c4650',
+  },
+  leather: {
+    base: '#b98a52',
+    light: '#e8c48e',
+    dark: '#6a4520',
+    glow: '#d8aa6a',
+    accent: '#33200c',
+  },
+  cloth: {
+    base: '#b0a4d8',
+    light: '#e0d8f4',
+    dark: '#5a4e84',
+    glow: '#d0c4f0',
+    accent: '#2a2444',
+  },
+  pink: {
+    base: '#f0a8c0',
+    light: '#ffe0ec',
+    dark: '#a05878',
+    glow: '#ffd0e0',
+    accent: '#4e2030',
+  },
+} satisfies Record<string, IconPalette>;
+type PaletteName = keyof typeof PALETTES;
+
+// background radial gradient stops [c0, c1, c2]
+const BACKGROUNDS = {
+  fire: ['#ffb45e', '#b23410', '#38100a'],
+  frost: ['#bfe8ff', '#1d5e9e', '#0a1d38'],
+  arcane: ['#e8b8ff', '#6e34a0', '#1e0a33'],
+  shadow: ['#9a70c0', '#41245c', '#100618'],
+  holy: ['#fff3c0', '#c89018', '#43300a'],
+  nature: ['#c0e890', '#357a2a', '#0c230d'],
+  storm: ['#a8c8e8', '#3a5a80', '#101c2c'],
+  steel: ['#c8d4dc', '#5a6878', '#181d24'],
+  fury: ['#ff9468', '#a02818', '#2e0a06'],
+  blood: ['#d86858', '#7e1810', '#260604'],
+  earth: ['#d8a868', '#74481e', '#20120a'],
+  leather: ['#d0a06a', '#6e4824', '#1e1208'],
+  cloth: ['#c8b8e8', '#564878', '#181226'],
+  wood: ['#c89858', '#6a4520', '#1c1006'],
+  food: ['#f0c070', '#8a5424', '#281406'],
+  drink: ['#a0d8f0', '#2a6890', '#0a2030'],
+  junk: ['#a8a8a0', '#4e4e48', '#141412'],
+  treasure: ['#ffd970', '#a07818', '#2e2206'],
+  parchment: ['#f0e0b0', '#907040', '#2a200c'],
+} satisfies Record<string, [string, string, string]>;
+type BgName = keyof typeof BACKGROUNDS;
+
+// ---------------------------------------------------------------------------
+// Small drawing helpers
+// ---------------------------------------------------------------------------
+
+function lin(
+  ctx: Ctx,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  stops: [number, string][],
+): CanvasGradient {
+  const g = ctx.createLinearGradient(x0, y0, x1, y1);
+  for (const [o, c] of stops) g.addColorStop(o, c);
+  return g;
+}
+
+function rad(ctx: Ctx, x: number, y: number, r: number, stops: [number, string][]): CanvasGradient {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  for (const [o, c] of stops) g.addColorStop(o, c);
+  return g;
+}
+
+function rrPath(ctx: Ctx, x: number, y: number, w: number, h: number, r: number): void {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function edge(ctx: Ctx, color: string, w: number): void {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = w;
+  ctx.stroke();
+}
+
+function noShadow(ctx: Ctx): void {
+  ctx.shadowColor = 'transparent';
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+}
+
+function withAlpha(hex: string, a: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+
+function hashStr(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function flaredBar(ctx: Ctx, y0: number, y1: number): void {
+  ctx.beginPath();
+  ctx.moveTo(-6, y0);
+  ctx.lineTo(6, y0);
+  ctx.lineTo(3.2, y0 + 7);
+  ctx.lineTo(3.2, y1 - 7);
+  ctx.lineTo(6, y1);
+  ctx.lineTo(-6, y1);
+  ctx.lineTo(-3.2, y1 - 7);
+  ctx.lineTo(-3.2, y0 + 7);
+  ctx.closePath();
+}
+
+function heaterPath(ctx: Ctx): void {
+  ctx.beginPath();
+  ctx.moveTo(0, -26);
+  ctx.quadraticCurveTo(13, -22, 20, -18);
+  ctx.quadraticCurveTo(20, -2, 16, 10);
+  ctx.quadraticCurveTo(9, 20, 0, 26);
+  ctx.quadraticCurveTo(-9, 20, -16, 10);
+  ctx.quadraticCurveTo(-20, -2, -20, -18);
+  ctx.quadraticCurveTo(-13, -22, 0, -26);
+  ctx.closePath();
+}
+
+function flamePath(ctx: Ctx): void {
+  ctx.beginPath();
+  ctx.moveTo(0, 26);
+  ctx.bezierCurveTo(-15, 19, -13, 4, -7, -5);
+  ctx.bezierCurveTo(-10, -13, -3, -19, 2, -26);
+  ctx.bezierCurveTo(3, -16, 11, -13, 13, -2);
+  ctx.bezierCurveTo(15, 11, 10, 21, 0, 26);
+  ctx.closePath();
+}
+
+// ---------------------------------------------------------------------------
+// Primitive painters — drawn centered at (0,0) in a 100x100 logical space,
+// fitting r <= 36. Light source is top-left.
+// ---------------------------------------------------------------------------
+
+type Painter = (ctx: Ctx, pal: IconPalette) => void;
+
+const PRIMITIVES = {
+  sword(ctx, pal) {
+    ctx.rotate(-Math.PI / 4);
+    ctx.beginPath();
+    ctx.moveTo(-3.2, 18);
+    ctx.lineTo(-2, -28);
+    ctx.lineTo(0, -34);
+    ctx.lineTo(2, -28);
+    ctx.lineTo(3.2, 18);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, -3, 0, 3, 0, [
+      [0, pal.light],
+      [0.55, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.3);
+    ctx.strokeStyle = pal.light;
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.moveTo(0, -31);
+    ctx.lineTo(0, 16);
+    ctx.stroke();
+    ctx.fillStyle = lin(ctx, 0, 16, 0, 21, [
+      [0, '#f0cd72'],
+      [1, '#7a5a18'],
+    ]);
+    rrPath(ctx, -10, 16, 20, 5, 2);
+    ctx.fill();
+    edge(ctx, '#3a2a08', 1);
+    ctx.fillStyle = '#4a3018';
+    rrPath(ctx, -2.6, 21, 5.2, 11, 2);
+    ctx.fill();
+    ctx.fillStyle = rad(ctx, -1.2, 31.8, 4.6, [
+      [0, '#ffe9a8'],
+      [1, '#8a5f12'],
+    ]);
+    ctx.beginPath();
+    ctx.arc(0, 33, 4, 0, TAU);
+    ctx.fill();
+    edge(ctx, '#3a2a08', 1);
+  },
+  dagger(ctx, pal) {
+    ctx.rotate(-Math.PI / 4);
+    ctx.scale(0.8, 0.8);
+    ctx.beginPath();
+    ctx.moveTo(-5, 13);
+    ctx.lineTo(-2.6, -24);
+    ctx.lineTo(0, -31);
+    ctx.lineTo(2.6, -24);
+    ctx.lineTo(5, 13);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, -5, 0, 5, 0, [
+      [0, pal.light],
+      [0.5, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.4);
+    ctx.strokeStyle = pal.light;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, -27);
+    ctx.lineTo(0, 11);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-12, 12);
+    ctx.quadraticCurveTo(0, 22, 12, 12);
+    ctx.quadraticCurveTo(0, 17, -12, 12);
+    ctx.closePath();
+    ctx.fillStyle = '#8a6a28';
+    ctx.fill();
+    edge(ctx, '#3a2a08', 1);
+    ctx.fillStyle = '#42301a';
+    rrPath(ctx, -2.4, 17, 4.8, 11, 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, 30, 3.4, 0, TAU);
+    ctx.fillStyle = '#caa84e';
+    ctx.fill();
+    edge(ctx, '#3a2a08', 1);
+  },
+  staff(ctx, pal) {
+    ctx.rotate(0.5);
+    ctx.fillStyle = lin(ctx, -3, 0, 3, 0, [
+      [0, '#a87c44'],
+      [0.5, '#7a5226'],
+      [1, '#46290e'],
+    ]);
+    rrPath(ctx, -2.6, -24, 5.2, 57, 2.6);
+    ctx.fill();
+    edge(ctx, '#2a1806', 1);
+    ctx.fillStyle = '#5a3c18';
+    rrPath(ctx, -4, -20, 8, 4, 1.5);
+    ctx.fill();
+    ctx.fillStyle = rad(ctx, -2.5, -30.5, 9, [
+      [0, pal.glow],
+      [0.55, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.beginPath();
+    ctx.arc(0, -28, 8, 0, TAU);
+    ctx.fill();
+    edge(ctx, pal.dark, 1.4);
+    noShadow(ctx);
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath();
+    ctx.ellipse(-2.6, -30.6, 1.8, 1.2, -0.6, 0, TAU);
+    ctx.fill();
+  },
+  mace(ctx, pal) {
+    ctx.fillStyle = lin(ctx, -2.5, 0, 2.5, 0, [
+      [0, '#8a6a3c'],
+      [1, '#3c2810'],
+    ]);
+    rrPath(ctx, -2.5, -2, 5, 33, 2);
+    ctx.fill();
+    edge(ctx, '#241404', 1);
+    ctx.beginPath();
+    ctx.arc(0, -13, 13, 0, TAU);
+    ctx.fillStyle = rad(ctx, -4.5, -17.5, 16, [
+      [0, pal.light],
+      [0.55, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.6);
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * TAU + 0.3;
+      ctx.beginPath();
+      ctx.arc(Math.cos(a) * 8.6, -13 + Math.sin(a) * 8.6, 2.6, 0, TAU);
+      ctx.fillStyle = pal.light;
+      ctx.fill();
+      edge(ctx, pal.dark, 0.8);
+    }
+  },
+  axe(ctx, pal) {
+    ctx.rotate(0.55);
+    ctx.fillStyle = lin(ctx, -2, 0, 2, 0, [
+      [0, '#a87c44'],
+      [1, '#46290e'],
+    ]);
+    rrPath(ctx, -2, -28, 4, 56, 2);
+    ctx.fill();
+    edge(ctx, '#2a1806', 1);
+    ctx.beginPath();
+    ctx.moveTo(-1, -27);
+    ctx.quadraticCurveTo(-24, -27, -25, -4);
+    ctx.quadraticCurveTo(-14, -11, -1, -9);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, -24, -24, -4, -6, [
+      [0, pal.light],
+      [0.55, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.4);
+    ctx.strokeStyle = pal.light;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(-3, -26.2);
+    ctx.quadraticCurveTo(-23, -26, -24, -5.5);
+    ctx.stroke();
+  },
+  bow(ctx, pal) {
+    ctx.strokeStyle = lin(ctx, 0, -30, 0, 30, [
+      [0, pal.dark],
+      [0.5, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-6, -30);
+    ctx.quadraticCurveTo(22, 0, -6, 30);
+    ctx.stroke();
+    ctx.strokeStyle = pal.light;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(-6, -30);
+    ctx.lineTo(-6, 30);
+    ctx.stroke();
+    ctx.fillStyle = pal.accent;
+    rrPath(ctx, 5.8, -5, 4.6, 10, 2);
+    ctx.fill();
+  },
+  arrow(ctx, pal) {
+    ctx.strokeStyle = '#8a6a3c';
+    ctx.lineWidth = 2.6;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-20, 20);
+    ctx.lineTo(14, -14);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(22, -22);
+    ctx.lineTo(10, -13);
+    ctx.lineTo(13, -10);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, 10, -22, 22, -10, [
+      [0, pal.light],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 1);
+    ctx.fillStyle = pal.light;
+    ctx.beginPath();
+    ctx.moveTo(-19, 19);
+    ctx.lineTo(-26, 16);
+    ctx.lineTo(-17, 13);
+    ctx.closePath();
+    ctx.fill();
+    edge(ctx, pal.accent, 0.8);
+    ctx.beginPath();
+    ctx.moveTo(-19, 19);
+    ctx.lineTo(-16, 26);
+    ctx.lineTo(-13, 17);
+    ctx.closePath();
+    ctx.fill();
+    edge(ctx, pal.accent, 0.8);
+  },
+  shield(ctx, pal) {
+    heaterPath(ctx);
+    ctx.fillStyle = lin(ctx, 0, -26, 0, 26, [
+      [0, pal.light],
+      [0.45, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 2.6);
+    noShadow(ctx);
+    ctx.save();
+    ctx.scale(0.84, 0.84);
+    heaterPath(ctx);
+    ctx.strokeStyle = withAlpha(pal.light, 0.7);
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.restore();
+    ctx.beginPath();
+    ctx.arc(0, -2, 5, 0, TAU);
+    ctx.fillStyle = rad(ctx, -1.5, -3.5, 5.5, [
+      [0, pal.light],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 1);
+  },
+  bolt(ctx, pal) {
+    ctx.beginPath();
+    ctx.moveTo(14, -17);
+    ctx.quadraticCurveTo(-10, -2, -27, 25);
+    ctx.quadraticCurveTo(-4, 4, 15, -5);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, 12, -12, -26, 24, [
+      [0, pal.base],
+      [1, withAlpha(pal.base, 0)],
+    ]);
+    ctx.fill();
+    noShadow(ctx);
+    ctx.globalAlpha = 0.8;
+    ctx.fillStyle = pal.light;
+    ctx.beginPath();
+    ctx.arc(-14, 16, 2.2, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(-21, 22, 1.4, 0, TAU);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = rad(ctx, 8, -12, 11, [
+      [0, '#ffffff'],
+      [0.35, pal.light],
+      [0.8, pal.base],
+      [1, withAlpha(pal.base, 0)],
+    ]);
+    ctx.beginPath();
+    ctx.arc(10, -10, 10.5, 0, TAU);
+    ctx.fill();
+  },
+  flame(ctx, pal) {
+    flamePath(ctx);
+    ctx.fillStyle = lin(ctx, 0, -26, 0, 26, [
+      [0, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    noShadow(ctx);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.save();
+    ctx.translate(0, 9);
+    ctx.scale(0.62, 0.62);
+    flamePath(ctx);
+    ctx.fillStyle = withAlpha(pal.light, 0.9);
+    ctx.fill();
+    ctx.restore();
+    ctx.save();
+    ctx.translate(0.5, 14);
+    ctx.scale(0.32, 0.32);
+    flamePath(ctx);
+    ctx.fillStyle = pal.glow;
+    ctx.fill();
+    ctx.restore();
+    ctx.globalCompositeOperation = 'source-over';
+  },
+  snowflake(ctx, pal) {
+    ctx.strokeStyle = pal.light;
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 3;
+    ctx.shadowColor = pal.glow;
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    for (let i = 0; i < 6; i++) {
+      ctx.save();
+      ctx.rotate((i / 6) * TAU);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, -26);
+      ctx.moveTo(0, -14);
+      ctx.lineTo(-5.5, -19.5);
+      ctx.moveTo(0, -14);
+      ctx.lineTo(5.5, -19.5);
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.beginPath();
+    ctx.moveTo(4, 0);
+    for (let i = 1; i < 6; i++) {
+      const a = (i / 6) * TAU;
+      ctx.lineTo(Math.cos(a) * 4, Math.sin(a) * 4);
+    }
+    ctx.closePath();
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+  },
+  skull(ctx, pal) {
+    ctx.beginPath();
+    ctx.arc(0, -5, 15.5, 0, TAU);
+    ctx.fillStyle = rad(ctx, -5, -11, 20, [
+      [0, pal.light],
+      [0.6, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.4);
+    ctx.fillStyle = lin(ctx, 0, 6, 0, 18, [
+      [0, pal.base],
+      [1, pal.dark],
+    ]);
+    rrPath(ctx, -8.5, 6, 17, 12, 4);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.2);
+    noShadow(ctx);
+    ctx.fillStyle = pal.accent;
+    ctx.beginPath();
+    ctx.ellipse(-6.2, -6.5, 4.4, 4.8, 0, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(6.2, -6.5, 4.4, 4.8, 0, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(0, -1);
+    ctx.lineTo(-2.4, 4.4);
+    ctx.lineTo(2.4, 4.4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = pal.accent;
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    for (const x of [-4, 0, 4]) {
+      ctx.moveTo(x, 9);
+      ctx.lineTo(x, 16.5);
+    }
+    ctx.stroke();
+    ctx.fillStyle = withAlpha(pal.light, 0.45);
+    ctx.beginPath();
+    ctx.arc(-7.4, -8, 1.2, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(5, -8, 1.2, 0, TAU);
+    ctx.fill();
+  },
+  fist(ctx, pal) {
+    ctx.fillStyle = lin(ctx, -14, -12, 14, 14, [
+      [0, pal.light],
+      [0.55, pal.base],
+      [1, pal.dark],
+    ]);
+    for (const x of [-10.5, -3.5, 3.5, 10.5]) {
+      ctx.beginPath();
+      ctx.arc(x, -10, 3.7, Math.PI, 0);
+      ctx.closePath();
+      ctx.fill();
+    }
+    rrPath(ctx, -15, -10, 30, 22, 7);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.6);
+    ctx.fillStyle = lin(ctx, 8, -4, 20, 8, [
+      [0, pal.base],
+      [1, pal.dark],
+    ]);
+    rrPath(ctx, 10, -3, 9, 13, 4.5);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.2);
+    noShadow(ctx);
+    ctx.strokeStyle = withAlpha(pal.dark, 0.9);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    for (const x of [-7, 0, 7]) {
+      ctx.moveTo(x, -8);
+      ctx.lineTo(x, 0);
+    }
+    ctx.stroke();
+  },
+  hand(ctx, pal) {
+    ctx.fillStyle = lin(ctx, -10, -20, 10, 16, [
+      [0, pal.light],
+      [0.6, pal.base],
+      [1, pal.dark],
+    ]);
+    const fingers: [number, number, number][] = [
+      [-10.5, -24, 20],
+      [-4, -28, 24],
+      [2.5, -27, 23],
+      [9, -22, 18],
+    ];
+    for (const [x, top, len] of fingers) {
+      rrPath(ctx, x, top, 5.6, len, 2.8);
+      ctx.fill();
+      edge(ctx, pal.dark, 1);
+    }
+    rrPath(ctx, -12, -6, 24, 22, 7);
+    ctx.fill();
+    edge(ctx, pal.dark, 1.2);
+    ctx.save();
+    ctx.rotate(-0.5);
+    rrPath(ctx, 9, 2, 14, 6, 3);
+    ctx.fill();
+    edge(ctx, pal.dark, 1);
+    ctx.restore();
+  },
+  boot(ctx, pal) {
+    ctx.beginPath();
+    ctx.moveTo(-8, -22);
+    ctx.lineTo(5, -22);
+    ctx.lineTo(6.5, 2);
+    ctx.quadraticCurveTo(13, 3, 17.5, 9);
+    ctx.lineTo(18, 14);
+    ctx.lineTo(-8, 14);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, -8, -20, 14, 14, [
+      [0, pal.light],
+      [0.5, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.6);
+    ctx.fillStyle = pal.accent;
+    rrPath(ctx, -9.5, 13, 29, 5.5, 2);
+    ctx.fill();
+    edge(ctx, '#000000', 0.8);
+    noShadow(ctx);
+    ctx.strokeStyle = withAlpha(pal.light, 0.8);
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    for (const y of [-17, -11, -5]) {
+      ctx.moveTo(-6, y);
+      ctx.lineTo(3, y + 1.5);
+    }
+    ctx.stroke();
+    ctx.fillStyle = withAlpha(pal.light, 0.4);
+    rrPath(ctx, -9, -23.5, 15, 4, 2);
+    ctx.fill();
+  },
+  chestplate(ctx, pal) {
+    ctx.beginPath();
+    ctx.moveTo(-20, -15);
+    ctx.lineTo(-8, -20);
+    ctx.lineTo(0, -12.5);
+    ctx.lineTo(8, -20);
+    ctx.lineTo(20, -15);
+    ctx.lineTo(16.5, 2);
+    ctx.quadraticCurveTo(15, 15, 11.5, 21);
+    ctx.lineTo(-11.5, 21);
+    ctx.quadraticCurveTo(-15, 15, -16.5, 2);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, -14, -20, 12, 21, [
+      [0, pal.light],
+      [0.5, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 2);
+    noShadow(ctx);
+    ctx.strokeStyle = withAlpha(pal.dark, 0.9);
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(0, -12);
+    ctx.lineTo(0, 20.5);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(-7.5, 0, 6.5, -2.6, 0.3);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(7.5, 0, 6.5, Math.PI - 0.3, Math.PI + 2.6);
+    ctx.stroke();
+    ctx.strokeStyle = withAlpha(pal.light, 0.7);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(-17, -13.5);
+    ctx.lineTo(-8, -17.5);
+    ctx.stroke();
+  },
+  trousers(ctx, pal) {
+    ctx.fillStyle = lin(ctx, -14, -20, 12, 26, [
+      [0, pal.light],
+      [0.5, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.beginPath();
+    ctx.moveTo(-16, -12);
+    ctx.lineTo(16, -12);
+    ctx.lineTo(13, 26);
+    ctx.lineTo(3.5, 26);
+    ctx.lineTo(0, -1);
+    ctx.lineTo(-3.5, 26);
+    ctx.lineTo(-13, 26);
+    ctx.closePath();
+    ctx.fill();
+    edge(ctx, pal.accent, 1.8);
+    ctx.fillStyle = lin(ctx, 0, -21, 0, -12, [
+      [0, pal.light],
+      [1, pal.dark],
+    ]);
+    rrPath(ctx, -16.5, -20, 33, 8, 2);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.4);
+    noShadow(ctx);
+    ctx.strokeStyle = withAlpha(pal.light, 0.6);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(-9, -10);
+    ctx.lineTo(-10.5, 24);
+    ctx.moveTo(9, -10);
+    ctx.lineTo(10.5, 24);
+    ctx.stroke();
+  },
+  helm(ctx, pal) {
+    // domed great-helm: rounded crown, brow ridge, horizontal eye slit + breath slit
+    ctx.beginPath();
+    ctx.moveTo(-15, 6);
+    ctx.lineTo(-15, -4);
+    ctx.quadraticCurveTo(-15, -22, 0, -22);
+    ctx.quadraticCurveTo(15, -22, 15, -4);
+    ctx.lineTo(15, 6);
+    ctx.quadraticCurveTo(15, 16, 0, 19);
+    ctx.quadraticCurveTo(-15, 16, -15, 6);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, -12, -20, 10, 16, [
+      [0, pal.light],
+      [0.5, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 2);
+    noShadow(ctx);
+    ctx.strokeStyle = withAlpha(pal.dark, 0.9);
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(-13, -2);
+    ctx.quadraticCurveTo(0, -7, 13, -2);
+    ctx.stroke();
+    ctx.fillStyle = withAlpha('#000000', 0.78);
+    rrPath(ctx, -11, 1, 22, 4, 2);
+    ctx.fill();
+    rrPath(ctx, -1.4, 6, 2.8, 9, 1.4);
+    ctx.fill();
+    ctx.fillStyle = withAlpha(pal.light, 0.5);
+    rrPath(ctx, -3, -21, 6, 5, 2);
+    ctx.fill();
+  },
+  belt(ctx, pal) {
+    // horizontal strap with a central buckle
+    ctx.fillStyle = lin(ctx, 0, -8, 0, 8, [
+      [0, pal.light],
+      [0.5, pal.base],
+      [1, pal.dark],
+    ]);
+    rrPath(ctx, -22, -7, 44, 14, 4);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.8);
+    noShadow(ctx);
+    ctx.strokeStyle = withAlpha(pal.dark, 0.7);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-20, -4.5);
+    ctx.lineTo(20, -4.5);
+    ctx.moveTo(-20, 4.5);
+    ctx.lineTo(20, 4.5);
+    ctx.stroke();
+    ctx.fillStyle = lin(ctx, -9, -10, 9, 10, [
+      [0, pal.light],
+      [1, pal.dark],
+    ]);
+    rrPath(ctx, -10, -11, 20, 22, 4);
+    ctx.fill();
+    edge(ctx, pal.accent, 2);
+    ctx.fillStyle = withAlpha('#000000', 0.72);
+    rrPath(ctx, -5.5, -6.5, 11, 13, 3);
+    ctx.fill();
+    ctx.strokeStyle = pal.accent;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, -6);
+    ctx.lineTo(0, 6);
+    ctx.stroke();
+    ctx.fillStyle = withAlpha(pal.light, 0.5);
+    rrPath(ctx, -9, -10, 4, 20, 2);
+    ctx.fill();
+  },
+  pauldron(ctx, pal) {
+    // rounded shoulder cap with layered lames and a top stud
+    ctx.beginPath();
+    ctx.moveTo(-20, 14);
+    ctx.quadraticCurveTo(-22, -8, -6, -18);
+    ctx.quadraticCurveTo(8, -24, 19, -12);
+    ctx.quadraticCurveTo(22, -2, 20, 14);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, -14, -18, 12, 14, [
+      [0, pal.light],
+      [0.5, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 2);
+    noShadow(ctx);
+    ctx.strokeStyle = withAlpha(pal.dark, 0.85);
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, 18, 20, Math.PI * 1.08, Math.PI * 1.92);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 22, 26, Math.PI * 1.12, Math.PI * 1.88);
+    ctx.stroke();
+    ctx.fillStyle = pal.accent;
+    ctx.beginPath();
+    ctx.moveTo(-4, -16);
+    ctx.lineTo(0, -24);
+    ctx.lineTo(4, -16);
+    ctx.closePath();
+    ctx.fill();
+    edge(ctx, pal.dark, 0.8);
+    ctx.fillStyle = withAlpha(pal.light, 0.45);
+    ctx.beginPath();
+    ctx.ellipse(-6, -6, 5, 8, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+  },
+  gauntlet(ctx, pal) {
+    // armored fist: flared cuff, plated back-of-hand, knuckle studs, short fingers + thumb
+    ctx.fillStyle = lin(ctx, 0, 6, 0, 20, [
+      [0, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.beginPath();
+    ctx.moveTo(-13, 6);
+    ctx.lineTo(13, 6);
+    ctx.lineTo(16, 20);
+    ctx.lineTo(-16, 20);
+    ctx.closePath();
+    ctx.fill();
+    edge(ctx, pal.accent, 1.8);
+    ctx.fillStyle = lin(ctx, -12, -10, 10, 8, [
+      [0, pal.light],
+      [0.5, pal.base],
+      [1, pal.dark],
+    ]);
+    rrPath(ctx, -13, -10, 26, 18, 5);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.8);
+    noShadow(ctx);
+    ctx.fillStyle = lin(ctx, 0, -18, 0, -8, [
+      [0, pal.light],
+      [1, pal.dark],
+    ]);
+    for (const x of [-9.5, -3.2, 3.2, 9.5]) {
+      rrPath(ctx, x - 2.4, -18, 4.8, 11, 2);
+      ctx.fill();
+      edge(ctx, pal.dark, 0.9);
+    }
+    ctx.fillStyle = pal.accent;
+    for (const x of [-9, -3, 3, 9]) {
+      ctx.beginPath();
+      ctx.arc(x, -8, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+      edge(ctx, pal.dark, 0.7);
+    }
+    ctx.save();
+    ctx.rotate(-0.5);
+    ctx.fillStyle = lin(ctx, -19, -2, -10, 4, [
+      [0, pal.light],
+      [1, pal.dark],
+    ]);
+    rrPath(ctx, -20, -2, 9, 5, 2.5);
+    ctx.fill();
+    edge(ctx, pal.dark, 0.9);
+    ctx.restore();
+    ctx.fillStyle = withAlpha(pal.light, 0.4);
+    rrPath(ctx, -11, -8, 6, 12, 3);
+    ctx.fill();
+  },
+  pelt(ctx, pal) {
+    ctx.beginPath();
+    ctx.moveTo(-19, -15);
+    ctx.lineTo(-11, -11);
+    ctx.quadraticCurveTo(0, -16, 11, -11);
+    ctx.lineTo(19, -15);
+    ctx.lineTo(15, -4);
+    ctx.lineTo(16, 10);
+    ctx.lineTo(20, 16);
+    ctx.lineTo(12, 14);
+    ctx.lineTo(7, 18);
+    ctx.lineTo(3, 13);
+    ctx.lineTo(0, 18);
+    ctx.lineTo(-3, 13);
+    ctx.lineTo(-7, 18);
+    ctx.lineTo(-12, 14);
+    ctx.lineTo(-20, 16);
+    ctx.lineTo(-16, 10);
+    ctx.lineTo(-15, -4);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, -12, -14, 10, 16, [
+      [0, pal.light],
+      [0.5, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.6);
+    noShadow(ctx);
+    ctx.strokeStyle = withAlpha(pal.dark, 0.8);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const x of [-9, -4.5, 0, 4.5, 9]) {
+      ctx.moveTo(x, -13.2);
+      ctx.lineTo(x + 1.5, -8);
+    }
+    ctx.stroke();
+  },
+  potion(ctx, pal) {
+    ctx.beginPath();
+    ctx.arc(0, 7, 13.5, 0, TAU);
+    ctx.fillStyle = withAlpha(pal.light, 0.18);
+    ctx.fill();
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(0, 7, 12.3, 0, TAU);
+    ctx.clip();
+    ctx.fillStyle = lin(ctx, 0, -1, 0, 20, [
+      [0, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fillRect(-13, 0.5, 26, 20);
+    noShadow(ctx);
+    ctx.fillStyle = withAlpha(pal.light, 0.8);
+    ctx.beginPath();
+    ctx.ellipse(0, 0.8, 12, 2.4, 0, 0, TAU);
+    ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = withAlpha(pal.light, 0.25);
+    rrPath(ctx, -4, -18, 8, 13, 2);
+    ctx.fill();
+    ctx.strokeStyle = pal.light;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(0, 7, 13.5, 0, TAU);
+    ctx.stroke();
+    rrPath(ctx, -4, -18, 8, 12, 2);
+    ctx.stroke();
+    ctx.fillStyle = '#9a7440';
+    rrPath(ctx, -3.4, -22.5, 6.8, 6, 2);
+    ctx.fill();
+    edge(ctx, '#4a3010', 1);
+    noShadow(ctx);
+    ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(0, 7, 9.4, Math.PI * 0.78, Math.PI * 1.18);
+    ctx.stroke();
+  },
+  waterskin(ctx, pal) {
+    ctx.beginPath();
+    ctx.moveTo(-4, -20);
+    ctx.quadraticCurveTo(-16, -10, -14, 6);
+    ctx.quadraticCurveTo(-12, 20, 0, 21);
+    ctx.quadraticCurveTo(13, 20, 14, 5);
+    ctx.quadraticCurveTo(15, -8, 4, -16);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, -12, -14, 12, 20, [
+      [0, '#cf9d5f'],
+      [0.5, '#9c6c34'],
+      [1, '#52300f'],
+    ]);
+    ctx.fill();
+    edge(ctx, '#2e1a06', 1.6);
+    ctx.save();
+    ctx.rotate(0.5);
+    ctx.fillStyle = '#7a5a2c';
+    rrPath(ctx, -3, -25, 6, 7, 2);
+    ctx.fill();
+    edge(ctx, '#2e1a06', 1);
+    ctx.restore();
+    noShadow(ctx);
+    ctx.strokeStyle = '#4a2c0e';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-12, -4);
+    ctx.quadraticCurveTo(0, 2, 13, -2);
+    ctx.stroke();
+    ctx.strokeStyle = withAlpha(pal.light, 0.45);
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(-9, -12);
+    ctx.quadraticCurveTo(-12, -2, -10, 8);
+    ctx.stroke();
+  },
+  // Drawstring bag/pouch: a plump sack body cinched at a gathered neck with a
+  // knotted rope, stitched bottom seam and a soft ground shadow, for the bag
+  // items (Linen Pouch ... Mistcaller's Duffel) and the backpack.
+  sack(ctx, pal) {
+    // the pouch is drawn in a compact ~44-unit box; scale it up to fill the
+    // icon like the weapon/armor primitives do
+    ctx.save();
+    ctx.scale(1.32, 1.32);
+    // ground shadow so the bag sits instead of floating
+    noShadow(ctx);
+    ctx.fillStyle = 'rgba(0,0,0,0.32)';
+    ctx.beginPath();
+    ctx.ellipse(0, 21, 16, 3.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // plump body: wide hips, waist pulled in toward the cinch
+    ctx.beginPath();
+    ctx.moveTo(-6.5, -13);
+    ctx.bezierCurveTo(-15, -12, -20, -3, -19.5, 6);
+    ctx.bezierCurveTo(-19, 16, -10, 21, 0, 21);
+    ctx.bezierCurveTo(10, 21, 19, 16, 19.5, 6);
+    ctx.bezierCurveTo(20, -3, 15, -12, 6.5, -13);
+    ctx.closePath();
+    ctx.fillStyle = rad(ctx, -6, -2, 30, [
+      [0, pal.light],
+      [0.45, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.dark, 1.8);
+    // gathered neck flaring above the tie, with pleat cuts
+    ctx.beginPath();
+    ctx.moveTo(-7, -12);
+    ctx.quadraticCurveTo(-8.5, -19, -11, -23);
+    ctx.quadraticCurveTo(-3.5, -20.5, 0, -21.5);
+    ctx.quadraticCurveTo(3.5, -20.5, 11, -23);
+    ctx.quadraticCurveTo(8.5, -19, 7, -12);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, -8, -23, 8, -12, [
+      [0, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.dark, 1.4);
+    noShadow(ctx);
+    // pleats in the gathered neck
+    ctx.strokeStyle = withAlpha(pal.dark, 0.4);
+    ctx.lineWidth = 1;
+    for (const x of [-4.5, 0, 4.5]) {
+      ctx.beginPath();
+      ctx.moveTo(x * 0.9, -20);
+      ctx.lineTo(x, -13);
+      ctx.stroke();
+    }
+    // knotted rope tie: dark strand + light strand + knot bead and hanging tail
+    ctx.strokeStyle = pal.dark;
+    ctx.lineWidth = 3.4;
+    ctx.beginPath();
+    ctx.moveTo(-8.5, -13.5);
+    ctx.quadraticCurveTo(0, -9.5, 8.5, -13.5);
+    ctx.stroke();
+    ctx.strokeStyle = withAlpha(pal.light, 0.75);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(-8, -14);
+    ctx.quadraticCurveTo(0, -10.2, 8, -14);
+    ctx.stroke();
+    ctx.fillStyle = pal.dark;
+    ctx.beginPath();
+    ctx.arc(8.2, -12.6, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = pal.dark;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(8.6, -11);
+    ctx.quadraticCurveTo(10.5, -6, 9.2, -1.5);
+    ctx.stroke();
+    // two soft cloth folds falling from the cinch (kept faint so the bag does
+    // not read as a striped vase at 40px)
+    ctx.strokeStyle = withAlpha(pal.dark, 0.28);
+    ctx.lineWidth = 1.6;
+    for (const x of [-5.5, 4]) {
+      ctx.beginPath();
+      ctx.moveTo(x * 0.5, -9);
+      ctx.quadraticCurveTo(x * 1.35, 5, x * 0.8, 16);
+      ctx.stroke();
+    }
+    // stitched bottom seam: short dashes following the belly curve
+    ctx.strokeStyle = withAlpha(pal.light, 0.55);
+    ctx.lineWidth = 1.3;
+    for (let i = -3; i <= 3; i++) {
+      const a = Math.PI / 2 + i * 0.19;
+      const cx = Math.cos(a) * 16.4;
+      const cy = 3.2 + Math.sin(a) * 16.2;
+      ctx.beginPath();
+      ctx.moveTo(cx - 1.4, cy - 0.4);
+      ctx.lineTo(cx + 1.4, cy + 0.4);
+      ctx.stroke();
+    }
+    // top-left sheen following the body curve
+    ctx.strokeStyle = withAlpha(pal.light, 0.6);
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(-12.5, -7);
+    ctx.quadraticCurveTo(-16.5, 2, -12, 13);
+    ctx.stroke();
+    ctx.restore();
+  },
+  droplet(ctx, pal) {
+    ctx.beginPath();
+    ctx.moveTo(0, -20);
+    ctx.bezierCurveTo(6.5, -9, 13, -1, 13, 8);
+    ctx.bezierCurveTo(13, 16, 7, 21.5, 0, 21.5);
+    ctx.bezierCurveTo(-7, 21.5, -13, 16, -13, 8);
+    ctx.bezierCurveTo(-13, -1, -6.5, -9, 0, -20);
+    ctx.closePath();
+    ctx.fillStyle = rad(ctx, -4.5, 3, 20, [
+      [0, pal.light],
+      [0.5, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.dark, 1.4);
+    noShadow(ctx);
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.beginPath();
+    ctx.ellipse(-4.5, 2, 2.6, 4.2, 0.35, 0, TAU);
+    ctx.fill();
+  },
+  bread(ctx, _pal) {
+    ctx.beginPath();
+    ctx.ellipse(0, 4, 19.5, 11, 0, 0, TAU);
+    ctx.fillStyle = lin(ctx, 0, -8, 0, 15, [
+      [0, '#e8b86a'],
+      [0.55, '#b07e36'],
+      [1, '#6e4716'],
+    ]);
+    ctx.fill();
+    edge(ctx, '#3c2406', 1.4);
+    noShadow(ctx);
+    ctx.fillStyle = 'rgba(255,240,200,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(-4, -1, 12, 5, -0.15, 0, TAU);
+    ctx.fill();
+    ctx.strokeStyle = '#6e4716';
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (const x of [-9, -1, 7]) {
+      ctx.moveTo(x, -4.5);
+      ctx.lineTo(x + 5, 3.5);
+    }
+    ctx.stroke();
+  },
+  meat(ctx, pal) {
+    ctx.strokeStyle = '#efe7d2';
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(4, -2);
+    ctx.lineTo(15, -12);
+    ctx.stroke();
+    ctx.fillStyle = '#f7f1e0';
+    ctx.beginPath();
+    ctx.arc(18, -15.5, 3.6, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(13, -18, 3.4, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(-5, 4, 14.5, 13, -0.45, 0, TAU);
+    ctx.fillStyle = rad(ctx, -10, -2, 22, [
+      [0, pal.light],
+      [0.55, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.5);
+    noShadow(ctx);
+    ctx.fillStyle = withAlpha(pal.light, 0.5);
+    ctx.beginPath();
+    ctx.ellipse(-9, -2, 6, 3.4, -0.5, 0, TAU);
+    ctx.fill();
+  },
+  scroll(ctx, _pal) {
+    ctx.rotate(-0.1);
+    ctx.fillStyle = lin(ctx, 0, -12, 0, 12, [
+      [0, '#f4e6bc'],
+      [0.6, '#dcc183'],
+      [1, '#a8854a'],
+    ]);
+    rrPath(ctx, -15, -12, 30, 24, 2);
+    ctx.fill();
+    edge(ctx, '#5e451c', 1.3);
+    ctx.fillStyle = lin(ctx, 0, -16, 0, -9, [
+      [0, '#efe0b2'],
+      [1, '#8a6a34'],
+    ]);
+    rrPath(ctx, -18, -16, 36, 7, 3.5);
+    ctx.fill();
+    edge(ctx, '#5e451c', 1.2);
+    ctx.fillStyle = lin(ctx, 0, 9, 0, 16, [
+      [0, '#efe0b2'],
+      [1, '#8a6a34'],
+    ]);
+    rrPath(ctx, -18, 9, 36, 7, 3.5);
+    ctx.fill();
+    edge(ctx, '#5e451c', 1.2);
+    noShadow(ctx);
+    ctx.strokeStyle = '#6e5526';
+    ctx.lineWidth = 1.3;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (const y of [-6, -1, 4]) {
+      ctx.moveTo(-10, y);
+      ctx.lineTo(y === -1 ? 11 : 7, y);
+    }
+    ctx.stroke();
+  },
+  gem(ctx, pal) {
+    const pts: [number, number][] = [];
+    for (let i = 0; i < 6; i++) {
+      const a = -Math.PI / 2 + (i / 6) * TAU;
+      pts.push([Math.cos(a) * 16, Math.sin(a) * 16]);
+    }
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (const [x, y] of pts.slice(1)) ctx.lineTo(x, y);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, -12, -14, 12, 16, [
+      [0, pal.light],
+      [0.5, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.dark, 1.6);
+    noShadow(ctx);
+    ctx.strokeStyle = withAlpha(pal.light, 0.75);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const [x, y] of pts) {
+      ctx.moveTo(x * 0.45, y * 0.45 - 2);
+      ctx.lineTo(x, y);
+    }
+    ctx.moveTo(pts[0][0] * 0.45, pts[0][1] * 0.45 - 2);
+    for (const [x, y] of pts.slice(1)) ctx.lineTo(x * 0.45, y * 0.45 - 2);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.beginPath();
+    ctx.arc(-5, -7, 1.6, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(3, 1, 1, 0, TAU);
+    ctx.fill();
+  },
+  coin(ctx, pal) {
+    ctx.beginPath();
+    ctx.arc(0, 0, 16, 0, TAU);
+    ctx.fillStyle = rad(ctx, -5.5, -6.5, 21, [
+      [0, pal.light],
+      [0.55, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.6);
+    noShadow(ctx);
+    ctx.strokeStyle = pal.dark;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, 11.5, 0, TAU);
+    ctx.stroke();
+    ctx.strokeStyle = withAlpha(pal.light, 0.85);
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(0, 0, 13.8, Math.PI * 0.7, Math.PI * 1.45);
+    ctx.stroke();
+    ctx.strokeStyle = pal.dark;
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-4.5, 4);
+    ctx.lineTo(-4.5, -2);
+    ctx.lineTo(0, -5);
+    ctx.lineTo(4.5, -2);
+    ctx.lineTo(4.5, 4);
+    ctx.closePath();
+    ctx.stroke();
+  },
+  paw(ctx, pal) {
+    ctx.fillStyle = rad(ctx, -3, 2, 22, [
+      [0, pal.light],
+      [0.5, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.beginPath();
+    ctx.moveTo(0, -2);
+    ctx.quadraticCurveTo(-12, 0, -10, 11);
+    ctx.quadraticCurveTo(-7, 18, 0, 18);
+    ctx.quadraticCurveTo(7, 18, 10, 11);
+    ctx.quadraticCurveTo(12, 0, 0, -2);
+    ctx.closePath();
+    ctx.fill();
+    edge(ctx, pal.accent, 1.4);
+    for (const [x, y, r] of [
+      [-12, -7, 4.4],
+      [-4.5, -12, 4.6],
+      [4.5, -12, 4.6],
+      [12, -7, 4.4],
+    ] as const) {
+      ctx.beginPath();
+      ctx.ellipse(x, y, r, r + 1, 0, 0, TAU);
+      ctx.fill();
+      edge(ctx, pal.accent, 1.2);
+    }
+  },
+  fang(ctx, pal) {
+    ctx.beginPath();
+    ctx.moveTo(-8, -17);
+    ctx.quadraticCurveTo(7, -17, 9, -4);
+    ctx.quadraticCurveTo(10.5, 7, 3, 19.5);
+    ctx.quadraticCurveTo(3.5, 5, -2.5, -3);
+    ctx.quadraticCurveTo(-8.5, -9, -8, -17);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, -6, -16, 6, 18, [
+      [0, pal.light],
+      [0.55, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.3);
+    ctx.fillStyle = pal.dark;
+    ctx.beginPath();
+    ctx.ellipse(-0.5, -16.2, 8, 3, 0.12, 0, TAU);
+    ctx.fill();
+    edge(ctx, pal.accent, 1);
+    noShadow(ctx);
+    ctx.strokeStyle = withAlpha(pal.light, 0.8);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(4.5, -10);
+    ctx.quadraticCurveTo(7, 2, 2.8, 15);
+    ctx.stroke();
+  },
+  web(ctx, pal) {
+    ctx.strokeStyle = withAlpha(pal.light, 0.9);
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * TAU + Math.PI / 6;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(Math.cos(a) * 30, Math.sin(a) * 30);
+      ctx.stroke();
+    }
+    for (const r of [10, 19, 28]) {
+      ctx.beginPath();
+      for (let i = 0; i <= 6; i++) {
+        const a0 = (i / 6) * TAU + Math.PI / 6;
+        const x = Math.cos(a0) * r,
+          y = Math.sin(a0) * r;
+        if (i === 0) {
+          ctx.moveTo(x, y);
+          continue;
+        }
+        const am = a0 - Math.PI / 6;
+        ctx.quadraticCurveTo(Math.cos(am) * r * 0.82, Math.sin(am) * r * 0.82, x, y);
+      }
+      ctx.stroke();
+    }
+  },
+  bone(ctx, pal) {
+    ctx.rotate(0.7);
+    ctx.fillStyle = lin(ctx, 0, -6, 0, 8, [
+      [0, pal.light],
+      [0.6, pal.base],
+      [1, pal.dark],
+    ]);
+    rrPath(ctx, -20, -3, 40, 6, 3);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.2);
+    for (const ex of [-20, 20]) {
+      for (const ey of [-4, 4]) {
+        ctx.beginPath();
+        ctx.arc(ex, ey, 5.4, 0, TAU);
+        ctx.fill();
+        edge(ctx, pal.accent, 1.1);
+      }
+    }
+  },
+  candle(ctx, _pal) {
+    ctx.fillStyle = lin(ctx, -6, 0, 6, 0, [
+      [0, '#f6ecd2'],
+      [0.5, '#e2cfa2'],
+      [1, '#9a8054'],
+    ]);
+    rrPath(ctx, -6, -2, 12, 24, 2);
+    ctx.fill();
+    edge(ctx, '#5c4a26', 1.3);
+    ctx.fillStyle = '#f6ecd2';
+    ctx.beginPath();
+    ctx.ellipse(-5, 1, 2.2, 4, 0, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(4.5, 2.5, 1.8, 5, 0, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(0, -2, 6, 2.2, 0, 0, TAU);
+    ctx.fill();
+    edge(ctx, '#9a8054', 0.8);
+    noShadow(ctx);
+    ctx.strokeStyle = '#3a2c14';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(0, -2.5);
+    ctx.lineTo(0, -7);
+    ctx.stroke();
+    ctx.shadowColor = '#ffb45e';
+    ctx.shadowBlur = 7;
+    ctx.beginPath();
+    ctx.moveTo(0, -19);
+    ctx.quadraticCurveTo(4.6, -12, 3.2, -8.5);
+    ctx.quadraticCurveTo(1.8, -5.5, 0, -5.5);
+    ctx.quadraticCurveTo(-1.8, -5.5, -3.2, -8.5);
+    ctx.quadraticCurveTo(-4.6, -12, 0, -19);
+    ctx.closePath();
+    ctx.fillStyle = rad(ctx, 0, -9, 8, [
+      [0, '#fff3c0'],
+      [0.5, '#ffb45e'],
+      [1, '#c83e10'],
+    ]);
+    ctx.fill();
+    noShadow(ctx);
+  },
+  crate(ctx, _pal) {
+    ctx.beginPath();
+    ctx.moveTo(-15, -9);
+    ctx.lineTo(-7, -18);
+    ctx.lineTo(23, -18);
+    ctx.lineTo(15, -9);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, 0, -18, 0, -9, [
+      [0, '#b88c50'],
+      [1, '#7a5226'],
+    ]);
+    ctx.fill();
+    edge(ctx, '#2e1c08', 1.2);
+    ctx.beginPath();
+    ctx.moveTo(15, -9);
+    ctx.lineTo(23, -18);
+    ctx.lineTo(23, 9);
+    ctx.lineTo(15, 18);
+    ctx.closePath();
+    ctx.fillStyle = '#5e3c16';
+    ctx.fill();
+    edge(ctx, '#2e1c08', 1.2);
+    ctx.fillStyle = lin(ctx, -15, -9, 15, 18, [
+      [0, '#a87c44'],
+      [0.5, '#8a6230'],
+      [1, '#553414'],
+    ]);
+    rrPath(ctx, -15, -9, 30, 27, 1);
+    ctx.fill();
+    edge(ctx, '#2e1c08', 1.4);
+    noShadow(ctx);
+    ctx.strokeStyle = '#3e2810';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(-15, 0);
+    ctx.lineTo(15, 0);
+    ctx.moveTo(-15, 9);
+    ctx.lineTo(15, 9);
+    ctx.stroke();
+    ctx.strokeStyle = '#6e4c22';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-13, -7);
+    ctx.lineTo(13, 16);
+    ctx.moveTo(13, -7);
+    ctx.lineTo(-13, 16);
+    ctx.stroke();
+    ctx.fillStyle = '#d8b070';
+    for (const [x, y] of [
+      [-12.5, -6.5],
+      [12.5, -6.5],
+      [-12.5, 15],
+      [12.5, 15],
+    ] as const) {
+      ctx.beginPath();
+      ctx.arc(x, y, 1.2, 0, TAU);
+      ctx.fill();
+    }
+  },
+  sigil_rune(ctx, pal) {
+    ctx.strokeStyle = pal.base;
+    ctx.lineWidth = 3;
+    ctx.shadowColor = pal.glow;
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.beginPath();
+    ctx.arc(0, 0, 20, 0, TAU);
+    ctx.stroke();
+    ctx.strokeStyle = pal.glow;
+    ctx.lineWidth = 3.5;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-8, 11);
+    ctx.lineTo(-8, -11);
+    ctx.lineTo(0, 1);
+    ctx.lineTo(8, -11);
+    ctx.lineTo(8, 11);
+    ctx.stroke();
+    noShadow(ctx);
+  },
+  heart(ctx, pal) {
+    ctx.beginPath();
+    ctx.moveTo(0, 17);
+    ctx.bezierCurveTo(-15, 5, -16, -9, -8.5, -12.5);
+    ctx.bezierCurveTo(-3.5, -14.8, -0.5, -10.5, 0, -7);
+    ctx.bezierCurveTo(0.5, -10.5, 3.5, -14.8, 8.5, -12.5);
+    ctx.bezierCurveTo(16, -9, 15, 5, 0, 17);
+    ctx.closePath();
+    ctx.fillStyle = rad(ctx, -5, -6, 22, [
+      [0, pal.light],
+      [0.5, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.5);
+    noShadow(ctx);
+    ctx.fillStyle = 'rgba(255,255,255,0.65)';
+    ctx.beginPath();
+    ctx.ellipse(-6, -7, 3, 1.9, -0.5, 0, TAU);
+    ctx.fill();
+  },
+  sunburst(ctx, pal) {
+    noShadow(ctx);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = withAlpha(pal.glow, 0.9);
+    for (let i = 0; i < 8; i++) {
+      ctx.save();
+      ctx.rotate((i / 8) * TAU);
+      const len = i % 2 === 0 ? 24 : 16;
+      ctx.beginPath();
+      ctx.moveTo(-2.6, -7);
+      ctx.lineTo(0, -len);
+      ctx.lineTo(2.6, -7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.shadowColor = pal.glow;
+    ctx.shadowBlur = 8;
+    ctx.beginPath();
+    ctx.arc(0, 0, 7, 0, TAU);
+    ctx.fillStyle = rad(ctx, 0, 0, 7.5, [
+      [0, '#ffffff'],
+      [0.55, pal.light],
+      [1, pal.base],
+    ]);
+    ctx.fill();
+    noShadow(ctx);
+  },
+  ascension_seal(ctx, pal) {
+    noShadow(ctx);
+    ctx.shadowColor = pal.glow;
+    ctx.shadowBlur = 7;
+    ctx.strokeStyle = pal.light;
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.arc(0, 0, 22, 0, TAU);
+    ctx.stroke();
+    for (let index = 0; index < 5; index++) {
+      ctx.save();
+      ctx.rotate((index / 5) * TAU);
+      ctx.translate(0, -27);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = index % 2 === 0 ? pal.light : pal.base;
+      ctx.fillRect(-4, -4, 8, 8);
+      ctx.strokeStyle = pal.accent;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-4, -4, 8, 8);
+      ctx.restore();
+    }
+    ctx.fillStyle = rad(ctx, -3, -4, 13, [
+      [0, '#ffffff'],
+      [0.45, pal.light],
+      [1, pal.base],
+    ]);
+    ctx.beginPath();
+    ctx.arc(0, 0, 11, 0, TAU);
+    ctx.fill();
+    ctx.strokeStyle = pal.dark;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(0, -8);
+    ctx.lineTo(0, 8);
+    ctx.moveTo(-8, 0);
+    ctx.lineTo(8, 0);
+    ctx.stroke();
+    noShadow(ctx);
+  },
+  moon(ctx, pal) {
+    ctx.beginPath();
+    ctx.moveTo(4, -16.6);
+    ctx.bezierCurveTo(-19, -13, -19, 13, 4, 16.6);
+    ctx.bezierCurveTo(-8, 10, -8, -10, 4, -16.6);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, -16, -10, 2, 14, [
+      [0, pal.light],
+      [0.6, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.dark, 1.2);
+    noShadow(ctx);
+    ctx.fillStyle = withAlpha(pal.dark, 0.5);
+    ctx.beginPath();
+    ctx.arc(-9, -3, 1.8, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(-6, 6, 1.3, 0, TAU);
+    ctx.fill();
+  },
+  bell(ctx, pal) {
+    // hand-bell silhouette: dome + flared lip, crown loop above, clapper below
+    ctx.beginPath();
+    ctx.moveTo(-13, 12);
+    ctx.bezierCurveTo(-13, 2, -11, -14, 0, -17);
+    ctx.bezierCurveTo(11, -14, 13, 2, 13, 12);
+    ctx.lineTo(17, 16);
+    ctx.lineTo(-17, 16);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, -12, -16, 10, 14, [
+      [0, pal.light],
+      [0.55, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.dark, 1.2);
+    ctx.beginPath();
+    ctx.arc(0, -19, 3.2, 0, TAU);
+    ctx.strokeStyle = pal.dark;
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+    noShadow(ctx);
+    ctx.beginPath();
+    ctx.arc(0, 21, 3.6, 0, TAU);
+    ctx.fillStyle = rad(ctx, -1, 20, 4.2, [
+      [0, pal.light],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+  },
+  lightning(ctx, pal) {
+    ctx.shadowColor = pal.glow;
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 1;
+    ctx.beginPath();
+    ctx.moveTo(7, -28);
+    ctx.lineTo(-9, 3);
+    ctx.lineTo(-1, 3);
+    ctx.lineTo(-7, 28);
+    ctx.lineTo(12, -4);
+    ctx.lineTo(3, -4);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, 0, -28, 0, 28, [
+      [0, '#ffffff'],
+      [0.35, pal.light],
+      [1, pal.base],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.dark, 1.2);
+    noShadow(ctx);
+  },
+  leaf(ctx, pal) {
+    ctx.rotate(-0.5);
+    ctx.beginPath();
+    ctx.moveTo(0, -22);
+    ctx.quadraticCurveTo(13.5, -8, 8, 11);
+    ctx.quadraticCurveTo(4.5, 19, 0, 22);
+    ctx.quadraticCurveTo(-4.5, 19, -8, 11);
+    ctx.quadraticCurveTo(-13.5, -8, 0, -22);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, -10, -16, 10, 18, [
+      [0, pal.light],
+      [0.5, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.4);
+    noShadow(ctx);
+    ctx.strokeStyle = withAlpha(pal.dark, 0.85);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(0, -19);
+    ctx.quadraticCurveTo(1.5, 0, 0, 20);
+    ctx.stroke();
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    for (const [y, dy] of [
+      [-12, 6],
+      [-4, 7],
+      [4, 7],
+    ] as const) {
+      ctx.moveTo(0.5, y);
+      ctx.lineTo(7, y + dy);
+      ctx.moveTo(0.5, y);
+      ctx.lineTo(-6.5, y + dy);
+    }
+    ctx.stroke();
+  },
+  claw_slash(ctx, pal) {
+    ctx.rotate(-0.35);
+    for (const dx of [-9.5, 0, 9.5]) {
+      ctx.beginPath();
+      ctx.moveTo(dx - 4.5, -20);
+      ctx.quadraticCurveTo(dx + 8, -4, dx - 1, 20);
+      ctx.quadraticCurveTo(dx + 2.5, -4, dx - 7.5, -16.5);
+      ctx.closePath();
+      ctx.fillStyle = lin(ctx, dx, -20, dx, 20, [
+        [0, pal.light],
+        [0.6, pal.base],
+        [1, pal.light],
+      ]);
+      ctx.fill();
+      edge(ctx, pal.dark, 0.9);
+    }
+  },
+  eye(ctx, pal) {
+    const almond = () => {
+      ctx.beginPath();
+      ctx.moveTo(-17, 0);
+      ctx.quadraticCurveTo(0, -14, 17, 0);
+      ctx.quadraticCurveTo(0, 14, -17, 0);
+      ctx.closePath();
+    };
+    almond();
+    ctx.fillStyle = lin(ctx, 0, -9, 0, 9, [
+      [0, '#ffffff'],
+      [0.6, pal.light],
+      [1, withAlpha(pal.dark, 0.9)],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.dark, 1.6);
+    ctx.save();
+    almond();
+    ctx.clip();
+    noShadow(ctx);
+    ctx.beginPath();
+    ctx.arc(0, 0, 6.6, 0, TAU);
+    ctx.fillStyle = rad(ctx, -1.6, -1.8, 7.5, [
+      [0, pal.light],
+      [0.5, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, 0, 2.9, 0, TAU);
+    ctx.fillStyle = pal.accent;
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.beginPath();
+    ctx.arc(-2.2, -2.4, 1.3, 0, TAU);
+    ctx.fill();
+    ctx.restore();
+  },
+  cross(ctx, pal) {
+    ctx.shadowColor = pal.glow;
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = lin(ctx, -6, -20, 6, 16, [
+      [0, '#ffffff'],
+      [0.4, pal.light],
+      [1, pal.base],
+    ]);
+    flaredBar(ctx, -23, 17);
+    ctx.fill();
+    edge(ctx, pal.dark, 1.2);
+    ctx.save();
+    ctx.translate(0, -5.5);
+    ctx.rotate(Math.PI / 2);
+    ctx.fillStyle = lin(ctx, -6, -14, 6, 14, [
+      [0, '#ffffff'],
+      [0.4, pal.light],
+      [1, pal.base],
+    ]);
+    flaredBar(ctx, -16, 16);
+    ctx.fill();
+    edge(ctx, pal.dark, 1.2);
+    ctx.restore();
+    noShadow(ctx);
+  },
+  wing(ctx, pal) {
+    ctx.translate(10, 8);
+    const feathers: [number, number][] = [
+      [-2.7, 30],
+      [-2.25, 26],
+      [-1.8, 21],
+      [-1.35, 16],
+    ];
+    for (const [a, len] of feathers) {
+      ctx.save();
+      ctx.rotate(a);
+      ctx.fillStyle = lin(ctx, 0, 0, len, 0, [
+        [0, pal.dark],
+        [0.55, pal.base],
+        [1, pal.light],
+      ]);
+      rrPath(ctx, 0, -3, len, 6, 3);
+      ctx.fill();
+      edge(ctx, pal.dark, 1);
+      ctx.restore();
+    }
+    ctx.beginPath();
+    ctx.arc(0, 0, 4.5, 0, TAU);
+    ctx.fillStyle = pal.base;
+    ctx.fill();
+    edge(ctx, pal.dark, 1);
+  },
+  sheep_head(ctx, _pal) {
+    ctx.fillStyle = rad(ctx, -4, -8, 24, [
+      [0, '#ffffff'],
+      [0.6, '#e8e4da'],
+      [1, '#a8a094'],
+    ]);
+    for (let i = 0; i < 8; i++) {
+      const a = (i / 8) * TAU;
+      ctx.beginPath();
+      ctx.arc(Math.cos(a) * 11, Math.sin(a) * 11 - 2, 5.5, 0, TAU);
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.arc(0, -2, 11.5, 0, TAU);
+    ctx.fill();
+    for (const s of [-1, 1]) {
+      ctx.save();
+      ctx.translate(s * 13, 2);
+      ctx.rotate(s * 0.6);
+      ctx.fillStyle = '#cdb6a4';
+      rrPath(ctx, -2.5, -3, 5, 9, 2.5);
+      ctx.fill();
+      edge(ctx, '#6e5544', 1);
+      ctx.restore();
+    }
+    ctx.fillStyle = lin(ctx, 0, 0, 0, 16, [
+      [0, '#bfa890'],
+      [1, '#6e5544'],
+    ]);
+    ctx.beginPath();
+    ctx.ellipse(0, 7, 7, 9.5, 0, 0, TAU);
+    ctx.fill();
+    edge(ctx, '#4e3a2c', 1.2);
+    noShadow(ctx);
+    ctx.fillStyle = '#241810';
+    ctx.beginPath();
+    ctx.arc(-3, 4.5, 1.4, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(3, 4.5, 1.4, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(-1.7, 11.5, 0.9, 1.4, 0.3, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(1.7, 11.5, 0.9, 1.4, -0.3, 0, TAU);
+    ctx.fill();
+  },
+  tendrils(ctx, pal) {
+    ctx.lineCap = 'round';
+    const vines: [number, number][] = [
+      [-13, -0.3],
+      [0, 0.15],
+      [13, 0.45],
+    ];
+    for (const [x, bend] of vines) {
+      const tipX = x + bend * 10;
+      ctx.strokeStyle = lin(ctx, 0, 28, 0, -20, [
+        [0, pal.dark],
+        [0.5, pal.base],
+        [1, pal.light],
+      ]);
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x, 28);
+      ctx.bezierCurveTo(x - 6, 14, x + 7, 4, tipX, -8);
+      ctx.quadraticCurveTo(tipX + 6, -16, tipX - 2, -19);
+      ctx.stroke();
+      ctx.strokeStyle = pal.light;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(tipX - 2, -16, 3, -1.2, 2.6);
+      ctx.stroke();
+      ctx.fillStyle = pal.light;
+      ctx.beginPath();
+      ctx.ellipse(x - 4, 12, 3.4, 1.7, -0.7, 0, TAU);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(x + 4, 2, 3.4, 1.7, 0.7, 0, TAU);
+      ctx.fill();
+    }
+  },
+  imp_head(ctx, pal) {
+    ctx.fillStyle = lin(ctx, 0, -30, 0, -8, [
+      [0, pal.light],
+      [1, pal.dark],
+    ]);
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(s * 8, -10);
+      ctx.quadraticCurveTo(s * 21, -19, s * 15, -31);
+      ctx.quadraticCurveTo(s * 12, -22, s * 3, -13);
+      ctx.closePath();
+      ctx.fill();
+      edge(ctx, pal.dark, 1);
+    }
+    ctx.fillStyle = pal.base;
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(s * 11, -2);
+      ctx.lineTo(s * 25, -5);
+      ctx.lineTo(s * 12, 8);
+      ctx.closePath();
+      ctx.fill();
+      edge(ctx, pal.dark, 1);
+    }
+    ctx.beginPath();
+    ctx.arc(0, 2, 14, 0, TAU);
+    ctx.fillStyle = rad(ctx, -4, -2, 18, [
+      [0, pal.light],
+      [0.6, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.4);
+    noShadow(ctx);
+    ctx.fillStyle = '#ffe14a';
+    ctx.beginPath();
+    ctx.ellipse(-5, 0, 2.4, 3.4, 0.4, 0, TAU);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(5, 0, 2.4, 3.4, -0.4, 0, TAU);
+    ctx.fill();
+    ctx.strokeStyle = withAlpha(pal.dark, 0.9);
+    ctx.lineWidth = 1.6;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-6, 8);
+    ctx.quadraticCurveTo(0, 13, 6, 8);
+    ctx.stroke();
+  },
+  void_brute(ctx, pal) {
+    ctx.fillStyle = lin(ctx, 0, -22, 0, 24, [
+      [0, pal.light],
+      [0.5, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.beginPath();
+    ctx.moveTo(-20, -4);
+    ctx.quadraticCurveTo(-23, -20, -10, -20);
+    ctx.quadraticCurveTo(0, -27, 10, -20);
+    ctx.quadraticCurveTo(23, -20, 20, -4);
+    ctx.lineTo(15, 24);
+    ctx.lineTo(-15, 24);
+    ctx.closePath();
+    ctx.fill();
+    edge(ctx, pal.accent, 1.6);
+    noShadow(ctx);
+    ctx.beginPath();
+    ctx.arc(0, -15, 7, 0, TAU);
+    ctx.fillStyle = pal.dark;
+    ctx.fill();
+    ctx.shadowColor = pal.glow;
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = '#c87bff';
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.arc(s * 3, -16, 1.9, 0, TAU);
+      ctx.fill();
+    }
+    noShadow(ctx);
+  },
+  meteor(ctx, pal) {
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.strokeStyle = withAlpha(pal.glow, 0.6);
+    ctx.lineCap = 'round';
+    for (const [w, o] of [
+      [8, 0],
+      [3.5, -5],
+    ] as const) {
+      ctx.lineWidth = w;
+      ctx.beginPath();
+      ctx.moveTo(22 + o, -26 - o);
+      ctx.lineTo(2, -2);
+      ctx.stroke();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.beginPath();
+    ctx.moveTo(-2, -3);
+    ctx.lineTo(8, -7);
+    ctx.lineTo(15, 4);
+    ctx.lineTo(8, 15);
+    ctx.lineTo(-5, 12);
+    ctx.lineTo(-9, 2);
+    ctx.closePath();
+    ctx.fillStyle = rad(ctx, 2, 0, 20, [
+      [0, pal.light],
+      [0.5, pal.base],
+      [1, '#2a1206'],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.dark, 1.4);
+    noShadow(ctx);
+    ctx.strokeStyle = withAlpha(pal.glow, 0.9);
+    ctx.lineWidth = 1.4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-2, 0);
+    ctx.lineTo(4, 4);
+    ctx.lineTo(1, 9);
+    ctx.stroke();
+  },
+  roar(ctx, pal) {
+    ctx.beginPath();
+    ctx.moveTo(-20, -6);
+    ctx.quadraticCurveTo(0, -16, 20, -6);
+    ctx.quadraticCurveTo(14, 20, 0, 22);
+    ctx.quadraticCurveTo(-14, 20, -20, -6);
+    ctx.closePath();
+    ctx.fillStyle = rad(ctx, 0, 4, 22, [
+      [0, '#400d0d'],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.6);
+    noShadow(ctx);
+    ctx.fillStyle = '#f6efdc';
+    for (const x of [-13, -5, 5, 13]) {
+      ctx.beginPath();
+      ctx.moveTo(x - 3, -8);
+      ctx.lineTo(x + 3, -8);
+      ctx.lineTo(x, 3);
+      ctx.closePath();
+      ctx.fill();
+      edge(ctx, '#9a8c66', 0.6);
+    }
+    for (const x of [-9, 0, 9]) {
+      ctx.beginPath();
+      ctx.moveTo(x - 3, 16);
+      ctx.lineTo(x + 3, 16);
+      ctx.lineTo(x, 6);
+      ctx.closePath();
+      ctx.fill();
+      edge(ctx, '#9a8c66', 0.6);
+    }
+  },
+  crosshair(ctx, pal) {
+    ctx.strokeStyle = pal.base;
+    ctx.lineWidth = 2.4;
+    ctx.shadowColor = pal.glow;
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.arc(0, 0, 18, 0, TAU);
+    ctx.stroke();
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(0, 0, 10, 0, TAU);
+    ctx.stroke();
+    noShadow(ctx);
+    ctx.strokeStyle = pal.light;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (const a of [0, Math.PI / 2, Math.PI, Math.PI * 1.5]) {
+      ctx.moveTo(Math.cos(a) * 6, Math.sin(a) * 6);
+      ctx.lineTo(Math.cos(a) * 24, Math.sin(a) * 24);
+    }
+    ctx.stroke();
+    ctx.fillStyle = pal.accent;
+    ctx.beginPath();
+    ctx.arc(0, 0, 2.2, 0, TAU);
+    ctx.fill();
+  },
+  hourglass(ctx, pal) {
+    ctx.save();
+    ctx.strokeStyle = '#e9bd53';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-20, -29);
+    ctx.lineTo(20, -29);
+    ctx.moveTo(-20, 29);
+    ctx.lineTo(20, 29);
+    ctx.moveTo(-16, -25);
+    ctx.lineTo(-16, 25);
+    ctx.moveTo(16, -25);
+    ctx.lineTo(16, 25);
+    ctx.stroke();
+
+    ctx.fillStyle = withAlpha(pal.light, 0.42);
+    ctx.strokeStyle = pal.accent;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-13, -23);
+    ctx.bezierCurveTo(-12, -8, -4, -5, 0, 0);
+    ctx.bezierCurveTo(-4, 5, -12, 8, -13, 23);
+    ctx.lineTo(13, 23);
+    ctx.bezierCurveTo(12, 8, 4, 5, 0, 0);
+    ctx.bezierCurveTo(4, -5, 12, -8, 13, -23);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffd86b';
+    ctx.beginPath();
+    ctx.moveTo(-10, -18);
+    ctx.lineTo(10, -18);
+    ctx.lineTo(2, -4);
+    ctx.lineTo(-2, -4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(0, -3);
+    ctx.lineTo(1.5, 15);
+    ctx.lineTo(10, 20);
+    ctx.lineTo(-10, 20);
+    ctx.lineTo(-1.5, 15);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  },
+  needle(ctx, pal) {
+    ctx.rotate(0.6);
+    // thread through the eye, drawn first so the shaft reads on top
+    ctx.strokeStyle = '#e8b33a';
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(0, -21);
+    ctx.bezierCurveTo(14, -26, 24, -14, 18, 2);
+    ctx.bezierCurveTo(14, 14, 22, 20, 28, 24);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-2.6, -28);
+    ctx.lineTo(2.6, -28);
+    ctx.lineTo(0.8, 12);
+    ctx.lineTo(0, 30);
+    ctx.lineTo(-0.8, 12);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, -3, 0, 3, 0, [
+      [0, pal.light],
+      [0.55, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.2);
+    ctx.fillStyle = pal.accent;
+    ctx.beginPath();
+    ctx.ellipse(0, -23, 1.4, 3.2, 0, 0, TAU);
+    ctx.fill();
+  },
+  gear(ctx, pal) {
+    const teeth = 8;
+    const outer = 30;
+    const inner = 22;
+    ctx.beginPath();
+    for (let i = 0; i < teeth; i++) {
+      const a = (i / teeth) * TAU;
+      const half = Math.PI / teeth;
+      const t = half * 0.42;
+      ctx.lineTo(Math.cos(a - half + t) * inner, Math.sin(a - half + t) * inner);
+      ctx.lineTo(Math.cos(a - t) * outer, Math.sin(a - t) * outer);
+      ctx.lineTo(Math.cos(a + t) * outer, Math.sin(a + t) * outer);
+      ctx.lineTo(Math.cos(a + half - t) * inner, Math.sin(a + half - t) * inner);
+    }
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, -22, -22, 22, 22, [
+      [0, pal.light],
+      [0.55, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.4);
+    ctx.fillStyle = pal.dark;
+    ctx.beginPath();
+    ctx.arc(0, 0, 8, 0, TAU);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.2);
+    ctx.strokeStyle = withAlpha(pal.light, 0.8);
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(0, 0, 14.5, Math.PI * 0.85, Math.PI * 1.45);
+    ctx.stroke();
+  },
+  pickaxe(ctx, pal) {
+    ctx.rotate(0.55);
+    ctx.fillStyle = lin(ctx, -2, 0, 2, 0, [
+      [0, '#a87c44'],
+      [1, '#46290e'],
+    ]);
+    rrPath(ctx, -2, -26, 4, 56, 2);
+    ctx.fill();
+    edge(ctx, '#2a1806', 1);
+    // crescent head across the top, both tips tapering down
+    ctx.beginPath();
+    ctx.moveTo(-28, -6);
+    ctx.quadraticCurveTo(0, -34, 28, -6);
+    ctx.quadraticCurveTo(24, -12, 14, -18);
+    ctx.quadraticCurveTo(0, -25, -14, -18);
+    ctx.quadraticCurveTo(-24, -12, -28, -6);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, -20, -28, 16, -8, [
+      [0, pal.light],
+      [0.55, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.4);
+    ctx.strokeStyle = pal.light;
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(-25, -8);
+    ctx.quadraticCurveTo(0, -31, 25, -8);
+    ctx.stroke();
+  },
+  fish(ctx, pal) {
+    // ripple rings under the leap
+    ctx.strokeStyle = withAlpha(pal.light, 0.6);
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.ellipse(0, 26, 17, 4.5, 0, 0, TAU);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(0, 26, 9, 2.4, 0, 0, TAU);
+    ctx.stroke();
+    ctx.save();
+    ctx.rotate(-0.35);
+    ctx.translate(0, -6);
+    ctx.beginPath();
+    ctx.moveTo(-22, 0);
+    ctx.quadraticCurveTo(-10, -11, 6, -8);
+    ctx.quadraticCurveTo(12, -7, 15, -3);
+    ctx.lineTo(24, -10);
+    ctx.quadraticCurveTo(20, 0, 24, 10);
+    ctx.lineTo(15, 3);
+    ctx.quadraticCurveTo(12, 7, 6, 8);
+    ctx.quadraticCurveTo(-10, 11, -22, 0);
+    ctx.closePath();
+    ctx.fillStyle = lin(ctx, -18, -10, 18, 10, [
+      [0, pal.light],
+      [0.55, pal.base],
+      [1, pal.dark],
+    ]);
+    ctx.fill();
+    edge(ctx, pal.accent, 1.3);
+    ctx.strokeStyle = withAlpha(pal.dark, 0.8);
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(-12, -6);
+    ctx.quadraticCurveTo(-9, 0, -12, 6);
+    ctx.stroke();
+    ctx.fillStyle = pal.accent;
+    ctx.beginPath();
+    ctx.arc(-16, -2.5, 1.6, 0, TAU);
+    ctx.fill();
+    ctx.restore();
+  },
+} satisfies Record<string, Painter>;
+type PrimitiveName = keyof typeof PRIMITIVES;
+
+// ---------------------------------------------------------------------------
+// FX painters (glow draws under primitives, the rest draw over)
+// ---------------------------------------------------------------------------
+
+const FX = {
+  glow(ctx: Ctx, pal: IconPalette): void {
+    ctx.fillStyle = rad(ctx, 0, 0, 31, [
+      [0, withAlpha(pal.glow, 0.55)],
+      [1, withAlpha(pal.glow, 0)],
+    ]);
+    ctx.fillRect(-50, -50, 100, 100);
+  },
+  sparkle(ctx: Ctx, pal: IconPalette): void {
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = pal.light;
+    for (const [x, y, s] of [
+      [-18, -14, 5.5],
+      [16, -20, 4.5],
+      [20, 12, 3.5],
+    ] as const) {
+      ctx.beginPath();
+      ctx.moveTo(x, y - s);
+      ctx.quadraticCurveTo(x + s * 0.2, y - s * 0.2, x + s, y);
+      ctx.quadraticCurveTo(x + s * 0.2, y + s * 0.2, x, y + s);
+      ctx.quadraticCurveTo(x - s * 0.2, y + s * 0.2, x - s, y);
+      ctx.quadraticCurveTo(x - s * 0.2, y - s * 0.2, x, y - s);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  },
+  crack(ctx: Ctx, pal: IconPalette): void {
+    ctx.strokeStyle = withAlpha(pal.dark, 0.9);
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-1, 1);
+    ctx.lineTo(-7, 9);
+    ctx.lineTo(-5, 16);
+    ctx.lineTo(-11, 25);
+    ctx.moveTo(2, -2);
+    ctx.lineTo(9, -10);
+    ctx.lineTo(7, -17);
+    ctx.lineTo(13, -26);
+    ctx.stroke();
+  },
+  drips(ctx: Ctx, pal: IconPalette): void {
+    for (const [x, y] of [
+      [-10, 18],
+      [0, 24],
+      [10, 16],
+    ] as const) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(0.24, 0.24);
+      PRIMITIVES.droplet(ctx, pal);
+      ctx.restore();
+    }
+  },
+  motion(ctx: Ctx, pal: IconPalette): void {
+    ctx.strokeStyle = withAlpha(pal.light, 0.4);
+    ctx.lineWidth = 2.6;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    for (const o of [-12, 0, 12]) {
+      ctx.moveTo(-26 + o * 0.7, -26 - o * 0.7);
+      ctx.lineTo(22 + o * 0.7, 22 - o * 0.7);
+    }
+    ctx.stroke();
+  },
+  arcs(ctx: Ctx, pal: IconPalette): void {
+    ctx.lineCap = 'round';
+    const alphas = [0.8, 0.55, 0.3];
+    [18, 26, 34].forEach((r, i) => {
+      ctx.strokeStyle = withAlpha(pal.light, alphas[i]);
+      ctx.lineWidth = 2.6;
+      ctx.beginPath();
+      ctx.arc(0, 0, r, -1.4, -0.18);
+      ctx.stroke();
+    });
+  },
+};
+type FxName = keyof typeof FX;
+
+// ---------------------------------------------------------------------------
+// Recipes
+// ---------------------------------------------------------------------------
+
+interface Placement {
+  p: PrimitiveName;
+  x?: number;
+  y?: number;
+  s?: number;
+  rot?: number;
+  pal?: PaletteName;
+  alpha?: number;
+}
+interface IconRecipe {
+  bg: BgName;
+  pal: PaletteName;
+  prims: Placement[];
+  fx?: FxName[];
+}
+
+// corner-badge / backdrop placement shorthand
+const TL = { x: -13, y: -13, s: 0.45 } as const;
+const TR = { x: 13, y: -13, s: 0.45 } as const;
+const BR = { x: 13, y: 13, s: 0.45 } as const;
+const BIG = { s: 1.15, alpha: 0.35 } as const;
+
+function r(
+  bg: BgName,
+  pal: PaletteName,
+  prims: (PrimitiveName | Placement)[],
+  fx?: FxName[],
+): IconRecipe {
+  return {
+    bg,
+    pal,
+    prims: prims.map((p) => (typeof p === 'string' ? { p } : p)),
+    fx,
+  };
+}
+
+const ABILITY_RECIPES: Record<string, IconRecipe> = {
+  // Talents 2.0 ground-targeted spells (each aimed AoE gets a distinct recipe;
+  // grouped here so the family reads together, order within the map is cosmetic).
+  flamestrike: r('fire', 'ember', ['meteor', { p: 'sunburst', ...BIG }], ['glow']),
+  rain_of_fire: r(
+    'fire',
+    'ember',
+    [
+      { p: 'flame', x: -11, y: -11, s: 0.6 },
+      { p: 'flame', s: 0.72 },
+      { p: 'flame', x: 11, y: 11, s: 0.84 },
+    ],
+    ['drips'],
+  ),
+  volley: r(
+    'storm',
+    'sky',
+    [
+      { p: 'arrow', x: -11, y: -11, s: 0.6 },
+      { p: 'arrow', s: 0.72 },
+      { p: 'arrow', x: 11, y: 11, s: 0.84 },
+    ],
+    ['motion'],
+  ),
+  hurricane: r(
+    'nature',
+    'leafGreen',
+    [
+      { p: 'leaf', x: -11, y: -10, s: 0.62 },
+      { p: 'leaf', s: 0.74 },
+      { p: 'leaf', x: 11, y: 10, s: 0.62 },
+    ],
+    ['arcs'],
+  ),
+  earthquake: r('earth', 'earthBrown', ['sunburst'], ['crack']),
+  attack: r('steel', 'steel', ['sword'], ['motion']),
+  // Ignivar and Varkhul encounter-journal icons. These ids are UI-owned rather
+  // than cast ids so related fire mechanics remain visually distinct at a glance.
+  raid_ignivar_forge_strike: r('fire', 'ember', ['mace', { p: 'flame', ...BR }], ['glow']),
+  raid_ignivar_brand: r('fire', 'blood', ['sigil_rune', { p: 'flame', ...BR }], ['glow']),
+  raid_ignivar_searing_torrent: r('fire', 'ember', ['flame', { p: 'droplet', ...BR, pal: 'ice' }]),
+  raid_ignivar_rain_of_cinders: r('fire', 'ember', [
+    { p: 'meteor', x: -10, y: -8, s: 0.72 },
+    { p: 'meteor', x: 11, y: 10, s: 0.62 },
+  ]),
+  raid_ignivar_revolving_inferno: r('fire', 'ember', ['sunburst', 'flame'], ['arcs']),
+  raid_ignivar_forge_wave: r('fire', 'ember', ['droplet', { p: 'sunburst', ...BIG }], ['arcs']),
+  raid_ignivar_apocalypse: r('shadow', 'blood', ['skull', { p: 'flame', ...BR }], ['glow']),
+  raid_ignivar_judgment: r('fire', 'holyGold', ['mace', { p: 'sunburst', ...BIG }], ['glow']),
+  raid_ignivar_chains: r('steel', 'ember', ['tendrils', { p: 'flame', ...BR }], ['arcs']),
+  raid_ignivar_last_inferno: r('blood', 'ember', ['skull', 'flame'], ['glow', 'drips']),
+  raid_varkhul_makers_brand: r('steel', 'ember', ['sigil_rune', { p: 'mace', ...BR }], ['glow']),
+  raid_varkhul_frontal: r('fury', 'ember', ['mace', { p: 'flame', ...BR }], ['motion']),
+  raid_varkhul_cinder_orbs: r('fire', 'ember', [
+    { p: 'sunburst', x: -10, y: -8, s: 0.68 },
+    { p: 'sunburst', x: 11, y: 10, s: 0.58 },
+  ]),
+  raid_varkhul_shared_pyre: r('fire', 'holyGold', ['heart', { p: 'flame', ...BR }], ['glow']),
+  raid_varkhul_forgestorm: r('storm', 'ember', ['meteor', { p: 'flame', ...BR }], ['arcs']),
+  raid_varkhul_tempering_ray: r('fire', 'holyGold', ['bolt', { p: 'shield', ...BR }], ['glow']),
+  raid_varkhul_anvils_decree: r('steel', 'ember', ['mace', { p: 'sunburst', ...BIG }], ['crack']),
+  raid_varkhul_masters_assembly: r('steel', 'gold', ['sigil_rune', { p: 'mace', ...BR }], ['arcs']),
+  raid_varkhul_crucible_beam: r('fire', 'ember', ['bolt', { p: 'shield', ...BR }], ['arcs']),
+  raid_varkhul_forge_legion: r('steel', 'ember', ['helm', { p: 'mace', ...BR }]),
+  raid_varkhul_masterpiece_unbound: r('fury', 'blood', ['mace', 'flame'], ['glow']),
+  raid_varkhul_worldfire: r('fire', 'blood', ['sunburst', 'flame'], ['glow', 'drips']),
+  // Nythraxis encounter-journal icons (same UI-owned convention): bone and shadow
+  // on a crypt palette, each mechanic keyed by its own primitive so the journal
+  // rows read apart at a glance.
+  raid_nythraxis_gravebreaker: r('shadow', 'bone', ['mace', { p: 'skull', ...BR }], ['motion']),
+  raid_nythraxis_dread_curse: r(
+    'shadow',
+    'shadowPurple',
+    ['skull', { p: 'sigil_rune', ...BR }],
+    ['glow'],
+  ),
+  raid_nythraxis_bone_spike: r(
+    'blood',
+    'bone',
+    ['bone', { p: 'droplet', ...BR, pal: 'blood' }],
+    ['crack'],
+  ),
+  raid_nythraxis_grave_eruption: r(
+    'earth',
+    'shadowPurple',
+    ['hand', { p: 'flame', ...BR }],
+    ['crack'],
+  ),
+  raid_nythraxis_binding_sigil: r(
+    'shadow',
+    'silverWhite',
+    ['sigil_rune', { p: 'tendrils', ...BR }],
+    ['arcs'],
+  ),
+  raid_nythraxis_raise_fallen: r('shadow', 'bone', ['helm', { p: 'skull', ...BR }], ['arcs']),
+  raid_nythraxis_soul_rend: r(
+    'shadow',
+    'shadowPurple',
+    ['heart', { p: 'claw_slash', ...BR }],
+    ['drips'],
+  ),
+  raid_nythraxis_soulfire: r('blood', 'shadowPurple', ['flame', { p: 'heart', ...BR }], ['drips']),
+  raid_nythraxis_gravefire: r(
+    'shadow',
+    'shadowPurple',
+    ['flame', { p: 'claw_slash', ...BR }],
+    ['motion'],
+  ),
+  raid_nythraxis_deathless_rage: r('shadow', 'blood', ['roar', { p: 'skull', ...BR }], ['glow']),
+  raid_nythraxis_deathless_court: r(
+    'shadow',
+    'silverWhite',
+    ['ascension_seal', { p: 'skull', ...BR }],
+    ['arcs'],
+  ),
+  raid_nythraxis_kings_wrath: r(
+    'fury',
+    'shadowPurple',
+    ['roar', { p: 'helm', ...BR, pal: 'gold' }],
+    ['glow'],
+  ),
+  raid_nythraxis_bone_storm: r(
+    'storm',
+    'bone',
+    ['bone', { p: 'sunburst', ...BIG }],
+    ['motion', 'arcs'],
+  ),
+  raid_nythraxis_crown_endures: r(
+    'shadow',
+    'gold',
+    ['helm', { p: 'shield', ...BR }],
+    ['glow', 'arcs'],
+  ),
+  // pet action bar (dedicated, never a class ability id: see pet_action_icons.ts).
+  pet_attack: r('blood', 'blood', ['fang'], ['motion']),
+  pet_growl: r('fury', 'gold', ['roar'], ['arcs']),
+  pet_water_jet: r('frost', 'ice', ['bolt', 'snowflake'], ['drips']),
+  emberkin_felbolt: r('fire', 'venom', ['bolt', 'flame'], ['glow']),
+  gloomshade_abyssal_chain: r('shadow', 'shadowPurple', ['tendrils', 'sigil_rune'], ['arcs']),
+  pet_feed: r('food', 'ember', ['meat']), // roasted meat: hunters feed, not magic-heal
+  pet_mend: r('shadow', 'shadowPurple', ['heart'], ['drips']),
+  pet_passive: r('nature', 'earthBrown', ['paw']),
+  pet_defensive: r('leather', 'earthBrown', ['shield']),
+  pet_aggressive: r('fury', 'blood', ['claw_slash'], ['glow']),
+  // warrior
+  heroic_strike: r('fury', 'steel', ['sword'], ['glow']),
+  battle_shout: r('fury', 'gold', ['fist'], ['arcs']),
+  demoralizing_shout: r('shadow', 'steel', ['fist'], ['arcs']),
+  charge: r('fury', 'steel', ['boot', { p: 'sword', ...BR }], ['motion']),
+  thunder_clap: r('storm', 'sky', ['lightning'], ['arcs']),
+  hamstring: r('blood', 'blood', ['boot', { p: 'claw_slash', ...TR }]),
+  bloodrage: r('blood', 'blood', ['heart'], ['drips', 'glow']),
+  overpower: r('fury', 'gold', ['sword', { p: 'sunburst', ...TL }]),
+  // mage
+  fireball: r('fire', 'ember', ['bolt', { p: 'flame', ...BR }], ['glow']),
+  fireball_form: r(
+    'fire',
+    'gold',
+    [
+      { p: 'sunburst', s: 1.08 },
+      { p: 'flame', x: -10, s: 0.76 },
+      { p: 'flame', x: 10, s: 0.76, rot: 0.38 },
+    ],
+    ['glow', 'motion', 'sparkle'],
+  ),
+  pyroblast: r(
+    'fire',
+    'ember',
+    [
+      { p: 'sunburst', ...BIG },
+      { p: 'flame', s: 0.9 },
+    ],
+    ['glow'],
+  ),
+  frost_armor: r('frost', 'ice', ['chestplate', { p: 'snowflake', ...TR }]),
+  arcane_intellect: r('arcane', 'arcanePink', ['eye'], ['sparkle']),
+  frostbolt: r('frost', 'ice', ['bolt', { p: 'snowflake', ...BR }], ['motion']),
+  conjure_water: r('arcane', 'sky', [{ p: 'potion', pal: 'sky' }], ['sparkle']),
+  fire_blast: r('fire', 'ember', [{ p: 'sunburst', ...BIG }, 'flame'], ['glow']),
+  dragons_breath: r(
+    'fire',
+    'ember',
+    [
+      { p: 'flame', s: 1.15 },
+      { p: 'claw_slash', ...BR, s: 0.75 },
+    ],
+    ['arcs', 'glow'],
+  ),
+  arcane_missiles: r(
+    'arcane',
+    'arcanePink',
+    [
+      { p: 'bolt', x: -12, y: -12, s: 0.55 },
+      { p: 'bolt', s: 0.65 },
+      { p: 'bolt', x: 12, y: 12, s: 0.75 },
+    ],
+    ['glow'],
+  ),
+  polymorph: r('arcane', 'pink', ['sheep_head'], ['sparkle']),
+  frost_nova: r('frost', 'ice', ['snowflake'], ['arcs', 'glow']),
+  // Frost spec kit (owner design 2026-07-11): procedural recipes; distinct
+  // silhouettes from frostbolt (bolt+flake) and frost_nova (flake+arcs).
+  ice_lance: r('frost', 'ice', [{ p: 'dagger', rot: -Math.PI / 4 }], ['glow', 'motion']),
+  glacial_spike: r('frost', 'ice', [{ p: 'dagger', rot: 0 }], ['glow']),
+  flurry: r(
+    'frost',
+    'ice',
+    [
+      { p: 'bolt', x: -12, y: -12, s: 0.55 },
+      { p: 'bolt', s: 0.65 },
+      { p: 'bolt', x: 12, y: 12, s: 0.75 },
+    ],
+    ['motion'],
+  ),
+  frozen_orb: r(
+    'frost',
+    'ice',
+    [
+      { p: 'gem', s: 1.05 },
+      { p: 'snowflake', ...TR },
+    ],
+    ['glow'],
+  ),
+  blizzard: r(
+    'frost',
+    'sky',
+    [
+      { p: 'snowflake', x: -10, y: -8, s: 0.5 },
+      { p: 'snowflake', x: 8, y: -2, s: 0.6 },
+      { p: 'snowflake', x: -2, y: 12, s: 0.45 },
+    ],
+    ['motion'],
+  ),
+  glacial_front: r(
+    'frost',
+    'ice',
+    [
+      { p: 'snowflake', x: 0, y: -10, s: 0.55 },
+      { p: 'bolt', x: -11, y: 6, s: 0.6, rot: -0.55 },
+      { p: 'bolt', x: 11, y: 6, s: 0.6, rot: 0.55 },
+    ],
+    ['arcs', 'motion', 'glow'],
+  ),
+  fingers_of_frost: r('frost', 'ice', ['claw_slash', { p: 'snowflake', ...BR }], ['glow']),
+  brain_freeze: r('frost', 'ice', ['eye', { p: 'snowflake', ...BR }], ['sparkle']),
+  shatter: r('frost', 'ice', ['snowflake', { p: 'claw_slash', ...BIG }], ['arcs']),
+  // rogue
+  sinister_strike: r('steel', 'steel', ['dagger'], ['glow']),
+  eviscerate: r('blood', 'blood', ['dagger'], ['drips']),
+  backstab: r('shadow', 'steel', [{ p: 'dagger', rot: Math.PI * 0.85 }], ['motion']),
+  gouge: r('fury', 'blood', ['eye', { p: 'claw_slash', ...BR }]),
+  evasion: r('storm', 'sky', ['shield'], ['motion']),
+  slice_and_dice: r(
+    'blood',
+    'steel',
+    [
+      { p: 'dagger', x: -7, s: 0.85, rot: -0.5 },
+      { p: 'dagger', x: 7, s: 0.85, rot: 0.5 },
+    ],
+    ['motion'],
+  ),
+  sprint: r('earth', 'leather', ['boot'], ['motion']),
+  garrote: r('shadow', 'steel', [{ p: 'dagger', rot: 1.2 }], ['motion', 'drips']),
+  cheap_shot: r('shadow', 'steel', ['fist', { p: 'dagger', ...BR }], ['arcs']),
+  sap: r('shadow', 'steel', ['fist'], ['motion']),
+  crippling_poison: r('nature', 'venom', ['droplet', { p: 'claw_slash', ...BR }], ['drips']),
+  expose_armor: r('fury', 'steel', ['chestplate', { p: 'claw_slash', ...BR }]),
+  rupture: r('blood', 'blood', ['dagger', { p: 'claw_slash', ...BR }], ['drips']),
+  vanish: r('shadow', 'shadowPurple', ['shield'], ['motion', 'glow']),
+  instant_poison: r('nature', 'venom', ['droplet'], ['glow']),
+  deadly_poison: r('nature', 'venom', ['fang'], ['drips']),
+  // The two utility poisons: the venom palette they share with the rest of the
+  // rogue's poisons, distinguished by what each one eats (armor / healing).
+  melting_acid: r('nature', 'venom', ['chestplate', { p: 'droplet', ...TR }], ['drips']),
+  nightshade_coating: r('nature', 'venom', ['heart', { p: 'droplet', ...TR }], ['drips']),
+  blind: r('shadow', 'shadowPurple', ['eye'], ['arcs']),
+  // paladin
+  seal_of_righteousness: r('holy', 'holyGold', [{ p: 'sunburst', ...BIG }, 'sigil_rune'], ['glow']),
+  holy_light: r('holy', 'holyGold', ['sunburst'], ['glow', 'sparkle']),
+  devotion_aura: r('holy', 'holyGold', ['shield', { p: 'sunburst', ...TL }]),
+  blessing_of_might: r('holy', 'gold', ['fist', { p: 'sunburst', ...TL }]),
+  divine_protection: r('holy', 'silverWhite', ['shield'], ['glow']),
+  sacred_bulwark: r('holy', 'holyGold', ['shield', { p: 'cross', ...BR }], ['arcs', 'glow']),
+  hammer_of_justice: r('holy', 'gold', ['mace'], ['arcs']),
+  lay_on_hands: r('holy', 'holyGold', [{ p: 'sunburst', ...BIG }, 'hand'], ['sparkle', 'glow']),
+  holy_taunt: r('holy', 'holyGold', ['roar'], ['arcs']),
+  divine_ascension: r(
+    'holy',
+    'holyGold',
+    [
+      { p: 'ascension_seal', ...BIG },
+      { p: 'wing', ...BR },
+    ],
+    ['glow', 'sparkle'],
+  ),
+  hushbrand: r('holy', 'gold', ['fist', { p: 'sigil_rune', ...BR }], ['arcs']),
+  guardian_covenant: r('holy', 'holyGold', ['shield', { p: 'hand', ...BR }], ['glow']),
+  devotion_ward: r('holy', 'silverWhite', ['shield', { p: 'sunburst', ...BIG }], ['arcs']),
+  solar_step: r('holy', 'gold', ['boot', { p: 'lightning', ...TR }], ['motion', 'sparkle']),
+  solar_invocation: r(
+    'holy',
+    'holyGold',
+    [
+      { p: 'sunburst', ...BIG },
+      { p: 'heart', ...BR },
+    ],
+    ['arcs', 'sparkle'],
+  ),
+  hammer_of_grace: r('holy', 'sky', ['mace', { p: 'gem', ...BR }], ['glow']),
+  sacred_form: r('holy', 'silverWhite', ['wing', { p: 'cross', ...BR }], ['glow', 'sparkle']),
+  aegis_first_dawn: r(
+    'holy',
+    'holyGold',
+    ['shield', { p: 'sunburst', ...BIG }, { p: 'sigil_rune', ...BR }],
+    ['arcs', 'glow', 'sparkle'],
+  ),
+  radiant_devotion: r('holy', 'arcanePink', ['gem', { p: 'sunburst', ...TR }], ['arcs']),
+  dawn_devotion: r('holy', 'gold', ['fist', { p: 'sunburst', ...BR }], ['glow']),
+  grace_devotion: r('holy', 'sky', ['gem', { p: 'droplet', ...BR }], ['sparkle']),
+  recall_the_fallen: r('holy', 'silverWhite', ['cross', { p: 'hand', ...BR }], ['sparkle']),
+  beacon_of_light: r(
+    'holy',
+    'holyGold',
+    [
+      { p: 'sunburst', ...BIG },
+      { p: 'cross', ...BR },
+    ],
+    ['glow', 'sparkle'],
+  ),
+  final_edict: r('fury', 'ember', ['mace', { p: 'sunburst', ...BR }], ['arcs', 'glow']),
+  dawnfall: r('fury', 'holyGold', [{ p: 'sunburst', ...BIG }, 'sword'], ['arcs']),
+  sun_gods_verdict: r(
+    'holy',
+    'holyGold',
+    [
+      { p: 'sunburst', ...BIG },
+      { p: 'eye', ...BR },
+    ],
+    ['arcs', 'glow', 'sparkle'],
+  ),
+  valkyrs_calling: r(
+    'holy',
+    'holyGold',
+    [
+      { p: 'wing', ...BIG },
+      { p: 'sunburst', ...BR },
+    ],
+    ['motion', 'glow'],
+  ),
+  faithforged_guard: r('steel', 'gold', ['shield', { p: 'sword', ...BR }], ['glow']),
+  mercy_lance: r('holy', 'silverWhite', ['bolt', { p: 'heart', ...BR }], ['sparkle']),
+  dawns_embrace: r('holy', 'pink', ['hand', { p: 'sunburst', ...TR }], ['glow']),
+  radiant_chorus: r('holy', 'silverWhite', [{ p: 'sunburst', ...BIG }, 'cross'], ['sparkle']),
+  life_covenant: r('arcane', 'pink', ['heart', { p: 'shield', ...BR }], ['glow']),
+  vowkeeper_strike: r('steel', 'holyGold', ['mace', { p: 'shield', ...BR }], ['arcs']),
+  bastion_rite: r('steel', 'sky', ['shield', { p: 'sigil_rune', ...BR }], ['glow']),
+  sunward_disc: r('storm', 'gold', ['coin', { p: 'sunburst', ...BR }], ['motion', 'glow']),
+  sacred_challenge: r('storm', 'holyGold', ['roar', { p: 'shield', ...BR }], ['arcs']),
+  // hunter
+  raptor_strike: r('earth', 'blood', ['claw_slash']),
+  aspect_of_the_hawk: r('storm', 'sky', ['wing'], ['glow']),
+  aspect_of_the_monkey: r('nature', 'leafGreen', ['paw'], ['motion']),
+  serpent_sting: r('nature', 'venom', ['fang', { p: 'arrow', ...BR }], ['drips']),
+  arcane_shot: r('arcane', 'arcanePink', ['arrow'], ['glow', 'sparkle']),
+  concussive_shot: r('storm', 'sky', ['arrow'], ['arcs']),
+  mongoose_bite: r('earth', 'steel', ['fang', { p: 'claw_slash', ...BR }], ['motion']),
+  wing_clip: r('earth', 'blood', ['wing', { p: 'claw_slash', ...BR }]),
+  pack_command: r('fury', 'gold', ['paw', { p: 'arrow', ...BR }], ['arcs']),
+  stampede: r(
+    'fury',
+    'blood',
+    [
+      { p: 'paw', ...BIG },
+      { p: 'boot', ...BR },
+    ],
+    ['motion', 'glow'],
+  ),
+  unleash_beast: r('fury', 'blood', [{ p: 'paw', ...BIG }, 'roar'], ['glow', 'arcs']),
+  measured_shot: r('steel', 'gold', ['crosshair', { p: 'arrow', ...BR }], ['sparkle']),
+  pack_rally: r('nature', 'sky', ['roar', { p: 'wing', ...BR }], ['motion', 'glow']),
+  shrapnel_charge: r('steel', 'ember', ['meteor', { p: 'arrow', ...BR }], ['crack']),
+  bloodtrail_assault: r('blood', 'blood', ['boot', { p: 'droplet', ...BR }], ['motion', 'drips']),
+  trailbreak: r('storm', 'leafGreen', ['boot', { p: 'arrow', ...TR }], ['motion', 'arcs']),
+  wildheart: r('nature', 'blood', ['heart', { p: 'paw', ...BR }], ['glow', 'sparkle']),
+  shellskin: r('earth', 'earthBrown', ['shield', { p: 'pelt', ...BR }], ['crack']),
+  frostjaw_trap: r('frost', 'ice', ['fang', { p: 'tendrils', ...BR }], ['arcs', 'glow']),
+  cold_focus: r('frost', 'steel', ['eye', { p: 'crosshair', ...BR }], ['sparkle']),
+  bloodhook: r('blood', 'steel', ['fang', { p: 'tendrils', ...TR }], ['motion', 'drips']),
+  hunting_momentum: r('fury', 'blood', ['boot', { p: 'fang', ...TR }], ['motion', 'glow']),
+  fieldcraft_reentry: r(
+    'earth',
+    'ember',
+    ['tendrils', { p: 'claw_slash', ...BR }],
+    ['motion', 'crack'],
+  ),
+  // priest
+  smite: r('holy', 'holyGold', ['bolt', { p: 'sunburst', ...TL }], ['glow']),
+  lesser_heal: r('holy', 'silverWhite', ['cross'], ['glow']),
+  power_word_fortitude: r('holy', 'gold', ['shield', { p: 'cross', ...TL }]),
+  shadow_word_pain: r('shadow', 'shadowPurple', ['skull', { p: 'claw_slash', ...BR }]),
+  power_word_shield: r('holy', 'silverWhite', ['shield'], ['sparkle', 'glow']),
+  renew: r('holy', 'leafGreen', [{ p: 'heart', pal: 'leafGreen' }], ['sparkle']),
+  mind_blast: r('shadow', 'shadowPurple', ['eye'], ['arcs', 'glow']),
+  // shaman
+  lightning_bolt: r('storm', 'sky', ['lightning'], ['glow']),
+  rockbiter_weapon: r('earth', 'earthBrown', ['fist'], ['crack']),
+  healing_wave: r('frost', 'sky', ['droplet'], ['arcs', 'sparkle']),
+  chain_heal: r('nature', 'sky', ['droplet'], ['arcs', 'glow']),
+  earth_shock: r('earth', 'earthBrown', [{ p: 'lightning', pal: 'earthBrown' }], ['crack']),
+  lightning_shield: r('storm', 'sky', ['shield', { p: 'lightning', s: 0.6 }], ['glow']),
+  flame_shock: r('fire', 'ember', ['flame'], ['arcs']),
+  flametongue_weapon: r('fire', 'ember', ['sword', { p: 'flame', s: 0.6 }], ['glow']),
+  frostbrand_weapon: r('frost', 'ice', ['sword', { p: 'snowflake', s: 0.6 }], ['glow']),
+  galeheart_weapon: r('storm', 'sky', ['sword', { p: 'lightning', ...TR }], ['motion', 'arcs']),
+  thunder_reservoir: r('storm', 'gold', ['gem', { p: 'lightning', ...TR }], ['arcs', 'glow']),
+  warspirit_cadence: r('storm', 'steel', ['fist', { p: 'sword', ...BR }], ['motion', 'arcs']),
+  stormsurge: r('storm', 'sky', ['lightning', { p: 'sunburst', ...BR }], ['glow', 'sparkle']),
+  lifespring_weapon: r('nature', 'leafGreen', ['droplet', { p: 'heart', ...BR }], ['sparkle']),
+  unleash_weapon: r('nature', 'sky', ['sword', { p: 'droplet', ...BR }], ['arcs', 'glow']),
+  tidecall: r('nature', 'sky', ['sunburst', { p: 'droplet', ...BR }], ['arcs']),
+  stoneward: r('earth', 'earthBrown', ['shield', { p: 'gem', ...TR }], ['crack', 'glow']),
+  primal_exaltation: r('storm', 'gold', ['sunburst', { p: 'lightning', ...BR }], ['glow', 'arcs']),
+  // warlock
+  shadow_bolt: r('shadow', 'shadowPurple', ['bolt'], ['glow']),
+  demon_skin: r('shadow', 'venom', [{ p: 'chestplate', pal: 'venom' }]),
+  immolate: r('fire', 'ember', ['flame'], ['crack', 'glow']),
+  corruption: r('shadow', 'shadowPurple', ['skull'], ['drips']),
+  evil_eye: r('shadow', 'venom', [{ p: 'eye', s: 1.08 }], ['glow']),
+  maledict_gaze: r(
+    'shadow',
+    'venom',
+    [
+      { p: 'eye', x: -8, s: 0.88 },
+      { p: 'bolt', x: 10, s: 0.72, pal: 'shadowPurple' },
+    ],
+    ['arcs', 'glow'],
+  ),
+  needle_of_fate: r(
+    'shadow',
+    'silverWhite',
+    [
+      { p: 'bolt', s: 0.92 },
+      { p: 'eye', ...TR, s: 0.5, pal: 'venom' },
+    ],
+    ['motion'],
+  ),
+  sentence: r(
+    'shadow',
+    'shadowPurple',
+    [
+      { p: 'skull', s: 0.92 },
+      { p: 'sunburst', ...BR, s: 0.58, pal: 'venom' },
+    ],
+    ['arcs', 'glow'],
+  ),
+  cursed_accomplice: r(
+    'shadow',
+    'venom',
+    [
+      { p: 'eye', ...TL, s: 0.72 },
+      { p: 'hand', ...BR, s: 0.72, pal: 'shadowPurple' },
+    ],
+    ['glow'],
+  ),
+  hex_of_violence: r(
+    'blood',
+    'shadowPurple',
+    [
+      { p: 'skull', s: 0.88 },
+      { p: 'fist', ...BR, s: 0.58, pal: 'blood' },
+    ],
+    ['arcs'],
+  ),
+  cruel_pact: r(
+    'blood',
+    'blood',
+    [
+      { p: 'heart', s: 0.9 },
+      { p: 'claw_slash', ...TR, s: 0.62, pal: 'shadowPurple' },
+    ],
+    ['drips'],
+  ),
+  vicarious_suffering: r(
+    'shadow',
+    'blood',
+    [
+      { p: 'heart', ...TL, s: 0.7 },
+      { p: 'tendrils', ...BR, s: 0.72, pal: 'shadowPurple' },
+    ],
+    ['arcs'],
+  ),
+  coven: r(
+    'shadow',
+    'venom',
+    [
+      { p: 'eye', x: -11, y: -8, s: 0.58 },
+      { p: 'eye', x: 10, y: -7, s: 0.54, pal: 'shadowPurple' },
+      { p: 'eye', x: 0, y: 10, s: 0.64 },
+    ],
+    ['glow', 'arcs'],
+  ),
+  life_tap: r('blood', 'shadowPurple', ['heart', { p: 'droplet', ...BR, pal: 'shadowPurple' }]),
+  curse_of_agony: r('shadow', 'shadowPurple', ['skull'], ['arcs']),
+  drain_life: r('shadow', 'blood', [{ p: 'droplet', pal: 'blood' }], ['motion', 'drips']),
+  umbral_anchor: r(
+    'shadow',
+    'shadowPurple',
+    [
+      { p: 'sunburst', s: 0.9, pal: 'venom' },
+      { p: 'tendrils', ...BR, s: 0.62, pal: 'shadowPurple' },
+    ],
+    ['glow', 'arcs'],
+  ),
+  possess_evil_eye: r(
+    'shadow',
+    'venom',
+    [
+      { p: 'eye', s: 1.05 },
+      { p: 'tendrils', ...BR },
+    ],
+    ['glow', 'arcs'],
+  ),
+  hour_of_judgment: r(
+    'shadow',
+    'venom',
+    [
+      { p: 'eye', s: 0.82 },
+      { p: 'sunburst', s: 1.08, pal: 'shadowPurple' },
+      { p: 'skull', ...BR, s: 0.48, pal: 'blood' },
+    ],
+    ['glow', 'arcs'],
+  ),
+  // druid
+  wrath: r('nature', 'leafGreen', ['bolt', { p: 'leaf', ...BR }], ['glow']),
+  moonseed: r('arcane', 'leafGreen', ['moon', { p: 'leaf', ...BR }], ['sparkle']),
+  moonlash: r('arcane', 'silverWhite', ['moon', { p: 'lightning', ...BR }], ['arcs', 'glow']),
+  sunlance: r('nature', 'gold', ['sunburst', { p: 'bolt', ...BR }], ['glow']),
+  redharvest: r('blood', 'blood', ['fang', { p: 'droplet', ...BR }], ['drips']),
+  marrowbreak: r('earth', 'earthBrown', ['paw', { p: 'bone', ...BR }], ['crack']),
+  overbloom: r('nature', 'leafGreen', ['heart', { p: 'leaf', ...BR }], ['sparkle', 'glow']),
+  healing_touch: r('nature', 'leafGreen', ['hand', { p: 'leaf', ...TL }], ['sparkle']),
+  mark_of_the_wild: r('nature', 'leafGreen', ['paw'], ['sparkle']),
+  moonfire: r('arcane', 'silverWhite', [{ p: 'moon', pal: 'silverWhite' }], ['glow', 'sparkle']),
+  rejuvenation: r('nature', 'leafGreen', ['leaf'], ['sparkle', 'glow']),
+  thorns: r('nature', 'leafGreen', ['leaf', { p: 'claw_slash', ...BR }]),
+  entangling_roots: r('nature', 'leafGreen', ['tendrils']),
+  bear_form: r('earth', 'earthBrown', [
+    { p: 'paw', pal: 'earthBrown' },
+    { p: 'claw_slash', ...BR },
+  ]),
+  travel_form: r('nature', 'leafGreen', [{ p: 'paw', pal: 'leafGreen' }], ['motion']),
+  enrage: r('fury', 'blood', [{ p: 'paw', pal: 'blood' }], ['glow']),
+  bash: r('earth', 'earthBrown', ['paw', { p: 'claw_slash', ...BR }]),
+  faerie_fire: r('nature', 'leafGreen', [{ p: 'gem', pal: 'leafGreen' }], ['sparkle', 'glow']),
+  hibernate: r('arcane', 'silverWhite', [{ p: 'moon', pal: 'silverWhite' }], ['sparkle']),
+  dash: r('nature', 'leafGreen', ['paw', { p: 'claw_slash', ...TR }], ['motion']),
+  pounce: r('nature', 'leafGreen', ['fang', { p: 'claw_slash', ...BR }], ['motion']),
+  insect_swarm: r('nature', 'leafGreen', ['tendrils'], ['sparkle']),
+  tigers_fury: r('fire', 'ember', ['fang'], ['glow']),
+  rip: r('blood', 'blood', ['claw_slash'], ['drips']),
+  // --- formerly procedural-fallback abilities: unique hand-authored icons ---
+  // warrior
+  execute: r('blood', 'blood', ['axe'], ['glow']),
+  slam: r('fury', 'steel', ['mace'], ['motion']),
+  cleave: r('fury', 'steel', ['axe'], ['arcs']),
+  defensive_stance: r('steel', 'steel', ['shield'], ['arcs']),
+  sunder_armor: r('steel', 'steel', ['chestplate', { p: 'mace', ...BR }]),
+  taunt: r('fury', 'blood', ['fist'], ['arcs']),
+  mortal_strike: r('blood', 'blood', ['sword', { p: 'claw_slash', ...BR }]),
+  bloodthirst: r('blood', 'blood', ['heart', { p: 'dagger', ...BR }], ['drips']),
+  shield_slam: r('steel', 'steel', ['shield', { p: 'mace', ...BR }]),
+  whirlwind: r('fury', 'steel', ['sword'], ['arcs']),
+  berserker_rage: r('fury', 'blood', ['fist'], ['glow']),
+  // warrior (Talents 2.0 rows): each hints the mechanic with an existing primitive combo
+  pummel: r('steel', 'steel', ['fist', { p: 'bolt', ...BR }], ['arcs']), // fist smashing a cast
+  // Bladestorm: a whole STORM of blades, so a storm-blue background sets it apart
+  // from raging_gale's fury-red crossed swords on the action bar.
+  // PTR (v0.24.0) additions kept alongside the overhaul kit above.
+  razor_howl: r('fury', 'steel', ['roar', { p: 'claw_slash', ...BR }], ['arcs']),
+  stormthrow: r('storm', 'sky', ['axe', { p: 'lightning', ...TR }], ['motion']),
+  reckless_vow: r('blood', 'gold', ['heart', { p: 'fist', ...TR }], ['glow', 'arcs']),
+  red_banner: r('blood', 'blood', ['staff', { p: 'sunburst', ...TR, pal: 'gold' }], ['arcs']),
+  // mage
+  conjure_food: r('arcane', 'arcanePink', ['bread'], ['sparkle']),
+  arcane_explosion: r('arcane', 'arcanePink', ['sunburst'], ['arcs']),
+  scorch: r('fire', 'ember', ['flame'], ['motion']),
+  ice_barrier: r('frost', 'ice', ['shield'], ['glow']),
+  // The mage redesign's new kit (owner playtest 2026-07): every ability gets an
+  // explicit recipe (the ability_icons guard forbids the procedural fallback),
+  // each visually distinct from its neighbours.
+  ice_floes: r('frost', 'ice', ['boot', { p: 'snowflake', ...TR }], ['motion']),
+  greater_invisibility: r('arcane', 'pink', ['eye', { p: 'moon', ...TR }], ['motion']),
+  rings_of_frost: r('frost', 'ice', ['sigil_rune', { p: 'snowflake', ...TR }]),
+  cold_snap: r('frost', 'ice', ['sunburst', { p: 'snowflake', ...BIG }], ['glow']),
+  mass_barrier: r('arcane', 'arcanePink', ['shield', { p: 'sunburst', ...TR }], ['glow']),
+  overload: r('arcane', 'pink', ['bolt', { p: 'sunburst', ...TR }], ['glow']),
+  // Power Echo: the doubled cast, two bolts chasing each other.
+  power_echo: r('fire', 'ember', ['bolt', { p: 'bolt', ...BR }], ['motion']),
+  rune_of_power: r('arcane', 'arcanePink', ['sigil_rune', { p: 'sunburst', ...TL }], ['glow']),
+  blazing_barrier: r('fire', 'ember', ['shield', { p: 'flame', ...TR }], ['glow']),
+  ignition: r('fire', 'ember', ['flame', { p: 'droplet', ...BR }], ['drips']),
+  hot_streak: r('fire', 'gold', ['flame', { p: 'sunburst', ...TR }], ['sparkle']),
+  summon_water_elemental: r('frost', 'ice', ['droplet', { p: 'snowflake', ...TR }], ['glow']),
+  // Chronomancy (procedural placeholders until painted art lands).
+  temporal_mend: r('arcane', 'arcanePink', ['heart', { p: 'moon', ...TR }], ['glow']),
+  temporal_barrier: r('arcane', 'arcanePink', ['shield', { p: 'moon', ...TR }], ['glow']),
+  // Phase 2: the Arcane-damage-to-healing mark (heart + a radiating echo).
+  temporal_echo: r('arcane', 'arcanePink', ['heart', { p: 'sunburst', ...TR }], ['sparkle']),
+  // Chronomancy later phases (procedural fallbacks; the painted desktop-sheet
+  // icons ride ABILITY_IMAGE_IDS): the stacking nuke, the group echo, the combat
+  // res, the raid rewind, and the group lust. Distinct shape combos per the
+  // no-identical-icons guard.
+  arcane_surge: r('arcane', 'arcanePink', [{ p: 'sunburst', ...BIG }, 'bolt'], ['glow']),
+  temporal_cascade: r(
+    'arcane',
+    'arcanePink',
+    [
+      { p: 'heart', s: 0.8 },
+      { p: 'moon', ...BR },
+    ],
+    ['arcs'],
+  ),
+  temporal_reversal: r('arcane', 'arcanePink', ['cross', { p: 'moon', ...TR }], ['glow']),
+  collective_reversal: r(
+    'arcane',
+    'gold',
+    [
+      { p: 'cross', s: 0.9 },
+      { p: 'sunburst', ...TR },
+    ],
+    ['arcs', 'sparkle'],
+  ),
+  temporal_rewind: r('arcane', 'arcanePink', [{ p: 'moon', s: 1.1 }], ['arcs', 'glow']),
+  temporal_hourglass: r('arcane', 'gold', [{ p: 'hourglass', s: 1.05 }], ['glow', 'sparkle']),
+  temporal_acceleration: r('arcane', 'arcanePink', ['boot', { p: 'moon', ...TR }], ['motion']),
+  // Perfect Moment: the loaded-bird offensive window (gem = the held charges).
+  perfect_moment: r(
+    'arcane',
+    'arcanePink',
+    [
+      { p: 'gem', s: 1.05 },
+      { p: 'moon', ...TR },
+    ],
+    ['glow'],
+  ),
+  crusader_strike: r('holy', 'gold', ['sword', { p: 'cross', ...BR }], ['glow']),
+  // rogue
+  kidney_shot: r('shadow', 'steel', ['dagger', { p: 'boot', ...BR }]),
+  ambush: r('shadow', 'steel', ['dagger'], ['motion']),
+  stealth: r('shadow', 'steel', ['eye'], ['glow']),
+  adrenaline_rush: r('fury', 'blood', ['lightning'], ['glow']),
+  // paladin
+  flash_of_light: r('holy', 'holyGold', ['hand'], ['sparkle', 'glow']),
+  exorcism: r('holy', 'holyGold', ['sunburst'], ['glow']),
+  consecration: r('holy', 'holyGold', ['sigil_rune'], ['glow']),
+  aura_mastery: r('holy', 'holyGold', ['sunburst', 'shield'], ['arcs', 'glow']),
+  righteous_fury: r('holy', 'gold', ['shield'], ['glow']),
+  retribution_aura: r('holy', 'gold', ['sunburst'], ['arcs']),
+  // hunter
+  tame_beast: r('nature', 'gold', ['paw'], ['sparkle']),
+  dismiss_pet: r('shadow', 'steel', ['paw'], ['arcs']),
+  revive_pet: r('nature', 'leafGreen', ['heart', { p: 'paw', ...BR }], ['sparkle', 'glow']),
+  aspect_of_the_cheetah: r('nature', 'leafGreen', ['boot', { p: 'paw', ...BR }], ['motion']),
+  aimed_shot: r('steel', 'steel', ['crosshair', { p: 'arrow', ...BR }]),
+  rapid_fire: r('fury', 'steel', ['arrow'], ['motion']),
+  // priest
+  heal: r('holy', 'holyGold', ['cross'], ['sparkle']),
+  flash_heal: r('holy', 'holyGold', ['cross'], ['motion']),
+  mind_flay: r('shadow', 'shadowPurple', ['eye'], ['motion']),
+  // shaman
+  frost_shock: r('frost', 'ice', ['snowflake'], ['motion']),
+  ghost_wolf: r('nature', 'leafGreen', ['paw'], ['glow']),
+  stormstrike: r('storm', 'sky', ['sword', { p: 'lightning', ...BR }]),
+  counter_shot: r('steel', 'steel', ['bow', { p: 'sigil_rune', ...BR }], ['motion']),
+  counterspell: r('arcane', 'arcanePink', ['sigil_rune', { p: 'fist', ...BR }], ['sparkle']),
+  kick: r('steel', 'blood', ['boot', { p: 'sigil_rune', ...BR }], ['motion']),
+  last_stand: r('blood', 'gold', ['heart', { p: 'shield', ...BR }], ['glow']),
+  mend_pet: r('nature', 'leafGreen', ['heart', { p: 'paw', ...TR }], ['sparkle']),
+  rebuke: r('holy', 'holyGold', ['fist', { p: 'sigil_rune', ...BR }], ['arcs']),
+  shield_wall: r('steel', 'steel', ['shield', { p: 'chestplate', ...BR }], ['glow']),
+  skull_bash: r('earth', 'bone', ['skull', { p: 'paw', ...BR }], ['motion']),
+  spell_lock: r('shadow', 'venom', ['sigil_rune', { p: 'fang', ...BR }], ['arcs']),
+  // warlock
+  fear: r('shadow', 'shadowPurple', ['roar'], ['glow']),
+  searing_pain: r('fire', 'ember', ['bolt'], ['glow']),
+  shadowburn: r('shadow', 'shadowPurple', ['flame'], ['glow']),
+  summon_imp: r('fire', 'ember', ['imp_head'], ['glow']),
+  summon_voidwalker: r('shadow', 'shadowPurple', ['void_brute'], ['glow']),
+  summon_succubus: r('shadow', 'pink', ['heart', { p: 'wing', ...BR }], ['glow']),
+  summon_felhunter: r('shadow', 'venom', ['eye', { p: 'tendrils', ...BR }], ['glow']),
+  summon_felguard: r('shadow', 'steel', ['axe', { p: 'helm', ...TL }], ['glow']),
+  summon_infernal: r('fire', 'ember', ['meteor'], ['glow']),
+  summon_doomguard: r('shadow', 'shadowPurple', ['wing', { p: 'skull', ...BR }], ['glow']),
+  soul_fragments: r('shadow', 'venom', ['skull'], ['sparkle', 'glow']),
+  soul_harvest: r('shadow', 'venom', ['skull', { p: 'bolt', ...BR }], ['glow']),
+  soul_lance: r('shadow', 'venom', ['bolt', { p: 'skull', ...TR }], ['motion', 'glow']),
+  raise_graveguard: r('shadow', 'bone', ['skull', { p: 'shield', ...BR }], ['glow']),
+  raise_skeletal_warrior: r('shadow', 'bone', ['skull', { p: 'sword', ...BR }], ['arcs', 'glow']),
+  raise_bone_mage: r('shadow', 'venom', ['skull', { p: 'sigil_rune', ...BR }], ['glow']),
+  raise_gravewing: r('shadow', 'bone', ['wing', { p: 'skull', ...BR }], ['motion', 'glow']),
+  bone_armor: r('steel', 'bone', ['chestplate', { p: 'shield', ...BR }], ['glow']),
+  corpse_explosion: r('shadow', 'venom', ['skull'], ['drips', 'glow']),
+  litany_of_guilt: r('shadow', 'shadowPurple', ['scroll', { p: 'skull', ...BR }], ['arcs', 'glow']),
+  funeral_harvest: r('shadow', 'bone', ['hourglass', { p: 'skull', ...TR }], ['sparkle', 'glow']),
+  ossuary_mark: r('shadow', 'bone', ['sigil_rune', { p: 'skull', ...TR }], ['arcs', 'glow']),
+  unholy_command: r('shadow', 'bone', ['roar', { p: 'skull', ...BR }], ['arcs']),
+  reaping_command: r('shadow', 'venom', ['fist', { p: 'skull', ...TR }], ['arcs', 'motion']),
+  sacrifice_undead: r('blood', 'bone', ['heart', { p: 'skull', ...BR }], ['drips']),
+  army_of_the_dead: r('shadow', 'bone', ['wing', { p: 'skull', ...BR }], ['arcs', 'glow']),
+  metamorphosis: r('shadow', 'venom', ['skull', { p: 'helm', ...TR }], ['glow']),
+  // druid
+  bear_charge: r('earth', 'earthBrown', ['paw', { p: 'boot', ...BR }], ['motion']),
+  maul: r('earth', 'earthBrown', ['paw', { p: 'claw_slash', ...TR }], ['glow']),
+  growl: r('earth', 'earthBrown', ['roar'], ['arcs']),
+  challenging_roar: r('fury', 'earthBrown', ['roar', { p: 'paw', ...BR }], ['arcs']),
+  demoralizing_roar: r('shadow', 'earthBrown', ['roar'], ['arcs']),
+  cat_form: r('nature', 'leafGreen', ['paw', { p: 'fang', ...BR }]),
+  prowl: r('nature', 'leafGreen', ['paw'], ['arcs']),
+  rake: r('nature', 'leafGreen', ['claw_slash'], ['drips']),
+  claw: r('nature', 'leafGreen', ['claw_slash'], ['motion']),
+  ferocious_bite: r('blood', 'blood', ['fang'], ['drips']),
+  swipe: r('earth', 'earthBrown', ['claw_slash'], ['arcs']),
+  regrowth: r('nature', 'leafGreen', ['heart', { p: 'leaf', ...BR }], ['sparkle']),
+  barkskin: r('earth', 'earthBrown', ['shield', { p: 'leaf', ...BR }]),
+  primal_reflexes: r('nature', 'leafGreen', ['paw', { p: 'eye', ...TR }], ['motion', 'glow']),
+  starfire: r('arcane', 'silverWhite', ['moon', { p: 'sunburst', ...BR }], ['sparkle', 'glow']),
+  holy_shock: r('holy', 'holyGold', ['bolt', { p: 'cross', ...BR }], ['glow']),
+  holy_shield: r('holy', 'gold', ['shield', { p: 'sunburst', ...BR }]),
+  bestial_wrath: r('fury', 'blood', ['paw'], ['glow']),
+  trueshot_aura: r('storm', 'gold', ['arrow'], ['arcs']),
+  wyvern_sting: r('nature', 'venom', ['wing', { p: 'fang', ...BR }], ['drips']),
+  arcane_power: r('arcane', 'arcanePink', ['sigil_rune'], ['glow']),
+  combustion: r('fire', 'ember', ['flame'], ['sparkle']),
+  icy_veins: r('frost', 'ice', ['snowflake'], ['glow']),
+  cold_blood: r('frost', 'steel', ['dagger'], ['glow']),
+  blade_flurry: r('fury', 'steel', ['sword', { p: 'sword', ...BR }], ['motion']),
+  hemorrhage: r('blood', 'blood', ['dagger', { p: 'droplet', ...BR }], ['drips']),
+  power_infusion: r('holy', 'arcanePink', ['sunburst'], ['sparkle']),
+  holy_nova: r('holy', 'holyGold', ['sunburst'], ['arcs']),
+  shadowform: r('shadow', 'shadowPurple', ['eye'], ['glow']),
+  elemental_mastery: r('storm', 'sky', ['lightning', { p: 'sigil_rune', ...BR }], ['glow']),
+  // Warspirit signature trance: the watching eye inside the elements, mana
+  // flowing back (procedural fallback; painted art ships beside it).
+  elemental_trance: r('storm', 'sky', ['eye', { p: 'lightning', ...BR }], ['glow']),
+  siphon_life: r('shadow', 'venom', ['heart'], ['drips']),
+  conflagrate: r('fire', 'ember', ['flame', { p: 'skull', ...BR }], ['crack']),
+  moonkin_form: r('nature', 'sky', ['moon'], ['sparkle']),
+  feral_charge: r('nature', 'earthBrown', ['paw'], ['motion']),
+  swiftmend: r('nature', 'leafGreen', ['droplet'], ['glow']),
+  // Groveheart resurrections: the in-combat single rez (a heart bursting back
+  // to life) and the out-of-combat group rez (the ancestor_return shape in the
+  // druid's leaf, not the shaman's rune).
+  wildwake: r('nature', 'leafGreen', ['heart', { p: 'sunburst', ...TR }], ['glow']),
+  grove_awakening: r(
+    'nature',
+    'leafGreen',
+    [
+      { p: 'cross', s: 0.9 },
+      { p: 'leaf', ...TR },
+    ],
+    ['sparkle', 'glow'],
+  ),
+  // Talents V2 and the winning Warrior overlay. These explicit recipes remain
+  // the deterministic fallback contract even when authored painted art wins at
+  // render time, and every recipe is deliberately distinct.
+  // warrior
+  battle_stance: r('fury', 'gold', ['sword'], ['arcs']),
+  berserker_stance: r('blood', 'blood', ['skull'], ['glow']),
+  enrage_passive: r('fury', 'blood', ['flame', { p: 'fist', ...BIG }], ['glow', 'motion']),
+  raging_gale: r('fury', 'steel', ['sword', { p: 'sword', rot: Math.PI / 2 }], ['motion']),
+  red_harvest: r('blood', 'blood', ['axe', { p: 'droplet', ...BR }], ['drips']),
+  emboldening_roar: r('fury', 'gold', ['roar', { p: 'sunburst', ...TR }], ['glow']),
+  furious_mending: r('blood', 'gold', ['heart', { p: 'droplet', ...BR }], ['glow']),
+  raised_guard: r('steel', 'steel', ['shield', { p: 'shield', ...TR }], ['glow']),
+  iron_resolve: r('steel', 'gold', ['shield', { p: 'heart', ...TR }], ['glow']),
+  faultline: r('earth', 'earthBrown', [{ p: 'sunburst', ...BIG }, 'fist'], ['crack']),
+  defiant_bellow: r('steel', 'steel', ['roar', { p: 'shield', ...TR }], ['arcs']),
+  breachmaker: r('fury', 'gold', ['sword', { p: 'sunburst', ...BIG }], ['crack', 'glow']),
+  measured_fury: r('steel', 'steel', ['helm', { p: 'heart', ...BR }], ['glow']),
+  sweeping_strikes: r('fury', 'steel', ['claw_slash', { p: 'sword', ...BR }], ['arcs', 'motion']),
+  deep_wounds: r('blood', 'blood', ['claw_slash', { p: 'droplet', ...BR }], ['drips']),
+  seasoned_soldier: r('steel', 'gold', ['helm', { p: 'fist', ...BR }], ['glow']),
+  sudden_death: r('shadow', 'bone', ['skull', { p: 'sword', ...BR }], ['glow']),
+  diabolical_twinstrike: r('shadow', 'blood', ['dagger', { p: 'dagger', ...TR }], ['glow']),
+  cleaving_blows: r('blood', 'steel', ['axe', { p: 'axe', ...BR }], ['arcs', 'motion']),
+  revenge: r('steel', 'steel', ['sword', { p: 'claw_slash', ...BIG }], ['arcs']),
+  heroic_leap: r('earth', 'steel', [{ p: 'sunburst', ...BIG }, 'boot'], ['crack']),
+  rallying_cry: r('fury', 'gold', ['roar', { p: 'heart', ...BR }], ['arcs']),
+  storm_bolt: r('storm', 'steel', ['mace', { p: 'lightning', ...TR }], ['motion']),
+  intimidating_shout: r('shadow', 'blood', ['roar', { p: 'skull', ...TR }], ['arcs']),
+  bladestorm: r(
+    'storm',
+    'steel',
+    ['sword', { p: 'sword', rot: Math.PI * 0.5 }],
+    ['arcs', 'motion'],
+  ),
+  victory_rush: r('fury', 'gold', ['sword', { p: 'heart', ...BR }], ['glow']),
+  piercing_howl: r('storm', 'steel', ['roar', { p: 'boot', ...BR }], ['arcs']),
+  die_by_sword: r('steel', 'gold', ['shield', { p: 'sword', ...TR }], ['glow', 'arcs']),
+  // Intervene ships PAINTED art (ABILITY_IMAGE_IDS below), so abilityImageUrl wins and
+  // this recipe is the fallback path only. It stays because every ability owes an
+  // explicit, distinct recipe (tests/ability_icons.test.ts): a shield (the ally absorb)
+  // over a boot (the rush).
+  intervene: r('steel', 'gold', ['shield', { p: 'boot', ...BR }], ['motion', 'glow']),
+  recklessness: r('fury', 'blood', ['axe', { p: 'sunburst', ...TL }], ['glow']),
+  avatar: r('earth', 'earthBrown', ['helm', { p: 'fist', ...BR }], ['crack', 'glow']),
+  sanguine_aura: r('blood', 'blood', ['droplet', { p: 'heart', ...TL }], ['arcs', 'glow']),
+  // paladin
+  avenging_wrath: r('holy', 'gold', ['wing', { p: 'sunburst', ...BR }], ['glow']),
+  hammer_of_wrath: r('holy', 'holyGold', ['mace', { p: 'lightning', ...BR }], ['glow']),
+  bastion_sweep: r('holy', 'gold', ['shield', { p: 'claw_slash', ...BR }], ['arcs', 'motion']),
+  oath_chain: r('holy', 'holyGold', ['tendrils', { p: 'hand', ...BR }], ['motion', 'glow']),
+  veilbound_march: r(
+    'holy',
+    'silverWhite',
+    ['boot', { p: 'wing', ...TR }, { p: 'sigil_rune', ...BR }],
+    ['motion', 'glow'],
+  ),
+  // hunter
+  startle_shot: r('nature', 'venom', ['sunburst'], ['glow']),
+  frost_trap: r('frost', 'ice', ['snowflake', { p: 'tendrils', ...BR }], ['glow']),
+  multi_shot: r('steel', 'gold', ['bow', { p: 'arrow', ...BR }], ['motion']),
+  deterrence: r('steel', 'leafGreen', ['shield', { p: 'paw', ...BR }], ['arcs']),
+  aspect_of_the_wild: r('nature', 'leafGreen', ['paw', { p: 'sunburst', ...BR }], ['glow']),
+  // rogue
+  smoke_screen: r('shadow', 'steel', ['fist'], ['glow']),
+  flurry_of_knives: r('steel', 'silverWhite', ['dagger', { p: 'sunburst', ...BR }], ['motion']),
+  thieves_chorus: r('shadow', 'gold', ['roar', { p: 'dagger', ...BR }], ['sparkle']),
+  venomrend: r('nature', 'venom', ['dagger', { p: 'flame', ...BR }], ['glow']),
+  venom_dart: r('nature', 'venom', ['arrow', { p: 'droplet', ...BR }], ['motion']),
+  body_blow: r('steel', 'blood', ['fist', { p: 'sunburst', ...BR }], ['motion']),
+  knockout_blow: r('steel', 'gold', ['fist', { p: 'skull', ...BR }], ['glow']),
+  veilstrike: r('shadow', 'shadowPurple', ['eye', { p: 'dagger', ...BR }], ['motion']),
+  preparation: r('shadow', 'steel', ['scroll', { p: 'dagger', ...BR }], ['sparkle']),
+  ghostly_strike: r('shadow', 'silverWhite', ['dagger', { p: 'eye', ...TR }], ['glow']),
+  cloak_of_shadows: r('shadow', 'shadowPurple', ['shield', { p: 'eye', ...BR }], ['glow']),
+  shadowstep: r('shadow', 'shadowPurple', ['boot', { p: 'dagger', ...BR }], ['motion']),
+  // priest
+  silence: r('shadow', 'shadowPurple', ['sigil_rune', { p: 'eye', ...BR }], ['arcs']),
+  psychic_scream: r('shadow', 'shadowPurple', ['roar', { p: 'eye', ...BR }], ['glow']),
+  inner_focus: r('holy', 'arcanePink', ['eye', { p: 'cross', ...BR }], ['sparkle']),
+  desperate_prayer: r('holy', 'holyGold', ['hand', { p: 'heart', ...BR }], ['sparkle']),
+  prayer_of_healing: r('holy', 'holyGold', ['cross', { p: 'sunburst', ...BR }], ['sparkle']),
+  mind_sear: r('shadow', 'shadowPurple', ['eye', { p: 'flame', ...BR }], ['motion']),
+  // Priest v0.29 redesign: explicit, collision-free recipes for the shared
+  // movement spell, three signatures, and two major-prayer talents.
+  veilstep: r('shadow', 'silverWhite', ['boot', { p: 'wing', ...TR }], ['motion', 'sparkle']),
+  scouring_mercy: r('holy', 'holyGold', ['bolt', { p: 'heart', ...BR }], ['arcs']),
+  seraphic_vigil: r('holy', 'silverWhite', ['eye', { p: 'wing', ...TR }], ['glow']),
+  summon_tithefiend: r('shadow', 'shadowPurple', ['skull', { p: 'tendrils', ...TR }], ['drips']),
+  martyrs_aegis: r('blood', 'holyGold', ['shield', { p: 'heart', ...TR }], ['arcs']),
+  choir_of_deliverance: r(
+    'holy',
+    'arcanePink',
+    ['cross', { p: 'wing', ...BR }],
+    ['sparkle', 'arcs'],
+  ),
+  // Benison/Doctrine out-of-combat group rez: the holy cross with a lifted
+  // wing, distinct from prayer_of_healing's sunburst and the mass-rez twins.
+  prayer_of_returning: r(
+    'holy',
+    'holyGold',
+    [
+      { p: 'cross', s: 0.9 },
+      { p: 'wing', ...TR },
+    ],
+    ['sparkle', 'glow'],
+  ),
+  // shaman
+  healing_stream: r('nature', 'sky', ['droplet', { p: 'heart', ...BR }], ['sparkle']),
+  chain_lightning: r(
+    'storm',
+    'sky',
+    [
+      { p: 'lightning', x: -9, s: 0.72 },
+      { p: 'lightning', x: 9, y: 6, s: 0.72, rot: 0.4 },
+    ],
+    ['arcs'],
+  ),
+  ancestor_return: r(
+    'nature',
+    'leafGreen',
+    [{ p: 'cross', ...BIG }, 'sigil_rune'],
+    ['sparkle', 'glow'],
+  ),
+  earthbind: r('earth', 'earthBrown', ['tendrils', { p: 'mace', ...BR }], ['crack']),
+  bloodlust: r('fury', 'blood', ['fist', { p: 'lightning', ...BR }], ['glow']),
+  // mage
+  spellsteal: r('arcane', 'arcanePink', ['sunburst'], ['glow']),
+  cone_of_cold: r('frost', 'ice', ['snowflake'], ['arcs']),
+  presence_of_mind: r('arcane', 'silverWhite', ['eye', { p: 'sunburst', ...BR }], ['sparkle']),
+  blink: r('arcane', 'arcanePink', ['boot', { p: 'lightning', ...TR }], ['motion']),
+  ice_block: r('frost', 'ice', ['gem', { p: 'shield', ...BR }], ['glow']),
+  deep_freeze: r('frost', 'ice', ['snowflake', { p: 'fist', ...BR }], ['glow']),
+  meteor: r('fire', 'ember', ['meteor', { p: 'flame', ...BR }], ['drips']),
+  evocation: r('arcane', 'arcanePink', ['hand', { p: 'gem', ...BR }], ['sparkle']),
+  // warlock
+  voidfeast: r('shadow', 'venom', ['flame'], ['glow']),
+  // The Soul Stone well: the stored heart under glass, 25% back on a claim
+  // (procedural fallback; painted art ships beside it).
+  soulwell: r('shadow', 'venom', ['gem', { p: 'heart', ...BR }], ['glow']),
+  howl_of_terror: r('shadow', 'blood', ['roar', { p: 'skull', ...BR }], ['glow']),
+  curse_of_exhaustion: r('shadow', 'shadowPurple', ['boot', { p: 'skull', ...TR }], ['motion']),
+  death_coil: r('shadow', 'blood', ['skull', { p: 'heart', ...BR }], ['drips']),
+  chaos_bolt: r('fire', 'shadowPurple', ['bolt', { p: 'flame', ...BR }], ['crack']),
+  ruinous_brand: r(
+    'fire',
+    'shadowPurple',
+    ['sigil_rune', { p: 'flame', ...BR }],
+    ['crack', 'glow'],
+  ),
+  cinderhide: r('fire', 'ember', ['shield', { p: 'flame', ...BR }], ['crack', 'glow']),
+  destruction_ruin: r('fire', 'ember', ['gem', { p: 'flame', ...BR }], ['crack', 'glow']),
+  desolation: r('fire', 'ember', ['sunburst', { p: 'bolt', ...BR }], ['crack']),
+  duskfire_claim: r('shadow', 'ember', ['skull', { p: 'flame', ...BR }], ['glow']),
+  pyre_guardian: r('fire', 'ember', ['meteor', { p: 'fist', ...BR }], ['glow']),
+  sacrilegious_march: r(
+    'blood',
+    'shadowPurple',
+    ['boot', { p: 'droplet', ...BR }],
+    ['motion', 'drips'],
+  ),
+  dark_pact: r('shadow', 'blood', ['shield', { p: 'droplet', ...BR }], ['glow', 'drips']),
+  abyssal_rift: r(
+    'shadow',
+    'arcanePink',
+    ['sigil_rune', { p: 'tendrils', ...BIG }],
+    ['arcs', 'glow'],
+  ),
+  // druid
+  typhoon: r('nature', 'sky', ['sunburst'], ['glow']),
+  innervate: r('nature', 'leafGreen', ['leaf', { p: 'gem', ...BR }], ['sparkle']),
+  frenzied_regeneration: r('nature', 'blood', ['heart', { p: 'paw', ...BR }], ['glow']),
+  berserk: r('fury', 'blood', ['paw', { p: 'fist', ...BR }], ['glow']),
+  tranquility: r('nature', 'silverWhite', ['heart', { p: 'leaf', ...BR }], ['sparkle']),
+};
+
+const ITEM_RECIPES: Record<string, IconRecipe> = {
+  // Bags (+ the implicit backpack the bag bar shows). Every shipped bag carries painted
+  // art (ITEM_IMAGE_IDS / UI_ITEM_IMAGE_IDS below), which iconDataUrl prefers; the
+  // pre-phase-05 family below keeps a drawn fallback recipe, newer bags rely on
+  // itemFallback's kind-aware sack arm. Palettes step up with the quality tier so the
+  // bag reads richer as it grows.
+  backpack: r('leather', 'earthBrown', [{ p: 'sack', pal: 'earthBrown' }]),
+  linen_pouch: r('cloth', 'cloth', [{ p: 'sack', pal: 'cloth' }]),
+  travelers_knapsack: r('leather', 'leather', [{ p: 'sack', pal: 'leather' }]),
+  wolfhide_satchel: r('leather', 'earthBrown', [
+    { p: 'sack', pal: 'earthBrown' },
+    { p: 'paw', ...BR },
+  ]),
+  silkspun_satchel: r('cloth', 'sky', [{ p: 'sack', pal: 'sky' }]),
+  gravewoven_bag: r('shadow', 'shadowPurple', [{ p: 'sack', pal: 'shadowPurple' }], ['glow']),
+  mistcallers_duffel: r(
+    'arcane',
+    'sky',
+    [
+      { p: 'sack', pal: 'sky' },
+      { p: 'gem', ...TR },
+    ],
+    ['sparkle'],
+  ),
+  // Collectible mount reins ship opaque painted item icons under woc-item-icon-v1 via
+  // ITEM_IMAGE_IDS, so they need no procedural recipe here. The former GLB renderer is
+  // historical tooling only; new or revised reins follow docs/design/item-icon-art-style.md.
+  worn_sword: r('steel', 'steel', ['sword']),
+  gnarled_staff: r('wood', 'earthBrown', [{ p: 'staff', pal: 'earthBrown' }]),
+  rusty_dagger: r('steel', 'earthBrown', [{ p: 'dagger', pal: 'earthBrown' }]),
+  training_mace: r('wood', 'earthBrown', [{ p: 'mace', pal: 'earthBrown' }]),
+  rusty_hatchet: r('steel', 'earthBrown', [{ p: 'axe', pal: 'earthBrown' }]),
+  recruit_tunic: r('leather', 'leather', [{ p: 'chestplate', pal: 'leather' }]),
+  apprentice_robe: r('cloth', 'cloth', [{ p: 'chestplate', pal: 'cloth' }]),
+  footpad_jerkin: r('leather', 'earthBrown', [{ p: 'chestplate', pal: 'earthBrown' }]),
+  redbrook_blade: r('steel', 'steel', ['sword', { p: 'sunburst', ...TL }], ['glow']),
+  apprentice_staff: r('arcane', 'arcanePink', ['staff', { p: 'gem', ...BR }], ['sparkle']),
+  keen_dirk: r('steel', 'steel', ['dagger'], ['motion']),
+  militia_vest: r('steel', 'steel', [{ p: 'chestplate', pal: 'steel' }]),
+  woven_robe: r('cloth', 'arcanePink', ['chestplate', { p: 'sigil_rune', ...BR }]),
+  shadow_jerkin: r('shadow', 'shadowPurple', [{ p: 'chestplate', pal: 'shadowPurple' }]),
+  oiled_boots: r('leather', 'leather', ['boot'], ['glow']),
+  quilted_trousers: r('cloth', 'cloth', ['trousers']),
+  greyjaw_pelt_cloak: r('leather', 'earthBrown', ['trousers', { p: 'paw', ...BR }]),
+  // Quartermaster's Consignment
+  roadwardens_helm: r('steel', 'steel', [{ p: 'helm', pal: 'steel' }]),
+  wayfarers_hood: r('leather', 'leather', [{ p: 'helm', pal: 'leather' }]),
+  acolytes_circlet: r('cloth', 'gold', [
+    { p: 'helm', pal: 'gold' },
+    { p: 'gem', ...TR },
+  ]),
+  reinforced_pauldrons: r('steel', 'steel', [{ p: 'pauldron', pal: 'steel' }]),
+  embroidered_mantle: r('cloth', 'arcanePink', [
+    { p: 'pauldron', pal: 'cloth' },
+    { p: 'sigil_rune', ...BR },
+  ]),
+  sturdy_belt: r('leather', 'leather', [{ p: 'belt', pal: 'leather' }]),
+  silk_sash: r('cloth', 'cloth', [{ p: 'belt', pal: 'cloth' }]),
+  roughspun_gloves: r('leather', 'earthBrown', [{ p: 'gauntlet', pal: 'earthBrown' }]),
+  bristlehide_spaulders: r('leather', 'earthBrown', [
+    { p: 'pauldron', pal: 'earthBrown' },
+    { p: 'fang', ...BR },
+  ]),
+  sableweb_cord: r('cloth', 'shadowPurple', [
+    { p: 'belt', pal: 'shadowPurple' },
+    { p: 'web', ...TR },
+  ]),
+  gorraks_cleaver: r('steel', 'steel', [{ p: 'axe', pal: 'steel' }], ['glow']),
+  mossy_handwraps: r('cloth', 'leafGreen', [{ p: 'gauntlet', pal: 'leafGreen' }]),
+  baked_bread: r('food', 'gold', ['bread']),
+  spring_water: r('drink', 'sky', [{ p: 'potion', pal: 'sky' }]),
+  simple_fishing_pole: r('wood', 'earthBrown', [
+    { p: 'staff', pal: 'earthBrown', rot: 0.7 },
+    { p: 'droplet', pal: 'sky', x: 14, y: 18, s: 0.45 },
+  ]),
+  raw_mirror_trout: r('drink', 'sky', [
+    { p: 'droplet', pal: 'sky', x: -4, y: 0, s: 1.1, rot: 1.55 },
+    { p: 'fang', pal: 'silverWhite', x: 18, y: -1, s: 0.45, rot: 1.55 },
+  ]),
+  the_codfather: r(
+    'treasure',
+    'gold',
+    [
+      { p: 'droplet', pal: 'sky', x: -5, y: 0, s: 1.2, rot: 1.55 },
+      { p: 'fang', pal: 'gold', x: 18, y: -1, s: 0.5, rot: 1.55 },
+    ],
+    ['sparkle'],
+  ),
+  tangled_weed: r('junk', 'venom', [{ p: 'tendrils', pal: 'venom' }]),
+  roasted_boar: r('food', 'ember', ['meat']),
+  conjured_water: r('arcane', 'sky', [{ p: 'potion', pal: 'sky' }], ['sparkle']),
+  gravecaller_blade: r('shadow', 'steel', ['sword', { p: 'skull', ...BR }], ['glow']),
+  widowfang_dirk: r('frost', 'ice', ['dagger', { p: 'web', ...TL }]),
+  gravecaller_staff: r('shadow', 'shadowPurple', ['staff', { p: 'skull', ...BR }], ['glow']),
+  boar_hide: r('leather', 'earthBrown', ['pelt']),
+  gravecaller_sigil: r('shadow', 'shadowPurple', ['sigil_rune'], ['glow']),
+  weathered_ledger_page: r('parchment', 'leather', ['scroll']),
+  morthen_grimoire: r(
+    'shadow',
+    'shadowPurple',
+    ['scroll', { p: 'skull', x: 10, y: 8, s: 0.55 }],
+    ['glow'],
+  ),
+  fen_muster_order: r('parchment', 'gold', ['scroll'], ['glow']),
+  lost_caravan_goods: r('leather', 'earthBrown', ['pelt']),
+  rusted_censer: r('shadow', 'bone', ['candle'], ['drips']),
+  bastion_ward_stone: r(
+    'arcane',
+    'arcanePink',
+    ['sigil_rune', { p: 'gem', x: 0, y: -6, s: 0.55 }],
+    ['glow'],
+  ),
+  highwatch_summons: r('parchment', 'steel', ['scroll'], ['glow']),
+  ogre_war_totem: r('earth', 'earthBrown', ['bone', { p: 'sigil_rune', x: 0, y: 10, s: 0.7 }]),
+  gravewyrm_sigil: r(
+    'shadow',
+    'ice',
+    ['sigil_rune', { p: 'gem', x: 0, y: -4, s: 0.5 }],
+    ['glow', 'sparkle'],
+  ),
+  sanctum_key_shard: r('arcane', 'sky', ['gem'], ['sparkle', 'glow']),
+  blessed_wax: r('holy', 'holyGold', [{ p: 'droplet', pal: 'holyGold' }], ['sparkle']),
+  // A pitch-filled bottle with a lit rag: a bottle body under a rising flame.
+  firebottle: r(
+    'fire',
+    'ember',
+    [
+      { p: 'potion', pal: 'ember' },
+      { p: 'flame', s: 0.5, y: -9 },
+    ],
+    ['glow'],
+  ),
+  ghostly_essence: r('shadow', 'silverWhite', [{ p: 'flame', pal: 'silverWhite' }], ['sparkle']),
+  webwood_silk: r('shadow', 'silverWhite', ['web']),
+  supply_crate: r('wood', 'earthBrown', ['crate']),
+  greyjaw_fang: r('earth', 'bone', [{ p: 'fang', pal: 'bone' }]),
+  wolf_fang: r('junk', 'bone', [{ p: 'fang', pal: 'bone' }], ['crack']),
+  bandit_bandana: r('junk', 'blood', [{ p: 'pelt', pal: 'blood' }]),
+  tough_jerky: r('food', 'earthBrown', [{ p: 'meat', pal: 'earthBrown' }]),
+  mudfin_scale: r('junk', 'venom', [{ p: 'droplet', pal: 'venom' }]),
+  tallow_candle: r('junk', 'gold', ['candle']),
+  spider_leg: r('junk', 'shadowPurple', [{ p: 'claw_slash', s: 0.9, pal: 'shadowPurple' }]),
+  bone_fragments: r(
+    'junk',
+    'bone',
+    [
+      { p: 'bone', x: -6, y: -4, s: 0.8 },
+      { p: 'bone', x: 8, y: 6, s: 0.7, rot: 1.2 },
+    ],
+    ['crack'],
+  ),
+  linen_scrap: r('junk', 'silverWhite', [{ p: 'pelt', pal: 'silverWhite' }]),
+  // --- The Drowned Litany (Drowned Reliquary Rite loot) ---
+  siltguard_helm: r('earth', 'earthBrown', [
+    { p: 'helm', pal: 'earthBrown' },
+    { p: 'droplet', ...BR, pal: 'venom' },
+  ]),
+  bulwark_rusted_pauldrons: r(
+    'earth',
+    'earthBrown',
+    [{ p: 'pauldron', pal: 'earthBrown' }],
+    ['crack'],
+  ),
+  nhalias_bell_maul: r(
+    'shadow',
+    'bone',
+    ['mace', { p: 'sunburst', ...TR, pal: 'bone' }],
+    ['glow', 'arcs'],
+  ),
+  reedstalker_jerkin: r('leather', 'leafGreen', [{ p: 'chestplate', pal: 'leafGreen' }]),
+  mirejaw_fang_knife: r('earth', 'venom', ['dagger', { p: 'fang', ...BR, pal: 'bone' }]),
+  widow_silk_hood: r(
+    'shadow',
+    'shadowPurple',
+    [
+      { p: 'helm', pal: 'shadowPurple' },
+      { p: 'web', ...TR },
+    ],
+    ['glow'],
+  ),
+  cantors_drowned_sash: r('drink', 'sky', [{ p: 'belt', pal: 'sky' }]),
+  corpse_candle_focus: r('shadow', 'bone', [{ p: 'candle', pal: 'bone' }], ['drips']),
+  nhalias_litany_rod: r(
+    'shadow',
+    'bone',
+    ['staff', { p: 'sunburst', ...TR, pal: 'bone' }],
+    ['glow'],
+  ),
+  blackwater_vanguard_chest: r(
+    'steel',
+    'steel',
+    [
+      { p: 'chestplate', pal: 'steel' },
+      { p: 'droplet', ...BR, pal: 'sky' },
+    ],
+    ['glow', 'sparkle'],
+  ),
+  siltstep_leggings: r('leather', 'earthBrown', ['trousers'], ['glow', 'sparkle']),
+  sunken_reliquary_hood: r(
+    'cloth',
+    'arcanePink',
+    [
+      { p: 'helm', pal: 'arcanePink' },
+      { p: 'gem', ...TR },
+    ],
+    ['glow', 'sparkle'],
+  ),
+  // Heroic-dungeon participation token (final-boss personal drop).
+  heroic_mark: r('holy', 'holyGold', ['sigil_rune'], ['glow']),
+  // Heroic Quartermaster jewelry (marks-vendor rings and pendants); a coin
+  // base reads as the band, the overlay carries the stat identity.
+  seal_of_the_nine_oaths: r('fury', 'blood', ['coin', 'gem'], ['glow']),
+  // the Last Keep's flavor signet: a gold seal disc set with an ember-red stone
+  last_keep_signet: r('treasure', 'gold', ['coin', { p: 'gem', pal: 'blood' }], ['glow']),
+  nielas_coldlight_band: r('arcane', 'arcanePink', ['coin', 'gem'], ['glow']),
+  sutils_gambit: r('nature', 'leafGreen', ['coin', 'gem'], ['sparkle']),
+  oath_of_the_round_table: r('earth', 'earthBrown', ['coin', 'gem'], ['glow']),
+  zyzzs_deathless_signet: r('holy', 'holyGold', ['coin', 'sigil_rune'], ['glow']),
+  architects_cornerstone: r('arcane', 'sky', ['coin', 'scroll'], ['glow']),
+  swiftfang_talisman: r('storm', 'silverWhite', ['wing', 'gem'], ['motion']),
+  yumis_keepsake_locket: r('storm', 'sky', ['gem'], ['sparkle', 'glow']),
+  zense_meridian: r('arcane', 'arcanePink', ['moon', 'gem'], ['glow']),
+  medallion_of_endless_profit: r('treasure', 'gold', ['coin', 'sunburst'], ['sparkle']),
+  // Nythraxis raid offhand epics. Two-handed weapons use the painted-weapon lane below.
+  bonewrought_bulwark: r('steel', 'bone', ['shield', { p: 'skull', ...TR }], ['glow', 'sparkle']),
+  wraithfire_orb: r('shadow', 'shadowPurple', ['gem'], ['glow', 'sparkle']),
+  // misc UI icons (not real items)
+  coin_gold: r('treasure', 'gold', ['coin'], ['sparkle']),
+  slot_empty: r('junk', 'silverWhite', []),
+};
+
+// generic per-aura-kind fallbacks for auras not applied by a known ability
+const AURA_RECIPES: Record<string, IconRecipe> = {
+  aura_dot: r('shadow', 'shadowPurple', ['skull'], ['drips']),
+  aura_hot: r('nature', 'leafGreen', ['heart'], ['sparkle']),
+  aura_slow: r('frost', 'ice', ['boot', { p: 'snowflake', ...TR }]),
+  aura_stun: r('storm', 'gold', ['sunburst']),
+  aura_root: r('nature', 'leafGreen', ['tendrils']),
+  aura_incapacitate: r('storm', 'sky', ['eye']),
+  aura_polymorph: r('arcane', 'pink', ['sheep_head']),
+  aura_attackspeed: r('storm', 'ice', ['axe', { p: 'snowflake', ...BR }]),
+  aura_tongues: r('shadow', 'shadowPurple', ['skull'], ['motion']),
+  aura_buff_sta: r('blood', 'blood', ['heart']),
+  aura_buff_ap: r('fury', 'gold', ['fist']),
+  aura_buff_ap_pct: r('fury', 'gold', ['fist', { p: 'sunburst', ...TR }], ['glow']),
+  aura_buff_armor: r('steel', 'steel', ['shield']),
+  aura_buff_int: r('arcane', 'arcanePink', ['eye']),
+  // The FLASK family: the three FlaskAuraKind stats, each the VESSEL primitive
+  // carrying the same stat motif its shared buff glyph uses, so a flask reads
+  // as "that buff, from the bottle" rather than as an unrelated icon. Keyed off
+  // the aura's flask marker (src/ui/aura_icon_view.ts flaskAuraIconId), which
+  // is why these ids are `flask_<kind>` and not `aura_<something>`: a flask, an
+  // elixir and a scroll of one stat share an aura id, and only the marker tells
+  // them apart. The added glow is what separates them at buff-bar size without
+  // relying on colour alone. Adding a fourth FlaskAuraKind means adding its
+  // recipe here, or the resolver falls back to the shared glyph, which is the
+  // safe direction.
+  flask_buff_sta: r('blood', 'blood', ['potion', { p: 'heart', ...BR }], ['glow']),
+  flask_buff_ap: r('fury', 'gold', ['potion', { p: 'fist', ...BR }], ['glow']),
+  flask_buff_int: r('arcane', 'arcanePink', ['potion', { p: 'eye', ...BR }], ['glow']),
+  aura_buff_dodge: r('storm', 'sky', ['shield'], ['motion']),
+  aura_buff_speed: r('earth', 'leather', ['boot'], ['motion']),
+  aura_buff_haste: r('storm', 'sky', ['lightning']),
+  aura_absorb: r('holy', 'silverWhite', ['shield'], ['glow']),
+  aura_imbue: r('holy', 'holyGold', ['sword', { p: 'sunburst', ...TL }]),
+  aura_buff_allstats: r('arcane', 'arcanePink', ['gem']),
+  aura_thorns: r('nature', 'leafGreen', ['leaf', { p: 'claw_slash', ...BR }]),
+  aura_cost_tax: r('shadow', 'shadowPurple', ['gem', { p: 'droplet', ...BR }], ['drips']),
+  aura_heal_absorb: r('shadow', 'shadowPurple', ['heart'], ['drips']),
+  aura_form_bear: r('earth', 'earthBrown', ['paw']),
+  aura_moontide: r('arcane', 'silverWhite', ['moon', { p: 'tendrils', ...BR }], ['glow']),
+  aura_sunwake: r('nature', 'gold', ['sunburst', { p: 'tendrils', ...BR }], ['glow']),
+  aura_old_blood: r('blood', 'blood', ['fang', { p: 'droplet', ...BR }], ['drips']),
+  aura_verdance: r('nature', 'leafGreen', ['leaf', { p: 'heart', ...BR }], ['sparkle']),
+  // Warlock specialization resources and offensive windows use aura_<kind>
+  // identities because they are not all applied by a matching AbilityDef.
+  aura_soul_fragments: r('shadow', 'venom', ['skull'], ['sparkle', 'glow']),
+  aura_affliction_doom: r('shadow', 'shadowPurple', ['scroll', { p: 'skull', ...BR }], ['glow']),
+  aura_destruction_ruin: r('fire', 'ember', ['gem', { p: 'flame', ...BR }], ['crack', 'glow']),
+  aura_desolation: r('fire', 'ember', ['sunburst', { p: 'bolt', ...BR }], ['crack']),
+  aura_duskfire_claim: r('shadow', 'ember', ['skull', { p: 'flame', ...BR }], ['glow']),
+  aura_pyre_guardian: r('fire', 'ember', ['meteor', { p: 'fist', ...BR }], ['glow']),
+  // Inert rolling-window markers (kind 'internal_cd': Heating Up, the temporal
+  // accumulator, the Water Jet counter). A single ember-on-gold "charging" look;
+  // without it every marker warned to the console and fell back, once per frame.
+  aura_internal_cd: r('fire', 'gold', ['flame', { p: 'sunburst', ...TR }], ['glow']),
+  // The mage proc/buff kinds (all worn on the player buff bar; each fell back
+  // to the unknown icon before these).
+  aura_fingers_of_frost: r('frost', 'ice', ['snowflake'], ['glow']),
+  aura_brain_freeze: r('frost', 'ice', ['snowflake', { p: 'sunburst', ...TR }], ['sparkle']),
+  aura_winters_chill: r('frost', 'ice', ['snowflake', { p: 'skull', ...BR }]),
+  aura_icicles: r('frost', 'ice', [{ p: 'dagger', rot: 0 }], ['glow']),
+  aura_perfect_moment: r('arcane', 'arcanePink', [{ p: 'gem', s: 1.05 }], ['glow', 'sparkle']),
+  // Hot Streak (the armed free instant): the blazing counterpart of Heating Up.
+  aura_next_cast_free: r('fire', 'ember', ['flame', { p: 'sunburst', ...BIG }], ['glow']),
+  aura_next_cast_instant: r('storm', 'sky', ['lightning'], ['glow']),
+  aura_buff_dmg_done: r('arcane', 'arcanePink', ['sunburst'], ['glow']),
+  // Aetherwell's stacking spell power.
+  aura_buff_spellpower: r('arcane', 'arcanePink', ['gem'], ['glow']),
+  aura_buff_spellhaste: r('storm', 'sky', ['lightning'], ['motion']),
+  aura_overload: r('arcane', 'pink', ['bolt', { p: 'sunburst', ...TR }], ['glow']),
+  aura_power_echo: r('fire', 'ember', ['bolt'], ['motion']),
+  aura_ice_floes: r('frost', 'ice', ['boot', { p: 'snowflake', ...TR }], ['motion']),
+  // Parameterized damage-reduction buffs (Furious Mending's 20% cut, aura id
+  // 'furious_mending_dr')
+  aura_buff_dr: r('blood', 'gold', ['shield', { p: 'heart', ...TR }], ['glow']),
+  // Bladed Echo (Bladed Gyre's armed echo buff)
+  aura_aoe_echo: r('fury', 'steel', ['sword'], ['motion']),
+  // Emboldened (Emboldening Roar's armed guaranteed-crit buff)
+  aura_sure_crit: r('fury', 'gold', ['sunburst'], ['glow']),
+  // Physical-only damage-reduction buffs (Raised Guard's cut), mirroring
+  // aura_buff_dr on the steel palette
+  aura_buff_dr_phys: r('steel', 'steel', ['shield', { p: 'heart', ...TR }], ['glow']),
+  // Breachmaker's source-scoped vulnerability debuff (kind 'vuln_source'), shown
+  // on the target's debuff frame: a cracked guard struck by a blade
+  aura_vuln_source: r('blood', 'earthBrown', ['sword', { p: 'sunburst', ...BR }], ['crack']),
+  // Thornhollow Fields rune buffs, keyed by AURA id (the hud iconId resolver passes
+  // ids with a recipe through): identity beyond hue, per the owner direction:
+  // boots for Sprint, a sword for Battle, a shield for Ward.
+  bg_sprint_rune: r('fire', 'ember', ['boot'], ['motion', 'glow']),
+  bg_battle_rune: r('blood', 'blood', ['sword'], ['glow']),
+  bg_ward_rune: r('frost', 'ice', ['shield'], ['glow']),
+  // The carried-flag buff, worn for the whole carry: a banner on its pole (the
+  // red_banner ability's staff-plus-sunburst language) on the objective gold, so
+  // it reads as the flag itself and not as another rune.
+  bg_carried_flag: r('fury', 'gold', ['staff', { p: 'sunburst', ...TR, pal: 'gold' }], ['motion']),
+  // Well Fed (the Masterwrought phase 10 role foods and, since 11c, every farm
+  // buff dish too, aura id 'well_fed'). Keyed
+  // by AURA id like the Thornhollow runes above, and it has to be: the buff
+  // carries an ordinary stat kind (buff_sta / buff_ap / buff_int, one per role
+  // food), so without a recipe of its own the resolver falls through to
+  // aura_buff_<kind> and Well Fed wears the same glyph as the elixir or flask of
+  // that stat. Three buffs, one picture, on a bar where the player is choosing
+  // between them. A cooked haunch on the food palette says which one it is.
+  well_fed: r('food', 'ember', ['meat'], ['glow']),
+  // The operator-applied Cheater mark (src/sim/moderation/), keyed by AURA id like
+  // the rune buffs above. Without a row here the resolver fell through to the
+  // generic utility fallback, so a SANCTION wore a parchment/gold buff icon in the
+  // debuff bar and, being outside AURA_RECIPE_IDS, also missed the prewarm worker
+  // and composed synchronously on the frame path the first time anyone saw it.
+  // A blood brand-sigil watched by a bone eye: branded, and seen.
+  cheater_mark: r('shadow', 'blood', ['sigil_rune', { p: 'eye', ...BR, pal: 'bone' }], ['glow']),
+  // Nythraxis's Impaled (src/sim/nythraxis_bone_spike.ts): an encounter-owned
+  // stun with no ability record and no painted art, so without this row the
+  // resolver collapsed it to the aura_stun sunburst and the pinned raider could
+  // not tell the spike from an ordinary daze. A bloodied bone, the spike itself.
+  nythraxis_impaled: r('blood', 'bone', ['bone', { p: 'droplet', ...BR, pal: 'blood' }], ['crack']),
+  nythraxis_ascension: r(
+    'shadow',
+    'silverWhite',
+    ['ascension_seal', { p: 'sunburst', ...BR }],
+    ['glow'],
+  ),
+  nythraxis_ascension_haste: r(
+    'storm',
+    'silverWhite',
+    ['ascension_seal', { p: 'lightning', ...BR }],
+    ['motion'],
+  ),
+  nythraxis_bound: r('earth', 'silverWhite', ['sigil_rune', { p: 'skull', ...BR }], ['arcs']),
+  nythraxis_bound_stun: r('shadow', 'bone', ['sigil_rune', { p: 'skull', ...BR }], ['crack']),
+  nythraxis_unbound: r('fury', 'shadowPurple', ['skull', { p: 'claw_slash', ...BR }], ['glow']),
+  nythraxis_kings_wrath: r(
+    'fury',
+    'shadowPurple',
+    ['helm', { p: 'roar', ...BR, pal: 'blood' }],
+    ['glow'],
+  ),
+  nythraxis_bone_storm: r('storm', 'bone', ['sunburst', { p: 'bone', ...BR }], ['motion', 'arcs']),
+  nythraxis_crown_endures: r('shadow', 'gold', ['helm', { p: 'skull', ...BR }], ['glow']),
+  nythraxis_crown_endures_haste: r(
+    'storm',
+    'gold',
+    ['helm', { p: 'lightning', ...BR }],
+    ['motion', 'arcs'],
+  ),
+  // Painted talent/modifier identities are not ABILITIES records, but their
+  // runtime timers still need a meaningful synchronous layer while the WebP
+  // decodes (and if it ever fails to load).
+  battle_rhythm: r('fury', 'gold', ['fist', { p: 'sunburst', ...TR }], ['motion']),
+  bloodbath: r('blood', 'blood', ['sword'], ['drips', 'glow']),
+  colossal_might: r('steel', 'gold', ['fist'], ['glow']),
+  elemental_convergence: r('storm', 'arcanePink', ['lightning', { p: 'gem', ...TR }], ['glow']),
+  overflowing_power: r('arcane', 'arcanePink', ['gem', { p: 'sunburst', ...TR }], ['glow']),
+  pursuit: r('fury', 'gold', ['boot', { p: 'sword', ...TR }], ['motion']),
+};
+
+/** Closed explicit recipe inventory used by the worker-backed aura fallback warmer. */
+export const AURA_RECIPE_IDS: ReadonlySet<string> = new Set(Object.keys(AURA_RECIPES));
+
+const GENERIC_AURA_FALLBACKS = {
+  control: r('shadow', 'shadowPurple', ['eye'], ['glow']),
+  defense: r('steel', 'steel', ['shield'], ['glow']),
+  healing: r('nature', 'leafGreen', ['heart'], ['sparkle']),
+  magic: r('arcane', 'arcanePink', ['gem'], ['glow']),
+  movement: r('storm', 'sky', ['boot'], ['motion']),
+  nature: r('nature', 'leafGreen', ['paw', { p: 'leaf', ...TR }]),
+  offense: r('fury', 'gold', ['sword', { p: 'sunburst', ...TR }], ['glow']),
+  penalty: r('shadow', 'bone', ['skull'], ['drips']),
+  utility: r('parchment', 'gold', ['sunburst']),
+} satisfies Record<string, IconRecipe>;
+
+/** Semantic last resort for a known aura kind. This keeps future generic
+ *  `aura_<kind>` identities readable without reviving the unknown M-rune. */
+function genericAuraFallback(id: string): IconRecipe | null {
+  if (!id.startsWith('aura_')) return null;
+  const kind = id.slice('aura_'.length);
+  if (/(sickness|fatigue|mortal|corrode|wither|siphon|vulnerability|critvuln)/.test(kind)) {
+    return GENERIC_AURA_FALLBACKS.penalty;
+  }
+  if (/(heal|hot|sanguine|victory|temporal_echo)/.test(kind)) {
+    return GENERIC_AURA_FALLBACKS.healing;
+  }
+  if (/(stun|incap|silence|blind|disarm|lockout|hex|tongues|fear)/.test(kind)) {
+    return GENERIC_AURA_FALLBACKS.control;
+  }
+  if (/(armor|shield|absorb|defensive|guardian|stasis|buff_dr)/.test(kind)) {
+    return GENERIC_AURA_FALLBACKS.defense;
+  }
+  if (/(speed|haste|dodge|travel|jump)/.test(kind)) {
+    return GENERIC_AURA_FALLBACKS.movement;
+  }
+  if (/(spell|int|spi|mana|arcane|cast|charge|overload|power_echo)/.test(kind)) {
+    return GENERIC_AURA_FALLBACKS.magic;
+  }
+  if (/(pet|form|feral|bear|cat|thorns|energy|resource_sap)/.test(kind)) {
+    return GENERIC_AURA_FALLBACKS.nature;
+  }
+  if (/(ap|crit|dmg|rage|attack|combat|enrage|blood|reckless|avatar|scale|execute)/.test(kind)) {
+    return GENERIC_AURA_FALLBACKS.offense;
+  }
+  return GENERIC_AURA_FALLBACKS.utility;
+}
+
+/** True when `id` has a dedicated aura recipe (the hud iconId resolver lets
+ *  such ids through instead of collapsing them to the aura_<kind> generic). */
+export function hasAuraRecipe(id: string): boolean {
+  return Object.hasOwn(AURA_RECIPES, id);
+}
+
+// Crests: class / mob-family / status glyphs, painted with the same primitive
+// vocabulary so unit-frame portraits and party rows match the spellbook art
+// (replaces the old emoji FAMILY_GLYPH/CLASS_GLYPH; see docs/design/icon-system.md §10).
+const CREST_RECIPES: Record<string, IconRecipe> = {
+  // player classes (motif + class-flavoured background)
+  class_warrior: r('fury', 'steel', ['sword'], ['glow']),
+  class_paladin: r('holy', 'holyGold', ['mace'], ['glow']),
+  class_hunter: r('nature', 'leafGreen', ['arrow'], ['glow']),
+  class_rogue: r(
+    'shadow',
+    'steel',
+    [
+      { p: 'dagger', x: -6, rot: -0.42 },
+      { p: 'dagger', x: 6, rot: 0.42 },
+    ],
+    ['motion'],
+  ),
+  class_priest: r('holy', 'silverWhite', ['cross'], ['glow', 'sparkle']),
+  class_shaman: r('storm', 'sky', ['lightning'], ['glow']),
+  class_mage: r('arcane', 'arcanePink', ['staff', { p: 'gem', ...TR }], ['sparkle', 'glow']),
+  class_warlock: r('shadow', 'shadowPurple', ['skull'], ['glow']),
+  class_druid: r('nature', 'leafGreen', ['paw'], ['sparkle']),
+  // mob families
+  family_beast: r('earth', 'earthBrown', ['paw']),
+  family_humanoid: r('steel', 'steel', ['sword']),
+  family_mudfin: r('drink', 'sky', ['droplet']),
+  family_spider: r('shadow', 'silverWhite', ['web']),
+  family_burrower: r('earth', 'gold', ['candle']),
+  family_undead: r('shadow', 'bone', ['skull']),
+  family_troll: r('junk', 'bone', ['bone']),
+  family_ogre: r('fury', 'earthBrown', ['fist']),
+  family_elemental: r('storm', 'sky', ['lightning'], ['glow']),
+  family_dragonkin: r('fire', 'ember', ['claw_slash'], ['glow']),
+  family_reptile: r('earth', 'leafGreen', ['fang']),
+  family_demon: r('shadow', 'blood', ['skull', { p: 'flame', ...TR }], ['glow']),
+  family_sheep: r('nature', 'silverWhite', ['sheep_head']),
+  // status / interaction markers
+  status_npc: r('parchment', 'gold', ['hand', { p: 'candle', ...TR }], ['glow']),
+  status_boss: r('shadow', 'bone', ['skull'], ['glow']),
+  status_dead: r('junk', 'bone', ['skull']),
+  status_combat: r('fury', 'blood', ['sword']),
+  // talent-tree icons (used when a node has no linked ability — derived from its
+  // stat/global effect; see talentEffectIcon in hud.ts)
+  talent_armor: r('steel', 'steel', ['shield']),
+  talent_crit: r('fury', 'gold', ['sword', { p: 'sunburst', ...TL }]),
+  talent_dodge: r('storm', 'sky', ['shield'], ['motion']),
+  talent_ap: r('fury', 'gold', ['fist']),
+  talent_health: r('blood', 'blood', ['heart']),
+  talent_haste: r('storm', 'sky', ['lightning']),
+  talent_choice: r('arcane', 'arcanePink', ['gem'], ['sparkle']),
+  talent_generic: r('steel', 'steel', ['sigil_rune']),
+  // Book of Deeds display-category base crests (deed_cat_<category>), one per
+  // sidebar bucket; hidden deeds share the Feats shelf crest. Resolution
+  // (bespoke first, else the category base) is deedCrestId in deeds_view.ts.
+  deed_cat_progression: r('treasure', 'gold', ['sunburst'], ['glow']),
+  deed_cat_combat: r('fury', 'blood', [
+    { p: 'sword', x: -6, rot: -0.42 },
+    { p: 'sword', x: 6, rot: 0.42 },
+  ]),
+  deed_cat_dungeon: r('shadow', 'silverWhite', ['skull', { p: 'sword', ...BIG }]),
+  deed_cat_delve: r('earth', 'gold', ['candle'], ['glow']),
+  deed_cat_chronicle: r('parchment', 'gold', ['scroll']),
+  deed_cat_collection: r('treasure', 'gold', ['gem'], ['sparkle']),
+  deed_cat_pvp: r('fury', 'gold', ['fist'], ['motion']),
+  deed_cat_social: r('holy', 'pink', ['heart']),
+  deed_cat_exploration: r('nature', 'earthBrown', ['boot'], ['motion']),
+  deed_cat_feat: r('parchment', 'silverWhite', ['wing'], ['glow']),
+  // Bespoke marquee crests (deed_<id>): the ~20-deed highlight subset of the
+  // launch catalog's Steam marquee list (title/border capstones and iconic
+  // milestones); every other deed renders its category base above.
+  deed_prog_veteran: r('steel', 'leather', ['shield', { p: 'sunburst', ...TL }]),
+  deed_prog_eternal: r('arcane', 'holyGold', ['sunburst'], ['glow', 'arcs']),
+  deed_prog_prestige: r('storm', 'gold', [{ p: 'wing', ...BIG }, 'sunburst'], ['glow']),
+  deed_prog_level_cap: r('storm', 'silverWhite', ['staff', { p: 'sunburst', ...TR }]),
+  deed_cmb_first_blood: r('blood', 'steel', [
+    { p: 'sword', x: -5, rot: -0.42 },
+    { p: 'sword', x: 5, rot: 0.42 },
+    { p: 'droplet', ...TL, pal: 'blood' },
+  ]),
+  deed_cmb_thunzharr_unbroken: r('storm', 'sky', ['lightning'], ['crack', 'glow']),
+  deed_dgn_nythraxis: r('fire', 'ember', [{ p: 'shield', ...BIG }, 'claw_slash'], ['glow']),
+  deed_dgn_korzul_flawless: r('shadow', 'bone', [
+    'skull',
+    { p: 'sword', y: 4, rot: Math.PI, s: 0.8 },
+  ]),
+  deed_dgn_nythraxis_deathless: r('holy', 'silverWhite', ['skull'], ['arcs', 'glow']),
+  deed_dgn_deepward: r('shadow', 'gold', ['shield', { p: 'gem', ...TL }], ['glow']),
+  deed_dlv_nhalia_bells: r('shadow', 'silverWhite', ['bell'], ['glow']),
+  deed_dlv_tumbler_premium: r('treasure', 'gold', ['crate', { p: 'gem', ...TL }], ['sparkle']),
+  deed_chr_vale_chapter_iii: r('nature', 'leafGreen', ['scroll', { p: 'leaf', ...TL }]),
+  deed_chr_marsh_chapter_iii: r('drink', 'venom', ['scroll', { p: 'droplet', ...TL }]),
+  deed_chr_peaks_chapter_iii: r('frost', 'sky', ['scroll', { p: 'snowflake', ...TL }]),
+  deed_col_discovery_250: r('treasure', 'gold', ['crate'], ['sparkle', 'glow']),
+  deed_col_seven_regalia: r('treasure', 'arcanePink', ['helm', { p: 'gem', ...TL }], ['sparkle']),
+  deed_pvp_arena_1v1_1900: r('fury', 'holyGold', [{ p: 'sunburst', ...BIG }, 'sword'], ['glow']),
+  deed_pvp_vcup_wins_25: r('nature', 'gold', ['roar', { p: 'coin', ...BR }]),
+  deed_soc_wyrms_hoard: r(
+    'treasure',
+    'gold',
+    [
+      { p: 'coin', x: -8, y: 8, s: 0.8 },
+      { p: 'coin', x: 8, y: -6 },
+    ],
+    ['sparkle'],
+  ),
+  deed_exp_world_traveler: r('nature', 'sky', ['crosshair', { p: 'boot', ...BR }], ['glow']),
+};
+
+// ---------------------------------------------------------------------------
+// Procedural fallbacks for ids without a hand-assigned recipe
+// ---------------------------------------------------------------------------
+
+const UNKNOWN_RECIPE: IconRecipe = r('junk', 'silverWhite', ['sigil_rune']);
+
+const SCHOOL_STYLE: Record<string, { bg: BgName; pal: PaletteName }> = {
+  physical: { bg: 'steel', pal: 'steel' },
+  fire: { bg: 'fire', pal: 'ember' },
+  frost: { bg: 'frost', pal: 'ice' },
+  arcane: { bg: 'arcane', pal: 'arcanePink' },
+  shadow: { bg: 'shadow', pal: 'shadowPurple' },
+  holy: { bg: 'holy', pal: 'holyGold' },
+  nature: { bg: 'nature', pal: 'leafGreen' },
+};
+
+function has(name: string, words: string[]): boolean {
+  return words.some((w) => name.includes(w));
+}
+
+function abilityPrimitive(name: string, effectsJson: string): PrimitiveName {
+  if (has(name, ['shield', 'armor', 'protection', 'barrier', 'skin', 'block'])) return 'shield';
+  if (has(name, ['renew', 'rejuv', 'regrowth', 'heart'])) return 'heart';
+  if (has(name, ['heal', 'mend', 'touch', 'prayer'])) return 'cross';
+  if (has(name, ['bolt', 'missile'])) return 'bolt';
+  if (has(name, ['shot', 'arrow', 'aim'])) return 'arrow';
+  if (has(name, ['flame', 'fire', 'immolat', 'burn', 'scorch', 'pyro'])) return 'flame';
+  if (has(name, ['frost', 'ice', 'chill', 'freez', 'blizzard'])) return 'snowflake';
+  if (has(name, ['lightning', 'thunder', 'storm', 'shock', 'adrenaline', 'haste']))
+    return 'lightning';
+  if (
+    has(name, [
+      'curse',
+      'pain',
+      'corrupt',
+      'death',
+      'plague',
+      'agony',
+      'fear',
+      'terror',
+      'horror',
+      'scream',
+    ])
+  )
+    return 'skull';
+  if (has(name, ['root', 'entangl', 'vine', 'grasp'])) return 'tendrils';
+  if (has(name, ['sting', 'bite', 'fang', 'venom', 'serpent'])) return 'fang';
+  if (has(name, ['claw', 'rend', 'rake', 'slash', 'swipe', 'lacerat', 'eviscerat']))
+    return 'claw_slash';
+  if (has(name, ['sprint', 'dash', 'charge', 'travel', 'stampede'])) return 'boot';
+  if (has(name, ['stab', 'ambush', 'dagger', 'rupture', 'kidney'])) return 'dagger';
+  if (has(name, ['hammer', 'mace', 'judg'])) return 'mace';
+  if (has(name, ['strike', 'slam', 'blade', 'sword', 'cleave', 'execute', 'mortal', 'whirlwind']))
+    return 'sword';
+  if (has(name, ['shout', 'roar', 'rally', 'might'])) return 'fist';
+  if (has(name, ['moon', 'star'])) return 'moon';
+  if (has(name, ['light', 'holy', 'bless', 'seal', 'smite', 'nova', 'blast'])) return 'sunburst';
+  if (has(name, ['mind', 'eye', 'gaze', 'intellect', 'focus'])) return 'eye';
+  if (has(name, ['mark', 'paw', 'bear', 'cat', 'wild', 'aspect', 'beast'])) return 'paw';
+  if (has(name, ['wing', 'hawk', 'swoop', 'eagle'])) return 'wing';
+  if (has(name, ['leaf', 'wrath', 'thorn', 'nature', 'bloom'])) return 'leaf';
+  if (has(name, ['drain', 'tap', 'siphon', 'leech', 'wave'])) return 'droplet';
+  if (has(name, ['word', 'rune', 'sigil', 'totem'])) return 'sigil_rune';
+  if (effectsJson.toLowerCase().includes('heal')) return 'cross';
+  return 'sigil_rune';
+}
+
+function abilityFallback(id: string): IconRecipe | null {
+  const a = Object.hasOwn(ABILITIES, id) ? ABILITIES[id] : undefined;
+  if (!a) return null;
+  const style = SCHOOL_STYLE[a.school] ?? SCHOOL_STYLE.physical;
+  const prim = abilityPrimitive(a.name.toLowerCase(), JSON.stringify(a.effects ?? []));
+  const isHelpful = a.targetType === 'friendly' || !a.requiresTarget;
+  return r(style.bg, style.pal, [prim], isHelpful ? ['glow'] : undefined);
+}
+
+function qualityFx(quality: string | undefined): FxName[] | undefined {
+  if (quality === 'epic') return ['glow', 'sparkle'];
+  if (quality === 'rare') return ['glow'];
+  return undefined;
+}
+
+function trinketPrimitive(name: string): {
+  p: PrimitiveName;
+  pal: PaletteName;
+} {
+  if (has(name, ['skull', 'head'])) return { p: 'skull', pal: 'bone' };
+  if (has(name, ['bone'])) return { p: 'bone', pal: 'bone' };
+  if (has(name, ['pelt', 'hide', 'fur', 'scrap', 'bandana', 'cloth']))
+    return { p: 'pelt', pal: 'earthBrown' };
+  if (has(name, ['fang', 'tooth', 'tusk', 'claw', 'talon'])) return { p: 'fang', pal: 'bone' };
+  if (has(name, ['silk', 'web'])) return { p: 'web', pal: 'silverWhite' };
+  if (has(name, ['crate', 'supply', 'cargo', 'box', 'cask', 'barrel']))
+    return { p: 'crate', pal: 'earthBrown' };
+  if (has(name, ['candle', 'wax', 'tallow'])) return { p: 'candle', pal: 'gold' };
+  if (has(name, ['sigil', 'rune', 'talisman', 'idol', 'totem', 'amulet', 'charm']))
+    return { p: 'sigil_rune', pal: 'arcanePink' };
+  if (has(name, ['essence', 'ghost', 'spirit', 'soul', 'ember']))
+    return { p: 'flame', pal: 'silverWhite' };
+  if (has(name, ['gem', 'jewel', 'crystal', 'shard', 'stone', 'ore']))
+    return { p: 'gem', pal: 'arcanePink' };
+  if (
+    has(name, [
+      'letter',
+      'scroll',
+      'note',
+      'missive',
+      'ledger',
+      'map',
+      'journal',
+      'report',
+      'orders',
+      'plans',
+    ])
+  )
+    return { p: 'scroll', pal: 'leather' };
+  if (has(name, ['heart'])) return { p: 'heart', pal: 'blood' };
+  if (has(name, ['eye'])) return { p: 'eye', pal: 'sky' };
+  if (has(name, ['coin', 'gold', 'payment'])) return { p: 'coin', pal: 'gold' };
+  if (has(name, ['vial', 'blood', 'sample', 'venom', 'extract']))
+    return { p: 'potion', pal: 'venom' };
+  if (has(name, ['scale', 'slime'])) return { p: 'droplet', pal: 'venom' };
+  if (has(name, ['feather', 'wing'])) return { p: 'wing', pal: 'sky' };
+  if (has(name, ['key'])) return { p: 'sigil_rune', pal: 'gold' };
+  return { p: 'scroll', pal: 'leather' };
+}
+
+function itemFallback(id: string): IconRecipe | null {
+  // Own-property gate plus shape check: ITEMS is a prototype-bearing Record,
+  // so a raw server id like '__proto__' resolves a truthy non-def whose
+  // missing `name` would throw right here, and 'constructor' resolves a
+  // FUNCTION whose `.name` is a real string, which a shape check alone would
+  // wave through to a garbage derived recipe. This is the unknown-id path
+  // every stale-client fallback surface funnels through; today the
+  // weapon-art arm (staticIconUrl, extracted from iconDataUrl in v0.32.0)
+  // happens to short-circuit prototype keys
+  // first, and this guard makes the fallback's throw-freedom a property of
+  // this function rather than of that coincidence surviving refactors.
+  const it = Object.hasOwn(ITEMS, id) ? ITEMS[id] : undefined;
+  if (!it || typeof it.name !== 'string') return null;
+  const name = it.name.toLowerCase();
+  const fx = qualityFx(it.quality);
+  if (it.kind === 'weapon') {
+    const prim: PrimitiveName =
+      it.weapon?.dagger || has(name, ['dagger', 'dirk', 'knife', 'shiv', 'kris'])
+        ? 'dagger'
+        : has(name, ['staff', 'rod', 'cane', 'branch', 'spire'])
+          ? 'staff'
+          : has(name, ['mace', 'hammer', 'club', 'maul', 'morningstar', 'cudgel'])
+            ? 'mace'
+            : has(name, ['axe', 'hatchet', 'cleaver'])
+              ? 'axe'
+              : has(name, ['bow'])
+                ? 'bow'
+                : has(name, ['wand'])
+                  ? 'bolt'
+                  : 'sword';
+    return r('steel', 'steel', [prim], fx);
+  }
+  if (it.kind === 'armor') {
+    const isCloth = has(name, [
+      'robe',
+      'vestment',
+      'garb',
+      'quilted',
+      'woven',
+      'silk',
+      'linen',
+      'mantle',
+    ]);
+    const isMetal = has(name, ['chain', 'plate', 'mail', 'steel', 'iron', 'bronze']);
+    const prim: PrimitiveName =
+      it.slot === 'feet'
+        ? 'boot'
+        : it.slot === 'legs'
+          ? 'trousers'
+          : it.slot === 'helmet'
+            ? 'helm'
+            : it.slot === 'waist'
+              ? 'belt'
+              : it.slot === 'shoulder'
+                ? 'pauldron'
+                : it.slot === 'gloves'
+                  ? 'gauntlet'
+                  : has(name, ['shield', 'bulwark', 'aegis'])
+                    ? 'shield'
+                    : 'chestplate';
+    const pal: PaletteName = isCloth ? 'cloth' : isMetal ? 'steel' : 'leather';
+    return r(isCloth ? 'cloth' : isMetal ? 'steel' : 'leather', pal, [{ p: prim, pal }], fx);
+  }
+  if (it.kind === 'food') {
+    const prim: PrimitiveName = has(name, ['bread', 'loaf', 'bun', 'cake', 'biscuit', 'pie'])
+      ? 'bread'
+      : 'meat';
+    return r('food', prim === 'bread' ? 'gold' : 'ember', [prim]);
+  }
+  if (it.kind === 'drink') {
+    const isFlask = has(name, ['potion', 'elixir', 'draught', 'brew', 'water']);
+    return isFlask
+      ? r('drink', 'sky', [{ p: 'potion', pal: 'sky' }])
+      : r('drink', 'sky', ['waterskin']);
+  }
+  if (it.kind === 'potion' || it.kind === 'elixir' || it.kind === 'flask') {
+    // Crafted consumables without curated art (the trained-ladder draughts and
+    // elixirs, plus the phase 10 apex flasks) render the flask, tinted by
+    // function, instead of falling through to the trinket arm below. The
+    // sparkle marks the timed-buff half of the family, so a flask carries it
+    // for the same reason an elixir does.
+    const pal: PaletteName = has(name, ['healing'])
+      ? 'ember'
+      : has(name, ['mana'])
+        ? 'sky'
+        : 'venom';
+    const timedBuff = it.kind === 'elixir' || it.kind === 'flask';
+    return r('arcane', pal, [{ p: 'potion', pal }], timedBuff ? ['sparkle'] : fx);
+  }
+  if (it.kind === 'tool') {
+    const prim: PrimitiveName = has(name, ['pole', 'rod', 'staff']) ? 'staff' : 'mace';
+    return r('wood', 'earthBrown', [prim], fx);
+  }
+  if (it.kind === 'bag') {
+    const isCloth = has(name, ['linen', 'silk', 'woven', 'cloth', 'wool']);
+    return r(isCloth ? 'cloth' : 'leather', isCloth ? 'cloth' : 'leather', ['sack'], fx);
+  }
+  // Recipe patterns (kind 'recipe') are a written page, so they take the same
+  // 'parchment' ground quest items do rather than falling through to the junk
+  // trinket below, which would ink every unlearned pattern the color of vendor
+  // trash. It sits ahead of BOTH arms below: the fall-through keys on 'quest'
+  // alone, and the fish arm matches on the NAME with no kind gate, so a pattern
+  // named "Pattern: Steel Longsword" would draw a fish off the 'eel' substring.
+  // Every arm above is kind-gated and cannot match a 'recipe'.
+  if (it.kind === 'recipe') return r('parchment', 'leather', ['scroll'], fx);
+  // Buff scrolls (kind 'scroll', phase 06) take the same parchment fallback
+  // explicitly: no kind-gated arm above matches them (the flask arm gates on
+  // potion|elixir), so without this row an artless scroll would fall through
+  // to the name-matched trinket cascade. Inert while every shipped scroll
+  // carries committed WebP; this is the artless-id backstop.
+  if (it.kind === 'scroll') return r('parchment', 'leather', ['scroll'], fx);
+  // Raw fishing catches left kind food for cooking reagents; keep a fish-like
+  // procedural recipe so they never fall through to generic junk trinkets when
+  // static WebP is missing. Name tokens cover cooked fish siblings and rares.
+  if (
+    isRawCookingCatch(id) ||
+    has(name, ['trout', 'perch', 'pike', 'eel', 'carp', 'koi', 'fish'])
+  ) {
+    return r('drink', 'sky', ['fish'], fx);
+  }
+  const t = trinketPrimitive(name);
+  return r(it.kind === 'quest' ? 'parchment' : 'junk', t.pal, [{ p: t.p, pal: t.pal }], fx);
+}
+
+// ---------------------------------------------------------------------------
+// Compositor
+// ---------------------------------------------------------------------------
+
+const SPECK_COUNT = 40;
+
+type PaintCanvas = HTMLCanvasElement | OffscreenCanvas;
+
+function getCanvas2d(canvas: PaintCanvas): CanvasRenderingContext2D {
+  // OffscreenCanvasRenderingContext2D implements every operation used by the
+  // procedural recipes. The DOM type has a few extra methods, so keep the
+  // renderer's existing narrow context type after this boundary.
+  const ctx = (canvas as HTMLCanvasElement).getContext('2d');
+  if (!ctx) throw new Error('2D canvas context is unavailable');
+  return ctx;
+}
+
+function paintIconCanvas(
+  canvas: PaintCanvas,
+  recipe: IconRecipe,
+  seedKey: string,
+  size: number,
+): void {
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = getCanvas2d(canvas);
+  ctx.scale(size / 100, size / 100);
+
+  ctx.save();
+  rrPath(ctx, 0.5, 0.5, 99, 99, 12);
+  ctx.clip();
+
+  // background
+  const bgc = BACKGROUNDS[recipe.bg];
+  ctx.fillStyle = rad(ctx, 35, 30, 85, [
+    [0, bgc[0]],
+    [0.55, bgc[1]],
+    [1, bgc[2]],
+  ]);
+  ctx.fillRect(0, 0, 100, 100);
+  // vignette
+  const vg = ctx.createRadialGradient(50, 50, 55, 50, 50, 85);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,0.45)');
+  ctx.fillStyle = vg;
+  ctx.fillRect(0, 0, 100, 100);
+  // seeded speck noise so it doesn't read as a flat CSS gradient
+  const rnd = mulberry32(hashStr(seedKey));
+  for (let i = 0; i < SPECK_COUNT; i++) {
+    ctx.fillStyle = i % 2 ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.06)';
+    ctx.fillRect(2 + rnd() * 96, 2 + rnd() * 96, 1.4, 1.4);
+  }
+
+  ctx.translate(50, 50);
+  const pal = PALETTES[recipe.pal];
+  const fx = recipe.fx ?? [];
+  if (fx.includes('glow')) FX.glow(ctx, pal);
+  for (const pl of recipe.prims) {
+    ctx.save();
+    ctx.translate(pl.x ?? 0, pl.y ?? 0);
+    if (pl.rot) ctx.rotate(pl.rot);
+    if (pl.s) ctx.scale(pl.s, pl.s);
+    if (pl.alpha) ctx.globalAlpha = pl.alpha;
+    ctx.shadowColor = 'rgba(0,0,0,0.6)';
+    ctx.shadowBlur = 3;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 2;
+    PRIMITIVES[pl.p](ctx, PALETTES[pl.pal ?? recipe.pal]);
+    ctx.restore();
+  }
+  for (const f of fx) {
+    if (f !== 'glow') FX[f](ctx, pal);
+  }
+  ctx.restore();
+
+  // bevel frame (baked in; quality border lives in CSS outside it)
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#000000';
+  rrPath(ctx, 1, 1, 98, 98, 11);
+  ctx.stroke();
+  const eg = ctx.createLinearGradient(0, 0, 100, 100);
+  eg.addColorStop(0, 'rgba(255,255,255,0.28)');
+  eg.addColorStop(0.5, 'rgba(255,255,255,0.05)');
+  eg.addColorStop(0.55, 'rgba(0,0,0,0.1)');
+  eg.addColorStop(1, 'rgba(0,0,0,0.55)');
+  ctx.lineWidth = 1.5;
+  ctx.strokeStyle = eg;
+  rrPath(ctx, 2.4, 2.4, 95.2, 95.2, 10);
+  ctx.stroke();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = withAlpha(bgc[0], 0.22);
+  rrPath(ctx, 3.6, 3.6, 92.8, 92.8, 9);
+  ctx.stroke();
+}
+
+function compose(recipe: IconRecipe, seedKey: string, size: number): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  paintIconCanvas(canvas, recipe, seedKey, size);
+  return canvas;
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+// classic-MMO item-name quality colors (shared by tooltips, bags, rewards)
+export const QUALITY_COLOR: Record<string, string> = {
+  poor: '#9d9d9d',
+  common: '#ffffff',
+  uncommon: '#1eff00',
+  rare: '#0070dd',
+  epic: '#a335ee',
+  legendary: '#ff8000',
+};
+
+// ---------------------------------------------------------------------------
+// Painted weapon inventory icons
+//
+// Each authored weapon ships bespoke painted art under /ui/items/<id>.webp.
+// ITEM_WEAPON_VARIANTS remains the independent held-model registry; its KayKit
+// JPG renders stay available to Armory/tooling surfaces but no longer define a
+// weapon's inventory identity. Generated Heroic copies intentionally reuse the
+// matching base painting, just as they inherit the base held model.
+// ---------------------------------------------------------------------------
+
+const WEAPON_ICON_DIR = '/ui/items';
+
+export const WEAPON_IMAGE_IDS: ReadonlySet<string> = new Set(Object.keys(ITEM_WEAPON_VARIANTS));
+
+/** Static URL of a weapon's painted inventory art, or null for a non-weapon. */
+export function weaponIconUrl(id: string): string | null {
+  // Own-property gates keep prototype keys and stale server IDs from becoming
+  // arbitrary asset paths.
+  if (Object.hasOwn(ITEM_WEAPON_VARIANTS, id)) return `${WEAPON_ICON_DIR}/${id}.webp`;
+
+  // Keep ITEM_WEAPON_VARIANTS base-oriented and mirror held-model inheritance.
+  const item = Object.hasOwn(ITEMS, id) ? ITEMS[id] : undefined;
+  const baseId = item?.heroicOf;
+  return baseId && Object.hasOwn(ITEM_WEAPON_VARIANTS, baseId)
+    ? `${WEAPON_ICON_DIR}/${baseId}.webp`
+    : null;
+}
+
+// Hand-picked image icons for class abilities, committed as 128px WebP under
+// public/ui/skills/<class>/<id>.webp (each icon's provenance/license is recorded in the
+// per-class mapping.json). WebP is the source of truth: the tree is WebP only, no PNGs.
+// To add an icon, drop the art into public/ui/skills/<class>/ in any common raster format
+// and run `npm run assets:skills` (scripts/convert_skill_icons_webp.mjs): it encodes each
+// non-webp image to WebP (quality 82, alphaQuality 100, smartSubsample true, effort 6) and
+// deletes the original. Then list its id below. Class folder is derived from the ability's
+// own `class`, so adding a class is just listing its ability ids here. Abilities not listed
+// fall through to the procedural ABILITY_RECIPES below. ABILITY_IMAGE_IDS and abilityImageUrl
+// are exported for the gate in tests/skill_icons.test.ts.
+const SKILL_ICON_DIR = '/ui/skills';
+const WARLOCK_TALENT_IMAGE_IDS = new Set<string>([
+  'wlk_r5_bane',
+  'wlk_r5_improved_corruption',
+  'wlk_r5_improved_immolate',
+  'wlk_r8_voidfeast',
+  'wlk_r8_howl_of_terror',
+  'wlk_r8_curse_of_exhaustion',
+  'wlk_r11_improved_life_tap',
+  'wlk_r11_fel_concentration',
+  'wlk_r11_demon_armor',
+  'wlk_r14_amplify_curse',
+  'wlk_r14_ruin',
+  'wlk_r14_shadow_mastery',
+  'wlk_r17_death_coil',
+  'wlk_r17_improved_fear',
+  'wlk_r17_demonic_resilience',
+  'wlk_r20_chaos_bolt',
+  'wlk_r20_grimoire_of_haste',
+  'wlk_r20_curse_mastery',
+]);
+export const ABILITY_IMAGE_IDS = new Set<string>([
+  // paladin (original project art for the overhaul and talent abilities, plus
+  // the existing CraftPix premium "RPG Paladin skill icons" base set)
+  'divine_ascension',
+  'devotion_ward',
+  'aura_mastery',
+  'hammer_of_grace',
+  'hushbrand',
+  'guardian_covenant',
+  'solar_step',
+  'solar_invocation',
+  'recall_the_fallen',
+  'beacon_of_light',
+  'radiant_devotion',
+  'dawn_devotion',
+  'grace_devotion',
+  'final_edict',
+  'dawnfall',
+  'sun_gods_verdict',
+  'valkyrs_calling',
+  'faithforged_guard',
+  'sacred_form',
+  'mercy_lance',
+  'dawns_embrace',
+  'radiant_chorus',
+  'life_covenant',
+  'aegis_first_dawn',
+  'vowkeeper_strike',
+  'bastion_rite',
+  'sunward_disc',
+  'sacred_challenge',
+  'bastion_sweep',
+  'oath_chain',
+  'veilbound_march',
+  'seal_of_righteousness',
+  'holy_light',
+  'devotion_aura',
+  'blessing_of_might',
+  'divine_protection',
+  'sacred_bulwark',
+  'hammer_of_justice',
+  'lay_on_hands',
+  'holy_taunt',
+  'flash_of_light',
+  'exorcism',
+  'consecration',
+  'righteous_fury',
+  'retribution_aura',
+  'crusader_strike',
+  'holy_shock',
+  'holy_shield',
+  'rebuke',
+  'avenging_wrath',
+  'hammer_of_wrath',
+  // hunter (CraftPix premium packs plus project-generated v0.29 class rework art).
+  'raptor_strike',
+  'mongoose_bite',
+  'arcane_shot',
+  'serpent_sting',
+  'concussive_shot',
+  'aimed_shot',
+  'rapid_fire',
+  'volley',
+  'counter_shot',
+  'bestial_wrath',
+  'wing_clip',
+  'aspect_of_the_cheetah',
+  'pack_command',
+  'stampede',
+  'unleash_beast',
+  'measured_shot',
+  'pack_rally',
+  'shrapnel_charge',
+  'bloodtrail_assault',
+  'trailbreak',
+  'wildheart',
+  'shellskin',
+  'frostjaw_trap',
+  'cold_focus',
+  'bloodhook',
+  'hunting_momentum',
+  'fieldcraft_reentry',
+  // priest (CraftPix premium packs plus project-generated v0.29 class rework art).
+  'smite',
+  'lesser_heal',
+  'power_word_fortitude',
+  'power_word_shield',
+  'renew',
+  'mind_blast',
+  'heal',
+  'flash_heal',
+  'psychic_scream',
+  'prayer_of_healing',
+  'holy_nova',
+  'shadowform',
+  'veilstep',
+  'scouring_mercy',
+  'seraphic_vigil',
+  'summon_tithefiend',
+  'martyrs_aegis',
+  'choir_of_deliverance',
+  'prayer_of_returning',
+  // warlock (CraftPix premium "RPG Warlock skill icons" pack + "RPG Demon skill icons"
+  // pack for the summons/life_tap/searing_pain that the warlock pack couldn't cover).
+  'shadow_bolt',
+  'demon_skin',
+  'immolate',
+  'corruption',
+  'curse_of_agony',
+  'drain_life',
+  'fear',
+  'shadowburn',
+  'summon_imp',
+  'summon_voidwalker',
+  'summon_succubus',
+  'summon_felhunter',
+  'summon_felguard',
+  'summon_infernal',
+  'summon_doomguard',
+  'life_tap',
+  'searing_pain',
+  // OpenAI-generated Warlock spell art. These complete the current ability catalog while
+  // preserving the existing CraftPix-backed ids above.
+  'rain_of_fire',
+  'evil_eye',
+  'maledict_gaze',
+  'needle_of_fate',
+  'sentence',
+  'cursed_accomplice',
+  'hex_of_violence',
+  'cruel_pact',
+  'vicarious_suffering',
+  'possess_evil_eye',
+  'hour_of_judgment',
+  'coven',
+  'soul_lance',
+  'litany_of_guilt',
+  'umbral_anchor',
+  'soulwell',
+  'ruinous_brand',
+  'soul_harvest',
+  'raise_graveguard',
+  'raise_skeletal_warrior',
+  'raise_bone_mage',
+  'raise_gravewing',
+  'bone_armor',
+  'corpse_explosion',
+  'funeral_harvest',
+  'ossuary_mark',
+  'unholy_command',
+  'reaping_command',
+  'sacrifice_undead',
+  'army_of_the_dead',
+  'metamorphosis',
+  'siphon_life',
+  'conflagrate',
+  'spell_lock',
+  'voidfeast',
+  'sacrilegious_march',
+  'dark_pact',
+  'abyssal_rift',
+  'howl_of_terror',
+  'curse_of_exhaustion',
+  'death_coil',
+  'chaos_bolt',
+  'cinderhide',
+  // Painted signature actions for the two controllable overhaul demons. These
+  // ids are not player ABILITIES, so abilityImageUrl's class projection below
+  // keeps their Warlock ownership explicit.
+  'emberkin_felbolt',
+  'gloomshade_abyssal_chain',
+  // Shared pet-bar commands are synthetic action identities rather than player
+  // ABILITIES. Their dedicated folder keeps Hunter, Mage, and Warlock ownership
+  // truthful while still using the action-bar image route.
+  ...PET_ACTION_IMAGE_IDS,
+  // Choice-row talents use their own images instead of borrowing spell art.
+  ...WARLOCK_TALENT_IMAGE_IDS,
+  // rogue (CraftPix premium "RPG Thief skill icons" pack). garrote/sap/expose_armor/blind
+  // have no fitting art (no garrote-wire, blackjack, armor-shred, or eye-powder) — procedural.
+  'sinister_strike',
+  'eviscerate',
+  'backstab',
+  // 2026-08-09 generated wave (missing-painted-icons accepted-art manifest).
+  'venom_dart',
+  'flurry_of_knives',
+  'thieves_chorus',
+  'venomrend',
+  'body_blow',
+  'knockout_blow',
+  'veilstrike',
+  'gouge',
+  'cheap_shot',
+  'evasion',
+  'slice_and_dice',
+  'sprint',
+  'crippling_poison',
+  'kidney_shot',
+  'ambush',
+  'rupture',
+  'vanish',
+  'instant_poison',
+  'adrenaline_rush',
+  'deadly_poison',
+  'melting_acid',
+  'nightshade_coating',
+  'stealth',
+  // warrior (CraftPix premium "RPG Warrior" + "RPG Berserker" packs; rage/fury abilities
+  // drew from berserker). taunt has no provoke art and stays procedural.
+  'heroic_strike',
+  'battle_shout',
+  'charge',
+  'thunder_clap',
+  'hamstring',
+  'bloodrage',
+  'overpower',
+  'raging_gale',
+  'execute',
+  'slam',
+  'red_harvest',
+  'cleave',
+  'battle_stance',
+  'defensive_stance',
+  'demoralizing_shout',
+  'intimidating_shout',
+  'sunder_armor',
+  'mortal_strike',
+  'bloodthirst',
+  'shield_slam',
+  'furious_mending',
+  'emboldening_roar',
+  'raised_guard',
+  'iron_resolve',
+  'faultline',
+  'defiant_bellow',
+  'revenge',
+  'rallying_cry',
+  'berserker_stance',
+  'die_by_sword',
+  'intervene',
+  'storm_bolt',
+  'victory_rush',
+  'piercing_howl',
+  'bladestorm',
+  'colossal_might',
+  'second_wind',
+  'pursuit',
+  'lingering_dread',
+  'anger_management',
+  'battle_rhythm',
+  'recklessness',
+  'avatar',
+  'bloodbath',
+  'sanguine_aura',
+  'pummel',
+  'sweeping_strikes',
+  'breachmaker',
+  'heroic_leap',
+  'attack',
+  'whirlwind',
+  'berserker_rage',
+  'double_charge',
+  'crushing_charge',
+  'combat_mastery',
+  // mage (CraftPix premium pyromancer/cryomancer/lightning-mage packs — fire/frost/arcane;
+  // aeromancer unused, mage has no wind). conjure_food and polymorph have no fit (no
+  // bread/food or sheep art) and stay procedural.
+  'fireball',
+  'fireball_form',
+  'counterspell',
+  'frost_armor',
+  'arcane_intellect',
+  'frostbolt',
+  'conjure_water',
+  'fire_blast',
+  'arcane_missiles',
+  'frost_nova',
+  'arcane_explosion',
+  'scorch',
+  'ice_barrier',
+  'pyroblast',
+  'ice_lance',
+  'flurry',
+  'frozen_orb',
+  'blizzard',
+  'icy_veins',
+  'ice_floes',
+  'double_blink',
+  'blink_while_casting',
+  'warded',
+  'temporal_rift',
+  'greater_invisibility',
+  'rings_of_frost',
+  'snap_polymorph',
+  'twin_frost_nova',
+  'power_echo',
+  'overload',
+  'presence_of_mind',
+  'elemental_convergence',
+  'cold_snap',
+  'mass_barrier',
+  'rune_of_power',
+  'overflowing_power',
+  'evocation',
+  // Owner-provided Chronomancy sheet, cropped into individual painted icons.
+  'blink',
+  'temporal_mend',
+  'temporal_barrier',
+  'temporal_echo',
+  'arcane_surge',
+  'collective_reversal',
+  'temporal_hourglass',
+  // Owner-provided spec icon sheets (2026-07-14: frost.png / "Mago fuego.png" /
+  // Chronomancer.png + a standalone combustion.png on the desktop), cropped into
+  // individual painted icons (the label rows trimmed off).
+  'fingers_of_frost',
+  'summon_water_elemental',
+  'ice_block',
+  'brain_freeze',
+  'shatter',
+  'glacial_spike',
+  'glacial_front',
+  'ignition',
+  'hot_streak',
+  'blazing_barrier',
+  'meteor',
+  'dragons_breath',
+  'flamestrike',
+  'combustion',
+  'temporal_cascade',
+  'temporal_reversal',
+  'temporal_rewind',
+  'temporal_acceleration',
+  'perfect_moment',
+  // druid (CraftPix premium "RPG Druid" pack). moonfire (no moon), bear_charge, pounce,
+  // demoralizing_roar, hibernate (no sleep), insect_swarm have no fitting art — procedural.
+  'wrath',
+  'healing_touch',
+  'mark_of_the_wild',
+  'rejuvenation',
+  'thorns',
+  'entangling_roots',
+  'bear_form',
+  'maul',
+  'growl',
+  'cat_form',
+  'prowl',
+  'rake',
+  'claw',
+  'regrowth',
+  'ferocious_bite',
+  'barkskin',
+  'swipe',
+  'starfire',
+  'travel_form',
+  'enrage',
+  'bash',
+  'faerie_fire',
+  'dash',
+  'tigers_fury',
+  'rip',
+  // shaman (CraftPix generic packs plus project-generated v0.29 class rework art).
+  'lightning_bolt',
+  // 2026-08-09 generated wave: the bespoke Elemental Trance replaces the
+  // interim elemental_mastery duplicate.
+  'elemental_trance',
+  'rockbiter_weapon',
+  'healing_wave',
+  'earth_shock',
+  'lightning_shield',
+  'flame_shock',
+  'flametongue_weapon',
+  'frost_shock',
+  'frostbrand_weapon',
+  'ghost_wolf',
+  'stormstrike',
+  'chain_lightning',
+  'earthquake',
+  'bloodlust',
+  'elemental_mastery',
+  'elemental_trance',
+  'chain_heal',
+  'galeheart_weapon',
+  'thunder_reservoir',
+  'warspirit_cadence',
+  'stormsurge',
+  'lifespring_weapon',
+  'unleash_weapon',
+  'tidecall',
+  'stoneward',
+  'primal_exaltation',
+  'ancestor_return',
+  // cross-class fills from the two generic CraftPix "100 RPG/skill icon" packs — abilities
+  // their own class pack couldn't cover but a generic icon fit. (warrior taunt completes warrior.)
+  'aspect_of_the_hawk',
+  'tame_beast',
+  'dismiss_pet', // hunter
+  'shadow_word_pain', // priest
+  'sap',
+  'expose_armor', // rogue
+  'taunt', // warrior
+  'moonfire',
+  'demoralizing_roar',
+  'insect_swarm', // druid
+  // final bespoke fills from per-ability "_Missing_*" packs — completes every class.
+  'aspect_of_the_monkey',
+  'revive_pet', // hunter
+  'mind_flay', // priest
+  'garrote',
+  'blind', // rogue
+  'conjure_food',
+  'polymorph', // mage
+  'bear_charge',
+  'hibernate',
+  'pounce', // druid
+  // Project-generated painted additions (OpenAI built-in image generation). These 90
+  // complete every live ABILITIES record while the procedural recipes below remain intact
+  // as resilience fallbacks. Per-asset prompts, reference roles, ownership and accepted
+  // hashes live in the class mapping files and missing-painted-icons accepted-art manifest.
+  // druid
+  'berserk',
+  // 2026-08-09 generated wave (missing-painted-icons accepted-art manifest).
+  'moonseed',
+  'moonlash',
+  'sunlance',
+  'redharvest',
+  'marrowbreak',
+  'overbloom',
+  'feral_charge',
+  'frenzied_regeneration',
+  'challenging_roar',
+  'hurricane',
+  'innervate',
+  'moonkin_form',
+  'primal_reflexes',
+  'skull_bash',
+  'swiftmend',
+  'tranquility',
+  'typhoon',
+  'wildwake',
+  'grove_awakening',
+  // hunter
+  'aspect_of_the_wild',
+  'bestial_wrath',
+  'counter_shot',
+  'deterrence',
+  'frost_trap',
+  'mend_pet',
+  'multi_shot',
+  'startle_shot',
+  'trueshot_aura',
+  'volley',
+  'wyvern_sting',
+  // mage
+  'arcane_power',
+  'cone_of_cold',
+  'deep_freeze',
+  'spellsteal',
+  // paladin
+  'avenging_wrath',
+  'crusader_strike',
+  'hammer_of_wrath',
+  'holy_shield',
+  'holy_shock',
+  'holy_taunt',
+  'rebuke',
+  'sacred_bulwark',
+  // priest
+  'desperate_prayer',
+  'holy_nova',
+  'inner_focus',
+  'mind_sear',
+  'power_infusion',
+  'prayer_of_healing',
+  'psychic_scream',
+  'shadowform',
+  'silence',
+  // rogue
+  'blade_flurry',
+  'cloak_of_shadows',
+  'cold_blood',
+  'ghostly_strike',
+  'hemorrhage',
+  'kick',
+  'preparation',
+  'shadowstep',
+  'smoke_screen',
+  // shaman
+  'bloodlust',
+  'chain_heal',
+  'chain_lightning',
+  'earthbind',
+  'earthquake',
+  'elemental_mastery',
+  'elemental_trance',
+  'healing_stream',
+  // warlock
+  'chaos_bolt',
+  'conflagrate',
+  'curse_of_exhaustion',
+  'death_coil',
+  'howl_of_terror',
+  'metamorphosis',
+  'rain_of_fire',
+  'siphon_life',
+  'spell_lock',
+  'voidfeast',
+  // warrior + the Vale Cup family
+  'cleaving_blows',
+  'deep_wounds',
+  'diabolical_twinstrike',
+  'enrage_passive',
+  'measured_fury',
+  'seasoned_soldier',
+  'sudden_death',
+]);
+
+/** Static URL of an ability's image icon, or null if it uses a recipe. */
+export function abilityImageUrl(id: string): string | null {
+  if (!ABILITY_IMAGE_IDS.has(id)) return null;
+  if (PET_ACTION_IMAGE_IDS.has(id)) return `${SKILL_ICON_DIR}/pet/${id}.webp`;
+  const cls =
+    ABILITIES[id]?.class ??
+    (id === 'colossal_might' ||
+    id === 'second_wind' ||
+    id === 'pursuit' ||
+    id === 'lingering_dread' ||
+    id === 'anger_management' ||
+    id === 'battle_rhythm' ||
+    id === 'bloodbath' ||
+    id === 'attack' ||
+    id === 'double_charge' ||
+    id === 'crushing_charge' ||
+    id === 'combat_mastery'
+      ? 'warrior'
+      : id === 'double_blink' ||
+          id === 'blink_while_casting' ||
+          id === 'warded' ||
+          id === 'temporal_rift' ||
+          id === 'snap_polymorph' ||
+          id === 'twin_frost_nova' ||
+          id === 'elemental_convergence' ||
+          id === 'overflowing_power'
+        ? 'mage'
+        : WARLOCK_TALENT_IMAGE_IDS.has(id) ||
+            id === 'emberkin_felbolt' ||
+            id === 'gloomshade_abyssal_chain' ||
+            id === 'summon_succubus' ||
+            id === 'summon_felhunter' ||
+            id === 'summon_felguard' ||
+            id === 'summon_doomguard'
+          ? 'warlock'
+          : null);
+  return cls ? `${SKILL_ICON_DIR}/${cls}/${id}.webp` : null;
+}
+
+const AURA_ICON_DIR = '/ui/auras';
+
+/** Exact aura-art identities whose shipping files live directly under /ui/auras. */
+export const AURA_FILE_IMAGE_IDS: ReadonlySet<string> = new Set([
+  ...MOB_AURA_IMAGE_IDS,
+  'affliction_doom',
+  'battle_trance',
+  'bg_battle_rune',
+  'bg_carried_flag',
+  'bg_carrier_vulnerability',
+  'bg_sprint_rune',
+  'bg_ward_rune',
+  'boneglass_cut',
+  'brood_burn_hatchling_burn',
+  'brood_burn_seared_scales',
+  'brood_counter_stun',
+  'brood_ward',
+  'cauterize_fatigue',
+  'cauterizing',
+  'cheater_mark',
+  'convergence_cd',
+  'convergence_mark',
+  'deathbloom',
+  'destruction_ruin',
+  'elemental_convergence',
+  'elixir_buff_sta',
+  'fear_incap',
+  'heating_up',
+  'hunter_enduring_courser_burst',
+  'hunter_enduring_courser_icd',
+  'hunter_pack_rally_haste',
+  'hunter_pack_rally_speed',
+  'hunter_pack_rally_spellhaste',
+  'hunter_predators_pace',
+  'hunter_predators_pace_icd',
+  'icicles',
+  'lifebloom',
+  'marrowpoint_rend',
+  'moontide',
+  'nhalia_cantor_shield',
+  'nythraxis_deathless_stun',
+  'nythraxis_dread_curse',
+  'nythraxis_final_stand',
+  'nythraxis_soul_rend',
+  'nythraxis_transition_pause',
+  'nythraxis_transition_stun',
+  'nythraxis_wardstone_lit',
+  'old_blood',
+  'resurrection_sickness',
+  'sated',
+  'set_bonesplinter',
+  'set_clearcasting',
+  'set_fangrush',
+  'set_gravemight',
+  'set_ragged_gash',
+  'set_soulblaze',
+  'set_warfare_ashen_step',
+  'set_warfare_emberward',
+  'set_warfare_thornguard',
+  'set_warfare_unbroken_oath',
+  'shaman_ancestral_bulwark',
+  'shaman_ancestral_bulwark_icd',
+  'shaman_gathering_winds',
+  'shaman_gathering_winds_icd',
+  'shaman_mending_current',
+  'shaman_stonebound_armor',
+  'shaman_stonebound_dr',
+  'shaman_stonebound_stamina',
+  'shaman_stonebound_unleash_guard',
+  'shaman_stonebound_ward_smooth',
+  'shaman_stormcast',
+  'shaman_stormcast_cheap',
+  'shaman_thunder_charges',
+  'shaman_warspirit_cadence',
+  'shaman_wayfarer_grace',
+  'shaman_wayfarer_grace_icd',
+  'soul_fragments',
+  'stomp_stun',
+  'thronebane_arc_slow',
+  'unstuck_sickness',
+  'verdance',
+  'voidsong_echo',
+  'water_jet',
+  'water_jet_slow',
+  'well_fed',
+  'winters_chill',
+  'wlk_forbidden_reflection',
+  'wlk_forbidden_reflection_lock',
+  'wlk_leaden_hex_root',
+  'wlk_leaden_hex_root_lock',
+  'wlk_leaden_hex_slow',
+]);
+
+/** Aura art identities that deliberately reuse another painted UI family. */
+const EXTERNAL_AURA_IMAGE_URLS: ReadonlyMap<string, string> = new Map([
+  ['bad_air', '/ui/delve-affixes/bad_air.webp'],
+  ['pow_berserker', '/ui/fiesta/powerups/pow_berserker.webp'],
+  ['pow_colossus', '/ui/fiesta/powerups/pow_colossus.webp'],
+  ['pow_moon_boots', '/ui/fiesta/powerups/pow_moon_boots.webp'],
+  ['pow_speed_demon', '/ui/fiesta/powerups/pow_speed_demon.webp'],
+]);
+
+/** All exact aura-art identities, including assets shared from another UI family. */
+export const AURA_IMAGE_IDS: ReadonlySet<string> = new Set([
+  ...AURA_FILE_IMAGE_IDS,
+  ...EXTERNAL_AURA_IMAGE_URLS.keys(),
+]);
+
+/** True when an exact runtime aura identity owns dedicated painted art. */
+export function hasAuraImageIdentity(id: string): boolean {
+  return AURA_IMAGE_IDS.has(id);
+}
+
+/** Static art for an exact aura identity, including ordinary ability-art reuse. */
+export function auraImageUrl(id: string): string | null {
+  const external = EXTERNAL_AURA_IMAGE_URLS.get(id);
+  if (external) return external;
+  if (AURA_FILE_IMAGE_IDS.has(id)) return `${AURA_ICON_DIR}/${id}.webp`;
+  return abilityImageUrl(id);
+}
+
+/** True when an aura identity can reuse known ability or modifier artwork. */
+export function hasAbilityIconIdentity(id: string): boolean {
+  return Object.hasOwn(ABILITIES, id) || ABILITY_IMAGE_IDS.has(id);
+}
+
+// Item ids with committed painted art under /ui/items/<id>.webp (curated from the CraftPix
+// resource/consumable and armor/equipment packs, the project-owned profession materials, and
+// the generated icon rebrand batches; provenance + license in public/ui/items/mapping.json).
+// Served for kind 'item' (bags, tooltips, loot, vendor, the /wiki guide). Every real non-weapon
+// item must ship a WebP: the derive loop below adds every non-weapon ITEMS id, so a new item
+// without art reds the gate instead of regressing to the procedural compositor. Weapons use
+// the separate WEAPON_IMAGE_IDS registry above; procedural item recipes remain available only
+// for UI fallbacks and development-time unknown ids.
+// For armor the icon is purely cosmetic (rarity colour still comes from item.quality), and the
+// flashier icons are reserved for higher-rarity pieces. WebP only, like the skill icons. Add
+// art via `npm run assets:items`, then list the item id here. Guarded by tests/item_icons.test.ts.
+const ITEM_ICON_DIR = '/ui/items';
+export const ITEM_IMAGE_IDS = new Set<string>([
+  // food
+  'baked_bread',
+  'brightwood_venison',
+  'conjured_bread',
+  'conjured_bread3',
+  'fenbridge_rye',
+  'glimmerfin_koi',
+  'raw_bog_eel',
+  'raw_frostgill_trout',
+  'raw_marsh_pike',
+  'raw_mirror_trout',
+  'raw_river_perch',
+  'raw_stonescale_carp',
+  'roast_mountain_goat',
+  'roasted_boar',
+  'smoked_eel',
+  'tough_jerky',
+  'trail_hardtack',
+  // drink
+  'conjured_water',
+  'conjured_water2',
+  'conjured_water3',
+  'glacier_melt',
+  'marsh_mint_tea',
+  'silvermist_cordial',
+  'spring_water',
+  // potion
+  'healing_potion',
+  'lesser_healing_potion',
+  'lesser_mana_potion',
+  'mana_potion',
+  'minor_healing_potion',
+  // elixir
+  'elixir_of_the_bear',
+  // junk
+  'amber_hide',
+  'bogiron_nugget',
+  'bone_fragments',
+  'chipped_tusk',
+  'cracked_fetish',
+  'cracked_ogre_tusk',
+  'cracked_wyrm_scale',
+  'deepfen_pearl',
+  'emberwing_cinderscale',
+  'frayed_prayer_beads',
+  'inert_storm_shard',
+  'linen_scrap',
+  'moonpale_scale',
+  'mudfin_scale',
+  'ogre_toe_ring',
+  'old_cragmaws_pelt',
+  'pale_pearl',
+  'soft_down',
+  'stag_antler',
+  'tangled_weed',
+  'wolf_fang',
+  // quest
+  'bastion_ward_stone',
+  'blessed_embers',
+  'boar_hide',
+  'crypt_keystone',
+  'crypt_ritual_circle',
+  'cult_cipher',
+  'drowned_offering',
+  'fen_muster_order',
+  'ghostly_essence',
+  'glowing_wax',
+  'grave_high_priest_malric',
+  'gravecaller_sigil',
+  'gravewyrm_sigil',
+  'greyjaw_fang',
+  'grubjaw_tusk',
+  'highwatch_summons',
+  'kazzix_heartshard',
+  'lost_caravan_goods',
+  'mire_prowler_pelt',
+  'moongate_rubbing',
+  'morthen_grimoire',
+  'palecoil_heartscale',
+  'priests_sigil',
+  'ridge_stalker_pelt',
+  'ritual_phylactery',
+  'royal_seal',
+  'runed_bone_shard',
+  'storm_core',
+  'supply_crate',
+  'the_codfather',
+  'troll_fetish',
+  'weathered_ledger_page',
+  'webwood_silk',
+  'widow_venom_sac',
+  'wyrmcult_orders',
+  // tool
+  'alien_armor_plate',
+  'amber_crimson_armor_plate',
+  'amethyst_silver_armor_plate',
+  'crimson_amber_armor_plate',
+  'cyan_magenta_armor_plate',
+  'event_skin_token',
+  'forest_pink_armor_plate',
+  'imperial_crimson_armor_plate',
+  'imperial_gold_armor_plate',
+  'ivory_copper_armor_plate',
+  'magenta_cyan_armor_plate',
+  'pink_forest_armor_plate',
+  'simple_fishing_pole',
+  'steel_orange_armor_plate',
+  'vanguard_azure_armor_plate',
+  // equipment (CraftPix premium armor/helmet/boot/glove/greave/belt/jewelry + equipment packs;
+  // curated per slot with rarity allocated by icon richness). Weapons are excluded from this
+  // historical literal because WEAPON_IMAGE_IDS owns their painted item art separately.
+  // armor - chest
+  'apprentice_robe',
+  'bogiron_hauberk',
+  'boneguard_breastplate',
+  'boneplate_vest',
+  'bramblehide_jerkin',
+  'broodmother_silk_robe',
+  'caravan_quilted_vest',
+  'cryptstalker_jerkin',
+  'deathlord_warplate',
+  'drownedguard_breastplate',
+  'eastbrook_chain_vest',
+  'fenmist_robe',
+  'footpad_jerkin',
+  'gravewoven_raiment',
+  'gravewyrm_scale_hauberk',
+  'highwatch_breastplate',
+  'hollowbone_hauberk',
+  'marshcloth_robe',
+  'militia_vest',
+  'mirejaw_scale_vest',
+  'moonshroud_breastplate',
+  'moonshroud_robe',
+  'necromancers_starshroud',
+  'outrider_brigandine',
+  'peakwool_robe',
+  'recruit_tunic',
+  'reedwoven_jerkin',
+  'reliquary_cloth_chest',
+  'reliquary_plate_chest',
+  'revenant_silk_robe',
+  'shadow_jerkin',
+  'skullsmasher_warbelt',
+  'stalkerhide_jerkin',
+  'tanned_leather_jerkin',
+  'tidescale_vest',
+  'valespun_robe',
+  'wanderers_chestguard',
+  'woven_robe',
+  'wyrmcult_grand_robe',
+  'wyrmscale_jerkin',
+  'wyrmshadow_harness',
+  // armor - legs
+  'cryptbone_greaves',
+  'deathlord_legguards',
+  'drowned_prayer_leggings',
+  'eastbrook_wool_trousers',
+  'eelscale_leggings',
+  'emberwing_legguards',
+  'greyjaw_pelt_cloak',
+  'hollowbound_legguards',
+  'knight_commanders_greaves',
+  'korgaths_chainwraps',
+  'necromancers_legwraps',
+  'nhalias_funeral_wraps',
+  'oathbound_greaves',
+  'outrider_legguards',
+  'pilgrims_leggings',
+  'quilted_trousers',
+  'reedwoven_trousers',
+  'reliquary_legs',
+  'stormshard_leggings',
+  'tideguard_greaves',
+  'tidewatchers_wraps',
+  'trail_leggings',
+  'trollhide_leggings',
+  'windguard_leggings',
+  'wyrmshadow_legguards',
+  'ysols_pearl_greaves',
+  // armor - feet
+  'cragmaw_prowlboots',
+  'cragwalker_boots',
+  'deathlord_sabatons',
+  'drogmar_warboots',
+  'drowned_prayer_sandals',
+  'drownstep_sabatons',
+  'drownstep_slippers',
+  'drownstep_treads',
+  'eelscale_treads',
+  'fenwalker_boots',
+  'gravepath_treads',
+  'gravewalker_softboots',
+  'gravewyrm_sabatons',
+  'gravewyrm_stalkers_treads',
+  'greyjaw_hide_boots',
+  'hobnail_boots',
+  'marrowlord_boneboots',
+  'marrowtread_boots',
+  'marshstrider_boots',
+  'milepost_boots',
+  'moggers_stomper_boots',
+  'necromancers_soulsteps',
+  'oiled_boots',
+  'outrider_sabatons',
+  'ridgestalker_treads',
+  'sableweb_slippers',
+  'selthes_seastriders',
+  'sextons_slippers',
+  'tideguard_sabatons',
+  'wyrmcult_soulsteps',
+  'wyrmshadow_treads',
+  // armor - helmet
+  'acolytes_circlet',
+  'boundstone_helm',
+  'crownforged_dreadhelm',
+  'cryptbone_helm',
+  'deacon_reliquary_helm',
+  'deathlords_dread_visage',
+  'monarch_crown_helm',
+  'nighttalon_crown',
+  'reliquary_helm',
+  'roadwardens_helm',
+  'soulflame_cowl',
+  'stormcallers_crown',
+  'varric_shadow_cowl',
+  'wayfarers_hood',
+  // armor - gloves
+  'crownforged_gauntlets',
+  'gravewyrm_gauntlets',
+  'mistveil_grips',
+  'mossy_handwraps',
+  'nighttalon_grips',
+  'reliquary_gloves_rog',
+  'roughspun_gloves',
+  'soulflame_gloves',
+  'stormcallers_handguards',
+  'wyrmshadow_talongrips',
+  // armor - waist
+  'boundstone_girdle',
+  'cragmaw_huntcord',
+  'crownforged_girdle',
+  'mistveil_cord',
+  'nighttalon_waistband',
+  'sableweb_cord',
+  'silk_sash',
+  'soulflame_cord',
+  'stormcallers_waistguard',
+  'sturdy_belt',
+  // bags (the six pre-phase-05 ids; the phase 05 catalog enters via the
+  // auto-derived non-weapon sweep below, so new bags never join this hand
+  // list; the implicit backpack is a UI id, see UI_ITEM_IMAGE_IDS)
+  'gravewoven_bag',
+  'linen_pouch',
+  'mistcallers_duffel',
+  'silkspun_satchel',
+  'travelers_knapsack',
+  'wolfhide_satchel',
+  // tools (gathering picks/axes/sickles + cosmetic armor-plate skin tokens)
+  'copper_mining_pick',
+  'felling_axe',
+  'gathering_sickle',
+  'handaxe',
+  'iron_mining_pick',
+  'ironbark_axe',
+  'mithril_mining_pick',
+  'orange_steel_armor_plate',
+  'silverleaf_sickle',
+  'vanguard_chrome_armor_plate',
+  // profession materials
+  'arcane_dust',
+  'arcane_essence',
+  'arcane_shard',
+  'arcanite_bar',
+  'ashwood_log',
+  'cooking_salt',
+  'copper_ore',
+  'elderwood_log',
+  'game_meat',
+  'glass_vial',
+  'goldleaf_herb',
+  'homespun_cloth',
+  'iron_ore',
+  'ironbark_log',
+  'prime_cut',
+  'pristine_hide',
+  'pristine_silk',
+  'pristine_venom_gland',
+  'resonant_hide',
+  'resonant_links',
+  'resonant_steel',
+  'resonant_thread',
+  'resonant_timber',
+  'rough_hide',
+  'silverleaf_herb',
+  'smithing_flux',
+  'spider_leg',
+  'spider_silk',
+  'spool_of_thread',
+  'sunpetal_herb',
+  'tanning_agent',
+  'thorium_ore',
+  'venom_gland',
+  // tool-effect charms (the acquisition craft; original painted inventory art)
+  'artisans_eye',
+  'gatherers_cache',
+  // junk
+  'bandit_bandana',
+  'briny_idol',
+  'soggy_moccasin',
+  // food
+  'conjured_bread2',
+  // quest
+  'blessed_wax',
+  'captains_crest',
+  'grave_captain_voss',
+  'grave_sir_aldren',
+  'kings_signet',
+  'ogre_war_totem',
+  'sanctum_key_shard',
+  'unknown_alien_weaponry',
+  // Mount (rideable) reins use opaque woc-item-icon-v1 paintings. Their identities may
+  // still be informed by the corresponding mount GLBs, but their shipping inventory art
+  // follows docs/design/item-icon-art-style.md and wins over iconDataUrl's procedural recipe.
+  'reins_valorsteed',
+  'reins_grag_bear',
+  'reins_stalkglider_snail',
+  'reins_aether_hover_cycle',
+  'reins_shadowjump_toad',
+  'reins_stormfeather_griffin',
+  'reins_thunderstrut_gobbler',
+  'reins_terrorspark_groundshaker',
+  'reins_lanternback_troll',
+]);
+
+// The grouped literals above preserve the curated catalog's provenance history. Derive the
+// complete runtime set from live content so a newly added non-weapon item immediately enters the
+// filesystem and provenance gates instead of silently regressing to a procedural placeholder.
+for (const item of Object.values(ITEMS)) {
+  if (item.kind !== 'weapon') ITEM_IMAGE_IDS.add(item.id);
+}
+
+// UI-only icon ids that ship painted art under /ui/items/<id>.webp but are NOT ITEMS
+// records. `backpack` is the implicit 16-slot bag the bag bar draws first: it can never be
+// looted, equipped, or unequipped, so it has no item def. Kept apart from ITEM_IMAGE_IDS so
+// the item guard (tests/item_icons.test.ts) keeps asserting that every wired ITEM id is a
+// real, non-weapon item; both sets are served by itemImageUrl and gated on committed art.
+export const UI_ITEM_IMAGE_IDS = new Set<string>(['backpack']);
+
+// Explicit development-only item-art debt ledger. The Masterwrought completion wave
+// cleared the Ignivar raid's 81 feature entries (content/ignivar_loot.ts), so that spread
+// is currently empty; it stays in the union below as the canonical seam for future parked
+// raid art. Tests reject both unenumerated debt and stale entries after art lands.
+export const ITEM_ART_PENDING = new Set<string>([
+  ...IGNIVAR_ART_PENDING_ITEM_IDS,
+  ...BRAMBLEHIDE_ART_PENDING_ITEM_IDS,
+  ...NYTHRAXIS_GAP_ART_PENDING_ITEM_IDS,
+]);
+
+/** Static URL of an item's (or a UI pseudo-item's) image icon, or null if it uses a recipe. */
+export function itemImageUrl(id: string): string | null {
+  if (ITEM_ART_PENDING.has(id)) return null;
+  return ITEM_IMAGE_IDS.has(id) || UI_ITEM_IMAGE_IDS.has(id) ? `${ITEM_ICON_DIR}/${id}.webp` : null;
+}
+
+// Book of Deeds crest ids are shaped `deed_<deedId>` (deeds_view.ts deedCrestId). Those whose
+// deed ships committed painted art (public/ui/deeds/<deedId>.webp, listed in DEED_IMAGE_IDS)
+// resolve to that static WebP. Mirrors itemImageUrl. The `deed_cat_<category>` base crests and
+// every non-deed crest id prefix-strips to something not in the set. Class, family, and status
+// paintings are resolved independently by crestIconUrl; a missing image still falls through to
+// the procedural recipe without breaking a consumer.
+const DEED_ICON_DIR = '/ui/deeds';
+const DEED_CREST_PREFIX = 'deed_';
+
+// Exhaustive live-deed art debt ledger. The Masterwrought completion wave clears its
+// eleven crests (including the commissioned Harvestmaster replacement). Inherited release
+// rows and the hidden hammer celebration retain their deliberate procedural category fallback.
+// Insertion order mirrors DEED_ORDER because the deed-art gate derives its exact debt in order.
+export const DEED_ART_PENDING: ReadonlySet<string> = new Set([
+  'exp_the_last_keep',
+  'exp_dawnhold_castle',
+  'soc_strongbox_outfitter',
+  'soc_four_bags_deep',
+  'prog_ready_for_an_adventure',
+  'dgn_ignivar',
+  'dgn_ignivar_heroic',
+  'dgn_varkhul',
+  'dgn_varkhul_heroic',
+  'dgn_varkhul_flawless',
+  // Hidden self-craft celebration; 512px RGBA commission brief in docs/achievements/icon-brief.md.
+  'hid_forgebreaker',
+]);
+/** Static URL of a deed crest's painted art, or null when the crest id has no committed image. */
+export function deedImageUrl(crestId: string): string | null {
+  if (!crestId.startsWith(DEED_CREST_PREFIX)) return null;
+  const deedId = crestId.slice(DEED_CREST_PREFIX.length);
+  return DEED_IMAGE_IDS.has(deedId) ? `${DEED_ICON_DIR}/${deedId}.webp` : null;
+}
+
+/** True when `id` has a real crest recipe, as opposed to falling through to the
+ *  generic fallback + dev-only console.warn. Lets a test walk every family a
+ *  MobFamily-shaped id can produce and assert none of them silently fall back. */
+export function hasCrestRecipe(id: string): boolean {
+  return Object.hasOwn(CREST_RECIPES, id);
+}
+
+const urlCache = new Map<string, string>();
+const warnedIds = new Set<string>();
+const proceduralIconCacheKey = (kind: IconKind, id: string, size: number): string =>
+  `procedural|${kind}|${id}|${size}`;
+
+function resolveRecipe(kind: IconKind, id: string): IconRecipe {
+  let recipe: IconRecipe | null = null;
+  if (kind === 'ability') {
+    recipe =
+      (Object.hasOwn(ABILITY_RECIPES, id) ? ABILITY_RECIPES[id] : null) ?? abilityFallback(id);
+  } else if (kind === 'item') {
+    // Own-property gate: a prototype key like '__proto__' would otherwise
+    // resolve Object.prototype as a truthy "recipe". Item ids are the kind
+    // the stale-client fallback surfaces funnel raw server strings into,
+    // hence the gate here first; the ability and aura arms also see
+    // server-sent ids and share the ungated-lookup shape (recorded, not
+    // fixed here: no realistic server mints a prototype-key ability id).
+    recipe = (Object.hasOwn(ITEM_RECIPES, id) ? ITEM_RECIPES[id] : null) ?? itemFallback(id);
+  } else if (kind === 'crest') {
+    recipe = Object.hasOwn(CREST_RECIPES, id) ? CREST_RECIPES[id] : null;
+  } else {
+    // auras carry the ability id that applied them, or a generic aura_<kind>
+    recipe =
+      (Object.hasOwn(AURA_RECIPES, id) ? AURA_RECIPES[id] : null) ??
+      (Object.hasOwn(ABILITY_RECIPES, id) ? ABILITY_RECIPES[id] : null) ??
+      abilityFallback(id) ??
+      genericAuraFallback(id);
+  }
+  if (!recipe) {
+    if (import.meta.env?.DEV && !warnedIds.has(id)) {
+      warnedIds.add(id);
+      console.warn(`[icons] no recipe or def for ${kind} id "${id}": using fallback icon`);
+    }
+    return UNKNOWN_RECIPE;
+  }
+  return recipe;
+}
+
+// Introspection helpers (no canvas needed), used by tests/ability_icons.test.ts
+// to assert every ability has a deliberate, distinct icon recipe.
+export function abilityIconRecipe(id: string): IconRecipe {
+  return resolveRecipe('ability', id);
+}
+// The item-side sibling, added so tests/item_icons.test.ts can pin the premise
+// every stale-client fallback rests on WITHOUT a canvas: any unresolvable item
+// id (including prototype-chain keys) lands on the shared fallback recipe
+// instead of throwing.
+export function itemIconRecipe(id: string): IconRecipe {
+  return resolveRecipe('item', id);
+}
+export function auraIconRecipe(id: string): IconRecipe {
+  return resolveRecipe('aura', id);
+}
+export function isUnknownIconRecipe(recipe: IconRecipe): boolean {
+  return recipe === UNKNOWN_RECIPE;
+}
+export function hasExplicitAbilityIcon(id: string): boolean {
+  return Object.hasOwn(ABILITY_RECIPES, id);
+}
+export function hasExplicitAuraIcon(id: string): boolean {
+  return id in AURA_RECIPES;
+}
+
+const DEFAULT_ICON_SIZE = 96; // crisp at 46px buttons on 2x displays
+const canvasCache = new Map<string, HTMLCanvasElement>();
+
+// Returns the cached composited <canvas> for an icon (ability/item/aura/crest).
+// Synchronous — safe to drawImage immediately (used for unit-frame portraits).
+export function iconCanvas(
+  kind: IconKind,
+  id: string,
+  size: number = DEFAULT_ICON_SIZE,
+): HTMLCanvasElement {
+  const key = `${kind}|${id}|${size}`;
+  let canvas = canvasCache.get(key);
+  if (!canvas) {
+    canvas = compose(resolveRecipe(kind, id), key, size);
+    canvasCache.set(key, canvas);
+  }
+  return canvas;
+}
+
+/** Cached procedural data URL even when committed static art exists for the id.
+ *  Aura CSS uses this as its immediate/error layer below a painted WebP. */
+export function proceduralIconDataUrl(
+  kind: IconKind,
+  id: string,
+  size: number = DEFAULT_ICON_SIZE,
+): string {
+  const key = proceduralIconCacheKey(kind, id, size);
+  const cached = urlCache.get(key);
+  if (cached) return cached;
+  const url = iconCanvas(kind, id, size).toDataURL();
+  urlCache.set(key, url);
+  return url;
+}
+
+/** Read an already-warmed procedural layer without composing on the caller's frame. */
+export function cachedProceduralIconDataUrl(
+  kind: IconKind,
+  id: string,
+  size: number = DEFAULT_ICON_SIZE,
+): string | null {
+  return urlCache.get(proceduralIconCacheKey(kind, id, size)) ?? null;
+}
+
+function staticIconUrl(kind: IconKind, id: string): string | null {
+  if (kind === 'item') {
+    const currency = currencyImageUrl(id);
+    if (currency) return currency;
+    const weapon = weaponIconUrl(id);
+    if (weapon) return weapon;
+    const img = itemImageUrl(id);
+    if (img) return img;
+  }
+  // Abilities use their skill art. Auras first check exact neutral-aura paintings,
+  // then share matching ability art. Generic aura_<kind> ids still fall through to
+  // their procedural recipe.
+  if (kind === 'ability') {
+    const img = abilityImageUrl(id);
+    if (img) return img;
+  }
+  if (kind === 'aura') {
+    const img = auraImageUrl(id);
+    if (img) return img;
+  }
+  // Committed deed, class, family, and status paintings short-circuit to a
+  // static WebP (URL-only is sufficient: crest consumers here are <img> sinks,
+  // the Book of Deeds cards and recent strip and the Reliquary title shelf;
+  // the synchronous iconCanvas path stays class-crest portraits only). Unit
+  // portraits still paint the procedural recipe immediately, then replace it
+  // after this same crest art decodes.
+  if (kind === 'crest') return deedImageUrl(id) ?? crestIconUrl(id);
+  return null;
+}
+
+/** Internal bridge for the worker-backed idle warmer. */
+export function needsIconDataUrlWarm(
+  kind: IconKind,
+  id: string,
+  size: number = DEFAULT_ICON_SIZE,
+): boolean {
+  return staticIconUrl(kind, id) === null && !urlCache.has(`${kind}|${id}|${size}`);
+}
+
+/** Internal bridge for worker-warming the procedural layer beneath static art. */
+export function needsProceduralIconDataUrlWarm(
+  kind: IconKind,
+  id: string,
+  size: number = DEFAULT_ICON_SIZE,
+): boolean {
+  return !urlCache.has(proceduralIconCacheKey(kind, id, size));
+}
+
+/** Internal bridge for the worker-backed idle warmer. */
+export function storePrewarmedIconDataUrl(
+  kind: IconKind,
+  id: string,
+  size: number,
+  url: string,
+): void {
+  const key = `${kind}|${id}|${size}`;
+  // A foreground request may have populated the cache while the worker was
+  // encoding. Its synchronous result remains authoritative.
+  if (!urlCache.has(key)) urlCache.set(key, url);
+}
+
+/** Internal bridge paired with needsProceduralIconDataUrlWarm. */
+export function storePrewarmedProceduralIconDataUrl(
+  kind: IconKind,
+  id: string,
+  size: number,
+  url: string,
+): void {
+  const key = proceduralIconCacheKey(kind, id, size);
+  if (!urlCache.has(key)) urlCache.set(key, url);
+}
+
+/** Worker-only renderer: no DOM access and no work on the gameplay thread. */
+export function renderProceduralIconPng(
+  kind: IconKind,
+  id: string,
+  size: number = DEFAULT_ICON_SIZE,
+): Promise<Blob> {
+  if (typeof OffscreenCanvas === 'undefined') {
+    return Promise.reject(new Error('OffscreenCanvas is unavailable'));
+  }
+  const key = `${kind}|${id}|${size}`;
+  const canvas = new OffscreenCanvas(size, size);
+  paintIconCanvas(canvas, resolveRecipe(kind, id), key, size);
+  return canvas.convertToBlob({ type: 'image/png' });
+}
+
+// Returns the icon URL for an ability/item/aura/crest id: committed painted art when registered,
+// otherwise a cached procedural PNG data URL. Both forms work as an <img src> or CSS
+// background-image.
+export function iconDataUrl(kind: IconKind, id: string, size: number = DEFAULT_ICON_SIZE): string {
+  const staticUrl = staticIconUrl(kind, id);
+  if (staticUrl) return staticUrl;
+  const key = `${kind}|${id}|${size}`;
+  const cached = urlCache.get(key);
+  if (cached) return cached;
+  const url = iconCanvas(kind, id, size).toDataURL();
+  urlCache.set(key, url);
+  return url;
+}
+
+// ---------------------------------------------------------------------------
+// Profession icons (Professions 2.0): the ten craft-wheel crafts plus the
+// gathering skills, consumed by the professions window via professionIconUrl.
+// Ids follow the prof_<craftId> / gather_<skill> convention (see
+// docs/design/professions-asset-manifest.json). Committed painted art under public/ui/professions/
+// (PROFESSION_IMAGE_IDS, normalized by scripts/convert_profession_icons_webp.mjs)
+// wins over the procedural recipe, mirroring the item/deed image sets.
+// ---------------------------------------------------------------------------
+
+const PROFESSION_RECIPES: Record<string, IconRecipe> = {
+  prof_weaponcrafting: r(
+    'fire',
+    'steel',
+    [{ p: 'sword' }, { p: 'flame', x: 13, y: 13, s: 0.45, pal: 'ember' }],
+    ['glow'],
+  ),
+  prof_armorcrafting: r('steel', 'steel', [
+    { p: 'chestplate' },
+    { p: 'mace', x: 13, y: -13, s: 0.45, pal: 'gold' },
+  ]),
+  prof_tailoring: r('cloth', 'cloth', [
+    { p: 'trousers', ...BIG },
+    { p: 'needle', pal: 'bone' },
+  ]),
+  prof_leatherworking: r('leather', 'leather', [{ p: 'pelt', ...BIG }, { p: 'dagger' }]),
+  prof_cooking: r('food', 'ember', [
+    { p: 'flame', y: 14, s: 0.6 },
+    { p: 'meat', y: -6, s: 0.85 },
+  ]),
+  prof_alchemy: r('arcane', 'venom', [{ p: 'potion' }], ['sparkle']),
+  prof_engineering: r('steel', 'gold', [
+    { p: 'gear', x: -6, y: -5 },
+    { p: 'gear', x: 15, y: 13, s: 0.55 },
+  ]),
+  prof_enchanting: r(
+    'arcane',
+    'arcanePink',
+    [{ p: 'sigil_rune', ...BIG }, { p: 'staff' }],
+    ['sparkle'],
+  ),
+  prof_jewelcrafting: r('treasure', 'sky', [{ p: 'gem' }], ['sparkle']),
+  prof_inscription: r(
+    'parchment',
+    'bone',
+    [{ p: 'scroll' }, { p: 'sigil_rune', x: 13, y: 13, s: 0.45, pal: 'gold' }],
+    ['glow'],
+  ),
+  gather_mining: r('earth', 'steel', [{ p: 'pickaxe' }], ['sparkle']),
+  gather_logging: r('wood', 'steel', [{ p: 'axe' }]),
+  gather_herbalism: r(
+    'nature',
+    'leafGreen',
+    [{ p: 'leaf' }, { p: 'leaf', x: 11, y: 11, s: 0.5, rot: 2.6 }],
+    ['sparkle'],
+  ),
+  gather_fishing: r('drink', 'sky', [{ p: 'fish' }], ['glow']),
+  // Farming, the fifth gathering skill: a seed sack faded into tilled-earth
+  // ground behind a crisp sprout, the tailoring/enchanting backdrop idiom. Read
+  // deliberately apart from herbalism, whose twin wild leaves sit on a nature
+  // ground: farming is the CULTIVATED skill, so the soil and the sack carry the
+  // silhouette and the foliage is only the payoff on top.
+  gather_farming: r('earth', 'leafGreen', [
+    { p: 'sack', ...BIG, pal: 'earthBrown' },
+    { p: 'leaf' },
+  ]),
+};
+
+/** True when `id` has an explicit profession recipe, as opposed to falling
+ *  through to the generic fallback; lets a test pin every manifest id to a
+ *  deliberate icon. */
+export function hasProfessionIconRecipe(id: string): boolean {
+  return id in PROFESSION_RECIPES;
+}
+
+/** Icon URL for a profession/gathering id: the committed WebP when wired,
+ *  otherwise the cached procedural data URL from PROFESSION_RECIPES. */
+export function professionIconUrl(id: string, size: number = DEFAULT_ICON_SIZE): string {
+  const img = professionImageUrl(id);
+  if (img) return img;
+  const key = `profession|${id}|${size}`;
+  const cached = urlCache.get(key);
+  if (cached) return cached;
+  let canvas = canvasCache.get(key);
+  if (!canvas) {
+    canvas = compose(PROFESSION_RECIPES[id] ?? UNKNOWN_RECIPE, key, size);
+    canvasCache.set(key, canvas);
+  }
+  const url = canvas.toDataURL();
+  urlCache.set(key, url);
+  return url;
+}
+
+// ---------------------------------------------------------------------------
+// Raid / target markers (issue #105)
+//
+// Eight classic symbols (indexed 0..7) drawn flat and bold on a transparent
+// canvas — a dark outline behind each colored shape keeps them legible while
+// floating above mobs in the bright overworld. Unlike ability icons these have
+// no frame/background; contrast comes from the baked outline (+ a CSS shadow).
+// ---------------------------------------------------------------------------
+
+export const RAID_MARKER_NAMES = [
+  'Star',
+  'Circle',
+  'Diamond',
+  'Triangle',
+  'Moon',
+  'Square',
+  'Cross',
+  'Skull',
+] as const;
+export const RAID_MARKER_COUNT = RAID_MARKER_NAMES.length;
+const RAID_MARKER_FILL = [
+  '#ffe23a',
+  '#ff8a2a',
+  '#d24bff',
+  '#37d72c',
+  '#cfe6ff',
+  '#23b5ff',
+  '#ff3b30',
+  '#f4f4f4',
+];
+const RAID_MARKER_OUTLINE = '#0d0d12';
+const RAID_MARKER_PX = 64;
+const raidMarkerCache = new Map<number, string>();
+
+function raidStarPath(ctx: Ctx): void {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const rr = i % 2 === 0 ? 42 : 17;
+    const a = -Math.PI / 2 + (i * Math.PI) / 5;
+    const x = Math.cos(a) * rr,
+      y = Math.sin(a) * rr;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+}
+
+function raidSkullPath(ctx: Ctx): void {
+  ctx.beginPath();
+  ctx.arc(0, -10, 30, Math.PI, 0, false); // cranium dome
+  ctx.lineTo(30, 6);
+  ctx.quadraticCurveTo(30, 20, 16, 23);
+  ctx.lineTo(13, 35);
+  ctx.quadraticCurveTo(0, 41, -13, 35); // chin
+  ctx.lineTo(-16, 23);
+  ctx.quadraticCurveTo(-30, 20, -30, 6);
+  ctx.closePath();
+}
+
+// Outline a single closed path, then fill it — the centered stroke leaves a
+// crisp dark border once the fill paints over its inner half.
+function raidStrokeFill(ctx: Ctx, fill: string): void {
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 9;
+  ctx.strokeStyle = RAID_MARKER_OUTLINE;
+  ctx.stroke();
+  ctx.fillStyle = fill;
+  ctx.fill();
+}
+
+function drawRaidMarker(ctx: Ctx, idx: number): void {
+  const fill = RAID_MARKER_FILL[idx] ?? '#ffffff';
+  switch (idx) {
+    case 0: // star
+      raidStarPath(ctx);
+      raidStrokeFill(ctx, fill);
+      break;
+    case 1: // circle
+      ctx.beginPath();
+      ctx.arc(0, 0, 37, 0, TAU);
+      raidStrokeFill(ctx, fill);
+      break;
+    case 2: // diamond
+      ctx.beginPath();
+      ctx.moveTo(0, -42);
+      ctx.lineTo(38, 0);
+      ctx.lineTo(0, 42);
+      ctx.lineTo(-38, 0);
+      ctx.closePath();
+      raidStrokeFill(ctx, fill);
+      break;
+    case 3: // triangle
+      ctx.beginPath();
+      ctx.moveTo(0, -40);
+      ctx.lineTo(38, 32);
+      ctx.lineTo(-38, 32);
+      ctx.closePath();
+      raidStrokeFill(ctx, fill);
+      break;
+    case 4: {
+      // moon — a dark crescent with a slightly inset colored one on top
+      const crescent = (outerR: number, carveX: number, carveR: number): void => {
+        ctx.beginPath();
+        ctx.arc(-4, 0, outerR, 0, TAU, false);
+        ctx.arc(carveX, 0, carveR, 0, TAU, true); // opposite winding carves a bite
+      };
+      crescent(40, 20, 40);
+      ctx.fillStyle = RAID_MARKER_OUTLINE;
+      ctx.fill();
+      crescent(34, 23, 40);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      break;
+    }
+    case 5: // square
+      ctx.beginPath();
+      ctx.rect(-34, -34, 68, 68);
+      raidStrokeFill(ctx, fill);
+      break;
+    case 6: // cross (X) — two round-capped bars, wide dark pass then colored pass
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-28, -28);
+      ctx.lineTo(28, 28);
+      ctx.moveTo(28, -28);
+      ctx.lineTo(-28, 28);
+      ctx.lineWidth = 28;
+      ctx.strokeStyle = RAID_MARKER_OUTLINE;
+      ctx.stroke();
+      ctx.lineWidth = 16;
+      ctx.strokeStyle = fill;
+      ctx.stroke();
+      break;
+    case 7: // skull
+      raidSkullPath(ctx);
+      raidStrokeFill(ctx, fill);
+      ctx.fillStyle = RAID_MARKER_OUTLINE;
+      ctx.beginPath();
+      ctx.ellipse(-12, -7, 8, 9, 0, 0, TAU);
+      ctx.fill(); // left eye
+      ctx.beginPath();
+      ctx.ellipse(12, -7, 8, 9, 0, 0, TAU);
+      ctx.fill(); // right eye
+      ctx.beginPath();
+      ctx.moveTo(0, 3);
+      ctx.lineTo(5, 14);
+      ctx.lineTo(-5, 14);
+      ctx.closePath();
+      ctx.fill(); // nose
+      break;
+    default:
+      ctx.beginPath();
+      ctx.arc(0, 0, 36, 0, TAU);
+      raidStrokeFill(ctx, fill);
+  }
+}
+
+// Cached transparent-background PNG data URL for raid marker `idx` (0..7).
+export function raidMarkerDataUrl(idx: number): string {
+  const cached = raidMarkerCache.get(idx);
+  if (cached) return cached;
+  const canvas = document.createElement('canvas');
+  canvas.width = RAID_MARKER_PX;
+  canvas.height = RAID_MARKER_PX;
+  const ctx = getCanvas2d(canvas);
+  ctx.scale(RAID_MARKER_PX / 100, RAID_MARKER_PX / 100);
+  ctx.translate(50, 50);
+  drawRaidMarker(ctx, idx);
+  const url = canvas.toDataURL();
+  raidMarkerCache.set(idx, url);
+  return url;
+}

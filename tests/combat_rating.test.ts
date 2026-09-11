@@ -1,0 +1,319 @@
+import { describe, expect, it } from 'vitest';
+import { effectiveSpellHit, spellResistChance } from '../src/sim/combat/spell_resist';
+import { aggregateSetBonuses } from '../src/sim/content/item_sets';
+import { FURY_STOCK } from '../src/sim/content/pvp_honor';
+import { ITEMS } from '../src/sim/data';
+import { itemLevel } from '../src/sim/item_level';
+import { Sim } from '../src/sim/sim';
+import type { Entity, ItemDef } from '../src/sim/types';
+import {
+  CRIT_RATING_PER_PCT,
+  critFractionFromRating,
+  HASTE_RATING_PER_PCT,
+  HIT_RATING_PER_PCT,
+  hasteFractionFromRating,
+  hitFractionFromRating,
+  meleeMissChance,
+  spellHitChance,
+  swingMissChance,
+} from '../src/sim/types';
+
+// A minimal entity for the pure hit-table functions: swingMissChance reads only
+// level/kind/hostile/ownerId/hitBonus.
+function ent(partial: Partial<Entity>): Entity {
+  return {
+    kind: 'player',
+    level: 20,
+    hostile: false,
+    ownerId: null,
+    hitBonus: 0,
+    ...partial,
+  } as Entity;
+}
+
+describe('combat ratings', () => {
+  it('halves haste and crit per point while preserving hit strength', () => {
+    expect(HASTE_RATING_PER_PCT).toBe(20);
+    expect(CRIT_RATING_PER_PCT).toBe(20);
+    expect(HIT_RATING_PER_PCT).toBe(10);
+    expect(hasteFractionFromRating(150)).toBe(0.075);
+    expect(critFractionFromRating(20)).toBe(0.01);
+    expect(hitFractionFromRating(50)).toBe(0.05);
+  });
+
+  it('accumulates item combat ratings and applies them to derived player stats', () => {
+    const itemId = '__test_combat_rating_chest';
+    const item: ItemDef = {
+      id: itemId,
+      name: 'Combat Rating Test Chest',
+      kind: 'armor',
+      slot: 'chest',
+      armorType: 'leather',
+      sellValue: 0,
+      requiredLevel: 1,
+      hasteRating: 150,
+      critRating: 20,
+      hitRating: 200,
+    };
+    ITEMS[itemId] = item;
+    try {
+      const sim = new Sim({ seed: 11, playerClass: 'rogue' });
+      const p = sim.player;
+      sim.addItem(itemId, 1);
+      sim.equipItem(itemId);
+
+      expect(p.hasteRating).toBe(150);
+      expect(p.critRating).toBe(20);
+      expect(p.hitRating).toBe(200);
+      expect(p.meleeHaste).toBe(0.075);
+      expect(p.rangedHaste).toBe(0.075);
+      expect(p.spellHaste).toBe(0.075);
+      expect(p.critChance).toBeCloseTo(0.05 + p.stats.agi * 0.0005 + 0.01);
+      expect(p.hitBonus).toBeCloseTo(0.2);
+    } finally {
+      delete ITEMS[itemId];
+    }
+  });
+
+  it('hit rating reduces a player melee miss vs a higher-level (Heroic +3) mob', () => {
+    const mob = ent({ kind: 'mob', hostile: true, level: 23 });
+    // The +3 above-level miss is capped at 19%; 5% hit claws it to 14%.
+    expect(meleeMissChance(20, 23)).toBeCloseTo(0.19);
+    expect(swingMissChance(ent({ hitBonus: 0.05 }), mob)).toBeCloseTo(0.14);
+    // Enough hit floors the miss at 0 (hit-capped), never negative.
+    expect(swingMissChance(ent({ hitBonus: 0.9 }), mob)).toBe(0);
+  });
+
+  it('hit rating reduces spell resist by the same amount', () => {
+    // The +3 above-level resist is capped at 18%; 5% hit claws it to 13%.
+    expect(spellResistChance(20, 23)).toBeCloseTo(0.18);
+    expect(spellResistChance(20, 23, 0.05)).toBeCloseTo(0.13);
+  });
+
+  it('is a no-op with zero hit, preserving the ungeared draw (parity)', () => {
+    // The player-attacker branch equals the raw level-only miss when hitBonus is 0.
+    expect(
+      swingMissChance(ent({ hitBonus: 0 }), ent({ kind: 'mob', hostile: true, level: 23 })),
+    ).toBe(meleeMissChance(20, 23));
+    // The spell path passes spellHitChance(...) unchanged to rng.chance when hit is 0.
+    expect(effectiveSpellHit(20, 23, 0)).toBe(spellHitChance(20, 23));
+  });
+
+  it('effective spell hit is clamped at 1 (over-capping Hit cannot exceed certainty)', () => {
+    // spellHitChance(20, 23) is ~0.75; a huge hitBonus would push it past 1 without
+    // the Math.min clamp. Equal-level (0.96) also clamps.
+    expect(effectiveSpellHit(20, 23, 0.9)).toBe(1);
+    expect(effectiveSpellHit(20, 20, 0.5)).toBe(1);
+    expect(spellResistChance(20, 23, 0.9)).toBe(0); // and resist floors at 0
+  });
+
+  it('hit does not help a mob attacking a player (attacker-side only, capped)', () => {
+    // A mob has no hit gear; the player-side target hit never reduces the mob's swing.
+    const mob = ent({ kind: 'mob', hostile: true, level: 23 });
+    const player = ent({ hitBonus: 0.5 });
+    expect(swingMissChance(mob, player)).toBeLessThanOrEqual(0.2); // MOB_VS_PLAYER cap, unchanged
+  });
+
+  it('the lineage bleed capstones grant their halved Hit at 6 pieces, not 4', () => {
+    // The retune: Hit left the 4-piece tier entirely; the 6-piece capstone
+    // pays the halved 30 (3%), the only Hit the old stack still provides.
+    const crownforgedFour = aggregateSetBonuses(new Map([['crownforged', 4]]));
+    expect(crownforgedFour.hitRating).toBe(0);
+    const strengthSix = aggregateSetBonuses(
+      new Map([
+        ['deathlord', 2],
+        ['crownforged', 4],
+      ]),
+    );
+    expect(strengthSix.hitRating).toBe(30);
+    const agilitySix = aggregateSetBonuses(
+      new Map([
+        ['wyrmshadow', 2],
+        ['nighttalon', 4],
+      ]),
+    );
+    expect(agilitySix.hitRating).toBe(30);
+  });
+
+  it('the heroic marks jewelry carries one combat rating each', async () => {
+    const { HEROIC_VENDOR_ITEMS } = await import('../src/sim/content/heroic_vendor');
+    const jewelry = Object.values(HEROIC_VENDOR_ITEMS);
+    expect(jewelry.length).toBeGreaterThanOrEqual(10);
+    for (const item of jewelry) {
+      const ratings = [item.hitRating, item.critRating, item.hasteRating].filter(
+        (r) => (r ?? 0) > 0,
+      );
+      expect(ratings.length, item.id).toBe(1);
+    }
+  });
+
+  it('PvP honor jewelry keeps its warfare rating (its own differentiator, unchanged)', () => {
+    // The honor track's jewelry is differentiated by its PvP warfare rating, not a
+    // PvE combat rating; hit/crit/haste are deliberately NOT added there to avoid a
+    // same-level PvP balance change.
+    const honorJewelry = Object.values(ITEMS).filter(
+      (i) => (i.slot === 'ring' || i.slot === 'neck') && (i.pvpOffenseRating ?? 0) > 0,
+    );
+    expect(honorJewelry.length).toBeGreaterThan(0);
+    for (const item of honorJewelry) {
+      expect(item.hitRating ?? 0, item.id).toBe(0);
+    }
+  });
+});
+
+// The tier ladder is the fix for "ilvl 31 feels the same as 26/28": ratings, not the
+// tiny primary-stat growth, differentiate the tiers. 0 ratings on ilvl-26 dungeon
+// epics -> 1 rating on every ilvl-31 heroic piece -> 2 on the ilvl-33/37 raid variants.
+describe('combat-rating tier ladder', () => {
+  const ratingValues = (item: ItemDef): number[] =>
+    [item.hitRating, item.critRating, item.hasteRating].filter((r): r is number => (r ?? 0) > 0);
+  const ratingCount = (item: ItemDef): number => ratingValues(item).length;
+
+  it('every ilvl-31 heroic boss-set piece carries exactly one rating', async () => {
+    const { HEROIC_ITEMS } = await import('../src/sim/content/heroic_loot');
+    const pieces = Object.values(HEROIC_ITEMS).filter((item) => itemLevel(item) === 31);
+    // 28 pre-Wildheart pieces + the 6 Zulgar heroic drops (Tier-2 basin loot
+    // pass, incl. the crown/legguards replacing the retired-hole dup-paths).
+    expect(pieces).toHaveLength(34);
+    for (const item of pieces) {
+      expect(ratingCount(item), item.id).toBe(1);
+      expect(ratingValues(item), item.id).toEqual([item.weapon ? 50 : 40]);
+    }
+    // Hit is over-represented (the Heroic-defining stat): at least a third of the set.
+    const hitPieces = pieces.filter((i) => (i.hitRating ?? 0) > 0).length;
+    expect(hitPieces).toBeGreaterThanOrEqual(Math.ceil(pieces.length / 3));
+  });
+
+  it('enforces the complete 0 -> 1 -> 2 rating ladder by live item level', async () => {
+    const { HEROIC_VENDOR_ITEMS } = await import('../src/sim/content/heroic_vendor');
+    const vendorIds = new Set(Object.keys(HEROIC_VENDOR_ITEMS));
+    // The 2026-08-30 ilvl-honesty relabels: these items keep their SHIPPED
+    // identity (zero ratings included) while their item level moved to the
+    // level their lines actually occupy, so they sit outside the authored
+    // rating ladder. Membership is pinned: the carve-out must never grow.
+    const ILVL_HONESTY_RELABELED = new Set([
+      'boneglass_shiv',
+      'duskwhisper',
+      'marrowpoint',
+      'deathless_heartwood',
+      'heroic_deathless_heartwood',
+      'kingsbane_last_oath',
+      'heroic_kingsbane_last_oath',
+      'voidsong_dirk',
+      'heart_of_the_rift',
+      'varkhul_forgebreaker',
+      'varkhul_emberward',
+    ]);
+    const allGear = Object.values(ITEMS).filter(
+      (item) => item.slot && itemLevel(item) !== undefined && !ILVL_HONESTY_RELABELED.has(item.id),
+    );
+    for (const id of ILVL_HONESTY_RELABELED) {
+      expect(ITEMS[id], `${id} still exists (carve-out is not stale)`).toBeDefined();
+    }
+
+    const ilvl26 = allGear.filter((item) => itemLevel(item) === 26);
+    for (const item of ilvl26) {
+      if (vendorIds.has(item.id)) {
+        expect(ratingValues(item), item.id).toEqual([25]);
+      } else {
+        expect(ratingCount(item), item.id).toBe(0);
+      }
+    }
+    expect([...vendorIds]).toHaveLength(10);
+
+    for (const item of allGear.filter((gear) => itemLevel(gear) === 28)) {
+      expect(ratingCount(item), item.id).toBe(0);
+    }
+
+    // The 8 Nythraxis set pieces plus the 5 offhand-slot / two-hander epics
+    // (bonewrought_greatsword/bulwark, direfang_greatblade, wraithfire_orb, and
+    // the hunter's direfang_quiver), the feral ladder's raid capstone
+    // (maul_of_the_scourged_wilds), and the seven Roots' Bramblehide pieces
+    // (the feral druid's Strength leather family), and the seven Nythraxis
+    // gap-fill drops (three one-handers, the healer shield, the leather caster
+    // helm, the mail caster gloves and feet).
+    const ilvl29 = allGear.filter((item) => itemLevel(item) === 29);
+    expect(ilvl29).toHaveLength(28);
+    for (const item of ilvl29) expect(ratingValues(item), item.id).toEqual([20]);
+
+    // ilvl-31: heroic five-man boss pieces (40 rating) + rift clear-time epics
+    // (armor pieces 40, ring 25). Every ilvl-31 PvE gear piece carries exactly one
+    // rating, and the WARFARE honor tier is the one deliberate hole in the ladder:
+    // it sits at ilvl 31 carrying ZERO combat ratings. That is load-bearing rather
+    // than an oversight. It is what stops a complete honor kit from substituting
+    // for the heroic tier: same item level, a 10 percent primary-stat discount,
+    // no ratings at all, and set bonuses that contribute nothing outside PvP.
+    // Carved out by id rather than filtered by "has no rating", which would
+    // silently absorb any future PvE piece that lost its rating by accident.
+    const warfareIds = new Set<string>(FURY_STOCK);
+    const ilvl31 = allGear.filter((item) => itemLevel(item) === 31);
+    expect(ilvl31.length).toBeGreaterThan(0);
+    for (const item of ilvl31) {
+      const expected = warfareIds.has(item.id) ? 0 : 1;
+      expect(ratingCount(item), `${item.id} (ilvl 31) carries ${expected} rating(s)`).toBe(
+        expected,
+      );
+    }
+    // The replacement POSITIVE pin: the carve-out must stay a known, bounded set
+    // rather than growing quietly, and both arms must be non-vacuous.
+    const warfareAtIlvl31 = ilvl31.filter((item) => warfareIds.has(item.id));
+    expect(warfareAtIlvl31, 'the whole WARFARE catalog sits at ilvl 31').toHaveLength(47);
+    expect(
+      ilvl31.length - warfareAtIlvl31.length,
+      'ilvl-31 PvE epics still carry their ratings',
+    ).toBeGreaterThan(0);
+
+    const directHeroicRaidWeapons = new Set([
+      'scepter_of_the_deathless_court',
+      'deathless_greatblade',
+      'stormcallers_focus',
+    ]);
+    const heroicRaidGear = allGear.filter((item) => {
+      const ilvl = itemLevel(item);
+      return (
+        (ilvl === 33 && (item.heroicOf !== undefined || directHeroicRaidWeapons.has(item.id))) ||
+        (ilvl === 37 && item.heroicOf !== undefined)
+      );
+    });
+    // 13 pre-existing pieces plus the 6 generated heroic raid variants of the
+    // normal-raid epics (greatsword, greatblade, bulwark, orb, the hunter's
+    // direfang_quiver, and the feral ladder capstone maul_of_the_scourged_wilds)
+    // plus the 7 generated variants of Roots' Bramblehide and the 7 of the
+    // Nythraxis gap-fill drops.
+    // Minus the two heroic legendaries, which live in the ilvl-honesty
+    // carve-out above with their shipped rating identity.
+    expect(heroicRaidGear).toHaveLength(31);
+    for (const item of heroicRaidGear) {
+      const ilvl = itemLevel(item);
+      const expectedPrimary = ilvl === 37 ? 70 : item.weapon ? 65 : 55;
+      const expectedSecondary = ilvl === 37 ? 30 : 20;
+      expect(
+        ratingValues(item).sort((a, b) => b - a),
+        item.id,
+      ).toEqual([expectedPrimary, expectedSecondary]);
+    }
+  });
+
+  it('heart_of_the_rift (ilvl-35 legendary) carries zero ratings by design', () => {
+    // The rift legendary neck is class-neutral and carries no combat ratings:
+    // its differentiation is a large multi-stat primary-stat block, not ratings.
+    // This is intentional (pinned here so a future tuner does not silently add one).
+    const legendary = ITEMS.heart_of_the_rift;
+    expect(legendary, 'heart_of_the_rift must exist').toBeTruthy();
+    if (legendary) {
+      expect(ratingCount(legendary), 'rift legendary carries no ratings').toBe(0);
+    }
+  });
+
+  it('a spell-facing raid legendary (Heartwood staff) takes throughput ratings, never Hit', () => {
+    // A rating-less caster/healer base must not default to the game's largest Hit
+    // allowance: heals are not resisted by level, matching the healer-facing rule.
+    const staff = ITEMS.heroic_deathless_heartwood;
+    expect(staff, 'heroic Heartwood variant should be generated').toBeTruthy();
+    if (staff) {
+      expect(staff.hitRating ?? 0).toBe(0);
+      expect(ratingCount(staff)).toBe(2); // haste primary + crit secondary
+      expect((staff.hasteRating ?? 0) > 0 && (staff.critRating ?? 0) > 0).toBe(true);
+    }
+  });
+});

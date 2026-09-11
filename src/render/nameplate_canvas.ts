@@ -1,0 +1,827 @@
+import { borderAccent, borderMotifPrimitives } from '../ui/deed_border_view';
+import { TextSpriteCache, type TextSpriteStyle } from '../ui/text_sprite_cache';
+import {
+  drawNameplateDotRow,
+  NAMEPLATE_DOT_TIME_STYLE,
+  type NameplateDotRowHost,
+} from './nameplate_dot_row';
+import {
+  type NameplateDotsPlan,
+  nameplateDotRowHeight,
+  newNameplateDotsPlan,
+} from './nameplate_dots_core';
+import {
+  createNameplateHeraldry,
+  NAMEPLATE_HERALDRY_TITLE_STEP,
+  NAMEPLATE_HERALDRY_WELL_ALPHA,
+  NAMEPLATE_HERALDRY_WELL_FILL,
+  type NameplateHeraldryInput,
+  nameplateHeraldryInto,
+  nameplateHeraldryLift,
+} from './nameplate_heraldry_core';
+import {
+  NAMEPLATE_IMAGE_CACHE_LIMIT,
+  NAMEPLATE_IMAGE_RETRY_BASE_FRAMES,
+  NameplateImageCache,
+} from './nameplate_image_cache';
+
+// Re-exported so the cache's budget stays part of THIS module's published
+// surface, where its callers and tests have always read it.
+export { NAMEPLATE_IMAGE_CACHE_LIMIT, NAMEPLATE_IMAGE_RETRY_BASE_FRAMES };
+
+import { drawNameplateCorpseIcon, type NameplateMarkerTone } from './nameplate_markers';
+import {
+  drawNameplateBadge,
+  drawNameplateComboPips,
+  drawNameplateImage,
+  type NameplateBadge,
+  roundedRect,
+} from './nameplate_paint_primitives';
+import { NAMEPLATE_BASE_WIDTH, nameplateHealthBarWidth } from './nameplate_pick_core';
+
+export type NameplateFrame = '' | 'elite' | 'boss';
+export type { NameplateMarkerTone } from './nameplate_markers';
+export type { NameplateBadge } from './nameplate_paint_primitives';
+
+export interface NameplateCanvasState {
+  initialized: boolean;
+  name: string;
+  nameColor: string;
+  level: string;
+  levelColor: string;
+  guild: string;
+  /** The drawn `<guild>` form, prebuilt by the painter's resolveContent
+   *  alongside `guild` (its only writer), so the per-frame draw path never
+   *  allocates the wrapper; drawBase only consumes it. */
+  guildLabel: string;
+  /** The guild colour tier for the line's fill (GUILD_TIER_FILLS). */
+  guildTier: number;
+  title: string;
+  /** The Book of Deeds border SLUG (never a deed id, never display text), '' for
+   *  a borderless player and every mob/npc/object. Resolved by the painter
+   *  through deedBorderSlug on the same cadence as `title`. */
+  border: string;
+  marker: string;
+  markerTone: NameplateMarkerTone;
+  hpVisible: boolean;
+  hpFill: number;
+  castVisible: boolean;
+  castFill: number;
+  castChannel: boolean;
+  castSource: string;
+  castLabel: string;
+  currentTarget: boolean;
+  hostile: boolean;
+  deadEnemy: boolean;
+  myPet: boolean;
+  friendlyPet: boolean;
+  threat: boolean;
+  opacity: number;
+  frame: NameplateFrame;
+  comboPips: number;
+  /** The local player's OWN debuffs on this entity, filled by the painter through
+   *  nameplateDotsInto. Drawn as an icon row between the name row and the health
+   *  bar while the showNameplateDots setting is on. One plan PER PLATE (never a
+   *  shared scratch): the plan is also where a recycled slot's artwork is
+   *  invalidated, which only works when it belongs to one entity. Its slots keep
+   *  their high-water capacity, so a plate that loses a dot allocates nothing.
+   *  These are actionable timers, so no graphics tier ever sheds them (root
+   *  CLAUDE.md, gameplay-neutral graphics). */
+  dots: NameplateDotsPlan;
+  aiLabel: string;
+  /** The operator-applied Cheater tag, already localized AND already wrapped in
+   *  its `< >` form by the painter's resolveContent (its only writer, the
+   *  guildLabel precedent), '' for everyone else. An inline chip in the name row
+   *  rather than a stacked line, so it adds no vertical step the drawEmote
+   *  anchor walk would have to mirror. */
+  cheaterLabel: string;
+  devOutline: string | null;
+  badges: NameplateBadge[];
+  raidMarkerUrl: string;
+  emoteIconUrl: string;
+  emoteLabel: string;
+}
+
+export function createNameplateCanvasState(): NameplateCanvasState {
+  return {
+    initialized: false,
+    name: '',
+    nameColor: '#fff',
+    level: '',
+    levelColor: '#fff',
+    guild: '',
+    guildLabel: '',
+    guildTier: 0,
+    title: '',
+    border: '',
+    marker: '',
+    markerTone: 'none',
+    hpVisible: false,
+    hpFill: 1,
+    castVisible: false,
+    castFill: 0,
+    castChannel: false,
+    castSource: '',
+    castLabel: '',
+    currentTarget: false,
+    hostile: false,
+    deadEnemy: false,
+    myPet: false,
+    friendlyPet: false,
+    threat: false,
+    opacity: 1,
+    frame: '',
+    comboPips: 0,
+    dots: newNameplateDotsPlan(),
+    aiLabel: '',
+    cheaterLabel: '',
+    devOutline: null,
+    badges: [],
+    raidMarkerUrl: '',
+    emoteIconUrl: '',
+    emoteLabel: '',
+  };
+}
+
+export const NAMEPLATE_MARKER_ROW_HEIGHT = 26;
+// The surface's own defensive clamp on the backing-store ratio it is handed.
+// The POLICY that picks that ratio lives in the pure knob module under
+// src/game (nameplatePixelRatio, bounded by the renderer's effective ratio) and
+// is applied by nameplate_painter.ts; this file deliberately imports nothing
+// from there, because the deed-accent fairness guard
+// (tests/deed_border_accent.test.ts) requires every module on the plate-drawing
+// path to be free of quality-knob and governor reads. The two bounds are pinned
+// equal in tests/nameplate_paint_gate.test.ts.
+export const NAMEPLATE_MAX_PIXEL_RATIO = 2;
+export const NAMEPLATE_MIN_PIXEL_RATIO = 1;
+// Nameplate labels scale their backing stores with DPR. The count remains a
+// secondary guard, while the 16 MiB RGBA budget is the hard memory ceiling.
+// At DPR 2 a representative 126x43 logical label retains about 85 KiB, so the
+// byte budget holds roughly 190 such labels rather than the old 129 MiB worst
+// case from a 1536-entry count alone.
+export const NAMEPLATE_TEXT_SPRITE_LIMIT = 512;
+export const NAMEPLATE_TEXT_SPRITE_BUDGET_BYTES = 16 * 1024 * 1024;
+
+const TITLE_FONT = 'Cinzel, Georgia, serif';
+const NAME_STYLE: TextSpriteStyle = {
+  font: `700 12px ${TITLE_FONT}`,
+  fill: '#fff',
+  stroke: '#000',
+  lineWidth: 3,
+};
+const TARGET_NAME_STYLE: TextSpriteStyle = {
+  font: `700 14px ${TITLE_FONT}`,
+  fill: '#fff',
+  stroke: '#000',
+  lineWidth: 3,
+};
+const LEVEL_STYLE: TextSpriteStyle = {
+  font: `700 19px ${TITLE_FONT}`,
+  fill: '#fff',
+  stroke: '#000',
+  lineWidth: 3,
+};
+const AI_STYLE: TextSpriteStyle = {
+  font: `700 11px ${TITLE_FONT}`,
+  fill: '#7de9c3',
+  stroke: '#000',
+  lineWidth: 2,
+};
+// The operator-applied Cheater tag. Same weight and size as the AI chip it sits
+// beside so the row's metrics do not change shape, but a hot red rather than the
+// AI mint: the two are both operator-set flair and must never read as the same
+// thing. Deliberately NOT the hostile-name red (#ff5555), which the same row
+// already spends on "this unit will attack you"; the sanction is louder.
+const CHEATER_STYLE: TextSpriteStyle = {
+  font: `700 11px ${TITLE_FONT}`,
+  fill: '#ff6b6b',
+  stroke: '#000',
+  lineWidth: 2,
+};
+const TITLE_STYLE: TextSpriteStyle = {
+  font: `italic 10px ${TITLE_FONT}`,
+  fill: '#ffe9a0',
+  stroke: '#000',
+  lineWidth: 2,
+};
+const GUILD_STYLE: TextSpriteStyle = {
+  font: `700 11px ${TITLE_FONT}`,
+  fill: '#c9dcfb',
+  stroke: '#000',
+  lineWidth: 2,
+};
+/** Guild colour tiers (sim/guild_tier.ts): the guild line's fill by the
+ *  guild's collective lifetime XP. Index IS the tier; 0 keeps the classic
+ *  fill every fresh guild has always had. Cosmetic only. */
+export const GUILD_TIER_FILLS: readonly string[] = [
+  '#c9dcfb', // 0: the classic guild blue
+  '#9fe8a8', // 1: spring green, a few actives
+  '#5fd3e8', // 2: cyan, an established roster
+  '#e8b45f', // 3: amber, a serious guild
+  '#ffcf40', // 4: gold, the realm's elite
+];
+const TARGET_GUILD_STYLE: TextSpriteStyle = {
+  font: `700 13px ${TITLE_FONT}`,
+  fill: '#c9dcfb',
+  stroke: '#000',
+  lineWidth: 2,
+};
+const MARKER_STYLE: TextSpriteStyle = {
+  font: `700 24px ${TITLE_FONT}`,
+  fill: '#f2c84b',
+  stroke: '#000',
+  lineWidth: 2,
+};
+const CAST_STYLE: TextSpriteStyle = {
+  font: '700 9px Arial, sans-serif',
+  fill: '#fff',
+  stroke: '#000',
+  lineWidth: 1,
+};
+const EMOTE_STYLE: TextSpriteStyle = {
+  font: `800 11px ${TITLE_FONT}`,
+  fill: '#ffe9a3',
+  stroke: '#000',
+  lineWidth: 1,
+};
+
+// Pen sizes for the world-scale forged seal; geometry lives in the pure heraldry core.
+const HERALDRY_EDGE_WIDTH = 2;
+const HERALDRY_FRAME_WIDTH = 1;
+const HERALDRY_MOTIF_WIDTH = 1.25;
+const HERALDRY_RIVET_RADIUS = 1;
+
+export class NameplateCanvasSurface {
+  readonly canvas: HTMLCanvasElement;
+  private readonly ctx: CanvasRenderingContext2D;
+  private readonly text = new TextSpriteCache(
+    NAMEPLATE_TEXT_SPRITE_LIMIT,
+    NAMEPLATE_TEXT_SPRITE_BUDGET_BYTES,
+  );
+  private readonly images = new NameplateImageCache();
+  private readonly forcedColorsMql: MediaQueryList | null;
+  private readonly nameStyle: TextSpriteStyle = { ...NAME_STYLE };
+  private readonly targetNameStyle: TextSpriteStyle = { ...TARGET_NAME_STYLE };
+  private readonly devNameStyle: TextSpriteStyle = { ...NAME_STYLE };
+  private readonly targetDevNameStyle: TextSpriteStyle = { ...TARGET_NAME_STYLE };
+  private readonly levelStyle: TextSpriteStyle = { ...LEVEL_STYLE };
+  private readonly aiStyle: TextSpriteStyle = { ...AI_STYLE };
+  private readonly cheaterStyle: TextSpriteStyle = { ...CHEATER_STYLE };
+  private readonly titleStyle: TextSpriteStyle = { ...TITLE_STYLE };
+  private readonly guildStyle: TextSpriteStyle = { ...GUILD_STYLE };
+  private readonly targetGuildStyle: TextSpriteStyle = { ...TARGET_GUILD_STYLE };
+  private readonly markerStyle: TextSpriteStyle = { ...MARKER_STYLE };
+  private readonly castStyle: TextSpriteStyle = { ...CAST_STYLE };
+  private readonly dotTimeStyle: TextSpriteStyle = { ...NAMEPLATE_DOT_TIME_STYLE };
+  // The dot row borrows this surface's pen, caches and forced-colors state; it
+  // owns none of them. Built once so the per-frame draw allocates no bag.
+  private readonly dotRowHost: NameplateDotRowHost = {
+    forcedColors: () => this.forcedColorsActive(),
+    roundedRect,
+    drawImage: (url, x, y, size) => this.drawImage(url, x, y, size, false),
+    drawText: (ctx, text, x, y, font, fill) => {
+      this.dotTimeStyle.font = font;
+      this.text.draw(ctx, text, x, y, this.configureTextStyle(this.dotTimeStyle, fill));
+    },
+  };
+  private readonly emoteStyle: TextSpriteStyle = { ...EMOTE_STYLE };
+  private width = 0;
+  private height = 0;
+  private layerHidden = false;
+  // Bumped by anything that changes how an UNCHANGED plate would be drawn: a
+  // late web-font load (which clears the sprite cache) and a forced-colors flip
+  // (which repaints every fill and stroke through the system palette). The
+  // repaint gate folds it in, so those two never leave a stale surface up.
+  private styleRev = 0;
+  private readonly heraldry = createNameplateHeraldry();
+  private readonly heraldryInput: NameplateHeraldryInput = {
+    screenX: 0,
+    nameRowBottomY: 0,
+    nameRowWidth: 0,
+    nameRowHeight: 0,
+    slug: '',
+  };
+
+  constructor(parent: HTMLElement) {
+    const canvas = document.createElement('canvas');
+    canvas.className = 'nameplate-canvas';
+    canvas.setAttribute('aria-hidden', 'true');
+    canvas.style.position = 'absolute';
+    canvas.style.inset = '0';
+    canvas.style.pointerEvents = 'none';
+    canvas.style.zIndex = '1';
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Nameplate canvas requires a 2D context');
+    this.canvas = canvas;
+    this.ctx = ctx;
+    this.forcedColorsMql =
+      typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+        ? window.matchMedia('(forced-colors: active)')
+        : null;
+    // Feature-detected: older WebKit MediaQueryList has only addListener, and a
+    // stub host may have neither. A missing listener costs a repaint on a
+    // forced-colors flip, never correctness on any frame that draws.
+    if (typeof this.forcedColorsMql?.addEventListener === 'function') {
+      this.forcedColorsMql.addEventListener('change', this.handleStyleChange);
+    }
+    parent.appendChild(canvas);
+    if (document.fonts) {
+      void document.fonts.ready.then(this.handleStyleChange);
+      document.fonts.addEventListener('loadingdone', this.handleStyleChange);
+    }
+  }
+
+  /** Monotonic stamp of everything that changes an unchanged plate's pixels:
+   *  the style changes above PLUS every image decode outcome, because a badge
+   *  or emote icon arrives asynchronously long after the state naming its url
+   *  stopped changing. Both counters only ever increase, so the sum does too. */
+  styleRevision(): number {
+    return this.styleRev + this.images.revision();
+  }
+
+  /** Drop the layer out of the compositor while nothing is drawn on it, and put
+   *  it back the moment a plate returns. An always-present full-viewport canvas
+   *  is a second full-screen surface Chrome keeps composited even when every one
+   *  of its pixels is transparent; `hidden` removes it from the tree's boxes
+   *  entirely. The backing store is cleared on the way out, so an unhide can
+   *  never flash the plates of a previous frame. */
+  setLayerHidden(hidden: boolean): void {
+    if (hidden === this.layerHidden) return;
+    this.layerHidden = hidden;
+    this.canvas.hidden = hidden;
+    if (!hidden) return;
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+
+  beginFrame(width: number, height: number, surfacePixelRatio: number): void {
+    const pixelRatio = Math.max(
+      NAMEPLATE_MIN_PIXEL_RATIO,
+      Math.min(NAMEPLATE_MAX_PIXEL_RATIO, surfacePixelRatio || 1),
+    );
+    const backingWidth = Math.max(1, Math.ceil(width * pixelRatio));
+    const backingHeight = Math.max(1, Math.ceil(height * pixelRatio));
+    if (
+      this.canvas.width !== backingWidth ||
+      this.canvas.height !== backingHeight ||
+      this.width !== width ||
+      this.height !== height
+    ) {
+      this.canvas.width = backingWidth;
+      this.canvas.height = backingHeight;
+      this.canvas.style.width = `${width}px`;
+      this.canvas.style.height = `${height}px`;
+      this.width = width;
+      this.height = height;
+    }
+    this.text.setPixelRatio(pixelRatio);
+    this.ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    this.ctx.clearRect(0, 0, width, height);
+    this.ctx.imageSmoothingEnabled = true;
+    this.text.beginRedraw();
+    this.images.beginFrame();
+  }
+
+  /** Drop every baked label sprite (a language switch). Bumps the style
+   *  revision too: the same plate must be repainted in the new language. */
+  clearTextCache(): void {
+    this.handleStyleChange();
+  }
+
+  drawBase(state: NameplateCanvasState, screenX: number, screenY: number): void {
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalAlpha = state.opacity;
+    let y = screenY;
+
+    if (state.castVisible) {
+      y -= 10;
+      this.drawCast(state, screenX, y);
+    }
+    if (state.hpVisible) {
+      y -= 7;
+      this.drawHealth(state, screenX, y);
+    }
+    // Your own dots sit BETWEEN the health bar and the name row (the classic
+    // nameplate-tracker placement): the health bar stays the lowest thing the eye
+    // tracks and the cast bar keeps its anchor, while the plate grows upward.
+    // drawEmote below mirrors this exact step, or the emote bubble drifts.
+    if (state.dots.count > 0) {
+      y -= nameplateDotRowHeight(state.dots.count, state.dots.scale);
+      this.drawDots(state, screenX, y);
+    }
+    if (state.guild) {
+      y -= state.currentTarget ? 14 : 12;
+      const guildStyle = state.currentTarget ? this.targetGuildStyle : this.guildStyle;
+      // The `<guild>` wrapper is prebuilt by resolveContent (guild's only
+      // writer): this runs per plate per frame, and an unconditional template
+      // literal here was a steady per-frame allocation for every guilded
+      // plate on screen.
+      this.text.draw(
+        ctx,
+        state.guildLabel,
+        screenX,
+        y + (state.currentTarget ? 11 : 10),
+        this.configureTextStyle(guildStyle, GUILD_TIER_FILLS[state.guildTier] ?? GUILD_STYLE.fill),
+      );
+    }
+    if (state.title) y -= NAMEPLATE_HERALDRY_TITLE_STEP;
+    y -= this.heraldryLift(state);
+
+    const rowHeight = this.drawNameRow(state, screenX, y);
+    y -= rowHeight;
+    y -= NAMEPLATE_MARKER_ROW_HEIGHT;
+    if (state.marker) {
+      if (state.markerTone === 'loot' || state.markerTone === 'harvest') {
+        drawNameplateCorpseIcon(ctx, screenX, y + 14, state.markerTone, this.forcedColorsActive());
+      } else {
+        const style = this.markerStyle;
+        // The glyph channel's cross-surface color contract (pinned by
+        // quest_marker_styles): gold for the first-offer '!' and ready '?',
+        // gray for the in-progress '?', and the rare-item blue for the
+        // repeatable arms, with the cooldown mark dimmed at the shared 0.55.
+        this.configureTextStyle(
+          style,
+          state.markerTone === 'active'
+            ? '#b9b9b9'
+            : state.markerTone === 'repeat' || state.markerTone === 'cooldown'
+              ? '#0070dd'
+              : '#f2c84b',
+        );
+        const dimmed = state.markerTone === 'cooldown';
+        if (dimmed) ctx.globalAlpha = state.opacity * 0.55;
+        this.text.draw(ctx, state.marker, screenX, y + 21, style);
+        // Forced colors collapses gold and blue to one CanvasText, so the two
+        // offers would read identically (the failure class the DOM plates'
+        // forced-colors rule closed). Underline the repeat mark as the
+        // redundant non-color cue, dotted for the cooldown mark so the dimmed
+        // not-yet state stays distinguishable too.
+        if (
+          this.forcedColorsActive() &&
+          (state.markerTone === 'repeat' || state.markerTone === 'cooldown')
+        ) {
+          const half = this.text.measureAdvance(state.marker, style) / 2;
+          ctx.beginPath();
+          if (dimmed) ctx.setLineDash([2, 2]);
+          ctx.moveTo(screenX - half, y + 24);
+          ctx.lineTo(screenX + half, y + 24);
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = 'CanvasText';
+          ctx.stroke();
+          if (dimmed) ctx.setLineDash([]);
+        }
+        if (dimmed) ctx.globalAlpha = state.opacity;
+      }
+    }
+    if (state.comboPips > 0) {
+      y -= 9;
+      this.drawCombo(state.comboPips, screenX, y);
+    }
+    if (state.raidMarkerUrl) {
+      y -= 31;
+      this.drawImage(state.raidMarkerUrl, screenX - 15, y, 30, false);
+    }
+    ctx.restore();
+  }
+
+  drawEmote(state: NameplateCanvasState, screenX: number, screenY: number): void {
+    if (!state.emoteIconUrl || !state.emoteLabel) return;
+    let y = screenY;
+    if (state.castVisible) y -= 10;
+    if (state.hpVisible) y -= 7;
+    // Mirrors drawBase's dot row exactly (same core, same count).
+    if (state.dots.count > 0) y -= nameplateDotRowHeight(state.dots.count, state.dots.scale);
+    if (state.guild) y -= state.currentTarget ? 14 : 12;
+    if (state.title) y -= NAMEPLATE_HERALDRY_TITLE_STEP;
+    y -= this.heraldryLift(state);
+    y -= this.nameRowHeight(state);
+    y -= NAMEPLATE_MARKER_ROW_HEIGHT;
+    if (state.comboPips > 0) y -= 9;
+    if (state.raidMarkerUrl) y -= 31;
+    y -= 47;
+
+    const emoteStyle = this.configureTextStyle(this.emoteStyle, EMOTE_STYLE.fill);
+    const labelWidth = Math.min(56, this.text.measureAdvance(state.emoteLabel, emoteStyle));
+    const width = Math.max(62, 49 + labelWidth);
+    const x = screenX - width / 2;
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalAlpha = state.opacity;
+    ctx.shadowColor = this.forcedColorsActive() ? 'transparent' : '#ffd65a66';
+    ctx.shadowBlur = this.forcedColorsActive() ? 0 : 12;
+    roundedRect(ctx, x, y, width, 42, 21);
+    ctx.fillStyle = this.forcedColorsActive() ? 'Canvas' : '#20160d';
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = this.forcedColorsActive() ? 'CanvasText' : '#f2d27a';
+    ctx.stroke();
+    this.drawImage(state.emoteIconUrl, x + 4, y + 4, 34, false);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x + 43, y, Math.max(1, width - 47), 42);
+    ctx.clip();
+    this.text.draw(ctx, state.emoteLabel, x + 43 + labelWidth / 2, y + 26, emoteStyle);
+    ctx.restore();
+    ctx.restore();
+  }
+
+  dispose(): void {
+    document.fonts?.removeEventListener('loadingdone', this.handleStyleChange);
+    if (typeof this.forcedColorsMql?.removeEventListener === 'function') {
+      this.forcedColorsMql.removeEventListener('change', this.handleStyleChange);
+    }
+    this.canvas.remove();
+  }
+
+  private readonly handleStyleChange = (): void => {
+    this.text.clear();
+    this.styleRev++;
+  };
+
+  private heraldryLift(state: NameplateCanvasState): number {
+    return nameplateHeraldryLift(state.border);
+  }
+
+  private nameRowHeight(state: NameplateCanvasState): number {
+    let height = state.currentTarget ? 18 : 16;
+    for (const badge of state.badges) height = Math.max(height, badge.size);
+    return height;
+  }
+
+  private drawNameRow(state: NameplateCanvasState, screenX: number, bottomY: number): number {
+    const rowHeight = this.nameRowHeight(state);
+    const nameStyle = state.currentTarget ? this.targetNameStyle : this.nameStyle;
+    const nameColor = state.deadEnemy ? '#bbb' : state.hostile ? '#ff5555' : state.nameColor;
+    this.configureTextStyle(nameStyle, nameColor);
+    this.configureTextStyle(this.levelStyle, state.levelColor);
+    this.configureTextStyle(this.aiStyle, AI_STYLE.fill);
+    this.configureTextStyle(this.cheaterStyle, CHEATER_STYLE.fill);
+    const titleStyle = this.configureTextStyle(this.titleStyle, TITLE_STYLE.fill);
+    const nameWidth = this.text.measureAdvance(state.name, nameStyle);
+    const levelWidth = state.level ? this.text.measureAdvance(state.level, this.levelStyle) + 6 : 0;
+    const aiWidth = state.aiLabel ? this.text.measureAdvance(state.aiLabel, this.aiStyle) + 3 : 0;
+    const cheaterWidth = state.cheaterLabel
+      ? this.text.measureAdvance(state.cheaterLabel, this.cheaterStyle) + 3
+      : 0;
+    let badgeWidth = 0;
+    for (const badge of state.badges) badgeWidth += badge.size + 3;
+    const rowWidth = badgeWidth + cheaterWidth + aiWidth + levelWidth + nameWidth;
+    const input = this.heraldryInput;
+    input.screenX = screenX;
+    input.nameRowBottomY = bottomY;
+    input.nameRowWidth = rowWidth;
+    input.nameRowHeight = rowHeight;
+    input.slug = state.border;
+    const heraldry = nameplateHeraldryInto(this.heraldry, input);
+    if (heraldry.active) this.drawDeedHeraldry(state.border, state.opacity);
+    let x = heraldry.nameRowLeft;
+    const topY = heraldry.nameRowTop;
+    const nameBaseline = heraldry.nameBaseline;
+    for (const badge of state.badges) {
+      this.drawBadge(badge, x, topY + (rowHeight - badge.size) / 2);
+      x += badge.size + 3;
+    }
+    // Leftmost text in the row, ahead of the AI chip and the level: a public
+    // sanction is the first thing the row should say about this player.
+    if (state.cheaterLabel) {
+      const width = cheaterWidth - 3;
+      this.text.draw(this.ctx, state.cheaterLabel, x + width / 2, nameBaseline, this.cheaterStyle);
+      x += cheaterWidth;
+    }
+    if (state.aiLabel) {
+      const width = aiWidth - 3;
+      this.text.draw(this.ctx, state.aiLabel, x + width / 2, nameBaseline, this.aiStyle);
+      x += aiWidth;
+    }
+    if (state.level) {
+      const width = levelWidth - 6;
+      this.text.draw(this.ctx, state.level, x + width / 2, nameBaseline + 1, this.levelStyle);
+      x += levelWidth;
+    }
+    const nameX = x + nameWidth / 2;
+    if (state.devOutline) {
+      const devStyle = state.currentTarget ? this.targetDevNameStyle : this.devNameStyle;
+      devStyle.fill = nameStyle.fill;
+      devStyle.stroke = this.forcedColorsActive() ? 'Highlight' : state.devOutline;
+      devStyle.lineWidth = 4;
+      this.text.draw(this.ctx, state.name, nameX, nameBaseline, devStyle);
+    }
+    this.text.draw(this.ctx, state.name, nameX, nameBaseline, nameStyle);
+    if (state.title) {
+      this.text.draw(
+        this.ctx,
+        state.title,
+        heraldry.titleCenterX,
+        heraldry.titleBaseline,
+        titleStyle,
+      );
+    }
+    return rowHeight;
+  }
+
+  // Caller-owned geometry and frozen motif data draw before readable content.
+  private drawDeedHeraldry(slug: string, plateAlpha: number): void {
+    const accent = borderAccent(slug);
+    const heraldry = this.heraldry;
+    const kind = heraldry.motifKind;
+    if (!accent || !heraldry.active || !kind) return;
+    const ctx = this.ctx;
+    const forcedColors = this.forcedColorsActive();
+    const plaque = heraldry.plaque;
+    const plaqueMiddleY = plaque.y + plaque.h / 2;
+    ctx.beginPath();
+    ctx.moveTo(plaque.x, plaque.y);
+    ctx.lineTo(heraldry.plaqueShoulderX, plaque.y);
+    ctx.lineTo(plaque.x + plaque.w, plaqueMiddleY);
+    ctx.lineTo(heraldry.plaqueShoulderX, plaque.y + plaque.h);
+    ctx.lineTo(plaque.x, plaque.y + plaque.h);
+    ctx.lineTo(heraldry.plaqueNotchX, plaqueMiddleY);
+    ctx.closePath();
+    if (forcedColors) {
+      ctx.fillStyle = 'Canvas';
+      ctx.fill();
+    } else {
+      ctx.globalAlpha = plateAlpha * NAMEPLATE_HERALDRY_WELL_ALPHA;
+      ctx.fillStyle = NAMEPLATE_HERALDRY_WELL_FILL;
+      ctx.fill();
+      ctx.globalAlpha = plateAlpha;
+    }
+    ctx.lineWidth = HERALDRY_EDGE_WIDTH;
+    ctx.strokeStyle = forcedColors ? 'Canvas' : accent.edge;
+    ctx.stroke();
+    ctx.lineWidth = HERALDRY_FRAME_WIDTH;
+    ctx.strokeStyle = forcedColors ? 'CanvasText' : accent.frame;
+    ctx.stroke();
+
+    // One static inset glint reads as worked metal at normal town distance.
+    ctx.beginPath();
+    ctx.moveTo(plaque.x + 5, plaque.y + 2);
+    ctx.lineTo(heraldry.plaqueShoulderX - 2, plaque.y + 2);
+    if (!forcedColors) ctx.globalAlpha = plateAlpha * 0.42;
+    ctx.lineWidth = HERALDRY_FRAME_WIDTH;
+    ctx.strokeStyle = forcedColors ? 'CanvasText' : accent.glow;
+    ctx.stroke();
+    if (!forcedColors) ctx.globalAlpha = plateAlpha;
+
+    ctx.beginPath();
+    ctx.rect(heraldry.joint.x, heraldry.joint.y, heraldry.joint.w, heraldry.joint.h);
+    ctx.fillStyle = forcedColors ? 'Canvas' : accent.edge;
+    ctx.fill();
+    ctx.lineWidth = HERALDRY_FRAME_WIDTH;
+    ctx.strokeStyle = forcedColors ? 'CanvasText' : accent.frame;
+    ctx.stroke();
+
+    const sealCenterX = heraldry.seal.x + heraldry.seal.size / 2;
+    const sealCenterY = heraldry.seal.y + heraldry.seal.size / 2;
+    ctx.beginPath();
+    ctx.arc(sealCenterX, sealCenterY, heraldry.seal.size / 2, 0, Math.PI * 2);
+    ctx.fillStyle = forcedColors ? 'Canvas' : accent.edge;
+    ctx.fill();
+    ctx.lineWidth = HERALDRY_EDGE_WIDTH;
+    ctx.strokeStyle = forcedColors ? 'CanvasText' : accent.frame;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(sealCenterX, sealCenterY, heraldry.seal.size / 2 - 3, 0, Math.PI * 2);
+    ctx.fillStyle = forcedColors ? 'Canvas' : NAMEPLATE_HERALDRY_WELL_FILL;
+    ctx.fill();
+    ctx.lineWidth = HERALDRY_FRAME_WIDTH;
+    ctx.strokeStyle = forcedColors ? 'Canvas' : accent.glow;
+    ctx.stroke();
+
+    const motif = borderMotifPrimitives(kind);
+    ctx.beginPath();
+    for (let i = 0; i < motif.length; i++) {
+      const line = motif[i];
+      ctx.moveTo(
+        heraldry.motifCenterX + line.x1 * heraldry.motifScale,
+        heraldry.motifCenterY + line.y1 * heraldry.motifScale,
+      );
+      ctx.lineTo(
+        heraldry.motifCenterX + line.x2 * heraldry.motifScale,
+        heraldry.motifCenterY + line.y2 * heraldry.motifScale,
+      );
+    }
+    ctx.lineWidth = HERALDRY_MOTIF_WIDTH;
+    ctx.strokeStyle = forcedColors ? 'CanvasText' : accent.frame;
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(heraldry.rivets[0].x, heraldry.rivets[0].y, HERALDRY_RIVET_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = forcedColors ? 'CanvasText' : accent.frame;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(heraldry.rivets[1].x, heraldry.rivets[1].y, HERALDRY_RIVET_RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = forcedColors ? 'CanvasText' : accent.frame;
+    ctx.fill();
+  }
+
+  private drawHealth(state: NameplateCanvasState, centerX: number, y: number): void {
+    const ctx = this.ctx;
+    const forcedColors = this.forcedColorsActive();
+    const width = nameplateHealthBarWidth(state.frame === 'boss');
+    const x = centerX - width / 2;
+    if (state.threat) {
+      ctx.save();
+      ctx.shadowColor = forcedColors ? 'CanvasText' : '#c0392b';
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = forcedColors ? 'Canvas' : '#2a0000';
+      roundedRect(ctx, x, y, width, 4, 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    roundedRect(ctx, x, y, width, 4, 2);
+    ctx.fillStyle = forcedColors ? 'Canvas' : '#2a0000';
+    ctx.fill();
+    const fill = Math.max(0, Math.min(1, state.hpFill));
+    if (fill > 0) {
+      roundedRect(ctx, x, y, width * fill, 4, 2);
+      ctx.fillStyle = forcedColors
+        ? 'Highlight'
+        : state.threat
+          ? '#d93632'
+          : state.myPet
+            ? '#4080ff'
+            : state.friendlyPet
+              ? '#76b653'
+              : state.hostile
+                ? '#e12c2c'
+                : '#2dab46';
+      ctx.fill();
+    }
+    ctx.lineWidth = state.frame === 'boss' ? 2 : 1;
+    ctx.strokeStyle = forcedColors
+      ? 'CanvasText'
+      : state.frame === 'boss'
+        ? '#ff5555'
+        : state.frame === 'elite'
+          ? '#f2c84b'
+          : state.currentTarget
+            ? '#ffffffaa'
+            : state.hostile
+              ? '#2e0000'
+              : '#00000088';
+    roundedRect(ctx, x, y, width, 4, 2);
+    ctx.stroke();
+  }
+
+  private drawCast(state: NameplateCanvasState, centerX: number, y: number): void {
+    const ctx = this.ctx;
+    const forcedColors = this.forcedColorsActive();
+    const width = NAMEPLATE_BASE_WIDTH;
+    const x = centerX - width / 2;
+    roundedRect(ctx, x, y, width, 8, 2);
+    ctx.fillStyle = forcedColors ? 'Canvas' : '#1a1205';
+    ctx.fill();
+    const fill = Math.max(0, Math.min(1, state.castFill));
+    if (fill > 0) {
+      roundedRect(ctx, x + 1, y + 1, Math.max(1, (width - 2) * fill), 6, 1);
+      ctx.fillStyle = forcedColors ? 'Highlight' : state.castChannel ? '#48a4e8' : '#e4ac2c';
+      ctx.fill();
+    }
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = forcedColors ? 'CanvasText' : '#000';
+    roundedRect(ctx, x, y, width, 8, 2);
+    ctx.stroke();
+    this.text.draw(
+      this.ctx,
+      state.castLabel,
+      centerX,
+      y + 7,
+      this.configureTextStyle(this.castStyle, CAST_STYLE.fill),
+    );
+  }
+
+  /** The player's own dots, centred over the health bar. `topY` is the row's
+   *  top edge in plate units (drawBase already subtracted the row height); the
+   *  drawing itself lives in nameplate_dot_row.ts. */
+  private drawDots(state: NameplateCanvasState, centerX: number, topY: number): void {
+    drawNameplateDotRow(this.ctx, state.dots, centerX, topY, this.dotRowHost);
+  }
+
+  private drawCombo(count: number, centerX: number, y: number): void {
+    drawNameplateComboPips(this.ctx, count, centerX, y, this.forcedColorsActive());
+  }
+
+  private drawBadge(badge: NameplateBadge, x: number, y: number): void {
+    const blit = (url: string, bx: number, by: number, size: number): void =>
+      this.drawImage(url, bx, by, size, false);
+    drawNameplateBadge(this.ctx, badge, x, y, blit, this.forcedColorsActive());
+  }
+
+  private drawImage(url: string, x: number, y: number, size: number, circular: boolean): void {
+    const image = this.images.get(url);
+    if (image) drawNameplateImage(this.ctx, image, x, y, size, circular);
+  }
+
+  private configureTextStyle(style: TextSpriteStyle, fill: string): TextSpriteStyle {
+    style.fill = this.forcedColorsActive() ? 'CanvasText' : fill;
+    style.stroke = this.forcedColorsActive() ? 'Canvas' : '#000';
+    return style;
+  }
+
+  private forcedColorsActive(): boolean {
+    return this.forcedColorsMql?.matches === true;
+  }
+}

@@ -1,0 +1,530 @@
+import { describe, expect, it } from 'vitest';
+
+import { COMMAND_FACETS, COMMAND_NAMES, DISPATCH_ONLY_COMMANDS } from '../src/world_api';
+
+// W6: facet tags on the shared command table. COMMAND_FACETS is APPEND-ONLY
+// metadata mapping each wire command to the IWorld facet whose method sends it; the
+// protocol vocabulary stays COMMAND_NAMES (W0b). This pins the W6 cluster's tags
+// (combat/targeting/loot/telemetry) and the table-consistency invariants without
+// touching the W0b gate. It never loosens command_schema.test.ts: a renamed token
+// surfaces there first; here it surfaces as an orphaned tag.
+
+// The exact tags W6 lands. Append (never edit) a slice's block as later clusters
+// (W7-W10) tag their facets' commands.
+const W6_TAGS: Readonly<Record<string, string>> = {
+  cast: 'IWorldCombat',
+  castSlot: 'IWorldCombat',
+  releaseEmpowered: 'IWorldCombat',
+  attack: 'IWorldCombat',
+  stopattack: 'IWorldCombat',
+  release: 'IWorldCombat',
+  unstuck: 'IWorldCombat',
+  resurrect_respond: 'IWorldCombat',
+  target: 'IWorldTargeting',
+  tab: 'IWorldTargeting',
+  tabPrev: 'IWorldTargeting',
+  targetNearestFriendly: 'IWorldTargeting',
+  tabFriendly: 'IWorldTargeting',
+  lootRoll: 'IWorldLoot',
+  telemetry: 'IWorldTelemetry',
+};
+
+describe('command facet tags (W6)', () => {
+  const names = new Set<string>(COMMAND_NAMES);
+  const dispatchOnly = new Set<string>(DISPATCH_ONLY_COMMANDS);
+  const tags = COMMAND_FACETS as Readonly<Record<string, string>>;
+
+  it('tags only real wire tokens that exist in COMMAND_NAMES', () => {
+    const orphans = Object.keys(tags)
+      .filter((cmd) => !names.has(cmd))
+      .sort();
+    expect(orphans, `tagged commands missing from COMMAND_NAMES:\n${orphans.join('\n')}`).toEqual(
+      [],
+    );
+  });
+
+  it('never tags a dispatch-only token (those are not client sends)', () => {
+    const leaked = Object.keys(tags)
+      .filter((cmd) => dispatchOnly.has(cmd))
+      .sort();
+    expect(leaked, `dispatch-only tokens must not be facet-tagged:\n${leaked.join('\n')}`).toEqual(
+      [],
+    );
+  });
+
+  it('tags the confirmed rank exchange to professions', () => {
+    expect(tags.swap_perfecting_ranks).toBe('IWorldProfessions');
+  });
+
+  it('tags every W6 combat/targeting/loot/telemetry command with its facet', () => {
+    for (const [cmd, facet] of Object.entries(W6_TAGS)) {
+      expect(tags[cmd], `facet tag for '${cmd}'`).toBe(facet);
+    }
+  });
+
+  it('does not tag targetNearest (RL/server-only) or activeLootRolls (no wire command)', () => {
+    expect('targetNearest' in tags).toBe(false);
+    expect('activeLootRolls' in tags).toBe(false);
+  });
+});
+
+// W7: append the progression cluster's tags (prestige + talents + cosmetics). The
+// table-consistency invariants in the W6 block above (no orphan tag, no dispatch-only
+// leak) already cover these new entries; this block pins the exact facet per W7
+// command and that the no-wire members stay untagged. Append-only: never edit a tag.
+const W7_TAGS: Readonly<Record<string, string>> = {
+  prestige: 'IWorldProgressionXp',
+  applyTalents: 'IWorldTalents',
+  respec: 'IWorldTalents',
+  setSpec: 'IWorldTalents',
+  selectTalentRow: 'IWorldTalents',
+  saveLoadout: 'IWorldTalents',
+  switchLoadout: 'IWorldTalents',
+  deleteLoadout: 'IWorldTalents',
+  change_skin: 'IWorldCosmetics',
+  claim_event_skin: 'IWorldCosmetics',
+  unequip_mech_chroma: 'IWorldCosmetics',
+};
+
+describe('command facet tags (W7)', () => {
+  const tags = COMMAND_FACETS as Readonly<Record<string, string>>;
+
+  it('tags every W7 progression/talents/cosmetics command with its facet', () => {
+    for (const [cmd, facet] of Object.entries(W7_TAGS)) {
+      expect(tags[cmd], `facet tag for '${cmd}'`).toBe(facet);
+    }
+  });
+
+  it('preserves the snake_case cosmetics wire strings (never normalized to camelCase)', () => {
+    expect('change_skin' in tags).toBe(true);
+    expect('claim_event_skin' in tags).toBe(true);
+    expect('unequip_mech_chroma' in tags).toBe(true);
+    expect('changeSkin' in tags).toBe(false);
+  });
+
+  it('does not tag talentPoints or leaderboard (local compute / REST GET, no wire send)', () => {
+    expect('talentPoints' in tags).toBe(false);
+    expect('leaderboard' in tags).toBe(false);
+  });
+});
+
+// W8: append the pet + party cluster's tags (hunter pets, party/raid, raid-target
+// markers). The table-consistency invariants in the W6 block above (no orphan tag, no
+// dispatch-only leak) already cover these new entries; this block pins the exact facet
+// per W8 command and that the no-wire reads (partyInfo/markerFor) stay untagged. The
+// raid markers belong to IWorldParty, not IWorldTargeting (the W6 exclusion).
+// Append-only: never edit a tag.
+const W8_TAGS: Readonly<Record<string, string>> = {
+  pet_abandon: 'IWorldPet',
+  pet_rename: 'IWorldPet',
+  pet_revive: 'IWorldPet',
+  pet_attack: 'IWorldPet',
+  pet_water_jet: 'IWorldPet',
+  pet_taunt: 'IWorldPet',
+  pet_auto_taunt: 'IWorldPet',
+  pet_special: 'IWorldPet',
+  pet_auto_special: 'IWorldPet',
+  pet_feed: 'IWorldPet',
+  pet_heal: 'IWorldPet',
+  pet_mode: 'IWorldPet',
+  pinvite: 'IWorldParty',
+  paccept: 'IWorldParty',
+  pdecline: 'IWorldParty',
+  pleave: 'IWorldParty',
+  pkick: 'IWorldParty',
+  praid: 'IWorldParty',
+  punraid: 'IWorldParty',
+  pmoveRaid: 'IWorldParty',
+  setMarker: 'IWorldParty',
+  clearMarker: 'IWorldParty',
+};
+
+describe('command facet tags (W8)', () => {
+  const tags = COMMAND_FACETS as Readonly<Record<string, string>>;
+
+  it('tags every W8 pet/party/marker command with its facet', () => {
+    for (const [cmd, facet] of Object.entries(W8_TAGS)) {
+      expect(tags[cmd], `facet tag for '${cmd}'`).toBe(facet);
+    }
+  });
+
+  it('preserves the snake_case pet wire strings (never normalized to camelCase)', () => {
+    expect('pet_abandon' in tags).toBe(true);
+    expect('pet_auto_taunt' in tags).toBe(true);
+    expect('pet_mode' in tags).toBe(true);
+    expect('petAbandon' in tags).toBe(false);
+    expect('petAutoTaunt' in tags).toBe(false);
+  });
+
+  it('tags the raid markers to IWorldParty, not IWorldTargeting (the W6 exclusion)', () => {
+    expect(tags['setMarker']).toBe('IWorldParty');
+    expect(tags['clearMarker']).toBe('IWorldParty');
+  });
+
+  it('does not tag partyInfo/markerFor (snapshot reads, no wire send)', () => {
+    expect('partyInfo' in tags).toBe(false);
+    expect('markerFor' in tags).toBe(false);
+    expect('markersFor' in tags).toBe(false);
+  });
+});
+
+// W9: append the social cluster's tags (trade + duel/arena/fiesta + social graph).
+// The table-consistency invariants in the W6 block above (no orphan tag, no
+// dispatch-only leak) already cover these new entries; this block pins the exact
+// facet per W9 command and that the non-command members stay untagged. socialInfo
+// rides the social/socialpos frames (no command), searchCharacters is a REST GET,
+// and social_refresh stays a dispatch-only server push. Append-only: never edit a tag.
+const W9_TAGS: Readonly<Record<string, string>> = {
+  trade_req: 'IWorldTrade',
+  trade_accept: 'IWorldTrade',
+  trade_offer: 'IWorldTrade',
+  trade_confirm: 'IWorldTrade',
+  trade_cancel: 'IWorldTrade',
+  trade_close: 'IWorldTrade',
+  duel_req: 'IWorldDuelArena',
+  duel_accept: 'IWorldDuelArena',
+  duel_decline: 'IWorldDuelArena',
+  arena_queue: 'IWorldDuelArena',
+  arena_leave: 'IWorldDuelArena',
+  arena_augment: 'IWorldDuelArena',
+  friend_add: 'IWorldSocialGraph',
+  friend_remove: 'IWorldSocialGraph',
+  block_add: 'IWorldSocialGraph',
+  block_remove: 'IWorldSocialGraph',
+  guild_create: 'IWorldSocialGraph',
+  guild_invite: 'IWorldSocialGraph',
+  guild_pledge: 'IWorldSocialGraph',
+  guild_pledge_withdraw: 'IWorldSocialGraph',
+  guild_pledge_decide: 'IWorldSocialGraph',
+  guild_pledge_settings: 'IWorldSocialGraph',
+  guild_accept: 'IWorldSocialGraph',
+  guild_decline: 'IWorldSocialGraph',
+  guild_leave: 'IWorldSocialGraph',
+  guild_kick: 'IWorldSocialGraph',
+  guild_promote: 'IWorldSocialGraph',
+  guild_demote: 'IWorldSocialGraph',
+  guild_transfer: 'IWorldSocialGraph',
+  guild_disband: 'IWorldSocialGraph',
+};
+
+describe('command facet tags (W9)', () => {
+  const tags = COMMAND_FACETS as Readonly<Record<string, string>>;
+
+  it('tags every W9 trade/duel-arena/social command with its facet', () => {
+    for (const [cmd, facet] of Object.entries(W9_TAGS)) {
+      expect(tags[cmd], `facet tag for '${cmd}'`).toBe(facet);
+    }
+  });
+
+  it('keeps duel + arena (incl. the fiesta arena_augment) under the one IWorldDuelArena facet', () => {
+    expect(tags['duel_req']).toBe('IWorldDuelArena');
+    expect(tags['arena_queue']).toBe('IWorldDuelArena');
+    expect(tags['arena_augment']).toBe('IWorldDuelArena');
+  });
+
+  it('does not tag social_refresh (dispatch-only), searchCharacters (REST) or socialInfo (frame)', () => {
+    expect('social_refresh' in tags).toBe(false);
+    expect('searchCharacters' in tags).toBe(false);
+    expect('socialInfo' in tags).toBe(false);
+  });
+});
+
+// W10: append the market + dungeons + delves cluster's tags. The table-consistency
+// invariants in the W6 block above (no orphan tag, no dispatch-only leak) already
+// cover these new entries; this block pins the exact facet per W10 command and that
+// the non-command reads stay untagged. The wire-name skew matters: delveBuyShopItem
+// sends `delve_buy`, so the tag is keyed on the WIRE string `delve_buy`, never
+// `delve_buy_shop_item`. enter_crypt/leave_crypt stay dispatch-only (untagged).
+// Append-only: never edit a tag.
+const W10_TAGS: Readonly<Record<string, string>> = {
+  market_search: 'IWorldMarket',
+  market_sell_price_check: 'IWorldMarket',
+  market_list: 'IWorldMarket',
+  market_buy: 'IWorldMarket',
+  market_cancel: 'IWorldMarket',
+  market_collect: 'IWorldMarket',
+  enter_dungeon: 'IWorldDungeons',
+  leave_dungeon: 'IWorldDungeons',
+  set_dungeon_difficulty: 'IWorldDungeons',
+  heroic_buy: 'IWorldDungeons',
+  enter_delve: 'IWorldDelves',
+  leave_delve: 'IWorldDelves',
+  delve_interact: 'IWorldDelves',
+  companion_upgrade: 'IWorldDelves',
+  delve_buy: 'IWorldDelves',
+  lockpick_engage: 'IWorldDelves',
+  lockpick_action: 'IWorldDelves',
+  lockpick_abort: 'IWorldDelves',
+  collect_delve_chest_loot: 'IWorldDelves',
+};
+
+describe('command facet tags (W10)', () => {
+  const tags = COMMAND_FACETS as Readonly<Record<string, string>>;
+
+  it('tags every W10 market/dungeons/delves command with its facet', () => {
+    for (const [cmd, facet] of Object.entries(W10_TAGS)) {
+      expect(tags[cmd], `facet tag for '${cmd}'`).toBe(facet);
+    }
+  });
+
+  it('tags delveBuyShopItem by its WIRE string delve_buy (not the method name)', () => {
+    expect(tags['delve_buy']).toBe('IWorldDelves');
+    expect('delve_buy_shop_item' in tags).toBe(false);
+    expect('delveBuyShopItem' in tags).toBe(false);
+  });
+
+  it('preserves the snake_case market/delve wire strings (never normalized to camelCase)', () => {
+    expect('market_search' in tags).toBe(true);
+    expect('enter_dungeon' in tags).toBe(true);
+    expect('collect_delve_chest_loot' in tags).toBe(true);
+    expect('marketSearch' in tags).toBe(false);
+    expect('enterDungeon' in tags).toBe(false);
+  });
+
+  it('does not tag enter_crypt/leave_crypt (dispatch-only legacy aliases, not IWorldDungeons)', () => {
+    expect('enter_crypt' in tags).toBe(false);
+    expect('leave_crypt' in tags).toBe(false);
+  });
+
+  it('does not tag the command-less reads (marketInfo/raidLockouts/delveShopOffers/lockpickState/delveRun/companionState/delveMarks/companionUpgrades/delveDaily)', () => {
+    for (const read of [
+      'marketInfo',
+      'raidLockouts',
+      'delveShopOffers',
+      'lockpickState',
+      'delveRun',
+      'companionState',
+      'delveMarks',
+      'companionUpgrades',
+      'delveDaily',
+    ]) {
+      expect(read in tags, `${read} should be untagged (no wire command)`).toBe(false);
+    }
+  });
+});
+
+// Bank: append the personal-bank cluster's tags. The table-consistency invariants in
+// the W6 block above (no orphan tag, no dispatch-only leak) already cover these new
+// entries; this block pins the exact facet per bank command, keyed on the WIRE strings
+// (bank_deposit/bank_withdraw/bank_buy_slots), and that the proximity-gated bankInfo
+// read stays untagged (no wire send). The tokens are personal-bank only forever; a
+// future guild bank gets its own guild_bank_* tokens (state.md decision 16), never a
+// reuse of these. Append-only: never edit a tag.
+const BANK_TAGS: Readonly<Record<string, string>> = {
+  bank_deposit: 'IWorldBank',
+  bank_withdraw: 'IWorldBank',
+  bank_buy_slots: 'IWorldBank',
+  // The Materials Vault: the per-material material store beside the slot bank.
+  // Same facet, same bursars, its OWN vault_* wire strings (never a bank_* reuse).
+  vault_deposit: 'IWorldBank',
+  vault_withdraw: 'IWorldBank',
+  vault_buy_upgrade: 'IWorldBank',
+  // The Phase 03 batched deposit-all sweep: one server-side command, same facet.
+  vault_deposit_all: 'IWorldBank',
+  // The bank bag-socket trio (Bank Storage phase 07): same facet, same
+  // bursars, its own bank_* socket wire strings.
+  bank_unlock_socket: 'IWorldBank',
+  bank_socket_bag: 'IWorldBank',
+  bank_unsocket_bag: 'IWorldBank',
+};
+
+describe('command facet tags (bank)', () => {
+  const tags = COMMAND_FACETS as Readonly<Record<string, string>>;
+
+  it('tags every personal-bank command with the IWorldBank facet', () => {
+    for (const [cmd, facet] of Object.entries(BANK_TAGS)) {
+      expect(tags[cmd], `facet tag for '${cmd}'`).toBe(facet);
+    }
+  });
+
+  it('preserves the snake_case bank wire strings (never normalized to camelCase)', () => {
+    expect('bank_deposit' in tags).toBe(true);
+    expect('bank_withdraw' in tags).toBe(true);
+    expect('bank_buy_slots' in tags).toBe(true);
+    expect('bankDeposit' in tags).toBe(false);
+    expect('bankBuySlots' in tags).toBe(false);
+    // The Materials Vault trio follows the same rule: the WIRE string is the key,
+    // and the camelCase IWorld method names are never tags.
+    expect('vault_deposit' in tags).toBe(true);
+    expect('vault_withdraw' in tags).toBe(true);
+    expect('vault_buy_upgrade' in tags).toBe(true);
+    expect('vault_deposit_all' in tags).toBe(true);
+    expect('vaultDeposit' in tags).toBe(false);
+    expect('vaultWithdraw' in tags).toBe(false);
+    expect('vaultBuyUpgrade' in tags).toBe(false);
+    expect('vaultDepositAll' in tags).toBe(false);
+    // The socket trio follows the same rule.
+    expect('bank_unlock_socket' in tags).toBe(true);
+    expect('bank_socket_bag' in tags).toBe(true);
+    expect('bank_unsocket_bag' in tags).toBe(true);
+    expect('bankUnlockSocket' in tags).toBe(false);
+    expect('bankSocketBag' in tags).toBe(false);
+    expect('bankUnsocketBag' in tags).toBe(false);
+  });
+
+  it('does not tag bankInfo (proximity-gated snapshot read, no wire command)', () => {
+    expect('bankInfo' in tags).toBe(false);
+  });
+
+  it('does not tag vaultInfo (proximity-gated snapshot read, no wire command)', () => {
+    expect('vaultInfo' in tags).toBe(false);
+  });
+});
+
+// Guild Bank: append the guild-bank cluster's tags (Phase 2, the reserved
+// guild_bank_* tokens the BANK_TAGS comment above promised: their OWN strings,
+// never a bank_* reuse). The table-consistency invariants in the W6 block above
+// (no orphan tag, no dispatch-only leak) already cover these new entries; this
+// block pins the exact facet per command, keyed on the WIRE strings, and that
+// the proximity + officer-rank gated guildBankInfo read stays untagged (no wire
+// send). Append-only: never edit a tag.
+const GUILD_BANK_TAGS: Readonly<Record<string, string>> = {
+  guild_bank_deposit_gold: 'IWorldGuildBank',
+  guild_bank_withdraw_gold: 'IWorldGuildBank',
+  guild_bank_deposit: 'IWorldGuildBank',
+  guild_bank_withdraw: 'IWorldGuildBank',
+  guild_bank_buy_slots: 'IWorldGuildBank',
+  // The activity log READ request. Tagged like the mutations because it is the
+  // same facet's surface; unlike them it answers on its own one-shot frame.
+  guild_bank_log: 'IWorldGuildBank',
+};
+
+describe('command facet tags (guild bank)', () => {
+  const tags = COMMAND_FACETS as Readonly<Record<string, string>>;
+
+  it('tags every guild-bank command with the IWorldGuildBank facet', () => {
+    for (const [cmd, facet] of Object.entries(GUILD_BANK_TAGS)) {
+      expect(tags[cmd], `facet tag for '${cmd}'`).toBe(facet);
+    }
+  });
+
+  it('keeps the guild-bank cluster distinct from the personal bank_* tokens', () => {
+    // The six wire strings, pinned literally: a rename is a protocol break.
+    expect(Object.keys(GUILD_BANK_TAGS).sort()).toEqual([
+      'guild_bank_buy_slots',
+      'guild_bank_deposit',
+      'guild_bank_deposit_gold',
+      'guild_bank_log',
+      'guild_bank_withdraw',
+      'guild_bank_withdraw_gold',
+    ]);
+    // And none of them shadows or reuses a personal-bank tag.
+    for (const cmd of Object.keys(GUILD_BANK_TAGS)) {
+      expect(BANK_TAGS[cmd]).toBeUndefined();
+    }
+  });
+
+  it('does not tag guildBankInfo (proximity + rank gated snapshot read, no wire command)', () => {
+    expect('guildBankInfo' in tags).toBe(false);
+  });
+});
+
+// Deeds: append the Book of Deeds cluster's tags. The table-consistency
+// invariants in the W6 block above (no orphan tag, no dispatch-only leak)
+// already cover the new entries; this block pins the exact facet for the two
+// cosmetic-selection commands and that the five snapshot reads stay untagged.
+// Append-only: never edit a tag.
+const DEEDS_TAGS: Readonly<Record<string, string>> = {
+  deed_set_title: 'IWorldDeeds',
+  deed_set_border: 'IWorldDeeds',
+};
+
+describe('command facet tags (deeds)', () => {
+  const tags = COMMAND_FACETS as Readonly<Record<string, string>>;
+
+  it('tags the title- and border-selection commands with the IWorldDeeds facet', () => {
+    for (const [cmd, facet] of Object.entries(DEEDS_TAGS)) {
+      expect(tags[cmd], `facet tag for '${cmd}'`).toBe(facet);
+    }
+  });
+
+  it('preserves the snake_case wire string (never normalized to camelCase)', () => {
+    expect('deed_set_title' in tags).toBe(true);
+    expect('deedSetTitle' in tags).toBe(false);
+    expect('setActiveTitle' in tags).toBe(false);
+    expect('deed_set_border' in tags).toBe(true);
+    expect('deedSetBorder' in tags).toBe(false);
+    expect('setActiveBorder' in tags).toBe(false);
+  });
+
+  it('does not tag the snapshot reads (deedsEarned/deedStats/renown/activeTitle/activeBorder)', () => {
+    for (const read of ['deedsEarned', 'deedStats', 'renown', 'activeTitle', 'activeBorder']) {
+      expect(read in tags, `${read} should be untagged (no wire command)`).toBe(false);
+    }
+  });
+});
+
+// Farming: append the growth phase's two plot mutations and the knobs phase's
+// husk conversion. The table-consistency invariants in the W6 block above (no
+// orphan tag, no dispatch-only leak) already cover the new entries; this block
+// pins the exact facet per command, keyed on the WIRE strings, and that the
+// two Phase 2 reads stay untagged (farmPatches is served from the client
+// bundle with no round trip at all, and myFarmPlots mirrors the `fplot` self
+// delta). Append-only: never edit a tag.
+const FARMING_TAGS: Readonly<Record<string, string>> = {
+  plant_crop: 'IWorldFarming',
+  harvest_crop: 'IWorldFarming',
+  convert_husks: 'IWorldFarming',
+  // The feast pair, added by the Phase 11d QA parity audit: both were tagged in
+  // COMMAND_FACETS on the farming parent and the absorb carried them in
+  // untagged HERE, so deleting or re-tagging either one stayed green (the
+  // table-consistency arms do not name commands, and command_schema never reads
+  // COMMAND_FACETS). Three of five pinned reads as "farming is covered".
+  place_feast: 'IWorldFarming',
+  consume_feast: 'IWorldFarming',
+};
+
+describe('command facet tags (farming)', () => {
+  const tags = COMMAND_FACETS as Readonly<Record<string, string>>;
+
+  it('tags every farming command with the IWorldFarming facet', () => {
+    for (const [cmd, facet] of Object.entries(FARMING_TAGS)) {
+      expect(tags[cmd], `facet tag for '${cmd}'`).toBe(facet);
+    }
+  });
+
+  it('preserves the snake_case farming wire strings (never normalized to camelCase)', () => {
+    // The five wire strings pinned literally: these are the protocol, and a
+    // rename is a breaking change, not a refactor.
+    expect(Object.keys(FARMING_TAGS).sort()).toEqual([
+      'consume_feast',
+      'convert_husks',
+      'harvest_crop',
+      'place_feast',
+      'plant_crop',
+    ]);
+    expect('plant_crop' in tags).toBe(true);
+    expect('harvest_crop' in tags).toBe(true);
+    expect('convert_husks' in tags).toBe(true);
+    expect('place_feast' in tags).toBe(true);
+    expect('consume_feast' in tags).toBe(true);
+    expect('plantCrop' in tags).toBe(false);
+    expect('harvestCrop' in tags).toBe(false);
+    expect('convertHusks' in tags).toBe(false);
+    expect('placeFeast' in tags).toBe(false);
+    expect('consumeFeast' in tags).toBe(false);
+  });
+
+  it('names EVERY IWorldFarming tag, so a sixth one cannot be added and forgotten', () => {
+    // The reverse direction. Every arm above iterates the local literal FORWARD
+    // into COMMAND_FACETS, which is how three-of-five read as "farming is
+    // covered" in the first place: a tag the table gains and this block does not
+    // is silent. Reading the table back closes that, one step later (Phase 11d
+    // QA pin audit). Scope: this is the file's idiom, not a general fix; 57
+    // tagged commands are named by no *_TAGS table at all.
+    const tagged = Object.entries(tags)
+      .filter(([, facet]) => facet === 'IWorldFarming')
+      .map(([cmd]) => cmd)
+      .sort();
+    expect(tagged).toEqual(Object.keys(FARMING_TAGS).sort());
+  });
+
+  it('does not tag the reads (farmPatches and myFarmPlots, plus the farmNowMs clock base)', () => {
+    // farmPatches is served from the client bundle with no round trip at all,
+    // myFarmPlots mirrors the `fplot` self delta, and farmNowMs is a local
+    // clock read. None of the three sends a command, so none may be tagged.
+    for (const read of ['farmPatches', 'myFarmPlots', 'farmNowMs']) {
+      expect(read in tags, `${read} should be untagged (no wire command)`).toBe(false);
+    }
+  });
+});

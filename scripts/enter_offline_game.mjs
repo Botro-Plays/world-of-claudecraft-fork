@@ -1,0 +1,157 @@
+// Shared pre-game entry for the mobile_* screenshot / E2E harnesses.
+//
+// The V16 client shows a single Play CTA and keeps #btn-offline as a HIDDEN legacy
+// automation hook, so page.click('#btn-offline') (which needs a visible clickable point)
+// throws "Node is either not clickable or not an Element". Firing the element's own
+// click() in-page works regardless of visibility. Keeping the one canonical entry flow
+// here means a future pre-game UI change is a one-line fix, not a sweep across ~20 scripts.
+//
+// The caller owns the browser, page, viewport, and navigation: it must page.goto the game
+// URL before calling this. This drives Play Offline -> name -> class -> Enter World and
+// resolves once the world has had settleMs to load. Post-entry concerns (forcing
+// body.mobile-touch in headless, dismissing the mobile preflight, opening a window, the
+// screenshot itself) stay in each script.
+//
+// Before returning, this also dismisses the overlays that must never appear in a
+// captured screenshot (repo-wide rule): the first-spawn intro cinematic/logo, the
+// new-adventurer tutorial overlay, the camera-mode-choice prompt, and the spawn
+// greeting one-shot (#tutorial-greeting). Every screenshot script that calls
+// enterOfflineGame gets this for free.
+//
+// opts:
+//   charClass  data-class of the class card to pick (default 'warrior')
+//   charName   name typed into #char-name when that field is present (default 'Adventurer')
+//   settleMs   pause after Enter World for the world to load (default 2500; 0 to skip)
+//   dismissMobilePreflight  wait for and dismiss the touch-only gate (default true)
+//   mobilePreflightTimeoutMs  maximum wait for the touch-only gate (default 5000)
+//   gameBootTimeoutMs  maximum wait for window.__game.sim.player (default 30000)
+//   selectorTimeoutMs  maximum wait for the class card to become visible (default
+//                      15000; the cards get their box only after the procedural
+//                      icons render, which under SwiftShader or CPU contention
+//                      can outlast the default)
+// Returns true when the world boot hook appeared before gameBootTimeoutMs, otherwise false.
+export async function enterOfflineGame(page, opts = {}) {
+  const {
+    charClass = 'warrior',
+    charName = 'Adventurer',
+    settleMs = 2500,
+    dismissMobilePreflight = true,
+    mobilePreflightTimeoutMs = 5000,
+    gameBootTimeoutMs = 30000,
+    selectorTimeoutMs = 15000,
+  } = opts;
+  const card = `#offline-select .mini-class[data-class="${charClass}"]`;
+  await page.waitForSelector('#btn-offline', { timeout: 30000 });
+  // Mark the first-run camera prompt as already seen BEFORE the world boots:
+  // it waits out the intro cinematic and can surface after the overlay poll in
+  // dismissEntryOverlays returned, which is how it photobombed a capture (the
+  // Thornhollow queue-window shot). Seeding the storage key beats the race at
+  // the source; the dismissal loop stays as the backstop for a prompt already
+  // up. Key: SHOWN_KEY in src/ui/camera_prompt.ts.
+  await page
+    .evaluate(() => localStorage.setItem('woc.cameraModePrompt.shown', '1'))
+    .catch(() => {});
+  // Hidden legacy hook: fire its handler in-page rather than page.click (no clickable point).
+  await page.evaluate(() => document.querySelector('#btn-offline')?.click());
+  await page.waitForSelector(card, { visible: true, timeout: selectorTimeoutMs });
+  // Drive name / class / Enter World in-page too: on small touch viewports these can fail
+  // puppeteer's clickable-point check, the same reason #btn-offline does.
+  await page.evaluate((name) => {
+    const n = document.querySelector('#char-name');
+    if (n) {
+      n.value = name;
+      n.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  }, charName);
+  await page.evaluate((sel) => document.querySelector(sel)?.click(), card);
+  await page.evaluate(() => document.querySelector('#btn-start-offline')?.click());
+  // On touch viewports a mobile preflight ("tap to continue") gates the world; dismiss it
+  // so the world actually boots. No-op on desktop, where the preflight never appears.
+  if (dismissMobilePreflight) {
+    await page
+      .waitForSelector('#mobile-preflight-continue', {
+        visible: true,
+        timeout: mobilePreflightTimeoutMs,
+      })
+      .catch(() => {});
+    await page.evaluate(() => document.querySelector('#mobile-preflight-continue')?.click());
+  }
+  // Wait for the world to actually boot (the window.__game debug hook appears post-start)
+  // rather than guessing with a fixed delay, so post-entry code that reads window.__game.sim
+  // does not race the loader. Falls back to the settle delay if the hook never shows.
+  const gameBooted = await page
+    .waitForFunction(() => window.__game?.sim?.player, { timeout: gameBootTimeoutMs })
+    .then(() => true)
+    .catch(() => false);
+  if (settleMs > 0) await new Promise((r) => setTimeout(r, settleMs));
+
+  await dismissEntryOverlays(page);
+  return gameBooted;
+}
+
+// Skip the first-spawn intro cinematic (Escape is its documented skip gesture), click any
+// "skip tutorial" button, and confirm the camera-mode-choice prompt. Polls a few rounds
+// since the intro cinematic's own listeners can attach a beat after the world boots.
+export async function dismissEntryOverlays(page) {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  for (let i = 0; i < 5; i++) {
+    const state = await page
+      .evaluate(() => {
+        const visible = (el) => !!el && getComputedStyle(el).display !== 'none';
+        const introLogo = document.getElementById('intro-logo');
+        const skipBtn = [...document.querySelectorAll('button.tut-skip')][0];
+        // The tutorial-island greeting (Ferryman Odo) rides the sim's 1 Hz
+        // sweep and pops a beat after the Proving Shore spawn
+        // (release/v0.41.0 moved fresh entries there), so it can surface
+        // AFTER a single poll would have returned; dismiss it through its
+        // own confirm like the other overlays, and the loop below holds a
+        // minimum number of polls so a not-yet-spawned greeting is still
+        // caught.
+        let greetingUp = false;
+        for (const id of ['tutorial-greeting', 'profession-tutorial']) {
+          const popup = document.getElementById(id);
+          if (popup && visible(popup)) {
+            greetingUp = true;
+            popup.querySelector('button')?.click();
+          }
+        }
+        return {
+          introUp: visible(introLogo) || document.getElementById('ui')?.style.display === 'none',
+          tutorialUp: visible(skipBtn),
+          cameraPromptUp: visible(document.querySelector('.camera-prompt-backdrop')),
+          greetingUp,
+        };
+      })
+      .catch(() => ({
+        introUp: false,
+        tutorialUp: false,
+        cameraPromptUp: false,
+        greetingUp: false,
+      }));
+    // Hold at least three polls (~1.2s): the spawn greeting arrives on the
+    // sim's own timer and a first quiet poll proves nothing about it.
+    if (i >= 2 && !state.introUp && !state.tutorialUp && !state.cameraPromptUp && !state.greetingUp)
+      return;
+    if (state.introUp) await page.keyboard.press('Escape').catch(() => {});
+    if (state.tutorialUp) {
+      await page.evaluate(() => document.querySelector('button.tut-skip')?.click()).catch(() => {});
+    }
+    // The spawn greeting one-shot (#tutorial-greeting): close the note variant,
+    // else decline the play/skip variant, so no capture carries the modal.
+    if (state.greetingUp) {
+      await page
+        .evaluate(() => {
+          const root = document.getElementById('tutorial-greeting');
+          const btn = root?.querySelector('[data-close]') ?? root?.querySelector('[data-skip]');
+          if (btn) btn.click();
+        })
+        .catch(() => {});
+    }
+    if (state.cameraPromptUp) {
+      await page
+        .evaluate(() => document.querySelector('.camera-prompt-confirm')?.click())
+        .catch(() => {});
+    }
+    await sleep(400);
+  }
+}

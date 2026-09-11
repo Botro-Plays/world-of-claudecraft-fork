@@ -1,0 +1,456 @@
+import {
+  ALL_CLASSES,
+  ALL_EQUIP_SLOTS,
+  type ArmorItemDef,
+  type ArmorType,
+  type EquipSlot,
+  type InvSlot,
+  type ItemDef,
+  type ItemInstancePayload,
+  type PlayerClass,
+  type WeaponItemDef,
+} from './types';
+
+type WeaponArchetype = 'warrior' | 'caster' | 'rogue';
+
+const MAIL_CLASSES = new Set<PlayerClass>(['warrior', 'paladin', 'shaman']);
+const LEATHER_CLASSES = new Set<PlayerClass>(['druid', 'rogue', 'hunter']);
+const WARRIOR_WEAPON_CLASSES = new Set<PlayerClass>([
+  'warrior',
+  'rogue',
+  'hunter',
+  'shaman',
+  'paladin',
+]);
+const CASTER_WEAPON_CLASSES = new Set<PlayerClass>([
+  'mage',
+  'priest',
+  'warlock',
+  'shaman',
+  'paladin',
+  'druid',
+]);
+const ROGUE_WEAPON_CLASSES = new Set<PlayerClass>(['rogue', 'hunter']);
+
+const ARMOR_RANK: Record<ArmorType, number> = {
+  cloth: 0,
+  leather: 1,
+  mail: 2,
+};
+
+// True when `classes` names exactly the members of `allowed` (order-independent).
+function sameClassSet(classes: readonly PlayerClass[], allowed: ReadonlySet<PlayerClass>): boolean {
+  return classes.length === allowed.size && classes.every((cls) => allowed.has(cls));
+}
+
+export function armorTypeForItem(item: ItemDef): ArmorType | null {
+  if (item.kind !== 'armor') return null;
+  // Jewelry (neck/ring) is kind 'armor' with no armor class.
+  return item.armorType ?? null;
+}
+
+export function isShieldItem(item: ItemDef | undefined): item is ArmorItemDef {
+  return item?.kind === 'armor' && item.slot === 'offhand' && item.shield === true;
+}
+
+// Resolve the concrete equipment key an item equips into. Rings declare the
+// slot KIND 'ring' and land in whichever ring slot is empty (ring1 first);
+// with both full the swap replaces ring1, the classic behavior. Every other
+// item names its equipment slot directly. Returns null for slotless items.
+export function resolveEquipSlot(
+  item: ItemDef,
+  equipment: Partial<Record<EquipSlot, string>>,
+): EquipSlot | null {
+  if (!item.slot) return null;
+  if (item.slot !== 'ring') return item.slot;
+  if (!equipment.ring1) return 'ring1';
+  if (!equipment.ring2) return 'ring2';
+  return 'ring1';
+}
+
+// Whether a concrete equipment key can structurally hold `item`, i.e. whether an
+// aimed slot (a paperdoll drop target) is legal for the dragged piece. Rings
+// declare the slot KIND 'ring' and accept either finger. One-hand and two-hand
+// weapons declare 'mainhand' as their default slot but may also target offhand;
+// canEquipItemInSlot applies the class/spec rule afterward. Slotless items
+// (consumables, materials) accept nothing. This is the ONE structural rule the
+// equip path and HUD drop target share, so their validation cannot disagree.
+export function slotAcceptsItem(item: ItemDef, slot: EquipSlot): boolean {
+  if (!item.slot) return false;
+  if (item.slot === 'ring') return slot === 'ring1' || slot === 'ring2';
+  if (item.kind === 'weapon' && slot === 'offhand') return weaponHand(item) !== 'mainhand';
+  return item.slot === slot;
+}
+
+// Every legendary item is unique-equipped: a character wears at most one copy
+// of a given legendary at a time. Derived from quality rather than a per-item
+// flag so a new legendary can never forget to opt in. Since 2026-08-27
+// (phase 13) the instance widening is ADD-ONLY and PROMOTION-SCOPED, not a
+// raw effective-quality read (corrected 2026-08-27, same day): a def-level
+// legendary ALWAYS counts (a below-def rolled quality can never remove
+// def-level uniqueness), and outside crafted collections a legendary-ROLLED
+// copy counts only when its payload carries `perfected` or the permanent
+// `perfectingBound` marker.
+// A promoted collection donor retains uniqueness when its ranks move away. Legacy
+// legendary-rolled payloads never do (old masterwork bumps wrote
+// rolled.quality; crafting.ts retired that for new writes but keeps loading
+// them), so a live character legally wearing two legacy legendary-rolled
+// copies is not retroactively captured and benched at login. A def-only
+// caller passes nothing and keeps the def-quality answer unchanged.
+// DECIDED 2026-08-27, display vs equip: a legacy legendary-rolled copy
+// deliberately KEEPS its legendary DISPLAY (tooltipEffectiveQuality in
+// src/ui/item_instance_tooltip.ts renders the copy's honest roll) while THIS
+// rule stays promotion-scoped for migration safety. The two reads
+// disagreeing about a legacy copy is a decision, not drift; do not "fix"
+// either side to match the other.
+export function isUniqueEquipped(item: ItemDef, instance?: ItemInstancePayload): boolean {
+  if (item.quality === 'legendary') return true;
+  // Crafted set membership first shipped with Crucible collections, after
+  // legacy quality rolls retired. Their only legendary writer is promotion,
+  // so a public copy does not need private binding proof to show uniqueness.
+  // The original Masterwrought roster has no set membership; the exact
+  // distinction is pinned in crucible_public_uniqueness.test.ts.
+  const craftedCollection = item.masterwrought === true && !!item.set;
+  return (
+    (craftedCollection || instance?.perfected === true || instance?.perfectingBound === true) &&
+    instance?.rolled?.quality === 'legendary'
+  );
+}
+
+// The uniqueness KEY. A heroic upgrade variant (content/heroic_variants.ts,
+// `heroicOf`) is the same item at a higher tier, so it shares its base item's
+// family: Thronebane plus heroic Thronebane is still two Thronebanes, both
+// firing their procs, which is exactly what the rule exists to stop.
+export function uniqueEquipFamily(item: ItemDef): string {
+  return item.heroicOf ?? item.id;
+}
+
+// The worn slot that would break the unique-equipped rule if `item` were
+// equipped now, or null when the equip is legal. `ignoreSlots` names the slots
+// this equip empties or overwrites (the target slot itself, plus a slot the
+// swap displaces, e.g. the offhand a two-hander benches), which therefore
+// cannot conflict with the incoming copy. `lookup` resolves a worn id to its
+// def (the sim passes ITEMS; injected so this leaf stays data-free).
+// `instances` are the worn per-copy payloads and `incomingInstance` the exact
+// copy about to be worn (phase 13, the masterwroughtConflictSlot params'
+// shape): with them the rule counts a promoted legendary-rolled copy on
+// either side; a caller with no instance context omits both and keeps the
+// def-only behavior.
+export function uniqueEquipConflictSlot(
+  item: ItemDef,
+  equipment: Partial<Record<EquipSlot, string>>,
+  lookup: (id: string) => ItemDef | undefined,
+  ignoreSlots: readonly EquipSlot[],
+  instances?: Partial<Record<EquipSlot, ItemInstancePayload>>,
+  incomingInstance?: ItemInstancePayload,
+): EquipSlot | null {
+  if (!isUniqueEquipped(item, incomingInstance)) return null;
+  const family = uniqueEquipFamily(item);
+  for (const slot of ALL_EQUIP_SLOTS) {
+    if (ignoreSlots.includes(slot)) continue;
+    const wornId = equipment[slot];
+    if (!wornId) continue;
+    const worn = lookup(wornId);
+    if (!worn || !isUniqueEquipped(worn, instances?.[slot])) continue;
+    if (uniqueEquipFamily(worn) === family) return slot;
+  }
+  return null;
+}
+
+// THE unit-selection rule for an equip: an explicit `slotIndex` naming a
+// valid cell holding this item id wins (the copy consumeSelectedInventorySlot
+// would lift, the item_copy_ref index-plus-id pin), else the highest-index
+// matching inventory slot (see the comment at the consume site in items.ts
+// equipItem for why the top of the bags is what an id-only equip picks up).
+// Lives in this leaf rather than beside the consume so the client mirror can
+// answer "which copy would this equip take" without importing the command
+// bodies, and so the pre-equip PEEK at a copy and the consume that lifts it
+// can never pick different units: a counted equip family reading a different
+// copy's rolled quality than the one it ends up wearing would be gameable by
+// stack ordering alone (and, before 2026-08-27, WAS: a slotIndex equip
+// consumed the named cell while the peek judged the highest-index one).
+// The invalid-index case (a slotIndex that names no valid cell of this id)
+// falls back to the highest-index unit HERE while
+// consumeSelectedInventorySlot refuses it outright; what keeps peek and
+// consume agreeing anyway is equipItem's early invalid-selection gate
+// (src/sim/items.ts, the selectedInventorySlot null check before the first
+// write), which refuses the whole equip before either is consulted.
+export function equipCandidateIndex(
+  inventory: readonly InvSlot[],
+  itemId: string,
+  slotIndex?: number,
+): number {
+  if (
+    slotIndex !== undefined &&
+    Number.isInteger(slotIndex) &&
+    slotIndex >= 0 &&
+    slotIndex < inventory.length &&
+    inventory[slotIndex].itemId === itemId &&
+    inventory[slotIndex].count >= 1
+  ) {
+    return slotIndex;
+  }
+  // Same count >= 1 rule as the named-cell arm above: a cell that holds none of
+  // the item is not a unit anything can lift, so it must not be the copy the
+  // peek judges either. Without it a stale count-0 cell sitting above a real
+  // copy answered as the unit an id-only equip would take, which is the exact
+  // peek-consume disagreement the header says this function exists to prevent.
+  for (let i = inventory.length - 1; i >= 0; i--) {
+    if (inventory[i].itemId === itemId && inventory[i].count >= 1) return i;
+  }
+  return -1;
+}
+
+// THE effective-quality precedence rule, shared by the worn side and the
+// incoming side below: a copy's own rolled quality wins over its def's when
+// present, the same precedence professions/battlefield_xp.ts reads rarity with.
+// Exported since phase 13: the promotion mints legendary-ROLLED copies, so
+// presentation consumers (the instance tooltip) read the same one rule.
+export function effectiveQuality(
+  def: ItemDef,
+  instance: ItemInstancePayload | undefined,
+): string | undefined {
+  return instance?.rolled?.quality ?? def.quality;
+}
+
+// The effective quality of the copy an equip of `itemId` would consume now:
+// the selected unit's rolled quality when it carries one, else the def's.
+// `slotIndex` is the equip's own selection when the caller named one (a drag
+// from a specific cell); without it the id-only rule answers. This is what
+// masterwroughtConflictSlot wants for `incomingQuality`.
+export function equipCandidateQuality(
+  inventory: readonly InvSlot[],
+  itemId: string,
+  def: ItemDef,
+  slotIndex?: number,
+): string | undefined {
+  return effectiveQuality(def, equipCandidateInstance(inventory, itemId, slotIndex));
+}
+
+// The per-copy payload of the unit an equip of `itemId` would consume now
+// (the same selection equipCandidateIndex makes: the named cell when
+// `slotIndex` validly names one, else the highest-index match), or undefined
+// for no carried copy or a plain one. The unique-equipped rule peeks it
+// (phase 13) the way the Masterwrought sub-cap peeks equipCandidateQuality
+// above. Both peeks must receive the SAME slotIndex the consume will honor:
+// judged-vs-worn CAN differ when the caller threads the selection into the
+// consume but not into the peek (the 2026-08-27 sub-cap bypass), which is
+// why items.ts passes its slotIndex through at every call site.
+export function equipCandidateInstance(
+  inventory: readonly InvSlot[],
+  itemId: string,
+  slotIndex?: number,
+): ItemInstancePayload | undefined {
+  const index = equipCandidateIndex(inventory, itemId, slotIndex);
+  return index < 0 ? undefined : inventory[index].instance;
+}
+
+// How many Masterwrought pieces a character may wear at once, and how many of
+// those may be legendary. A two-hander occupies one equipment slot and so
+// counts once, like every other piece. Retuning either cap is never a quiet
+// one-line edit: the refusal prose in src/ui/sim_i18n.ts spells these numbers
+// out in every locale and the tooltip copy interpolates the equip cap, so a
+// retune must sweep all of that copy with it (the pinned test in
+// tests/masterwrought_cap.test.ts is the reminder).
+export const MASTERWROUGHT_EQUIP_CAP = 2;
+export const MASTERWROUGHT_LEGENDARY_CAP = 1;
+
+export type MasterwroughtConflict = { slot: EquipSlot; reason: 'cap' | 'legendary' };
+
+// The worn slot that would break the Masterwrought counted-family rule if
+// `item` were equipped now, or null when the equip is legal. Two counted caps,
+// reported apart so the refusal can say which one bit: `cap` when the character
+// already wears the maximum number of flagged pieces, `legendary` when the
+// incoming piece is legendary-effective and a legendary-effective flagged piece
+// is already worn. Duplicates of one flagged item are deliberately legal inside
+// the cap, so nothing here compares ids or families.
+//
+// The sub-cap reads INSTANCE-effective quality. Until 2026-08-27 that made
+// the two rules deliberately disagree about one copy (isUniqueEquipped read
+// def quality only, so a legendary-ROLLED copy of an epic def counted here
+// and was NOT unique-equipped). 2026-08-27, phase 13: the orange promotion
+// mints legendary-rolled instances (NOT the first legal ones, as this
+// comment first claimed: legacy masterwork bumps wrote rolled.quality too,
+// crafting.ts says so; corrected 2026-08-27) and the phase file's acceptance
+// requires BOTH rules to count a PROMOTED copy, so isUniqueEquipped is
+// instance-aware for promotion-stamped (`perfected`) copies and the recorded
+// disagreement is retired for those. The sub-cap here keeps the plain
+// effective-quality read: a legacy legendary-rolled payload can only sit on
+// a non-masterwrought def (masterwrought crafts never wrote rolled.quality),
+// which the flag filter below never counts.
+//
+// `ignoreSlots` names the slots this equip empties or overwrites (the target
+// slot itself, plus a slot the swap displaces, e.g. the offhand a two-hander
+// benches), which therefore cannot conflict with the incoming piece. `lookup`
+// resolves a worn id to its def and `instances` the worn per-copy payloads (the
+// sim passes ITEMS and meta.equipmentInstance; injected so this leaf stays
+// data-free). `incomingQuality` is the effective quality of the exact copy
+// about to be worn, which overrides the def's when the carried unit rolled its
+// own. Quality strings are compared strictly: a rolled quality that is not
+// exactly 'legendary' (a typo, a future tier) counts as non-legendary, so the
+// sub-cap fails OPEN on an unrecognized string while the piece count itself is
+// unaffected.
+export function masterwroughtConflictSlot(
+  item: ItemDef,
+  equipment: Partial<Record<EquipSlot, string>>,
+  lookup: (id: string) => ItemDef | undefined,
+  ignoreSlots: readonly EquipSlot[],
+  instances?: Partial<Record<EquipSlot, ItemInstancePayload>>,
+  incomingQuality?: string,
+): MasterwroughtConflict | null {
+  if (!item.masterwrought) return null;
+  const worn: { slot: EquipSlot; legendary: boolean }[] = [];
+  for (const slot of ALL_EQUIP_SLOTS) {
+    if (ignoreSlots.includes(slot)) continue;
+    const wornId = equipment[slot];
+    if (!wornId) continue;
+    const def = lookup(wornId);
+    if (!def?.masterwrought) continue;
+    worn.push({ slot, legendary: effectiveQuality(def, instances?.[slot]) === 'legendary' });
+  }
+  if (worn.length >= MASTERWROUGHT_EQUIP_CAP) return { slot: worn[0].slot, reason: 'cap' };
+  if ((incomingQuality ?? item.quality) === 'legendary') {
+    const legendaryWorn = worn.filter((w) => w.legendary);
+    if (legendaryWorn.length >= MASTERWROUGHT_LEGENDARY_CAP) {
+      return { slot: legendaryWorn[0].slot, reason: 'legendary' };
+    }
+  }
+  return null;
+}
+
+// Does this item take up a HAND, as opposed to merely filling the offhand slot?
+// Everything held does: weapons, shields, and the caster orbs and tomes. An item
+// WORN on the offhand slot does not, a quiver being the case that forced the
+// distinction (it hangs on the back; the hunter's ranger.glb has always drawn it
+// there rather than in a fist). This is the question the two-hand exclusion below
+// actually means to ask, so a worn offhand is outside that rule rather than an
+// exception to it, and any future worn offhand inherits the behavior.
+export function occupiesHand(item: ItemDef): boolean {
+  return item.kind !== 'held_offhand' || item.occupiesHand !== false;
+}
+
+// The slot an equip into `slot` empties as a side effect (the two-hand/offhand
+// exclusion): equipping into the offhand benches a worn two-hand mainhand, and
+// equipping a two-hander into the mainhand benches the offhand. The rule exists
+// because a two-hander uses both hands, so it only binds items that need a hand:
+// a worn offhand (occupiesHand false) coexists with a two-hander in either
+// direction. Fury's Titan Grip exemption is weapon-only: a valid Fury pair may
+// contain one or two two-handers, so nothing is displaced. `lookup` resolves an
+// equipped id to its def (the sim passes ITEMS; kept injected so this leaf stays
+// data-free). This is THE displacement rule equipItem applies; the paperdoll drop
+// feedback mirrors it so the two can never disagree.
+export function displacedSlotForEquip(
+  item: ItemDef,
+  slot: EquipSlot,
+  equipment: Partial<Record<EquipSlot, string>>,
+  lookup: (id: string) => ItemDef | undefined,
+  cls: PlayerClass,
+  spec?: string | null,
+): EquipSlot | null {
+  if (slot === 'offhand') {
+    if (!occupiesHand(item)) return null;
+    const mainhand = equipment.mainhand ? lookup(equipment.mainhand) : undefined;
+    const titanPair = item.kind === 'weapon' && canDualWieldTwoHand(cls, spec);
+    if (mainhand?.kind === 'weapon' && weaponHand(mainhand) === 'twohand' && !titanPair) {
+      return 'mainhand';
+    }
+    return null;
+  }
+  if (slot === 'mainhand' && item.kind === 'weapon' && weaponHand(item) === 'twohand') {
+    const offhand = equipment.offhand ? lookup(equipment.offhand) : undefined;
+    if (offhand && !occupiesHand(offhand)) return null;
+    const titanPair = offhand?.kind === 'weapon' && canDualWieldTwoHand(cls, spec);
+    if (equipment.offhand && !titanPair) return 'offhand';
+  }
+  return null;
+}
+
+export function maxArmorTypeForClass(cls: PlayerClass): ArmorType {
+  if (MAIL_CLASSES.has(cls)) return 'mail';
+  if (LEATHER_CLASSES.has(cls)) return 'leather';
+  return 'cloth';
+}
+
+// A weapon's `requiredClass` lists exactly the classes that can equip it, i.e. the
+// full weapon-proficiency group (weapons are proficiency-based, not class-locked).
+// Recover the archetype by matching that list against each group. A weapon with a
+// narrower, bespoke class lock (not one of the three groups) has no archetype and
+// falls through to the literal `requiredClass` check in canEquipItem, and shows its
+// class line on the tooltip.
+export function weaponArchetypeForItem(item: ItemDef): WeaponArchetype | null {
+  if (item.kind !== 'weapon' || !item.requiredClass) return null;
+  if (sameClassSet(item.requiredClass, WARRIOR_WEAPON_CLASSES)) return 'warrior';
+  if (sameClassSet(item.requiredClass, CASTER_WEAPON_CLASSES)) return 'caster';
+  if (sameClassSet(item.requiredClass, ROGUE_WEAPON_CLASSES)) return 'rogue';
+  return null;
+}
+
+// The full set of classes `canEquipItem` actually admits for a given armor weight,
+// i.e. every class whose max armor rank is at least `armorType`'s rank. Used to tell
+// a genuinely enforced armor class list (one that names exactly this set, e.g. mail
+// naming only warrior/paladin/shaman) apart from `requiredClass` values that are
+// narrower loot-targeting metadata `canEquipItem` never reads (armor short-circuits
+// on weight before it would reach `requiredClass`).
+export function classesThatCanEquipArmorType(armorType: ArmorType): PlayerClass[] {
+  const rank = ARMOR_RANK[armorType];
+  return ALL_CLASSES.filter((cls) => ARMOR_RANK[maxArmorTypeForClass(cls)] >= rank);
+}
+
+export function canDualWield(cls: PlayerClass, spec?: string | null): boolean {
+  return (
+    cls === 'rogue' ||
+    (cls === 'warrior' && spec === 'fury') ||
+    (cls === 'shaman' && spec === 'enhancement')
+  );
+}
+
+export function canDualWieldTwoHand(cls: PlayerClass, spec?: string | null): boolean {
+  return cls === 'warrior' && spec === 'fury';
+}
+
+export function weaponHand(item: WeaponItemDef): WeaponItemDef['hand'] {
+  return item.hand ?? 'onehand';
+}
+
+export function canEquipItem(cls: PlayerClass, item: ItemDef): boolean {
+  if (isShieldItem(item)) {
+    return !item.requiredClass || item.requiredClass.includes(cls);
+  }
+  // Held offhands (caster orbs/tomes) carry no armor class or weapon proficiency:
+  // the literal requiredClass list is the whole rule, like shields.
+  if (item.kind === 'held_offhand') {
+    return !item.requiredClass || item.requiredClass.includes(cls);
+  }
+  const armorType = armorTypeForItem(item);
+  if (armorType) return ARMOR_RANK[armorType] <= ARMOR_RANK[maxArmorTypeForClass(cls)];
+  // Rogues may dual wield one-handed weapons, but can never equip a two-hander.
+  // Keep this at the equipment boundary so future items cannot bypass it through
+  // a missing or overly broad requiredClass list.
+  if (cls === 'rogue' && item.kind === 'weapon' && weaponHand(item) === 'twohand') {
+    return false;
+  }
+  const weaponArchetype = weaponArchetypeForItem(item);
+  if (weaponArchetype === 'warrior') return WARRIOR_WEAPON_CLASSES.has(cls);
+  if (weaponArchetype === 'caster') return CASTER_WEAPON_CLASSES.has(cls);
+  if (weaponArchetype === 'rogue') return ROGUE_WEAPON_CLASSES.has(cls);
+  if (item.requiredClass) return item.requiredClass.includes(cls);
+  return true;
+}
+
+export function canEquipItemInSlot(
+  cls: PlayerClass,
+  item: ItemDef,
+  slot: EquipSlot,
+  spec?: string | null,
+): boolean {
+  if (!canEquipItem(cls, item)) return false;
+  if (item.kind === 'armor') {
+    if (item.slot === 'ring') return slot === 'ring1' || slot === 'ring2';
+    return item.slot === slot;
+  }
+  if (item.kind !== 'weapon') return item.slot === slot;
+  const hand = weaponHand(item);
+  if (slot === 'mainhand') return true;
+  if (slot !== 'offhand' || !canDualWield(cls, spec)) return false;
+  return hand === 'onehand' || (hand === 'twohand' && canDualWieldTwoHand(cls, spec));
+}

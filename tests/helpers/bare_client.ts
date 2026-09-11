@@ -1,0 +1,327 @@
+// Shared server-test fixtures: a bare ClientWorld plus the fake-socket family
+// that drives a GameServer without a live transport. See "Server tests" in
+// tests/CLAUDE.md for the idiom this module centralizes (issue #2088): before
+// this module existed, each suite hand-rolled its own copy of both, so a new
+// ClientWorld field needed a manual sweep across every copy (or silently
+// diverged between them). New suites should import from here rather than
+// hand-rolling either fixture again.
+
+import type { ClientSession, GameServer } from '../../server/game';
+import { ActionBarLayoutUploader } from '../../src/net/action_bar_upload';
+import { EMPTY_MST_CRAFTS } from '../../src/net/crafting_wire';
+import { GuildBankLogMirror } from '../../src/net/guild_bank_log_mirror';
+import { ClientWorld } from '../../src/net/online';
+import { FARM_PATCHES } from '../../src/sim/content/farm_patches';
+import { emptyAllocation, emptyModifiers } from '../../src/sim/content/talents';
+import { ALL_RECIPES } from '../../src/sim/data';
+import { freshDeedStats } from '../../src/sim/deeds';
+import { emptyCraftSkills } from '../../src/sim/professions/wheel';
+import { emptyMoveInput, type PlayerClass } from '../../src/sim/types';
+
+export interface BareClientOverrides {
+  // Convenience key: sets BOTH cfg.playerClass and the private ownPlayerClass
+  // consistently. Ignored if overrides.cfg already supplies a playerClass.
+  playerClass?: PlayerClass;
+  // Any other ClientWorld field (including a full replacement `cfg`), stamped
+  // over the defaults below via Object.assign.
+  [field: string]: unknown;
+}
+
+/**
+ * A ClientWorld without the WebSocket plumbing, to drive applySnapshot/
+ * onMessage directly (Object.create(ClientWorld.prototype) skips the
+ * constructor, so no real socket ever opens). Mirrors every field the class
+ * declares a static default for, including the crafting mirrors
+ * (emptyCraftSkills() and a pre-sync craftingIdentity), which is strictly
+ * more faithful to a freshly constructed online client than omitting them.
+ * Constructor-only fields with no static default (characterId, the socket,
+ * token, base, clientSeed) are left unset, matching what `new ClientWorld(...)`
+ * itself leaves before openSocket() completes.
+ *
+ * `connected` defaults to true, NOT the class's own `false`: this fixture
+ * exists to feed an already-open session's snapshots/events, which is what
+ * every caller needs. Pass `overrides` to stamp any field (or a fresh nested
+ * object like `cfg`) to a suite-specific value.
+ */
+export function bareClient(pid: number, overrides: BareClientOverrides = {}): ClientWorld {
+  const { playerClass: playerClassOverride, ...rest } = overrides;
+  const cfgOverride = rest.cfg as { playerClass?: PlayerClass } | undefined;
+  const playerClass: PlayerClass =
+    cfgOverride?.playerClass ?? (playerClassOverride as PlayerClass | undefined) ?? 'warrior';
+
+  // biome-ignore lint/suspicious/noExplicitAny: the sanctioned bareClient idiom (tests/CLAUDE.md)
+  const c: any = Object.create(ClientWorld.prototype);
+  c.cfg = { seed: 20061, playerClass };
+  c.entities = new Map();
+  c.playerId = pid;
+  c.ownPlayerId = pid;
+  c.ownPlayerClass = playerClass;
+  c.spectating = null;
+  c.moveInput = emptyMoveInput();
+  c.known = [];
+  c.realm = '';
+  c.inventory = [];
+  c.bags = [null, null, null, null];
+  c.vendorBuyback = [];
+  c.equipment = {};
+  c.equipmentInstances = {};
+  c.copper = 0;
+  c.accountCosmetics = {
+    completedQuestIds: [],
+    mechChromaIds: [],
+    weaponSkinIds: [],
+    weaponSkinLoadout: {},
+  };
+  c.accountAdmin = false;
+  c.petSpecialCommandsSupported = false;
+  c.movementWireVersion = 1;
+  c.reconAuthoritativeX = null;
+  c.reconAuthoritativeY = null;
+  c.reconAuthoritativeZ = null;
+  c.reconPreviousAuthoritativeFacing = null;
+  c.reconAuthoritativeFacing = null;
+  c.reconAckClientTick = -1;
+  c.reconOverrideEpoch = 0;
+  c.reconOverrideActive = false;
+  c.reconMoveSpeedMult = 1;
+  c.xp = 0;
+  c.lifetimeXp = 0;
+  c.prestigeRank = 0;
+  c.restedXp = 0;
+  c.playtimeSeconds = 0;
+  c.unlockedMilestones = [];
+  c.talents = emptyAllocation();
+  c.talentMods = emptyModifiers();
+  c.talentSpec = null;
+  c.talentRole = null;
+  c.loadouts = [];
+  c.activeLoadout = -1;
+  c.questLog = new Map();
+  c.questsDone = new Set();
+  c.pendingQuestCommands = new Map();
+  c.partyInfo = null;
+  c.selectedDungeonDifficulty = 'normal';
+  c.tradeInfo = null;
+  c.duelInfo = null;
+  c.bgInfo = null;
+  c.arenaInfo = null;
+  c.dungeonFinderInfo = null;
+  c.dungeonFinderBoard = null;
+  c.honor = 0;
+  c.lifetimeHonor = 0;
+  c.cardMinigameInfo = { queued: false, available: true, match: null };
+  c.socialInfo = null;
+  c.marketInfo = null;
+  c.marketCollectPending = false;
+  c.mailInfo = null;
+  c.mailUnread = 0;
+  c.bankInfo = null;
+  c.bankPurchasedSlots = null;
+  c.vaultInfo = null;
+  c.craftVaultStock = null;
+  c.deedsEarned = new Map();
+  c.deedStats = freshDeedStats();
+  // IWorldReliquary sparse mirrors (heavy self `reliq`); empty until a snap.
+  c.reliquaryFirstFind = {};
+  c.reliquaryMarks = new Set();
+  c.reliquaryRecent = [];
+  c.reliquaryObtainCounts = {};
+  c.renown = 0;
+  c.activeTitle = null;
+  c.activeBorder = null;
+  c.delveRun = null;
+  c.companionState = null;
+  c.riftFloor = null;
+  // The reserved "no token" sentinel (src/sim/colliders.ts allocRiftCollisionToken
+  // never allocates 0), deliberate here: this bare fixture never runs the real
+  // ClientWorld constructor or applyRiftStateEvent, so it never has a real rift
+  // region to register a token for in the first place.
+  c.riftCollisionToken = 0;
+  c.lockpickState = null;
+  c.delveMarks = 0;
+  c.companionUpgrades = {};
+  c.craftSkills = emptyCraftSkills();
+  c.craftingIdentity = {
+    version: 1,
+    synced: false,
+    craftSkills: c.craftSkills,
+    activeArchetype: null,
+    pairedMajor: null,
+    hobbyCraft: null,
+    attunedPairs: [],
+    switchCount: 0,
+    amendsProgress: 0,
+    amendsRequired: 0,
+    knownRecipes: [],
+    cadenceBlockedQuests: [],
+  };
+  c.gatheringProficiency = {};
+  // The remembered corpse-harvest preference (Intentional Gathering PR3):
+  // null until the first `hpref` snapshot decodes, matching the class field
+  // default (src/net/online.ts).
+  c.harvestPreference = null;
+  // The tracked recipe/commission gathering goal (Intentional Gathering PR4):
+  // null until the first `ggoal` snapshot decodes, matching the class field
+  // default (src/net/online.ts).
+  c.gatheringGoal = null;
+  // The tslot/fplot self-delta mirrors and the static patch table, matching
+  // the class's own static defaults (src/net/online.ts): a consumer test
+  // reading IWorldFarming or the tool slots through this fixture must see
+  // what a freshly constructed online client sees, not undefined.
+  c.toolEffectSlots = [];
+  c.farmPatches = FARM_PATCHES;
+  c.myFarmPlots = [];
+  c.delveClears = {};
+  c.delveDaily = { date: '', firstClearXp: [], markClears: 0 };
+  c.professionsState = { skills: [] };
+  c.townFocus = {};
+  c.nodeCooldowns = new Map();
+  c.recipeList = ALL_RECIPES;
+  // stationPlacements is a getter on ClientWorld (it resolves the active
+  // content bundle, which wraps the builtin STATIONS on shipped hosts), so
+  // the bare client already reads STATIONS without an assignment here.
+  c.lastCraftResult = null;
+  c.lastMasterwork = null;
+  c.lastDisenchantResult = null;
+  c.lastEnchantResult = null;
+  c.lastSalvageResult = null;
+  // The class default is the shared frozen empty, contract and identity both.
+  c.activeMobileStationCrafts = EMPTY_MST_CRAFTS;
+  c.activeMobileStationCraftsRaw = null;
+  c.markers = {};
+  c.lastSnapAt = 0;
+  c.snapInterval = 50;
+  c.serverTickHz = null;
+  c.stableCooldownSchedules = new Map();
+  c.stableNodeDeadlines = new Map();
+  c.stableChargeRecharges = new Map();
+  c.missingSince = new Map();
+  c.pendingFacingDelta = 0;
+  c.connected = true;
+  c.eventQueue = [];
+  c.activeFrostRings = [];
+  c.activeIgnivarMeteors = [];
+  c.activeNythraxisGraveEruptions = [];
+  c.activeNythraxisGraveFlames = [];
+  c.activeNythraxisGravefires = [];
+  c.activeNythraxisBindingSigils = [];
+  c.activeVarkhulForgestormWarnings = [];
+  c.activeVarkhulCinderFires = [];
+  c.activeVarkhulCinderOrbProjectiles = [];
+  c.activeVarkhulAnvilMeteors = [];
+  c.activeVarkhulAssemblies = [];
+  c.activeTemporalHourglasses = [];
+  c.activeConsecrations = [];
+  c.profanityWords = [];
+  c.mouselookFacing = null;
+  c.lastInputSentAt = 0;
+  c.lastInputSig = '';
+  c.lastInputFacingSent = null;
+  c.lastInputFacingSentSeq = 0;
+  c.inputSeq = 0;
+  c.pendingInputSeqSentAt = new Map();
+  c.ackedInputSeq = 0;
+  c.inputEchoSamples = [];
+  c.spectateFacingPending = false;
+  c.pendingSpectateFacing = null;
+  c.dungeonEntrySeq = null;
+  c.pendingDungeonEntryFacing = null;
+  c.lootRollPrompts = [];
+  c.lootRollGroup = [];
+  c.masterLootPrompts = [];
+  c.playerFlair = new Map();
+  c.mountRaceMirror = null;
+  c.mountLessonActiveMirror = false;
+  c.activeBossDeathZones = [];
+  c.riftEventExpiresAtMs = null;
+  // The "mirrors every class-field default" claim above is now ENFORCED by
+  // tests/bare_client_defaults.test.ts (a source scrape of ClientWorld's
+  // initialized fields), which surfaced the drift below: these had all
+  // accreted on the class without the fixture noticing. Values mirror the
+  // class initializers exactly; guildBankInfo in particular is read through
+  // `!== null` gates, where undefined would behave differently.
+  c.guildBankInfo = null;
+  c.guildBankLogMirror = new GuildBankLogMirror();
+  c.toolEffectSlots = [];
+  c.commissionOrders = [];
+  c.socialDirty = false;
+  c.wireSeen = new Set();
+  c.lastStopAutoAttackOnTargetSwitch = null;
+  c.reconnectAttempts = 0;
+  c.conflictRejections = 0;
+  c.timeoutRejections = 0;
+  c.sessionEnded = false;
+  c.counterfangWindowDeadlineMs = 0;
+  c.invChanged = false;
+  c.cosmeticsChanged = false;
+  c.actionBarRestore = undefined;
+  c.actionBarRestoreResolved = false;
+  c.actionBarUploader = new ActionBarLayoutUploader((command) => c.cmd(command));
+  c.profanityDirty = false;
+  c.pendingTargetEcho = null;
+  // The lazy WorldInteractionRequests holder (src/net/world_interaction_requests.ts):
+  // undefined until the first cmdWithOutcome/corpseHarvestInfo/onMessage call,
+  // matching a freshly constructed online ClientWorld before it ever sends or
+  // routes such a request.
+  c.worldInteractionRequests = undefined;
+  c.selfLockouts = {};
+  c.selfOwnedMounts = [];
+  c.selfRidingTrained = false;
+  // Callback-typed fields the first (regex-based) defaults sweep was blind
+  // to: their annotations contain `=>`, which the scrape's annotation group
+  // could not cross. The AST-based sweep sees them.
+  c.onDisconnect = null;
+  c.onConnectionLost = null;
+  c.onReconnected = null;
+  c.onMovementWireNegotiated = null;
+  c.onMovementWireNeutral = null;
+
+  Object.assign(c, rest);
+  return c;
+}
+
+export interface FakeClient {
+  sent: any[];
+  // biome-ignore lint/suspicious/noExplicitAny: mirrors the `ws` field GameServer.join expects
+  ws: any;
+}
+
+/** A fake WebSocket that just records every JSON.parse'd payload sent to it. */
+export function fakeWs(): FakeClient {
+  // biome-ignore lint/suspicious/noExplicitAny: see FakeClient.sent
+  const sent: any[] = [];
+  return {
+    sent,
+    ws: { readyState: 1, send: (payload: string) => sent.push(JSON.parse(payload)) },
+  };
+}
+
+/** The most recent `t: 'snap'` frame among everything sent to a fakeWs(). */
+// biome-ignore lint/suspicious/noExplicitAny: sent frames are untyped wire JSON
+export function lastSnap(sent: any[]): any {
+  for (let i = sent.length - 1; i >= 0; i--) {
+    if (sent[i].t === 'snap') return sent[i];
+  }
+  return null;
+}
+
+/** Joins a fakeWs() to a GameServer, throwing on a join-time rejection. */
+export function joinServer(
+  server: GameServer,
+  fc: FakeClient,
+  characterId: number,
+  name: string,
+  cls: PlayerClass = 'warrior',
+  meta: Parameters<GameServer['join']>[7] = {},
+): ClientSession {
+  const session = server.join(fc.ws, characterId, characterId, name, cls, null, false, meta);
+  if ('error' in session) throw new Error(session.error);
+  session.blockListLoaded = true;
+  return session;
+}
+
+/** Forces one broadcastSnapshots() pass on a GameServer under test. */
+export function broadcast(server: GameServer): void {
+  // biome-ignore lint/suspicious/noExplicitAny: broadcastSnapshots is a private server-loop method
+  (server as any).broadcastSnapshots();
+}

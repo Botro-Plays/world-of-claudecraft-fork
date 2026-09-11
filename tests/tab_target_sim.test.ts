@@ -1,0 +1,278 @@
+// Tab targeting should cycle the enemies a player can see / is fighting, not
+// the nearest blip regardless of where the player is looking. Reproduces the
+// bug where Tab selected an off-screen mob behind the player over a visible one.
+import { describe, expect, it } from 'vitest';
+import { MOBS } from '../src/sim/data';
+import { createMob } from '../src/sim/entity';
+import { Sim } from '../src/sim/sim';
+import { WORLD_WITHOUT_HUB_YARD } from './helpers/hub_yard';
+
+const SEED = 31337;
+
+function spawnMob(sim: Sim, id: number, dx: number, dz: number) {
+  const p = sim.player;
+  const mob = createMob(id, MOBS.ridge_stalker, 13, {
+    x: p.pos.x + dx,
+    y: p.pos.y,
+    z: p.pos.z + dz,
+  });
+  sim.addEntity(mob);
+  return mob;
+}
+
+describe('Sim.tabTarget on-screen / in-combat cycling', () => {
+  it('targets the on-screen enemy and does not cycle to an unseen one behind', () => {
+    const sim = new Sim({ seed: SEED, playerClass: 'warrior', world: WORLD_WITHOUT_HUB_YARD });
+    const p = sim.player;
+    p.facing = 0; // facing +Z
+    sim.rebucket(p);
+    spawnMob(sim, 900001, 0, -6); // behind, near, idle
+    const frontFar = spawnMob(sim, 900002, 0, 25); // in front, far, idle
+
+    sim.tabTarget();
+    expect(p.targetId).toBe(frontFar.id);
+
+    // The unseen idle mob behind the player is not part of the fight cluster, so
+    // cycling stays on the visible enemy instead of grabbing it.
+    sim.tabTarget();
+    expect(p.targetId).toBe(frontFar.id);
+  });
+
+  it('falls back to an unseen enemy only when nothing visible is in the cluster', () => {
+    const sim = new Sim({ seed: SEED, playerClass: 'warrior', world: WORLD_WITHOUT_HUB_YARD });
+    const p = sim.player;
+    p.facing = 0; // facing +Z
+    sim.rebucket(p);
+    const behindClose = spawnMob(sim, 900003, 0, -6); // behind, near, idle (off screen)
+
+    // No on-screen / engaged enemy exists, so Tab still targets the only mob.
+    sim.tabTarget();
+    expect(p.targetId).toBe(behindClose.id);
+  });
+
+  it('ignores an engaged enemy behind the player and Tabs a fresh mob in front (charge-escape)', () => {
+    const sim = new Sim({ seed: SEED, playerClass: 'warrior', world: WORLD_WITHOUT_HUB_YARD });
+    const p = sim.player;
+    p.facing = 0; // facing +Z, away from the fight
+    sim.rebucket(p);
+    const chaser = spawnMob(sim, 900031, 0, -10); // behind, engaged with the player
+    chaser.aggroTargetId = p.id;
+    const freshFront = spawnMob(sim, 900032, 0, 16); // in front, idle, the charge target
+
+    // Tab grabs the visible fresh mob to charge toward, not the engaged chaser
+    // off screen behind the player.
+    sim.tabTarget();
+    expect(p.targetId).toBe(freshFront.id);
+    // Cycling stays on the front mob; the unseen chaser never steals selection.
+    sim.tabTarget();
+    expect(p.targetId).toBe(freshFront.id);
+  });
+
+  it('prefers an enemy engaged with the player', () => {
+    const sim = new Sim({ seed: SEED, playerClass: 'warrior', world: WORLD_WITHOUT_HUB_YARD });
+    const p = sim.player;
+    p.facing = 0;
+    sim.rebucket(p);
+    spawnMob(sim, 900011, 0, 6); // on screen, idle, near
+    const engagedFar = spawnMob(sim, 900012, 0, 28); // on screen, far, aggroed
+    engagedFar.aggroTargetId = p.id;
+
+    sim.tabTarget();
+    expect(p.targetId).toBe(engagedFar.id);
+  });
+
+  it('walks the fallback band from a clicked fallback target, then wraps into the cluster', () => {
+    const sim = new Sim({ seed: SEED, playerClass: 'warrior', world: WORLD_WITHOUT_HUB_YARD });
+    const p = sim.player;
+    p.facing = 0; // facing +Z
+    sim.rebucket(p);
+    // Isolate from world-spawned mobs so the fallback ordering is exactly ours.
+    const internals = sim as unknown as { dropEntity(id: number): void };
+    for (const id of [...sim.entities.keys()]) {
+      if (id !== sim.playerId) internals.dropEntity(id);
+    }
+    const near = spawnMob(sim, 900041, 0, 10); // on screen, idle, near: the cluster
+    const behindA = spawnMob(sim, 900042, 0, -8); // off screen behind: fallback
+    const behindB = spawnMob(sim, 900043, 0, -15); // off screen behind, farther: fallback
+
+    // Simulate clicking a fallback (off-screen) mob, which Tab alone never grabs
+    // while a cluster exists.
+    p.targetId = behindA.id;
+    // Tab from a fallback target walks the rest of the fallback band, nearest first.
+    sim.tabTarget();
+    expect(p.targetId).toBe(behindB.id);
+    // One more Tab wraps off the end of the fallback back into the cluster.
+    sim.tabTarget();
+    expect(p.targetId).toBe(near.id);
+    // And from the cluster it stays in the cluster (single mob wraps onto itself).
+    sim.tabTarget();
+    expect(p.targetId).toBe(near.id);
+  });
+
+  it('cycles only the near fight cluster and wraps back, ignoring a distant idle mob', () => {
+    const sim = new Sim({ seed: SEED, playerClass: 'warrior', world: WORLD_WITHOUT_HUB_YARD });
+    const p = sim.player;
+    p.facing = 0; // facing +Z
+    sim.rebucket(p);
+    // Three on-screen mobs within the near radius (the current fight) and one
+    // idle mob two screens away but still inside the 40 yd query.
+    const near1 = spawnMob(sim, 900021, 0, 8);
+    const near2 = spawnMob(sim, 900022, 0, 14);
+    const near3 = spawnMob(sim, 900023, 0, 20);
+    const farIdle = spawnMob(sim, 900024, 0, 38);
+
+    // Tab walks the cluster nearest-first.
+    sim.tabTarget();
+    expect(p.targetId).toBe(near1.id);
+    sim.tabTarget();
+    expect(p.targetId).toBe(near2.id);
+    sim.tabTarget();
+    expect(p.targetId).toBe(near3.id);
+    // One more Tab wraps back to the priority (nearest) mob, NOT the far idle one.
+    sim.tabTarget();
+    expect(p.targetId).toBe(near1.id);
+
+    // The distant idle mob is never selected by cycling the cluster.
+    for (let i = 0; i < 6; i++) {
+      sim.tabTarget();
+      expect(p.targetId).not.toBe(farIdle.id);
+    }
+  });
+
+  it('prioritizes melee attackers around the player over a distant idle mob', () => {
+    const sim = new Sim({ seed: SEED, playerClass: 'warrior', world: WORLD_WITHOUT_HUB_YARD });
+    const p = sim.player;
+    p.facing = 0; // facing +Z, toward the distant idle mob
+    sim.rebucket(p);
+    const idleBoar = spawnMob(sim, 900051, 0, -45);
+    p.targetId = idleBoar.id;
+    const engagedLeft = spawnMob(sim, 900052, -4, 0);
+    const engagedRight = spawnMob(sim, 900053, 4, 0);
+    const idleGreyjaw = spawnMob(sim, 900054, 0, 35);
+    engagedLeft.aggroTargetId = p.id;
+    engagedRight.aggroTargetId = p.id;
+
+    sim.tabTarget();
+    expect(p.targetId).toBe(engagedLeft.id);
+    sim.tabTarget();
+    expect(p.targetId).toBe(engagedRight.id);
+    sim.tabTarget();
+    expect(p.targetId).toBe(engagedLeft.id);
+    expect(p.targetId).not.toBe(idleGreyjaw.id);
+  });
+
+  it('targetNearestEnemy also prefers a melee attacker over a distant idle mob', () => {
+    const sim = new Sim({ seed: SEED, playerClass: 'warrior', world: WORLD_WITHOUT_HUB_YARD });
+    const p = sim.player;
+    p.facing = 0;
+    sim.rebucket(p);
+    const engagedWolf = spawnMob(sim, 900061, -4, 0);
+    const idleGreyjaw = spawnMob(sim, 900062, 0, 35);
+    engagedWolf.aggroTargetId = p.id;
+
+    sim.targetNearestEnemy();
+    expect(p.targetId).toBe(engagedWolf.id);
+    expect(p.targetId).not.toBe(idleGreyjaw.id);
+  });
+});
+
+// Shift+Tab walks the SAME ordered candidate list as Tab, one step backwards, so
+// a player who cycled one enemy too far can step straight back onto it.
+describe('Sim.tabTargetPrev backward cycling', () => {
+  // Three idle mobs straight ahead: all on screen and inside the near radius, so
+  // they form one cluster ordered nearest first.
+  const spawnLine = (sim: Sim) => {
+    const p = sim.player;
+    p.facing = 0; // facing +Z
+    sim.rebucket(p);
+    // Isolate from world-spawned mobs so the cycle order is exactly ours, not
+    // luck of the seed (the sibling forward tests do the same).
+    const internals = sim as unknown as { dropEntity(id: number): void };
+    for (const id of [...sim.entities.keys()]) {
+      if (id !== sim.playerId) internals.dropEntity(id);
+    }
+    return [
+      spawnMob(sim, 900101, 0, 8),
+      spawnMob(sim, 900102, 0, 14),
+      spawnMob(sim, 900103, 0, 20),
+    ];
+  };
+
+  it('steps to the previous enemy and wraps at the start of the cluster', () => {
+    const sim = new Sim({ seed: SEED, playerClass: 'warrior', world: WORLD_WITHOUT_HUB_YARD });
+    const p = sim.player;
+    const [near, mid, far] = spawnLine(sim);
+
+    sim.tabTarget();
+    expect(p.targetId).toBe(near.id);
+    // Backward from the first cluster entry wraps to its last, never out of the
+    // cluster and never to nothing.
+    sim.tabTargetPrev();
+    expect(p.targetId).toBe(far.id);
+    sim.tabTargetPrev();
+    expect(p.targetId).toBe(mid.id);
+    sim.tabTargetPrev();
+    expect(p.targetId).toBe(near.id);
+  });
+
+  // Scoped to an all-cluster fixture on purpose: the round trip returns WITHIN
+  // the near cluster, which is not true across the cluster/fallback wrap (the
+  // pure-leaf suite pins that exception directly).
+  it('undoes a Tab press within the cluster: forward then backward returns', () => {
+    const sim = new Sim({ seed: SEED, playerClass: 'warrior', world: WORLD_WITHOUT_HUB_YARD });
+    const p = sim.player;
+    const [near] = spawnLine(sim);
+
+    sim.tabTarget();
+    expect(p.targetId).toBe(near.id);
+    sim.tabTarget();
+    expect(p.targetId).not.toBe(near.id);
+    sim.tabTargetPrev();
+    expect(p.targetId).toBe(near.id);
+  });
+
+  it('grabs the priority enemy when nothing is targeted, exactly as Tab does', () => {
+    const sim = new Sim({ seed: SEED, playerClass: 'warrior', world: WORLD_WITHOUT_HUB_YARD });
+    const p = sim.player;
+    const [near] = spawnLine(sim);
+
+    p.targetId = null;
+    sim.tabTargetPrev();
+    expect(p.targetId).toBe(near.id);
+  });
+
+  it('leaves the selection alone when no enemy is in range, both arms', () => {
+    const sim = new Sim({ seed: SEED, playerClass: 'warrior', world: WORLD_WITHOUT_HUB_YARD });
+    const p = sim.player;
+    p.facing = 0;
+    sim.rebucket(p);
+    // Isolate from world-spawned mobs so "nothing in range" is really true,
+    // rather than luck of the seed (the sibling forward test does the same).
+    const internals = sim as unknown as { dropEntity(id: number): void };
+    for (const id of [...sim.entities.keys()]) {
+      if (id !== sim.playerId) internals.dropEntity(id);
+    }
+
+    p.targetId = null;
+    sim.tabTargetPrev();
+    expect(p.targetId).toBeNull();
+
+    // The half that actually exercises the empty-candidate guard: an EXISTING
+    // target must survive rather than be cleared or overwritten.
+    p.targetId = 4242;
+    sim.tabTargetPrev();
+    expect(p.targetId).toBe(4242);
+  });
+
+  it('honors the stop-auto-attack-on-target-switch preference like every other selector', () => {
+    const sim = new Sim({ seed: SEED, playerClass: 'warrior', world: WORLD_WITHOUT_HUB_YARD });
+    const p = sim.player;
+    spawnLine(sim);
+    sim.setStopAutoAttackOnTargetSwitch(true);
+
+    sim.tabTarget();
+    p.autoAttack = true;
+    sim.tabTargetPrev(); // a real switch, so auto-attack disengages
+    expect(p.autoAttack).toBe(false);
+  });
+});

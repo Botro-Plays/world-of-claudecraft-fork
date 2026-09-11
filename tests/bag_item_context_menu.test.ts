@@ -1,0 +1,298 @@
+// Pure-core tests for the bag-item context menu (Professions 2.0):
+// action eligibility (which items get Disenchant / Salvage / Apply Enchant), the
+// first-row classic-default guarantee, and the stronger-warning confirm predicate
+// (which copy a destructive action would actually consume, and whether it is
+// special) including the do-not-scare-a-plain-copy-holder nuance.
+
+import { describe, expect, it } from 'vitest';
+import { ENCHANTS } from '../src/sim/content/enchants';
+import type { MaterialComposition } from '../src/sim/material_sources';
+import type { ItemDef, ItemInstancePayload } from '../src/sim/types';
+import {
+  type BagCopy,
+  bagItemContextActions,
+  bagItemHasContextActions,
+  bagItemNewActions,
+  destroyConsumesSpecialCopy,
+  isEnchantReagentItem,
+  isSpecialCopy,
+  vendorSellContextActions,
+} from '../src/ui/bag_item_context_menu';
+
+function def(kind: string, quality?: string): ItemDef {
+  return { kind, quality } as unknown as ItemDef;
+}
+function copy(instance?: Partial<ItemInstancePayload>): BagCopy {
+  return instance ? { count: 1, instance: instance as ItemInstancePayload } : { count: 1 };
+}
+
+describe('bag_item_context_menu: enchant reagent detection', () => {
+  it('recognizes every item id that any enchant consumes', () => {
+    // Every reagent id in the static table is a reagent; arcane_dust is the base.
+    const reagentIds = new Set(
+      Object.values(ENCHANTS).flatMap((e) => e.reagents.map((r) => r.itemId)),
+    );
+    expect(reagentIds.size).toBeGreaterThan(1);
+    for (const id of reagentIds) expect(isEnchantReagentItem(id)).toBe(true);
+    expect(isEnchantReagentItem('arcane_dust')).toBe(true);
+    // Masterwrought phase 10: the apex intermediate became a reagent, which is
+    // the whole of its right-click entry point. Named as a LITERAL beside the
+    // derived sweep above, which reads the same table the predicate does and so
+    // cannot notice the id leaving the enchant table.
+    expect(isEnchantReagentItem('lucent_reagent')).toBe(true);
+    // And the action really is offered on it: nothing in the eligibility chain
+    // gates Apply Enchant on item kind, so a junk-kind material qualifies.
+    expect(bagItemNewActions(def('material'), 'lucent_reagent')).toEqual(['applyEnchant', 'lock']);
+  });
+  it('rejects a non-reagent id', () => {
+    expect(isEnchantReagentItem('bone_fragments')).toBe(false);
+    expect(isEnchantReagentItem('not_a_real_item')).toBe(false);
+  });
+});
+
+describe('bag_item_context_menu: material source actions', () => {
+  it('adds source inspection and exact split actions only for an eligible material stack', () => {
+    const sources: MaterialComposition = [
+      { source: { gatherer: { kind: 'character', id: 1, name: 'Ada' } }, count: 2 },
+      { source: { gatherer: { kind: 'character', id: 2, name: 'Bea' } }, count: 1 },
+    ];
+    expect(bagItemNewActions(def('material'), 'copper_ore', undefined, sources, true)).toEqual([
+      'viewSources',
+      'separateByGatherer',
+      'takeChosenQuantity',
+      'combine',
+      'lock',
+    ]);
+    expect(bagItemNewActions(def('weapon', 'common'), 'sword', undefined, sources, true)).toEqual([
+      'disenchant',
+      'salvage',
+      'lock',
+    ]);
+  });
+});
+
+describe('bag_item_context_menu: action eligibility', () => {
+  it('offers Disenchant AND Salvage on a common+ weapon or armor', () => {
+    expect(bagItemNewActions(def('weapon', 'common'), 'sword')).toEqual([
+      'disenchant',
+      'salvage',
+      'lock',
+    ]);
+    expect(bagItemNewActions(def('armor', 'rare'), 'plate')).toEqual([
+      'disenchant',
+      'salvage',
+      'lock',
+    ]);
+  });
+  // A held offhand (a shield-less caster orb/tome or a hunter quiver) is
+  // equipment exactly like a weapon or armor piece: it carries quality and
+  // requiredClass, and a piece looted by the wrong class is otherwise stuck
+  // with no way to break it down for materials. Missing this offered only
+  // Equip (which fails the class check) and Lock, so this must mirror the
+  // weapon/armor row above verbatim.
+  it('offers Disenchant AND Salvage on a common+ held offhand too', () => {
+    expect(bagItemNewActions(def('held_offhand', 'uncommon'), 'lantern')).toEqual([
+      'disenchant',
+      'salvage',
+      'lock',
+    ]);
+  });
+  // Every item now offers at least lock/unlock (issue #3042), so a
+  // poor-quality or non-gear item is never truly empty; "offers nothing NEW
+  // beyond the lock toggle" is the honest claim for a plain item today.
+  it('offers only the lock toggle on a poor-quality or non-gear item', () => {
+    expect(bagItemNewActions(def('weapon', 'poor'), 'stick')).toEqual(['lock']);
+    expect(bagItemNewActions(def('material'), 'iron_ore')).toEqual(['lock']);
+    expect(bagItemHasContextActions(def('material'), 'iron_ore')).toBe(true);
+  });
+  it('offers Apply Enchant on an enchant reagent material', () => {
+    expect(bagItemNewActions(def('material'), 'arcane_dust')).toEqual(['applyEnchant', 'lock']);
+    expect(bagItemHasContextActions(def('material'), 'arcane_dust')).toBe(true);
+  });
+  it('keeps Sunder on a locked raid epic: lock-exempt like disenchant', () => {
+    // The lock protects against salvage, craft consumption, and vendor sale
+    // only (the issue 3042 first-pass scope); sunder follows the disenchant
+    // precedent and stays offered on a locked copy, matching the sim, whose
+    // sunderAdmitted has no lock arm (pinned end to end in
+    // tests/masterwrought_materials.test.ts). Classification was taken at the
+    // v0.38.0 sync merge (fa51741408), and locked raid epics deliberately
+    // remain admitted;
+    // if the sim ever gains a lock deny for sunder, flip this pin and the sim-side
+    // pin in tests/masterwrought_materials.test.ts together, they are one surface.
+    const raidEpic = { ...def('armor', 'epic'), id: 'crownforged_dreadhelm' } as ItemDef;
+    const locked = { locked: true } as ItemInstancePayload;
+    // Self-validating fixture: the id must still be a live raid-sourced epic.
+    expect(bagItemNewActions(raidEpic, 'crownforged_dreadhelm')).toEqual([
+      'disenchant',
+      'salvage',
+      'sunder',
+      'lock',
+    ]);
+    expect(bagItemNewActions(raidEpic, 'crownforged_dreadhelm', locked)).toEqual([
+      'disenchant',
+      'sunder',
+      'unlock',
+    ]);
+  });
+  it('offers Unlock instead of Lock, and never Salvage, on a locked copy', () => {
+    const locked = { locked: true } as ItemInstancePayload;
+    // Salvage would destroy the copy, so a locked one never offers it (mirrors
+    // the sim's evaluateSalvageAdmission 'locked' deny).
+    expect(bagItemNewActions(def('weapon', 'common'), 'sword', locked)).toEqual([
+      'disenchant',
+      'unlock',
+    ]);
+    // Disenchant and Apply Enchant stay available: the lock protects against
+    // salvage, craft consumption, and vendor sale only (the issue's own
+    // first-pass scope).
+    expect(bagItemNewActions(def('material'), 'arcane_dust', locked)).toEqual([
+      'applyEnchant',
+      'unlock',
+    ]);
+  });
+});
+
+describe('bag_item_context_menu: menu row ordering', () => {
+  it('always leads with the classic default action', () => {
+    const gear = bagItemContextActions(def('weapon', 'common'), 'sword');
+    expect(gear[0]).toEqual({ id: 'default', labelKey: 'hudChrome.itemMenu.equip' });
+    expect(gear.map((r) => r.id)).toEqual(['default', 'disenchant', 'salvage', 'lock']);
+
+    const reagent = bagItemContextActions(def('material'), 'arcane_dust');
+    expect(reagent[0]).toEqual({ id: 'default', labelKey: 'hudChrome.itemMenu.use' });
+    expect(reagent.map((r) => r.id)).toEqual(['default', 'applyEnchant', 'lock']);
+  });
+});
+
+describe('bag_item_context_menu: special-copy classification', () => {
+  it('flags signed, masterwork, and enchanted copies; not a plain one', () => {
+    expect(isSpecialCopy(undefined)).toBe(false);
+    expect(isSpecialCopy({ signer: 'Alice' } as ItemInstancePayload)).toBe(true);
+    expect(isSpecialCopy({ rolled: { masterwork: true } } as ItemInstancePayload)).toBe(true);
+    expect(isSpecialCopy({ enchant: 'enchant_weapon_might' } as ItemInstancePayload)).toBe(true);
+    // Legacy enchanted marker: bare rolled.stats without masterwork.
+    expect(isSpecialCopy({ rolled: { stats: { str: 5 } } } as ItemInstancePayload)).toBe(true);
+    // Masterwrought phase 12: Perfecting progress and the Perfected stamp are
+    // special BY CONTRACT, with no signer and (for the stamp) a bare R5 record
+    // that isEnchantedInstance deliberately does not read as an enchant.
+    expect(isSpecialCopy({ perfecting: 1 } as ItemInstancePayload)).toBe(true);
+    expect(
+      isSpecialCopy({ perfected: true, rolled: { stats: { int: 1 } } } as ItemInstancePayload),
+    ).toBe(true);
+    // A legacy rolled.quality-only copy is NOT special (never signed/mw/enchanted).
+    expect(isSpecialCopy({ rolled: { quality: 'rare' } } as ItemInstancePayload)).toBe(false);
+    // A Riftbound band: its rolled line is the ladder's, not an enchant
+    // (isEnchantedInstance is false for it), but the copy is a personal
+    // first-clear reward, so it stays special.
+    expect(
+      isSpecialCopy({
+        rolled: { quality: 'epic', stats: { str: 8, sta: 6 } },
+        rift: {
+          sourceEventId: 'e',
+          tier: 'S',
+          power: 4,
+          upgradeLevel: 0,
+          maxUpgradeLevel: 5,
+          gemSlots: 2,
+          gems: [],
+        },
+      } as ItemInstancePayload),
+    ).toBe(true);
+  });
+});
+
+describe('bag_item_context_menu: confirm escalation predicate', () => {
+  it('never warns when a plain fungible copy exists (that copy is consumed)', () => {
+    const held = [copy(), copy({ rolled: { masterwork: true } })];
+    expect(destroyConsumesSpecialCopy('disenchant', held)).toBe(false);
+    expect(destroyConsumesSpecialCopy('salvage', held)).toBe(false);
+  });
+
+  it('warns for salvage when only a special instanced copy is held', () => {
+    expect(destroyConsumesSpecialCopy('salvage', [copy({ signer: 'Bob' })])).toBe(true);
+    expect(destroyConsumesSpecialCopy('salvage', [copy({ rolled: { masterwork: true } })])).toBe(
+      true,
+    );
+    // Salvage CAN consume an enchanted copy, so a lone enchanted copy warns.
+    expect(destroyConsumesSpecialCopy('salvage', [copy({ enchant: 'enchant_weapon_might' })])).toBe(
+      true,
+    );
+  });
+
+  it('salvage takes the highest-index copy: a trailing plain-ish legacy copy is not special', () => {
+    // No fungible copy; the last copy is a legacy quality-only instance, which
+    // salvage (removeItem) consumes and which is NOT special.
+    const held = [copy({ signer: 'Bob' }), copy({ rolled: { quality: 'rare' } })];
+    expect(destroyConsumesSpecialCopy('salvage', held)).toBe(false);
+  });
+
+  it('warns for disenchant when the consumed non-enchanted copy is special', () => {
+    expect(destroyConsumesSpecialCopy('disenchant', [copy({ rolled: { masterwork: true } })])).toBe(
+      true,
+    );
+    expect(destroyConsumesSpecialCopy('disenchant', [copy({ signer: 'Bob' })])).toBe(true);
+  });
+
+  it('disenchant skips the already-enchanted copy when choosing the victim', () => {
+    // The last copy is enchanted (only consumed once no unenchanted copy is
+    // left); the masterwork copy before it is the real victim, so the
+    // stronger warning fires.
+    const held = [
+      copy({ rolled: { masterwork: true } }),
+      copy({ enchant: 'enchant_weapon_might' }),
+    ];
+    expect(destroyConsumesSpecialCopy('disenchant', held)).toBe(true);
+  });
+
+  // Issue #2340: the sim now falls back to consuming an enchanted copy once
+  // no unenchanted copy remains, so the predicate must warn (an enchanted
+  // copy is always special) instead of silently reporting no victim.
+  it('disenchant warns when every held copy is enchanted (the fallback victim)', () => {
+    expect(
+      destroyConsumesSpecialCopy('disenchant', [copy({ enchant: 'enchant_weapon_might' })]),
+    ).toBe(true);
+    // Legacy enchanted shape (bare rolled.stats, no marker) counts the same.
+    expect(
+      destroyConsumesSpecialCopy('disenchant', [copy({ rolled: { stats: { str: 5 } } })]),
+    ).toBe(true);
+    expect(
+      destroyConsumesSpecialCopy('disenchant', [
+        copy({ enchant: 'enchant_weapon_might' }),
+        copy({ enchant: 'enchant_helmet_fortitude' }),
+      ]),
+    ).toBe(true);
+  });
+
+  it('disenchant does not warn on a lone plain copy', () => {
+    expect(destroyConsumesSpecialCopy('disenchant', [copy()])).toBe(false);
+  });
+
+  it('never warns when no copies are held at all', () => {
+    expect(destroyConsumesSpecialCopy('disenchant', [])).toBe(false);
+    expect(destroyConsumesSpecialCopy('salvage', [])).toBe(false);
+  });
+});
+
+describe('bag_item_context_menu: vendor Sell all row', () => {
+  it('offers only the classic Sell row when a single copy is held', () => {
+    expect(vendorSellContextActions(1)).toEqual([
+      { id: 'default', labelKey: 'hudChrome.itemMenu.sell' },
+    ]);
+  });
+
+  it('adds a Sell all row carrying the held total once more than one copy is held', () => {
+    expect(vendorSellContextActions(23)).toEqual([
+      { id: 'default', labelKey: 'hudChrome.itemMenu.sell' },
+      { id: 'sellAll', labelKey: 'hudChrome.itemMenu.sellAll', count: 23 },
+    ]);
+  });
+
+  it('never offers the enchanting-profession rows (a vendor never grants them)', () => {
+    const ids = vendorSellContextActions(5).map((row) => row.id);
+    expect(ids).not.toContain('disenchant');
+    expect(ids).not.toContain('salvage');
+    expect(ids).not.toContain('applyEnchant');
+    expect(ids).not.toContain('lock');
+    expect(ids).not.toContain('unlock');
+  });
+});
