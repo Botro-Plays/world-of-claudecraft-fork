@@ -2481,7 +2481,7 @@ export const VISUALS: Record<string, VisualDef> = {
   // GLB on death and plays its DEAD clip on the die model's own mixer.
   mob_hopy: {
     url: `${CREATURES}/hopy.glb`,
-    height: 1.2,
+    height: 1.6,
     clips: {
       idle: 'STAND',
       walk: 'WALK',
@@ -2494,7 +2494,7 @@ export const VISUALS: Record<string, VisualDef> = {
   mob_bargon: {
     url: `${CREATURES}/Monbagon.glb`,
     deathModelUrl: `${CREATURES}/Monbagon-die.glb`,
-    height: 2.5,
+    height: 4.0,
     clips: {
       idle: 'STAND',
       walk: 'WALK',

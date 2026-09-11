@@ -2393,6 +2393,13 @@ export interface PreparedVisual {
   /** click-capsule radius in world units (from measured XZ body extents —
    *  long/wide creatures like wolves need far more than a humanoid sliver) */
   clickRadius: number;
+  /** Death model swap (VisualDef.deathModelUrl): separate normalization for
+   *  the death GLB, which has its own raw bounds. The death model is placed
+   *  inside modelWrap (which carries the MAIN body's normScale), so the
+   *  renderer applies a counter-scale deathNormScale / normScale to a
+   *  wrapper group so the death model lands at the same world height as the
+   *  main body. Zero when the def has no deathModelUrl. */
+  deathNormScale: number;
 }
 
 const prepared = new Map<string, PreparedVisual>();
@@ -2546,6 +2553,53 @@ export function prepareVisual(key: string): PreparedVisual {
   // and reading the live count one high.
   releaseModularVariant(temp);
 
+  // Death model swap (VisualDef.deathModelUrl): measure the death GLB's raw
+  // bounds so the renderer can normalize it to the SAME world height as the
+  // main body. The death GLB has its own skeleton and raw bounds, so the main
+  // body's normScale would scale it wrong (e.g. Monbagon-die is 77.2 raw units
+  // vs Monbagon's 82.7, so the main body's normScale renders the death model
+  // ~7% too small). The death model is placed inside modelWrap (which carries
+  // the main body's normScale), so the renderer applies deathNormScale /
+  // normScale as a counter-scale on a wrapper group.
+  let deathNormScale = 0;
+  if (def.deathModelUrl) {
+    const deathTemp = cloneSkinned(optimizedScene(def.deathModelUrl));
+    deathTemp.updateMatrixWorld(true);
+    const deathBounds = new THREE.Box3();
+    deathTemp.traverse((o) => {
+      const sm = o as THREE.SkinnedMesh;
+      if (!sm.isSkinnedMesh || !meshChainVisible(sm, deathTemp)) return;
+      const pos = sm.geometry.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos as THREE.BufferAttribute, i);
+        sm.applyBoneTransform(i, v);
+        v.applyMatrix4(sm.matrixWorld);
+        deathBounds.expandByPoint(v);
+      }
+    });
+    if (deathBounds.isEmpty()) {
+      deathTemp.traverse((o) => {
+        const mesh = o as THREE.Mesh;
+        if (
+          !mesh.isMesh ||
+          (mesh as unknown as THREE.SkinnedMesh).isSkinnedMesh ||
+          !meshChainVisible(mesh, deathTemp)
+        )
+          return;
+        const pos = mesh.geometry.getAttribute('position') as THREE.BufferAttribute | undefined;
+        if (!pos) return;
+        for (let i = 0; i < pos.count; i++) {
+          v.fromBufferAttribute(pos, i);
+          v.applyMatrix4(mesh.matrixWorld);
+          deathBounds.expandByPoint(v);
+        }
+      });
+    }
+    const deathRawHeight = Math.max(1e-3, deathBounds.max.y - deathBounds.min.y);
+    deathNormScale = def.height / deathRawHeight;
+    releaseModularVariant(deathTemp);
+  }
+
   const prep: PreparedVisual = {
     key,
     def,
@@ -2557,6 +2611,7 @@ export function prepareVisual(key: string): PreparedVisual {
     idleSrcMats: mats,
     idleSrcIsBody: isBody,
     clickRadius,
+    deathNormScale,
   };
   prepared.set(key, prep);
   return prep;

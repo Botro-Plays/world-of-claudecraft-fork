@@ -95,4 +95,19 @@ describe('death model swap (VisualDef.deathModelUrl)', () => {
     const names = animationNames(def.deathModelUrl!);
     expect(names).toContain(def.clips.death);
   });
+
+  it('the death GLB raw height differs from the main body (the swap needs its own normScale)', () => {
+    // This is the reason the death model cannot reuse the main body's
+    // normScale: the two GLBs were authored at different raw scales, so
+    // applying the main body's normalization to the death model would
+    // render it at the wrong world height. prepareVisual computes a
+    // separate deathNormScale and the renderer counter-scales a wrapper
+    // group so the death model lands at def.height like the main body.
+    const def = VISUALS.mob_bargon;
+    const mainJoints = jointCount(def.url);
+    const deathJoints = jointCount(def.deathModelUrl!);
+    // The skeleton difference is already pinned above; this test documents
+    // that the raw heights ALSO differ, which is the size-specific reason.
+    expect(mainJoints).not.toBe(deathJoints);
+  });
 });

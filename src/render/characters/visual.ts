@@ -593,6 +593,12 @@ export class CharacterVisual {
   private deathAction: THREE.AnimationAction | null = null;
   private deathCasters: THREE.Mesh[] = [];
   private deathClip: THREE.AnimationClip | null = null;
+  /** Counter-scale for the death model: the death GLB has its own raw bounds,
+   *  so the renderer wraps the death model in deathWrap (inside modelWrap)
+   *  with scale = deathNormScale / normScale so the death model lands at the
+   *  same world height as the main body. */
+  private deathNormScale = 0;
+  private deathWrap: THREE.Group | null = null;
   private farMesh: THREE.Mesh | null = null;
   private farMaterials: THREE.Material | THREE.Material[] | null = null;
   /** A composed far LOD is baked on the first crossing into the far band, not
@@ -976,6 +982,7 @@ export class CharacterVisual {
       }
       if (skipDeathClip) {
         this.deathClip = prep.clips.get(prep.def.clips.death) ?? null;
+        this.deathNormScale = prep.deathNormScale;
       }
       this.mixer.addEventListener('finished', (ev) => this.onFinished(ev.action));
       recordBuildSpan('view-part:mixer', performance.now() - mixerStarted, mixerStarted);
@@ -3273,6 +3280,7 @@ export class CharacterVisual {
       this.deathSkeletonUpdates = null;
       this.deathAction = null;
       this.deathCasters.length = 0;
+      this.deathWrap = null;
     }
     this.root.removeFromParent();
     // SkeletonUtils.clone gives each instance exclusive Skeletons whose GPU
@@ -3902,7 +3910,17 @@ export class CharacterVisual {
         this.tintedRigClaims,
       );
       this.deathModel.visible = false;
-      this.modelWrap.add(this.deathModel);
+      // The death GLB has its own raw bounds, so the main body's normScale
+      // (on modelWrap) would scale it wrong. Wrap it in deathWrap with a
+      // counter-scale so the death model lands at the same world height as
+      // the main body. The mixer is created against the death model (inside
+      // deathWrap), so animation root TRS tracks modify the death model, not
+      // deathWrap's counter-scale.
+      this.deathWrap = new THREE.Group();
+      this.deathWrap.name = 'character_death_wrap';
+      this.deathWrap.scale.setScalar(this.deathNormScale / this.modelWrap.scale.x);
+      this.deathWrap.add(this.deathModel);
+      this.modelWrap.add(this.deathWrap);
       this.deathMixer = new THREE.AnimationMixer(this.deathModel);
       this.deathSkeletonUpdates = new SkeletonUpdateCache(this.deathModel);
       this.deathModel.traverse((o) => {
