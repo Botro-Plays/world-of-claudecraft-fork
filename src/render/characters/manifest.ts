@@ -260,6 +260,15 @@ export interface VisualDef {
    *  state; CharacterVisual's enterDeath/revive flip it. Node names as
    *  authored in the GLB. */
   corpseMeshSwap?: { hide: string; show: string };
+  /** Separate GLB for the death animation, used when the death model has a
+   *  DIFFERENT skeleton than the main body (Priston Tale monsters ship a
+   *  separate die model). On enterDeath the renderer swaps the entire visual
+   *  to this GLB and plays its DEAD clip on the death model's own mixer; on
+   *  revive it swaps back. The death GLB is preloaded alongside the main body
+   *  and its clips are resolved at prepare time. Mutually exclusive with
+   *  corpseMeshSwap (one is a mesh-visibility flip inside one GLB, the other
+   *  swaps to a different GLB entirely). */
+  deathModelUrl?: string;
 }
 
 /** The slice of a VisualDef that decides how held weapons attach (which bones, and
@@ -2468,8 +2477,8 @@ export const VISUALS: Record<string, VisualDef> = {
   // uppercase state names (STAND, WALK, ATTACK, DAMAGE, DEAD). No hit-react
   // for Hopy; Bargon's death is a separate model (Monbagon-die.glb) with a
   // DIFFERENT skeleton (bone names differ), so the DEAD clip cannot be
-  // merged via animUrls. The death animation reuses DAMAGE for now; a
-  // proper fix needs either converter-side retargeting or a death model swap.
+  // merged via animUrls. deathModelUrl swaps the entire visual to the die
+  // GLB on death and plays its DEAD clip on the die model's own mixer.
   mob_hopy: {
     url: `${CREATURES}/hopy.glb`,
     height: 1.2,
@@ -2484,13 +2493,14 @@ export const VISUALS: Record<string, VisualDef> = {
   },
   mob_bargon: {
     url: `${CREATURES}/Monbagon.glb`,
+    deathModelUrl: `${CREATURES}/Monbagon-die.glb`,
     height: 2.5,
     clips: {
       idle: 'STAND',
       walk: 'WALK',
       run: 'WALK',
       attack: ['ATTACK'],
-      death: 'DAMAGE', // TODO: die model has a different skeleton; needs retargeting
+      death: 'DEAD',
       hit: ['DAMAGE'],
       cast: 'EAT',
     },
@@ -4052,6 +4062,7 @@ export function manifestUrls(): string[] {
     if (def.lazyPreload) continue; // fetched on demand, not at boot
     urls.add(def.url);
     for (const url of def.animUrls ?? []) urls.add(url);
+    if (def.deathModelUrl) urls.add(def.deathModelUrl);
     for (const a of def.attach ?? []) urls.add(a.url);
   }
   // Equipped-weapon models a player may swap to at runtime (any nearby player's

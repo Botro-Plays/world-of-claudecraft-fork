@@ -129,6 +129,11 @@ function loadedClipNames(def: VisualDef, standardMaterials: boolean, key?: strin
   const urls = [
     visualAssetUrlForGraphics(def.url, standardMaterials),
     ...(def.animUrls ?? []).map((url) => visualAssetUrlForGraphics(url, standardMaterials)),
+    // The death model (deathModelUrl) is a separate GLB with its own skeleton.
+    // Its clips (notably DEAD) cannot be played on the main body's mixer, but
+    // they ARE loadable and resolved at prepare time, so the gate must include
+    // them to avoid a false "missing clip" failure.
+    ...(def.deathModelUrl ? [visualAssetUrlForGraphics(def.deathModelUrl, standardMaterials)] : []),
   ];
   const names = new Set<string>();
   for (const url of urls) for (const name of animationNamesOf(url)) names.add(name);
@@ -262,6 +267,12 @@ describe('character ClipMaps match the shipped GLBs', () => {
       expect(existsSync(publicPath(def.url)), `${key}: ${def.url} is missing`).toBe(true);
       for (const url of def.animUrls ?? []) {
         expect(existsSync(publicPath(url)), `${key}: ${url} is missing`).toBe(true);
+      }
+      if (def.deathModelUrl) {
+        expect(
+          existsSync(publicPath(def.deathModelUrl)),
+          `${key}: deathModelUrl ${def.deathModelUrl} is missing`,
+        ).toBe(true);
       }
     }
   });

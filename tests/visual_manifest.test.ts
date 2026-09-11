@@ -39,13 +39,18 @@ function expectedClipNames(clips: ClipMap): string[] {
 
 /** Every clip a def can actually resolve: its own GLB PLUS any animUrls layered
  *  onto it (assets.ts prepareVisual merges both into one clip map, which is how
- *  the hunter gets its bow draw and every player body gets the swim strokes). */
+ *  the hunter gets its bow draw and every player body gets the swim strokes),
+ *  PLUS the death model GLB (deathModelUrl) whose clips are also resolved at
+ *  prepare time for the death model swap mechanism. */
 async function loadableClipNames(visual: {
   url: string;
   animUrls?: readonly string[];
+  deathModelUrl?: string;
 }): Promise<Set<string>> {
   const names = new Set<string>();
-  for (const url of [visual.url, ...(visual.animUrls ?? [])]) {
+  const urls = [visual.url, ...(visual.animUrls ?? [])];
+  if (visual.deathModelUrl) urls.push(visual.deathModelUrl);
+  for (const url of urls) {
     for (const name of await glbAnimationNames(`public/${url}`)) names.add(name);
   }
   return names;

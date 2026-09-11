@@ -1724,6 +1724,30 @@ export function assembleModel(
   return root;
 }
 
+/** Build a death model clone from `VisualDef.deathModelUrl`. The death GLB is
+ *  a separate file with its own skeleton (Priston Tale ships separate die
+ *  models), so it cannot share the main body's mixer. This clones the
+ *  optimized scene for the death URL, applies the same material tinting as the
+ *  main body, and returns the model ready for its own AnimationMixer. The
+ *  caller is responsible for adding it to the scene graph, creating a mixer,
+ *  and managing shadow casters. */
+export function buildDeathModel(
+  def: VisualDef,
+  entityColor: number,
+  skinTex: THREE.Texture | null = null,
+  emisTex: THREE.Texture | null = null,
+  claims: TintedMaterialClaims,
+): THREE.Object3D {
+  if (!def.deathModelUrl) throw new Error('buildDeathModel requires def.deathModelUrl');
+  const root = cloneSkinned(optimizedScene(def.deathModelUrl));
+  shareRigSkeleton(root);
+  root.traverse((o) => {
+    if ((o as THREE.Mesh).isMesh) o.userData.bodyMesh = true;
+  });
+  applyMaterials(root, def, entityColor, skinTex, emisTex, claims);
+  return root;
+}
+
 // The target bone for one attachment: its authored bone normally, the chest bone
 // while a handslot prop is sheathed. GLTFLoader sanitizes node names
 // (PropertyBinding strips [].:/ chars), so "handslot.r" arrives as "handslotr";
@@ -2414,6 +2438,13 @@ export function prepareVisual(key: string): PreparedVisual {
   for (const clip of gltf.animations) clips.set(clip.name, clip);
   for (const url of def.animUrls ?? []) {
     for (const clip of resolvedGltf(url).animations) clips.set(clip.name, clip);
+  }
+  // The death model (deathModelUrl) is a separate GLB with its own skeleton.
+  // Its clips cannot be played on the main body's mixer, but we load them
+  // here so the DEAD clip is in the clip map for the clipmap gate and so
+  // CharacterVisual can resolve it when building the death model's mixer.
+  if (def.deathModelUrl) {
+    for (const clip of resolvedGltf(def.deathModelUrl).animations) clips.set(clip.name, clip);
   }
   // The modular paladin mirrors the classic clip map (attackByAbility includes
   // the synthesized Verdict and Sweep names), so it needs the same synthesis:

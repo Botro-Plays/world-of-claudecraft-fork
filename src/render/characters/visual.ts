@@ -43,6 +43,7 @@ import {
   applyModularSliderMorphs,
   assembleModel,
   attachDeferredFaceDecals,
+  buildDeathModel,
   ensureSkinTexture,
   farSourceMaterials,
   modularFarBake,
@@ -582,6 +583,16 @@ export class CharacterVisual {
   private modelWrap = new THREE.Group();
   private modelWrapGroundY = 0;
   private poseWrap = new THREE.Group();
+  /** Death model swap (VisualDef.deathModelUrl): a separate GLB with its own
+   *  skeleton for the death animation. Lazily built on first death, then
+   *  toggled with the main model on enterDeath/revive. Null when the def has
+   *  no deathModelUrl or before the first death. */
+  private deathModel: THREE.Object3D | null = null;
+  private deathMixer: THREE.AnimationMixer | null = null;
+  private deathSkeletonUpdates: SkeletonUpdateCache | null = null;
+  private deathAction: THREE.AnimationAction | null = null;
+  private deathCasters: THREE.Mesh[] = [];
+  private deathClip: THREE.AnimationClip | null = null;
   private farMesh: THREE.Mesh | null = null;
   private farMaterials: THREE.Material | THREE.Material[] | null = null;
   /** A composed far LOD is baked on the first crossing into the far band, not
@@ -953,9 +964,18 @@ export class CharacterVisual {
       const mixerStarted = performance.now();
       this.mixer = new THREE.AnimationMixer(this.model);
       this.skeletonUpdates = new SkeletonUpdateCache(this.model);
+      // When a death model swap is configured, the DEAD clip targets the
+      // death model's skeleton, not the main body's. Skip it here so the
+      // main mixer never holds a no-op action for it; enterDeath plays it
+      // on the death model's own mixer instead.
+      const skipDeathClip = !!prep.def.deathModelUrl;
       for (const name of [...clipNamesOf(prep.def), ...SKIN_ATTACK_CLIP_NAMES]) {
+        if (skipDeathClip && name === prep.def.clips.death) continue;
         const clip = prep.clips.get(name);
         if (clip) this.actions.set(name, this.mixer.clipAction(clip));
+      }
+      if (skipDeathClip) {
+        this.deathClip = prep.clips.get(prep.def.clips.death) ?? null;
       }
       this.mixer.addEventListener('finished', (ev) => this.onFinished(ev.action));
       recordBuildSpan('view-part:mixer', performance.now() - mixerStarted, mixerStarted);
@@ -1271,6 +1291,14 @@ export class CharacterVisual {
       // and frozen times are mixer INPUTS, unlike the additive lifts below).
       this.driveClimbClips();
       this.updateMixer(animationDt);
+      // Death model swap: advance the death model's mixer on the same dt so
+      // the DEAD clip plays at the same rate as the main body would. Only
+      // runs while the death model is visible (the entity is dead and close
+      // enough to animate; the far band shows the static far mesh instead).
+      if (this.deathModel?.visible && this.deathMixer) {
+        this.deathMixer.update(animationDt);
+        this.deathSkeletonUpdates?.markPoseChanged();
+      }
       // Held props with their own looping clip (the Ignivar legendaries'
       // engine idles) advance on the same hitstop-aware dt as the rig.
       // Gated on the far mesh ACTUALLY standing in, like updateWeaponVfx:
@@ -1310,7 +1338,10 @@ export class CharacterVisual {
   private syncDeathGrounding(dead: boolean): void {
     const finalOffset = this.def.deathGroundOffset ?? 0;
     if (finalOffset <= 0) return;
-    const death = this.action(this.def.clips.death);
+    // Death model swap: the death action lives on the death mixer, not the
+    // main mixer. Use it for the grounding offset so the death model sinks
+    // correctly as its DEAD clip plays.
+    const death = this.deathAction ?? this.action(this.def.clips.death);
     this.modelWrap.position.y =
       this.modelWrapGroundY -
       deathGroundingOffset(dead, death?.time ?? 0, death?.getClip().duration ?? 0, finalOffset);
@@ -1901,6 +1932,7 @@ export class CharacterVisual {
     if (on === this.shadowOn) return;
     this.shadowOn = on;
     for (const m of this.casters) m.castShadow = on;
+    for (const m of this.deathCasters) m.castShadow = on;
   }
 
   setProxyShadow(on: boolean): void {
@@ -3228,6 +3260,20 @@ export class CharacterVisual {
     this.mixer.stopAllAction();
     this.mixer.uncacheRoot(this.model);
     this.skeletonUpdates.dispose();
+    // Death model swap: release the death model's mixer, skeleton cache, and
+    // tinted-material leases. The death model shares the same tinted-material
+    // claims as the main body (buildDeathModel passes this.tintedRigClaims),
+    // so the claims release above already covers its materials; the skeletons
+    // are exclusive per clone and need their own release pass below.
+    if (this.deathMixer) {
+      this.deathMixer.stopAllAction();
+      this.deathMixer.uncacheRoot(this.deathModel!);
+      this.deathSkeletonUpdates?.dispose();
+      this.deathMixer = null;
+      this.deathSkeletonUpdates = null;
+      this.deathAction = null;
+      this.deathCasters.length = 0;
+    }
     this.root.removeFromParent();
     // SkeletonUtils.clone gives each instance exclusive Skeletons whose GPU
     // bone textures the renderer allocates lazily, release them here or
@@ -3240,6 +3286,14 @@ export class CharacterVisual {
       const sm = o as THREE.SkinnedMesh;
       if (sm.isSkinnedMesh && sm.skeleton) skeletons.add(sm.skeleton);
     });
+    // The death model's skeletons are exclusive per clone too (buildDeathModel
+    // clones from optimizedScene, same as the main body).
+    if (this.deathModel) {
+      this.deathModel.traverse((o) => {
+        const sm = o as THREE.SkinnedMesh;
+        if (sm.isSkinnedMesh && sm.skeleton) skeletons.add(sm.skeleton);
+      });
+    }
     for (const skeleton of skeletons) skeleton.dispose();
     // Give the composed part set back. It is the one shared cache entry that IS
     // reclaimable: keyed by the look rather than by the asset, so a populated
@@ -3793,6 +3847,15 @@ export class CharacterVisual {
     // per-frame update) since it only changes on the death/revive edge, and this
     // runs on every enterDeath path including the created-already-dead snapshot.
     this.clickProxy.scale.y = pickProxyHeight(this.height, this.clickRadius, true);
+
+    // Death model swap (VisualDef.deathModelUrl): the death GLB has its own
+    // skeleton, so play the DEAD clip on the death model's mixer instead of
+    // the main body's. The main model is hidden while dead; revive swaps back.
+    if (this.def.deathModelUrl && this.deathClip) {
+      this.enterDeathModelSwap();
+      return;
+    }
+
     const death = this.action(this.def.clips.death);
     if (!death) {
       // No death clip: the corpse holds whatever pose was driving it. dead-lock
@@ -3824,6 +3887,62 @@ export class CharacterVisual {
     this.current = death;
   }
 
+  /** Death model swap (VisualDef.deathModelUrl): hide the main body and play
+   *  the DEAD clip on the death model's own mixer. The death GLB has a
+   *  different skeleton, so the clip cannot be played on the main mixer.
+   *  The death model is built lazily on first death and reused thereafter;
+   *  revive() hides it and restores the main model. */
+  private enterDeathModelSwap(): void {
+    if (!this.deathModel) {
+      this.deathModel = buildDeathModel(
+        this.def,
+        this.entityColor,
+        skinTexture(this.key, this.skinIndex),
+        skinEmissiveTexture(this.key, this.skinIndex),
+        this.tintedRigClaims,
+      );
+      this.deathModel.visible = false;
+      this.modelWrap.add(this.deathModel);
+      this.deathMixer = new THREE.AnimationMixer(this.deathModel);
+      this.deathSkeletonUpdates = new SkeletonUpdateCache(this.deathModel);
+      this.deathModel.traverse((o) => {
+        const mesh = o as THREE.Mesh;
+        if (!mesh.isMesh) return;
+        const castsShadow = characterMeshCastsShadow(mesh);
+        mesh.castShadow = castsShadow && this.shadowOn;
+        mesh.receiveShadow = false;
+        if (castsShadow) {
+          const skinned = mesh as unknown as THREE.SkinnedMesh;
+          if (skinned.isSkinnedMesh) applySkinnedCullBounds(skinned, this.root, this.height);
+          this.deathCasters.push(mesh);
+        }
+      });
+    }
+
+    // Hide the main model and show the death model. The main model's mixer
+    // is left in place (its actions are paused by deadLock); revive() swaps
+    // back. The death model reuses the same modelWrap transform (yaw, scale,
+    // yOffset) so it lines up with the main body's ground anchor.
+    this.model.visible = false;
+    this.deathModel.visible = true;
+
+    const action = this.deathMixer!.clipAction(this.deathClip!);
+    action.reset();
+    action.setLoop(THREE.LoopOnce, 1);
+    action.clampWhenFinished = true;
+    action.timeScale = this.def.deathTimeScale ?? 1.15;
+    action.play();
+
+    if (!this.initialized) {
+      // created already-dead (corpse entering interest): snap to the end pose
+      action.time = Math.max(0, action.getClip().duration - 1e-3);
+      this.deathMixer!.update(0);
+      this.deathSkeletonUpdates!.markPoseChanged();
+    }
+
+    this.deathAction = action;
+  }
+
   private stopTemplarsVerdictFx(): void {
     this.templarsVerdictAction = null;
     this.templarsVerdictFx?.update(null, 0);
@@ -3839,6 +3958,17 @@ export class CharacterVisual {
     this.baseState = 'idle';
     this.modelWrap.position.y = this.modelWrapGroundY;
     this.applyCorpseMeshSwap(false);
+    // Death model swap: hide the death model and restore the main model. The
+    // death model's mixer is stopped (its action is a clamped one-shot); the
+    // main model's mixer resumes from the idle clip below.
+    if (this.deathModel) {
+      this.deathModel.visible = false;
+      this.model.visible = true;
+      if (this.deathAction) {
+        this.deathAction.stop();
+        this.deathAction = null;
+      }
+    }
     // Release the one-shot latch: a `finished` that never arrived (the rig was
     // throttled, or the clip was cut) would otherwise leave every later base
     // change committing its state while silently skipping its fade.
