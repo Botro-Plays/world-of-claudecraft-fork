@@ -1,0 +1,1923 @@
+{
+  "total": 319,
+  "ok": 318,
+  "fail": 1,
+  "skip": 0,
+  "elapsedSec": 154.9,
+  "results": [
+    {
+      "name": "Acero",
+      "status": "ok",
+      "glbSize": 2085572,
+      "durationMs": 616
+    },
+    {
+      "name": "Adevayo",
+      "status": "ok",
+      "glbSize": 629452,
+      "durationMs": 419
+    },
+    {
+      "name": "Amesyst",
+      "status": "ok",
+      "glbSize": 2302804,
+      "durationMs": 511
+    },
+    {
+      "name": "Amonk",
+      "status": "ok",
+      "glbSize": 2373444,
+      "durationMs": 516
+    },
+    {
+      "name": "AncientGolem",
+      "status": "ok",
+      "glbSize": 831104,
+      "durationMs": 397
+    },
+    {
+      "name": "Aragonian",
+      "status": "ok",
+      "glbSize": 7003608,
+      "durationMs": 817
+    },
+    {
+      "name": "Arhdyra",
+      "status": "ok",
+      "glbSize": 1968624,
+      "durationMs": 508
+    },
+    {
+      "name": "ArmBeetle",
+      "status": "ok",
+      "glbSize": 625520,
+      "durationMs": 397
+    },
+    {
+      "name": "BS_Midranda",
+      "status": "ok",
+      "glbSize": 3563632,
+      "durationMs": 564
+    },
+    {
+      "name": "BadWolf",
+      "status": "ok",
+      "glbSize": 2799500,
+      "durationMs": 594
+    },
+    {
+      "name": "Bear",
+      "status": "ok",
+      "glbSize": 1652852,
+      "durationMs": 505
+    },
+    {
+      "name": "Bebechick",
+      "status": "ok",
+      "glbSize": 500180,
+      "durationMs": 366
+    },
+    {
+      "name": "Beetle",
+      "status": "ok",
+      "glbSize": 633768,
+      "durationMs": 371
+    },
+    {
+      "name": "Bguardian",
+      "status": "ok",
+      "glbSize": 2427948,
+      "durationMs": 482
+    },
+    {
+      "name": "Billy",
+      "status": "ok",
+      "glbSize": 1145680,
+      "durationMs": 477
+    },
+    {
+      "name": "Billy_s",
+      "status": "ok",
+      "glbSize": 1177560,
+      "durationMs": 527
+    },
+    {
+      "name": "Bloodyknight",
+      "status": "ok",
+      "glbSize": 1562024,
+      "durationMs": 445
+    },
+    {
+      "name": "Boitata",
+      "status": "ok",
+      "glbSize": 2029336,
+      "durationMs": 458
+    },
+    {
+      "name": "Brazilbear",
+      "status": "ok",
+      "glbSize": 1675544,
+      "durationMs": 434
+    },
+    {
+      "name": "Bsnake",
+      "status": "ok",
+      "glbSize": 329488,
+      "durationMs": 331
+    },
+    {
+      "name": "Buma",
+      "status": "ok",
+      "glbSize": 558472,
+      "durationMs": 366
+    },
+    {
+      "name": "Bydream",
+      "status": "ok",
+      "glbSize": 5030712,
+      "durationMs": 584
+    },
+    {
+      "name": "CaveMush",
+      "status": "ok",
+      "glbSize": 588776,
+      "durationMs": 411
+    },
+    {
+      "name": "Chaingolem",
+      "status": "ok",
+      "glbSize": 581684,
+      "durationMs": 378
+    },
+    {
+      "name": "Chalybs",
+      "status": "ok",
+      "glbSize": 2087648,
+      "durationMs": 487
+    },
+    {
+      "name": "Chimera",
+      "status": "ok",
+      "glbSize": 1227284,
+      "durationMs": 436
+    },
+    {
+      "name": "Coma",
+      "status": "ok",
+      "glbSize": 503904,
+      "durationMs": 350
+    },
+    {
+      "name": "Crios",
+      "status": "ok",
+      "glbSize": 2142388,
+      "durationMs": 484
+    },
+    {
+      "name": "Crow",
+      "status": "ok",
+      "glbSize": 269204,
+      "durationMs": 456
+    },
+    {
+      "name": "CrystalWrath",
+      "status": "ok",
+      "glbSize": 2845332,
+      "durationMs": 563
+    },
+    {
+      "name": "Cstone",
+      "status": "ok",
+      "glbSize": 183572,
+      "durationMs": 346
+    },
+    {
+      "name": "DarkStalker",
+      "status": "ok",
+      "glbSize": 1069580,
+      "durationMs": 392
+    },
+    {
+      "name": "Darkguard",
+      "status": "ok",
+      "glbSize": 1196948,
+      "durationMs": 409
+    },
+    {
+      "name": "Darkmage",
+      "status": "ok",
+      "glbSize": 1077464,
+      "durationMs": 417
+    },
+    {
+      "name": "Darkphalanx",
+      "status": "ok",
+      "glbSize": 2753276,
+      "durationMs": 563
+    },
+    {
+      "name": "Deadhopy",
+      "status": "ok",
+      "glbSize": 289316,
+      "durationMs": 328
+    },
+    {
+      "name": "Deadkinghopy",
+      "status": "ok",
+      "glbSize": 554320,
+      "durationMs": 425
+    },
+    {
+      "name": "DevilShy",
+      "status": "ok",
+      "glbSize": 2449292,
+      "durationMs": 474
+    },
+    {
+      "name": "Dey",
+      "status": "ok",
+      "glbSize": 2274916,
+      "durationMs": 513
+    },
+    {
+      "name": "Domina",
+      "status": "ok",
+      "glbSize": 5774416,
+      "durationMs": 697
+    },
+    {
+      "name": "Draxos",
+      "status": "ok",
+      "glbSize": 2474080,
+      "durationMs": 479
+    },
+    {
+      "name": "Duardian",
+      "status": "ok",
+      "glbSize": 1665128,
+      "durationMs": 460
+    },
+    {
+      "name": "EvilMaple",
+      "status": "ok",
+      "glbSize": 716860,
+      "durationMs": 404
+    },
+    {
+      "name": "EvilPlant",
+      "status": "ok",
+      "glbSize": 711620,
+      "durationMs": 387
+    },
+    {
+      "name": "EvilSpirit",
+      "status": "ok",
+      "glbSize": 399932,
+      "durationMs": 353
+    },
+    {
+      "name": "FPTCrystal",
+      "status": "ok",
+      "glbSize": 1885500,
+      "durationMs": 518
+    },
+    {
+      "name": "Faugn",
+      "status": "ok",
+      "glbSize": 1565200,
+      "durationMs": 509
+    },
+    {
+      "name": "Firechick",
+      "status": "ok",
+      "glbSize": 1743552,
+      "durationMs": 432
+    },
+    {
+      "name": "Firegolem",
+      "status": "ok",
+      "glbSize": 479648,
+      "durationMs": 387
+    },
+    {
+      "name": "Fireworm",
+      "status": "ok",
+      "glbSize": 836760,
+      "durationMs": 396
+    },
+    {
+      "name": "FlameMaiden",
+      "status": "ok",
+      "glbSize": 2794808,
+      "durationMs": 539
+    },
+    {
+      "name": "Flamo",
+      "status": "ok",
+      "glbSize": 3283588,
+      "durationMs": 528
+    },
+    {
+      "name": "G_Pig",
+      "status": "ok",
+      "glbSize": 542744,
+      "durationMs": 390
+    },
+    {
+      "name": "G_Wolverin",
+      "status": "ok",
+      "glbSize": 984884,
+      "durationMs": 394
+    },
+    {
+      "name": "Gem",
+      "status": "ok",
+      "glbSize": 3818948,
+      "durationMs": 574
+    },
+    {
+      "name": "GoblinShaman",
+      "status": "ok",
+      "glbSize": 1692496,
+      "durationMs": 435
+    },
+    {
+      "name": "Golem",
+      "status": "ok",
+      "glbSize": 572532,
+      "durationMs": 352
+    },
+    {
+      "name": "Grangium",
+      "status": "ok",
+      "glbSize": 2194616,
+      "durationMs": 459
+    },
+    {
+      "name": "Great_Greven",
+      "status": "ok",
+      "glbSize": 723356,
+      "durationMs": 382
+    },
+    {
+      "name": "Greedy",
+      "status": "ok",
+      "glbSize": 4565040,
+      "durationMs": 659
+    },
+    {
+      "name": "GreySnow",
+      "status": "ok",
+      "glbSize": 2084736,
+      "durationMs": 502
+    },
+    {
+      "name": "Grotesque",
+      "status": "ok",
+      "glbSize": 989372,
+      "durationMs": 415
+    },
+    {
+      "name": "Guardian",
+      "status": "ok",
+      "glbSize": 1688560,
+      "durationMs": 439
+    },
+    {
+      "name": "Gurkob",
+      "status": "ok",
+      "glbSize": 1437680,
+      "durationMs": 441
+    },
+    {
+      "name": "HellPlant",
+      "status": "ok",
+      "glbSize": 1115476,
+      "durationMs": 427
+    },
+    {
+      "name": "Hest",
+      "status": "ok",
+      "glbSize": 2139572,
+      "durationMs": 483
+    },
+    {
+      "name": "Hestian",
+      "status": "ok",
+      "glbSize": 1334060,
+      "durationMs": 428
+    },
+    {
+      "name": "Hound",
+      "status": "ok",
+      "glbSize": 1229604,
+      "durationMs": 494
+    },
+    {
+      "name": "Hound_s",
+      "status": "ok",
+      "glbSize": 1255808,
+      "durationMs": 507
+    },
+    {
+      "name": "Hyper",
+      "status": "ok",
+      "glbSize": 889948,
+      "durationMs": 439
+    },
+    {
+      "name": "IBomber",
+      "status": "ok",
+      "glbSize": 1457760,
+      "durationMs": 461
+    },
+    {
+      "name": "IElite",
+      "status": "ok",
+      "glbSize": 2196952,
+      "durationMs": 532
+    },
+    {
+      "name": "ISoldier",
+      "status": "ok",
+      "glbSize": 1642744,
+      "durationMs": 608
+    },
+    {
+      "name": "ITechnician",
+      "status": "ok",
+      "glbSize": 1274520,
+      "durationMs": 437
+    },
+    {
+      "name": "IceSerpent",
+      "status": "ok",
+      "glbSize": 3094108,
+      "durationMs": 555
+    },
+    {
+      "name": "IceWorm",
+      "status": "ok",
+      "glbSize": 967464,
+      "durationMs": 402
+    },
+    {
+      "name": "Igniculus",
+      "status": "ok",
+      "glbSize": 1438668,
+      "durationMs": 462
+    },
+    {
+      "name": "Ignis",
+      "status": "ok",
+      "glbSize": 2110388,
+      "durationMs": 507
+    },
+    {
+      "name": "Igolation",
+      "status": "ok",
+      "glbSize": 2362188,
+      "durationMs": 531
+    },
+    {
+      "name": "Incubussummer",
+      "status": "ok",
+      "glbSize": 610596,
+      "durationMs": 379
+    },
+    {
+      "name": "Insec",
+      "status": "ok",
+      "glbSize": 1941008,
+      "durationMs": 558
+    },
+    {
+      "name": "Kakoa",
+      "status": "ok",
+      "glbSize": 1642768,
+      "durationMs": 456
+    },
+    {
+      "name": "Kelvezu",
+      "status": "ok",
+      "glbSize": 1916664,
+      "durationMs": 526
+    },
+    {
+      "name": "KhanDoor",
+      "status": "ok",
+      "glbSize": 305444,
+      "durationMs": 359
+    },
+    {
+      "name": "KingBat",
+      "status": "ok",
+      "glbSize": 759996,
+      "durationMs": 390
+    },
+    {
+      "name": "Koon",
+      "status": "ok",
+      "glbSize": 2582176,
+      "durationMs": 501
+    },
+    {
+      "name": "Korpion",
+      "status": "ok",
+      "glbSize": 3870296,
+      "durationMs": 603
+    },
+    {
+      "name": "LEngineer",
+      "status": "ok",
+      "glbSize": 1371652,
+      "durationMs": 472
+    },
+    {
+      "name": "LEngineer_1",
+      "status": "ok",
+      "glbSize": 662376,
+      "durationMs": 417
+    },
+    {
+      "name": "LGuardian",
+      "status": "ok",
+      "glbSize": 1612276,
+      "durationMs": 491
+    },
+    {
+      "name": "LLTiger",
+      "status": "ok",
+      "glbSize": 869212,
+      "durationMs": 416
+    },
+    {
+      "name": "LTechnician",
+      "status": "ok",
+      "glbSize": 1196904,
+      "durationMs": 448
+    },
+    {
+      "name": "LTechnician_1",
+      "status": "ok",
+      "glbSize": 1092896,
+      "durationMs": 418
+    },
+    {
+      "name": "LastBoss",
+      "status": "ok",
+      "glbSize": 3260804,
+      "durationMs": 571
+    },
+    {
+      "name": "LastRachikion",
+      "status": "ok",
+      "glbSize": 3713344,
+      "durationMs": 607
+    },
+    {
+      "name": "LastSkelet",
+      "status": "ok",
+      "glbSize": 2199508,
+      "durationMs": 541
+    },
+    {
+      "name": "LastVampire",
+      "status": "ok",
+      "glbSize": 4276308,
+      "durationMs": 696
+    },
+    {
+      "name": "LavaArcher",
+      "status": "ok",
+      "glbSize": 3876020,
+      "durationMs": 632
+    },
+    {
+      "name": "LavaArmor",
+      "status": "ok",
+      "glbSize": 4094724,
+      "durationMs": 700
+    },
+    {
+      "name": "LavaGiant",
+      "status": "ok",
+      "glbSize": 4852136,
+      "durationMs": 755
+    },
+    {
+      "name": "LavaGolem",
+      "status": "ok",
+      "glbSize": 2782296,
+      "durationMs": 557
+    },
+    {
+      "name": "Lena",
+      "status": "ok",
+      "glbSize": 1319828,
+      "durationMs": 623
+    },
+    {
+      "name": "Lena_s",
+      "status": "ok",
+      "glbSize": 1298292,
+      "durationMs": 652
+    },
+    {
+      "name": "LizardDoor",
+      "status": "ok",
+      "glbSize": 473824,
+      "durationMs": 402
+    },
+    {
+      "name": "Lizard_Commander",
+      "status": "ok",
+      "glbSize": 2791772,
+      "durationMs": 595
+    },
+    {
+      "name": "Lizard_Doctor",
+      "status": "ok",
+      "glbSize": 1786884,
+      "durationMs": 517
+    },
+    {
+      "name": "Lizard_Elder",
+      "status": "ok",
+      "glbSize": 2008732,
+      "durationMs": 558
+    },
+    {
+      "name": "Lizard_Papa",
+      "status": "ok",
+      "glbSize": 1900616,
+      "durationMs": 552
+    },
+    {
+      "name": "Lizard_Soldier",
+      "status": "ok",
+      "glbSize": 2326956,
+      "durationMs": 749
+    },
+    {
+      "name": "Lizard_bigmama",
+      "status": "ok",
+      "glbSize": 2648536,
+      "durationMs": 581
+    },
+    {
+      "name": "MapleFairy",
+      "status": "ok",
+      "glbSize": 1281816,
+      "durationMs": 477
+    },
+    {
+      "name": "MapleTree",
+      "status": "ok",
+      "glbSize": 136668,
+      "durationMs": 323
+    },
+    {
+      "name": "Marionette_s",
+      "status": "ok",
+      "glbSize": 1305960,
+      "durationMs": 703
+    },
+    {
+      "name": "Marterum",
+      "status": "ok",
+      "glbSize": 7144768,
+      "durationMs": 718
+    },
+    {
+      "name": "Mell",
+      "status": "ok",
+      "glbSize": 3172120,
+      "durationMs": 566
+    },
+    {
+      "name": "Metalgolem",
+      "status": "ok",
+      "glbSize": 1412612,
+      "durationMs": 449
+    },
+    {
+      "name": "Midranda",
+      "status": "ok",
+      "glbSize": 3565064,
+      "durationMs": 610
+    },
+    {
+      "name": "Mimic",
+      "status": "ok",
+      "glbSize": 664024,
+      "durationMs": 393
+    },
+    {
+      "name": "Minebat",
+      "status": "ok",
+      "glbSize": 2138048,
+      "durationMs": 509
+    },
+    {
+      "name": "Minegolem",
+      "status": "ok",
+      "glbSize": 1350132,
+      "durationMs": 480
+    },
+    {
+      "name": "MireKeeper",
+      "status": "ok",
+      "glbSize": 732020,
+      "durationMs": 412
+    },
+    {
+      "name": "MonGknight",
+      "status": "ok",
+      "glbSize": 1112220,
+      "durationMs": 545
+    },
+    {
+      "name": "MonGreven",
+      "status": "ok",
+      "glbSize": 703720,
+      "durationMs": 395
+    },
+    {
+      "name": "MonKingspider",
+      "status": "ok",
+      "glbSize": 1412136,
+      "durationMs": 538
+    },
+    {
+      "name": "MonMokova",
+      "status": "ok",
+      "glbSize": 1726188,
+      "durationMs": 479
+    },
+    {
+      "name": "MonSArcher",
+      "status": "ok",
+      "glbSize": 1020960,
+      "durationMs": 385
+    },
+    {
+      "name": "MonSGuard",
+      "status": "ok",
+      "glbSize": 1578344,
+      "durationMs": 425
+    },
+    {
+      "name": "MonSKnight",
+      "status": "ok",
+      "glbSize": 1003332,
+      "durationMs": 471
+    },
+    {
+      "name": "MonSRazorArcher",
+      "status": "ok",
+      "glbSize": 1056464,
+      "durationMs": 490
+    },
+    {
+      "name": "MonSWarrior",
+      "status": "ok",
+      "glbSize": 1189956,
+      "durationMs": 490
+    },
+    {
+      "name": "MonSeto",
+      "status": "ok",
+      "glbSize": 1002216,
+      "durationMs": 450
+    },
+    {
+      "name": "MonTempleguard",
+      "status": "ok",
+      "glbSize": 1687988,
+      "durationMs": 448
+    },
+    {
+      "name": "MonWolverin",
+      "status": "ok",
+      "glbSize": 1332196,
+      "durationMs": 499
+    },
+    {
+      "name": "Monavellriskbow",
+      "status": "ok",
+      "glbSize": 1238604,
+      "durationMs": 479
+    },
+    {
+      "name": "Monavellriskstf",
+      "status": "ok",
+      "glbSize": 1274448,
+      "durationMs": 462
+    },
+    {
+      "name": "Monavelrisk",
+      "status": "ok",
+      "glbSize": 955580,
+      "durationMs": 447
+    },
+    {
+      "name": "Monbabyhulk",
+      "status": "ok",
+      "glbSize": 532628,
+      "durationMs": 424
+    },
+    {
+      "name": "Monbagon",
+      "status": "ok",
+      "glbSize": 585976,
+      "durationMs": 532
+    },
+    {
+      "name": "Monbeechief",
+      "status": "ok",
+      "glbSize": 610028,
+      "durationMs": 403
+    },
+    {
+      "name": "Monbeedog",
+      "status": "ok",
+      "glbSize": 730976,
+      "durationMs": 421
+    },
+    {
+      "name": "Monberserker",
+      "status": "ok",
+      "glbSize": 1069416,
+      "durationMs": 498
+    },
+    {
+      "name": "Monburntree",
+      "status": "ok",
+      "glbSize": 366932,
+      "durationMs": 430
+    },
+    {
+      "name": "Moncavemummy",
+      "status": "ok",
+      "glbSize": 873096,
+      "durationMs": 440
+    },
+    {
+      "name": "Monclip",
+      "status": "ok",
+      "glbSize": 582240,
+      "durationMs": 533
+    },
+    {
+      "name": "Moncyclops",
+      "status": "ok",
+      "glbSize": 593028,
+      "durationMs": 406
+    },
+    {
+      "name": "Mondawlin",
+      "status": "ok",
+      "glbSize": 833400,
+      "durationMs": 445
+    },
+    {
+      "name": "Mondirebee",
+      "status": "ok",
+      "glbSize": 592936,
+      "durationMs": 409
+    },
+    {
+      "name": "Mondmachine",
+      "status": "ok",
+      "glbSize": 599520,
+      "durationMs": 407
+    },
+    {
+      "name": "Monegan",
+      "status": "ok",
+      "glbSize": 669120,
+      "durationMs": 412
+    },
+    {
+      "name": "Moneye",
+      "status": "ok",
+      "glbSize": 117672,
+      "durationMs": 332
+    },
+    {
+      "name": "Monfury",
+      "status": "ok",
+      "glbSize": 2106712,
+      "durationMs": 571
+    },
+    {
+      "name": "Monhauntplant",
+      "status": "ok",
+      "glbSize": 775828,
+      "durationMs": 418
+    },
+    {
+      "name": "Monheavygoblin",
+      "status": "ok",
+      "glbSize": 1008220,
+      "durationMs": 467
+    },
+    {
+      "name": "Monhobgoblin",
+      "status": "ok",
+      "glbSize": 761188,
+      "durationMs": 423
+    },
+    {
+      "name": "Monhobsanta",
+      "status": "ok",
+      "glbSize": 461208,
+      "durationMs": 400
+    },
+    {
+      "name": "Monhulk",
+      "status": "ok",
+      "glbSize": 750352,
+      "durationMs": 428
+    },
+    {
+      "name": "Monhulk-1",
+      "status": "ok",
+      "glbSize": 747688,
+      "durationMs": 455
+    },
+    {
+      "name": "Monigad",
+      "status": "ok",
+      "glbSize": 722088,
+      "durationMs": 505
+    },
+    {
+      "name": "Monimp",
+      "status": "ok",
+      "glbSize": 1346384,
+      "durationMs": 457
+    },
+    {
+      "name": "Monmetron",
+      "status": "ok",
+      "glbSize": 741668,
+      "durationMs": 422
+    },
+    {
+      "name": "Monmightygoblin",
+      "status": "ok",
+      "glbSize": 1113520,
+      "durationMs": 453
+    },
+    {
+      "name": "MonminiG",
+      "status": "ok",
+      "glbSize": 243396,
+      "durationMs": 407
+    },
+    {
+      "name": "Monmudy",
+      "status": "ok",
+      "glbSize": 435624,
+      "durationMs": 435
+    },
+    {
+      "name": "Monmummy",
+      "status": "ok",
+      "glbSize": 795500,
+      "durationMs": 504
+    },
+    {
+      "name": "Monmushroom",
+      "status": "ok",
+      "glbSize": 172276,
+      "durationMs": 385
+    },
+    {
+      "name": "Monmushroom-mo",
+      "status": "ok",
+      "glbSize": 183324,
+      "durationMs": 368
+    },
+    {
+      "name": "Monnazz",
+      "status": "ok",
+      "glbSize": 636980,
+      "durationMs": 429
+    },
+    {
+      "name": "Monnazz-1",
+      "status": "ok",
+      "glbSize": 642148,
+      "durationMs": 426
+    },
+    {
+      "name": "Monomicron",
+      "status": "ok",
+      "glbSize": 762712,
+      "durationMs": 422
+    },
+    {
+      "name": "Monomicron-1",
+      "status": "ok",
+      "glbSize": 765064,
+      "durationMs": 427
+    },
+    {
+      "name": "Monplant",
+      "status": "ok",
+      "glbSize": 585856,
+      "durationMs": 386
+    },
+    {
+      "name": "Monrafra",
+      "status": "ok",
+      "glbSize": 548780,
+      "durationMs": 380
+    },
+    {
+      "name": "Monratoo",
+      "status": "ok",
+      "glbSize": 724780,
+      "durationMs": 408
+    },
+    {
+      "name": "Monratoo-1",
+      "status": "ok",
+      "glbSize": 782548,
+      "durationMs": 471
+    },
+    {
+      "name": "Monrebi",
+      "status": "ok",
+      "glbSize": 254172,
+      "durationMs": 383
+    },
+    {
+      "name": "Monrebion",
+      "status": "ok",
+      "glbSize": 401400,
+      "durationMs": 410
+    },
+    {
+      "name": "Monsen",
+      "status": "ok",
+      "glbSize": 523108,
+      "durationMs": 383
+    },
+    {
+      "name": "Monshadow",
+      "status": "ok",
+      "glbSize": 576112,
+      "durationMs": 416
+    },
+    {
+      "name": "Monshadow-1",
+      "status": "ok",
+      "glbSize": 810932,
+      "durationMs": 442
+    },
+    {
+      "name": "Monskeleton",
+      "status": "ok",
+      "glbSize": 771772,
+      "durationMs": 428
+    },
+    {
+      "name": "Monsliver",
+      "status": "ok",
+      "glbSize": 615804,
+      "durationMs": 412
+    },
+    {
+      "name": "Monstonegolem",
+      "status": "ok",
+      "glbSize": 987536,
+      "durationMs": 455
+    },
+    {
+      "name": "Monstygianlord",
+      "status": "ok",
+      "glbSize": 651784,
+      "durationMs": 447
+    },
+    {
+      "name": "Monstygianlord-1",
+      "status": "ok",
+      "glbSize": 656328,
+      "durationMs": 468
+    },
+    {
+      "name": "Monthorncrowler",
+      "status": "ok",
+      "glbSize": 686152,
+      "durationMs": 408
+    },
+    {
+      "name": "Monwitch",
+      "status": "ok",
+      "glbSize": 842004,
+      "durationMs": 455
+    },
+    {
+      "name": "Monzombi",
+      "status": "ok",
+      "glbSize": 498368,
+      "durationMs": 422
+    },
+    {
+      "name": "Morgon",
+      "status": "ok",
+      "glbSize": 1402324,
+      "durationMs": 508
+    },
+    {
+      "name": "Moros",
+      "status": "ok",
+      "glbSize": 3890368,
+      "durationMs": 622
+    },
+    {
+      "name": "Mountain",
+      "status": "ok",
+      "glbSize": 1573076,
+      "durationMs": 444
+    },
+    {
+      "name": "Mouse",
+      "status": "ok",
+      "glbSize": 181744,
+      "durationMs": 351
+    },
+    {
+      "name": "Mystic",
+      "status": "ok",
+      "glbSize": 317208,
+      "durationMs": 431
+    },
+    {
+      "name": "Najan",
+      "status": "ok",
+      "glbSize": 1954300,
+      "durationMs": 495
+    },
+    {
+      "name": "NazSenior",
+      "status": "ok",
+      "glbSize": 634876,
+      "durationMs": 437
+    },
+    {
+      "name": "Nihil",
+      "status": "ok",
+      "glbSize": 2000296,
+      "durationMs": 539
+    },
+    {
+      "name": "Niken",
+      "status": "ok",
+      "glbSize": 1016856,
+      "durationMs": 453
+    },
+    {
+      "name": "Oblanko",
+      "status": "ok",
+      "glbSize": 6655860,
+      "durationMs": 803
+    },
+    {
+      "name": "Omicronos",
+      "status": "ok",
+      "glbSize": 1252456,
+      "durationMs": 464
+    },
+    {
+      "name": "PaPachick",
+      "status": "ok",
+      "glbSize": 1747216,
+      "durationMs": 493
+    },
+    {
+      "name": "Perma",
+      "status": "ok",
+      "glbSize": 3797088,
+      "durationMs": 769
+    },
+    {
+      "name": "PumpkinGhost",
+      "status": "ok",
+      "glbSize": 1681988,
+      "durationMs": 576
+    },
+    {
+      "name": "QuartzBat",
+      "status": "ok",
+      "glbSize": 5175216,
+      "durationMs": 761
+    },
+    {
+      "name": "QuartzSaurus",
+      "status": "ok",
+      "glbSize": 3038460,
+      "durationMs": 621
+    },
+    {
+      "name": "Raeda",
+      "status": "ok",
+      "glbSize": 6686604,
+      "durationMs": 899
+    },
+    {
+      "name": "Rampage",
+      "status": "ok",
+      "glbSize": 1295756,
+      "durationMs": 526
+    },
+    {
+      "name": "Ribbonhopy",
+      "status": "ok",
+      "glbSize": 204056,
+      "durationMs": 393
+    },
+    {
+      "name": "Roblanko",
+      "status": "ok",
+      "glbSize": 7179980,
+      "durationMs": 840
+    },
+    {
+      "name": "RoyalMummy",
+      "status": "ok",
+      "glbSize": 852416,
+      "durationMs": 405
+    },
+    {
+      "name": "Ruca",
+      "status": "ok",
+      "glbSize": 745840,
+      "durationMs": 411
+    },
+    {
+      "name": "RunicGuardian",
+      "status": "ok",
+      "glbSize": 1378800,
+      "durationMs": 483
+    },
+    {
+      "name": "S_Bloodyknight",
+      "status": "ok",
+      "glbSize": 1625344,
+      "durationMs": 503
+    },
+    {
+      "name": "Sadness",
+      "status": "ok",
+      "glbSize": 1009416,
+      "durationMs": 499
+    },
+    {
+      "name": "Sakura",
+      "status": "ok",
+      "glbSize": 403040,
+      "durationMs": 402
+    },
+    {
+      "name": "Samsara",
+      "status": "ok",
+      "glbSize": 9396196,
+      "durationMs": 1024
+    },
+    {
+      "name": "Sathla",
+      "status": "ok",
+      "glbSize": 2390432,
+      "durationMs": 540
+    },
+    {
+      "name": "SealCrasher",
+      "status": "ok",
+      "glbSize": 814404,
+      "durationMs": 509
+    },
+    {
+      "name": "Sendelost",
+      "status": "ok",
+      "glbSize": 682160,
+      "durationMs": 503
+    },
+    {
+      "name": "Shogoth",
+      "status": "ok",
+      "glbSize": 2183884,
+      "durationMs": 541
+    },
+    {
+      "name": "Slayer",
+      "status": "ok",
+      "glbSize": 774908,
+      "durationMs": 414
+    },
+    {
+      "name": "Snowman",
+      "status": "ok",
+      "glbSize": 1709916,
+      "durationMs": 478
+    },
+    {
+      "name": "Soldier_A",
+      "status": "ok",
+      "glbSize": 789792,
+      "durationMs": 502
+    },
+    {
+      "name": "Soldier_B",
+      "status": "ok",
+      "glbSize": 907696,
+      "durationMs": 560
+    },
+    {
+      "name": "Soldier_C",
+      "status": "ok",
+      "glbSize": 1069556,
+      "durationMs": 535
+    },
+    {
+      "name": "Soldier_D",
+      "status": "ok",
+      "glbSize": 1191992,
+      "durationMs": 578
+    },
+    {
+      "name": "Sprin",
+      "status": "ok",
+      "glbSize": 851548,
+      "durationMs": 455
+    },
+    {
+      "name": "Sylers",
+      "status": "ok",
+      "glbSize": 4737296,
+      "durationMs": 653
+    },
+    {
+      "name": "TBomber",
+      "status": "ok",
+      "glbSize": 1751436,
+      "durationMs": 535
+    },
+    {
+      "name": "TElite",
+      "status": "ok",
+      "glbSize": 2274332,
+      "durationMs": 578
+    },
+    {
+      "name": "TSoldier",
+      "status": "ok",
+      "glbSize": 2045144,
+      "durationMs": 829
+    },
+    {
+      "name": "TTechnician",
+      "status": "ok",
+      "glbSize": 1668124,
+      "durationMs": 556
+    },
+    {
+      "name": "Tarantulika",
+      "status": "ok",
+      "glbSize": 1463564,
+      "durationMs": 553
+    },
+    {
+      "name": "Tees",
+      "status": "ok",
+      "glbSize": 1687760,
+      "durationMs": 508
+    },
+    {
+      "name": "Toos",
+      "status": "ok",
+      "glbSize": 3563344,
+      "durationMs": 726
+    },
+    {
+      "name": "TowerGolem",
+      "status": "ok",
+      "glbSize": 585216,
+      "durationMs": 432
+    },
+    {
+      "name": "Tulla",
+      "status": "ok",
+      "glbSize": 2522552,
+      "durationMs": 636
+    },
+    {
+      "name": "UndeadManager",
+      "status": "ok",
+      "glbSize": 1464800,
+      "durationMs": 484
+    },
+    {
+      "name": "UndeadMaple",
+      "status": "ok",
+      "glbSize": 1557392,
+      "durationMs": 548
+    },
+    {
+      "name": "UndeadMiner",
+      "status": "ok",
+      "glbSize": 1759636,
+      "durationMs": 450
+    },
+    {
+      "name": "UndeadSlave",
+      "status": "ok",
+      "glbSize": 3483456,
+      "durationMs": 618
+    },
+    {
+      "name": "UndeadStalker",
+      "status": "ok",
+      "glbSize": 1417072,
+      "durationMs": 685
+    },
+    {
+      "name": "UndeadStalker_s",
+      "status": "ok",
+      "glbSize": 1403020,
+      "durationMs": 643
+    },
+    {
+      "name": "V_bee",
+      "status": "ok",
+      "glbSize": 676044,
+      "durationMs": 487
+    },
+    {
+      "name": "Vampiric",
+      "status": "ok",
+      "glbSize": 786072,
+      "durationMs": 435
+    },
+    {
+      "name": "VampiricBat",
+      "status": "ok",
+      "glbSize": 488828,
+      "durationMs": 436
+    },
+    {
+      "name": "Virdom",
+      "status": "ok",
+      "glbSize": 4879792,
+      "durationMs": 655
+    },
+    {
+      "name": "WLord",
+      "status": "ok",
+      "glbSize": 2069892,
+      "durationMs": 539
+    },
+    {
+      "name": "Web",
+      "status": "ok",
+      "glbSize": 636504,
+      "durationMs": 395
+    },
+    {
+      "name": "Wolverin",
+      "status": "ok",
+      "glbSize": 983276,
+      "durationMs": 431
+    },
+    {
+      "name": "Xetan",
+      "status": "ok",
+      "glbSize": 1236476,
+      "durationMs": 473
+    },
+    {
+      "name": "Yagditha",
+      "status": "ok",
+      "glbSize": 3065164,
+      "durationMs": 574
+    },
+    {
+      "name": "Ziddane",
+      "status": "ok",
+      "glbSize": 671956,
+      "durationMs": 457
+    },
+    {
+      "name": "arcuda",
+      "status": "ok",
+      "glbSize": 1194280,
+      "durationMs": 464
+    },
+    {
+      "name": "bal_crystal",
+      "status": "ok",
+      "glbSize": 150500,
+      "durationMs": 434
+    },
+    {
+      "name": "blizzardgiant",
+      "status": "ok",
+      "glbSize": 654396,
+      "durationMs": 396
+    },
+    {
+      "name": "castledoor",
+      "status": "ok",
+      "glbSize": 1077352,
+      "durationMs": 453
+    },
+    {
+      "name": "chaoscara",
+      "status": "ok",
+      "glbSize": 1166284,
+      "durationMs": 438
+    },
+    {
+      "name": "cokris",
+      "status": "ok",
+      "glbSize": 631960,
+      "durationMs": 400
+    },
+    {
+      "name": "coldeye",
+      "status": "ok",
+      "glbSize": 668552,
+      "durationMs": 403
+    },
+    {
+      "name": "cyclopswarrior",
+      "status": "ok",
+      "glbSize": 837956,
+      "durationMs": 473
+    },
+    {
+      "name": "d_ar",
+      "status": "ok",
+      "glbSize": 1435464,
+      "durationMs": 541
+    },
+    {
+      "name": "d_atal",
+      "status": "ok",
+      "glbSize": 1522024,
+      "durationMs": 556
+    },
+    {
+      "name": "d_fi",
+      "status": "ok",
+      "glbSize": 1644164,
+      "durationMs": 607
+    },
+    {
+      "name": "d_kn",
+      "status": "ok",
+      "glbSize": 1779808,
+      "durationMs": 565
+    },
+    {
+      "name": "d_magi",
+      "status": "ok",
+      "glbSize": 1624800,
+      "durationMs": 483
+    },
+    {
+      "name": "d_meca",
+      "status": "ok",
+      "glbSize": 2043904,
+      "durationMs": 567
+    },
+    {
+      "name": "d_pa",
+      "status": "ok",
+      "glbSize": 1811012,
+      "durationMs": 594
+    },
+    {
+      "name": "d_pr",
+      "status": "ok",
+      "glbSize": 1405240,
+      "durationMs": 487
+    },
+    {
+      "name": "deadzone",
+      "status": "ok",
+      "glbSize": 1095084,
+      "durationMs": 456
+    },
+    {
+      "name": "death_knight",
+      "status": "ok",
+      "glbSize": 1435192,
+      "durationMs": 494
+    },
+    {
+      "name": "death_night",
+      "status": "ok",
+      "glbSize": 1170960,
+      "durationMs": 468
+    },
+    {
+      "name": "decoy",
+      "status": "ok",
+      "glbSize": 419180,
+      "durationMs": 381
+    },
+    {
+      "name": "devilbird",
+      "status": "ok",
+      "glbSize": 877796,
+      "durationMs": 444
+    },
+    {
+      "name": "doral",
+      "status": "ok",
+      "glbSize": 418688,
+      "durationMs": 400
+    },
+    {
+      "name": "esnail",
+      "status": "ok",
+      "glbSize": 651300,
+      "durationMs": 395
+    },
+    {
+      "name": "figon",
+      "status": "ok",
+      "glbSize": 533684,
+      "durationMs": 458
+    },
+    {
+      "name": "firegremlin",
+      "status": "fail",
+      "error": "    at ModuleJob.run (node:internal/modules/esm/module_job:437:25) |     at async node:internal/modules/esm/loader:642:26 |     at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)",
+      "durationMs": 350
+    },
+    {
+      "name": "frost",
+      "status": "ok",
+      "glbSize": 1003124,
+      "durationMs": 435
+    },
+    {
+      "name": "frozen",
+      "status": "ok",
+      "glbSize": 712328,
+      "durationMs": 412
+    },
+    {
+      "name": "ghost",
+      "status": "ok",
+      "glbSize": 470648,
+      "durationMs": 360
+    },
+    {
+      "name": "goblinchief",
+      "status": "ok",
+      "glbSize": 1050720,
+      "durationMs": 444
+    },
+    {
+      "name": "gorgon",
+      "status": "ok",
+      "glbSize": 1559148,
+      "durationMs": 526
+    },
+    {
+      "name": "hammer_decoy",
+      "status": "ok",
+      "glbSize": 538224,
+      "durationMs": 423
+    },
+    {
+      "name": "hammer_goblin",
+      "status": "ok",
+      "glbSize": 703164,
+      "durationMs": 399
+    },
+    {
+      "name": "hammer_plant",
+      "status": "ok",
+      "glbSize": 901932,
+      "durationMs": 413
+    },
+    {
+      "name": "headcut",
+      "status": "ok",
+      "glbSize": 1057720,
+      "durationMs": 444
+    },
+    {
+      "name": "hellhound",
+      "status": "ok",
+      "glbSize": 894584,
+      "durationMs": 401
+    },
+    {
+      "name": "hobogolem",
+      "status": "ok",
+      "glbSize": 1882464,
+      "durationMs": 545
+    },
+    {
+      "name": "hopy",
+      "status": "ok",
+      "glbSize": 129892,
+      "durationMs": 365
+    },
+    {
+      "name": "hopyking",
+      "status": "ok",
+      "glbSize": 481444,
+      "durationMs": 365
+    },
+    {
+      "name": "icegoblin",
+      "status": "ok",
+      "glbSize": 1002300,
+      "durationMs": 431
+    },
+    {
+      "name": "icegolem",
+      "status": "ok",
+      "glbSize": 977312,
+      "durationMs": 400
+    },
+    {
+      "name": "ironfist",
+      "status": "ok",
+      "glbSize": 1255472,
+      "durationMs": 454
+    },
+    {
+      "name": "leech",
+      "status": "ok",
+      "glbSize": 351816,
+      "durationMs": 391
+    },
+    {
+      "name": "lizardfolk",
+      "status": "ok",
+      "glbSize": 845856,
+      "durationMs": 415
+    },
+    {
+      "name": "m_lord",
+      "status": "ok",
+      "glbSize": 1013064,
+      "durationMs": 700
+    },
+    {
+      "name": "marionette",
+      "status": "ok",
+      "glbSize": 1291912,
+      "durationMs": 585
+    },
+    {
+      "name": "omu",
+      "status": "ok",
+      "glbSize": 396868,
+      "durationMs": 388
+    },
+    {
+      "name": "rPT_Yeti",
+      "status": "ok",
+      "glbSize": 2373928,
+      "durationMs": 522
+    },
+    {
+      "name": "s_ar",
+      "status": "ok",
+      "glbSize": 1516872,
+      "durationMs": 530
+    },
+    {
+      "name": "s_atal",
+      "status": "ok",
+      "glbSize": 1600064,
+      "durationMs": 578
+    },
+    {
+      "name": "s_fi",
+      "status": "ok",
+      "glbSize": 1682116,
+      "durationMs": 564
+    },
+    {
+      "name": "s_kn",
+      "status": "ok",
+      "glbSize": 1857696,
+      "durationMs": 568
+    },
+    {
+      "name": "s_magi",
+      "status": "ok",
+      "glbSize": 1661256,
+      "durationMs": 534
+    },
+    {
+      "name": "s_meca",
+      "status": "ok",
+      "glbSize": 2181368,
+      "durationMs": 541
+    },
+    {
+      "name": "s_pa",
+      "status": "ok",
+      "glbSize": 1928684,
+      "durationMs": 515
+    },
+    {
+      "name": "s_pr",
+      "status": "ok",
+      "glbSize": 1531516,
+      "durationMs": 479
+    },
+    {
+      "name": "sandlem",
+      "status": "ok",
+      "glbSize": 635440,
+      "durationMs": 399
+    },
+    {
+      "name": "scoron",
+      "status": "ok",
+      "glbSize": 1900940,
+      "durationMs": 555
+    },
+    {
+      "name": "scorpion",
+      "status": "ok",
+      "glbSize": 564868,
+      "durationMs": 411
+    },
+    {
+      "name": "spider",
+      "status": "ok",
+      "glbSize": 1055156,
+      "durationMs": 448
+    },
+    {
+      "name": "ssnail",
+      "status": "ok",
+      "glbSize": 1101212,
+      "durationMs": 435
+    },
+    {
+      "name": "stingray",
+      "status": "ok",
+      "glbSize": 526484,
+      "durationMs": 429
+    },
+    {
+      "name": "strider",
+      "status": "ok",
+      "glbSize": 861124,
+      "durationMs": 533
+    },
+    {
+      "name": "t_crystal_b",
+      "status": "ok",
+      "glbSize": 294012,
+      "durationMs": 407
+    },
+    {
+      "name": "t_crystal_g",
+      "status": "ok",
+      "glbSize": 99192,
+      "durationMs": 358
+    },
+    {
+      "name": "t_crystal_n",
+      "status": "ok",
+      "glbSize": 300660,
+      "durationMs": 384
+    },
+    {
+      "name": "t_crystal_r",
+      "status": "ok",
+      "glbSize": 294412,
+      "durationMs": 388
+    },
+    {
+      "name": "turtlecannon",
+      "status": "ok",
+      "glbSize": 724892,
+      "durationMs": 376
+    },
+    {
+      "name": "watermelon",
+      "status": "ok",
+      "glbSize": 496308,
+      "durationMs": 421
+    }
+  ]
+}

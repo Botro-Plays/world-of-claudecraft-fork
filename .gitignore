@@ -163,8 +163,6 @@ docs/screenshots/goblin-rocket-sled/
 docs/
 # Input sky assets (not needed at runtime)
 skies_in/
-# Bulk PT monster GLB conversion output (460 MB, 318 monsters; regenerate via batch_convert.ts)
-scripts/pt-port/converted/
 # CI workflows (re-add when setting up CI for the fork)
 .github/
 # RL environment (not needed for the game)
