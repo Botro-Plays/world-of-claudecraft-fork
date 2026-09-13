@@ -57,7 +57,7 @@ function known(spec: 'arms' | 'fury' | 'prot', abilityId: string) {
 }
 
 describe('v0.26 winning Warrior release contracts', () => {
-  it('keeps exactly the canonical ten classes and stable warrior id', () => {
+  it('keeps exactly the canonical twenty classes and stable warrior id', () => {
     expect(ALL_CLASSES).toEqual([
       'warrior',
       'paladin',
@@ -69,6 +69,16 @@ describe('v0.26 winning Warrior release contracts', () => {
       'warlock',
       'druid',
       'tempskron_fighter',
+      'tempskron_mechanician',
+      'tempskron_pikeman',
+      'tempskron_archer',
+      'morion_knight',
+      'morion_atalanta',
+      'morion_priestess',
+      'morion_magician',
+      'atlanteon_assassin',
+      'atlanteon_martial_artist',
+      'atlanteon_shaman',
     ]);
     expect([...Object.keys(CLASSES)].sort()).toEqual([...ALL_CLASSES].sort());
     expect(CLASSES.warrior.id).toBe('warrior');

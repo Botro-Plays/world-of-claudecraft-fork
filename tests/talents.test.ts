@@ -104,8 +104,8 @@ function effectAbilityReferences(effect: TalentEffect): string[] {
 }
 
 describe('Talents V2 registry and reachability', () => {
-  it('registers exactly ten classes, 30 specs, 60 rows, and 180 options', () => {
-    expect(ALL_CLASSES).toHaveLength(10);
+  it('registers exactly twenty classes, 60 specs, 120 rows, and 360 options', () => {
+    expect(ALL_CLASSES).toHaveLength(20);
     expect(Object.keys(TALENTS).sort()).toEqual([...ALL_CLASSES].sort());
     expect(Object.keys(ROW_TREES).sort()).toEqual([...ALL_CLASSES].sort());
 
@@ -132,9 +132,9 @@ describe('Talents V2 registry and reachability', () => {
       options += tree.reduce((sum, row) => sum + row.options.length, 0);
     }
 
-    expect(specs).toBe(30);
-    expect(rows).toBe(60);
-    expect(options).toBe(180);
+    expect(specs).toBe(60);
+    expect(rows).toBe(120);
+    expect(options).toBe(360);
   });
 
   it('resolves every spec signature and every ability referenced by an active row', () => {

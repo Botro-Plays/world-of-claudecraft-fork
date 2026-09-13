@@ -34,7 +34,7 @@ const CLASS_WOLF_TEST_WORLD: WorldContent = {
   groundObjects: [],
 };
 
-describe('ten classes', () => {
+describe('twenty classes', () => {
   it('every class spawns with a working kit and stats', () => {
     for (const cls of ALL_CLASSES) {
       const sim = new Sim({ seed: 42, playerClass: cls, world: CLASS_TEST_WORLD });

@@ -158,9 +158,26 @@ public/models/sfx-studio-security-*.glb
 output/
 docs/screenshots/goblin-rocket-sled/
 
+# --- Fork cleanup: exclude non-essential directories not needed to run the game/server ---
+# Original repo documentation (1.7 GB, mostly screenshots)
 docs/
-public/env/
-public/audio/
-
-# PR screenshots - too large for git, not needed for development
-docs/screenshots/
+# Input sky assets (not needed at runtime)
+skies_in/
+# CI workflows (re-add when setting up CI for the fork)
+.github/
+# RL environment (not needed for the game)
+headless/
+python/
+# Discord bot (not needed for the game)
+bot/
+# Player wiki container + production first-boot assets
+mediawiki/
+deploy/
+# Mobile platform shells (re-add when targeting mobile)
+android/
+ios/
+# Diagnostics / scratch workspaces
+diagnostics/
+ip-refactor/
+.spawn/
+third_party/

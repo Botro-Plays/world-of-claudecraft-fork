@@ -121,6 +121,17 @@ describe('paladin Divine Tome: the chain is class-locked and ordered', () => {
       'mage',
       'warlock',
       'druid',
+      'tempskron_fighter',
+      'tempskron_mechanician',
+      'tempskron_pikeman',
+      'tempskron_archer',
+      'morion_knight',
+      'morion_atalanta',
+      'morion_priestess',
+      'morion_magician',
+      'atlanteon_assassin',
+      'atlanteon_martial_artist',
+      'atlanteon_shaman',
     ];
     expect(others).toHaveLength(ALL_CLASSES.length - 1);
     expect(others).not.toContain('paladin');
