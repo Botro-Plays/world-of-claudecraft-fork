@@ -31,6 +31,18 @@ const VALID_CLASSES: ReadonlySet<string> = new Set([
   'warlock',
   'druid',
   'shaman',
+  // PT classes (Phase A).
+  'tempskron_fighter',
+  'tempskron_mechanician',
+  'tempskron_pikeman',
+  'tempskron_archer',
+  'morion_knight',
+  'morion_atalanta',
+  'morion_priestess',
+  'morion_magician',
+  'atlanteon_assassin',
+  'atlanteon_shaman',
+  'atlanteon_martial_artist',
 ]);
 
 // Shape-check the content enough that the Sim ctor and terrain function won't trip

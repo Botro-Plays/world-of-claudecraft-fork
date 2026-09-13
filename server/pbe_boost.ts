@@ -92,6 +92,18 @@ export const BOOST_CLASSES: readonly PlayerClass[] = [
   'mage',
   'warlock',
   'druid',
+  // PT classes (Phase A: reuse warrior's CLASS_ROLES; authentic kits land in Phase B).
+  'tempskron_fighter',
+  'tempskron_mechanician',
+  'tempskron_pikeman',
+  'tempskron_archer',
+  'morion_knight',
+  'morion_atalanta',
+  'morion_priestess',
+  'morion_magician',
+  'atlanteon_assassin',
+  'atlanteon_shaman',
+  'atlanteon_martial_artist',
 ];
 
 export function pbeBoostEnabled(env: NodeJS.ProcessEnv = process.env): boolean {

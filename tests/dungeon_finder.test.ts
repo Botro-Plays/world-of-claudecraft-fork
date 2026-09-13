@@ -225,7 +225,7 @@ describe('compatibleFinderRoles', () => {
   });
 
   it('every class can dps below 5 (table completeness)', () => {
-    expect(FINDER_PRE_SPEC_ROLES.dps).toHaveLength(9);
+    expect(FINDER_PRE_SPEC_ROLES.dps).toHaveLength(20);
   });
 
   it('from level 5 the active spec role is the only compatible role', () => {

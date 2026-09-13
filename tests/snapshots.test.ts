@@ -2918,7 +2918,7 @@ describe('client-side delta merge', () => {
           seq: 1,
           mv: 2,
           mt: 100,
-          mi: { f: 1, b: 0, tl: 0, tr: 0, sl: 0, sr: 0, j: 0, dv: 0, sf: 0 },
+          mi: { f: 1, b: 0, tl: 0, tr: 0, sl: 0, sr: 0, j: 0, dv: 0, sf: 0, wm: 0 },
         },
       ]);
 
@@ -2935,7 +2935,7 @@ describe('client-side delta merge', () => {
         seq: 2,
         mv: 2,
         mt: 120,
-        mi: { f: 0, b: 0, tl: 0, tr: 0, sl: 0, sr: 1, j: 0, dv: 0, sf: 0 },
+        mi: { f: 0, b: 0, tl: 0, tr: 0, sl: 0, sr: 1, j: 0, dv: 0, sf: 0, wm: 0 },
       });
     } finally {
       (globalThis as any).WebSocket = oldWebSocket;
@@ -2970,13 +2970,13 @@ describe('client-side delta merge', () => {
           t: 'input',
           seq: 1,
           ct: 5,
-          mi: { f: 1, b: 0, tl: 0, tr: 0, sl: 0, sr: 0, j: 0, dv: 0, sf: 0 },
+          mi: { f: 1, b: 0, tl: 0, tr: 0, sl: 0, sr: 0, j: 0, dv: 0, sf: 0, wm: 0 },
         },
         {
           t: 'input',
           seq: 2,
           ct: 6,
-          mi: { f: 0, b: 0, tl: 0, tr: 0, sl: 1, sr: 0, j: 0, dv: 0, sf: 0 },
+          mi: { f: 0, b: 0, tl: 0, tr: 0, sl: 1, sr: 0, j: 0, dv: 0, sf: 0, wm: 0 },
           facing: 0.25,
         },
       ]);

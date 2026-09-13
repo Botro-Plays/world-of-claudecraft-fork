@@ -54,6 +54,7 @@ describe('ClientWorld neutralizeInputForClientPause', () => {
       jump: false,
       dive: false,
       surface: false,
+      walkMode: false,
     });
     expect(sent).toHaveLength(1);
     expect(JSON.parse(sent[0])).toEqual({
@@ -61,7 +62,7 @@ describe('ClientWorld neutralizeInputForClientPause', () => {
       mv: 2,
       mt: 1000,
       seq: 5,
-      mi: { f: 0, b: 0, tl: 0, tr: 0, sl: 0, sr: 0, j: 0, dv: 0, sf: 0 },
+      mi: { f: 0, b: 0, tl: 0, tr: 0, sl: 0, sr: 0, j: 0, dv: 0, sf: 0, wm: 0 },
     });
     expect(
       (client as unknown as { pendingTransientInput?: unknown }).pendingTransientInput,

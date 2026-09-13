@@ -121,6 +121,7 @@ export function sendMovementFrameV2(
       j: mi.jump ? 1 : 0,
       dv: mi.dive ? 1 : 0,
       sf: mi.surface ? 1 : 0,
+      wm: mi.walkMode ? 1 : 0,
     },
   };
   if (mi.swimSteer !== undefined && mi.swimSteer !== 1) {

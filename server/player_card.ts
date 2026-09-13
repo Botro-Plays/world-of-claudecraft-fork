@@ -85,7 +85,18 @@ type PlayerClassKey =
   | 'shaman'
   | 'mage'
   | 'warlock'
-  | 'druid';
+  | 'druid'
+  | 'tempskron_fighter'
+  | 'tempskron_mechanician'
+  | 'tempskron_pikeman'
+  | 'tempskron_archer'
+  | 'morion_knight'
+  | 'morion_atalanta'
+  | 'morion_priestess'
+  | 'morion_magician'
+  | 'atlanteon_assassin'
+  | 'atlanteon_shaman'
+  | 'atlanteon_martial_artist';
 
 export interface PublicCardCopy {
   gameName: string;
@@ -97,7 +108,7 @@ export interface PublicCardCopy {
   missingHeading: string;
   missingDescription: string;
   missingCta: string;
-  classes: Record<PlayerClassKey, string>;
+  classes: Partial<Record<PlayerClassKey, string>>;
 }
 
 const EN_CLASSES: Record<PlayerClassKey, string> = {
@@ -110,6 +121,18 @@ const EN_CLASSES: Record<PlayerClassKey, string> = {
   mage: 'Mage',
   warlock: 'Warlock',
   druid: 'Druid',
+  // PT classes (Phase A: display the PT class name, not a WoC fallback).
+  tempskron_fighter: 'Fighter',
+  tempskron_mechanician: 'Mechanician',
+  tempskron_pikeman: 'Pikeman',
+  tempskron_archer: 'Archer',
+  morion_knight: 'Knight',
+  morion_atalanta: 'Atalanta',
+  morion_priestess: 'Priestess',
+  morion_magician: 'Magician',
+  atlanteon_assassin: 'Assassin',
+  atlanteon_shaman: 'Shaman',
+  atlanteon_martial_artist: 'Martial Artist',
 };
 
 export const PUBLIC_CARD_COPY: Record<PublicCardLocale, PublicCardCopy> = {
@@ -475,7 +498,7 @@ function interpolate(template: string, values: Record<string, string | number>):
 
 function classDisplay(cls: string, locale: PublicCardLocale): string {
   const copy = PUBLIC_CARD_COPY[locale];
-  return Object.hasOwn(copy.classes, cls) ? copy.classes[cls as PlayerClassKey] : copy.unknownClass;
+  return Object.hasOwn(copy.classes, cls) ? copy.classes[cls as PlayerClassKey] ?? copy.unknownClass : copy.unknownClass;
 }
 
 // Build a URL/file-safe slug from a character name. Lowercased, non-alphanumerics

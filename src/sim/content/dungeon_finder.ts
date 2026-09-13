@@ -42,7 +42,29 @@ export function isFinderRole(value: unknown): value is Role {
 export const FINDER_PRE_SPEC_ROLES: Record<Role, readonly PlayerClass[]> = {
   tank: ['warrior', 'paladin', 'druid'],
   healer: ['paladin', 'priest', 'shaman', 'druid'],
-  dps: ['warrior', 'paladin', 'hunter', 'rogue', 'priest', 'shaman', 'mage', 'warlock', 'druid'],
+  dps: [
+    'warrior',
+    'paladin',
+    'hunter',
+    'rogue',
+    'priest',
+    'shaman',
+    'mage',
+    'warlock',
+    'druid',
+    // PT classes (Phase A: all reuse warrior's melee kit, so all are dps for now).
+    'tempskron_fighter',
+    'tempskron_mechanician',
+    'tempskron_pikeman',
+    'tempskron_archer',
+    'morion_knight',
+    'morion_atalanta',
+    'morion_priestess',
+    'morion_magician',
+    'atlanteon_assassin',
+    'atlanteon_shaman',
+    'atlanteon_martial_artist',
+  ],
 };
 
 export type FinderActivityKind = 'dungeon' | 'raid' | 'solo';

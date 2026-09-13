@@ -367,6 +367,18 @@ const CLASS_LABEL_IDS = new Set([
   'mage',
   'warlock',
   'druid',
+  // PT classes (Phase A): labels resolve through the same t(`class.${id}`) path.
+  'tempskron_fighter',
+  'tempskron_mechanician',
+  'tempskron_pikeman',
+  'tempskron_archer',
+  'morion_knight',
+  'morion_atalanta',
+  'morion_priestess',
+  'morion_magician',
+  'atlanteon_assassin',
+  'atlanteon_shaman',
+  'atlanteon_martial_artist',
 ]);
 export function classLabel(classId: string): string {
   return CLASS_LABEL_IDS.has(classId) ? t(`class.${classId}`) : classId;
