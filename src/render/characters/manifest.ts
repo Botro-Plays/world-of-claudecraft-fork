@@ -162,12 +162,12 @@ export interface VisualDef {
   animUrls?: string[];
   /** world-unit height (pivot->crown) at e.scale = 1 */
   height: number;
-  /** Optional override for the model's raw (unscaled) bounding-box height.
-   *  When set, the normalizer uses this instead of measuring the posed skinned
-   *  mesh bounds. Used by PT Fighter hair variants whose different head/hair
-   *  geometry would otherwise produce different scales (taller hair = smaller
-   *  body). Pinning all variants to the default's raw height keeps the body
-   *  size constant across hair swaps. */
+  /** Optional explicit raw height (pivot->crown in the GLB's own units).
+   *  When set, prepareVisual uses this instead of measuring the skinned
+   *  bounds. PT player visuals pin this so hair variants with different
+   *  hair geometry would otherwise produce different bounding-box heights
+   *  and thus different scales). Pinning all variants to the default's
+   *  raw height keeps the body size constant across hair swaps. */
   rawHeight?: number;
   clips: ClipMap;
   /** floating rigs hover: mesh bottom sits this far above the pivot. NEGATIVE
@@ -267,6 +267,15 @@ export interface VisualDef {
    *  state; CharacterVisual's enterDeath/revive flip it. Node names as
    *  authored in the GLB. */
   corpseMeshSwap?: { hide: string; show: string };
+  /** Separate GLB for the death animation, used when the death model has a
+   *  DIFFERENT skeleton than the main body (Priston Tale monsters ship a
+   *  separate die model). On enterDeath the renderer swaps the entire visual
+   *  to this GLB and plays its DEAD clip on the death model's own mixer; on
+   *  revive it swaps back. The death GLB is preloaded alongside the main body
+   *  and its clips are resolved at prepare time. Mutually exclusive with
+   *  corpseMeshSwap (one is a mesh-visibility flip inside one GLB, the other
+   *  swaps to a different GLB entirely). */
+  deathModelUrl?: string;
 }
 
 /** The slice of a VisualDef that decides how held weapons attach (which bones, and
@@ -1936,7 +1945,6 @@ export const VISUALS: Record<string, VisualDef> = {
     offhandSlot: 1,
   }),
 
-  // -- Priston Tale Tempskron Fighter (player character) -------------------
   // The converted MagicPT-Chinese PT Fighter (scripts/pt-port/fighter_assembler.ts).
   // This is a PLAYER visual keyed by visualKeyFor when the local player's
   // templateId is 'tempskron_fighter'. The GLB ships its own PT animation
@@ -2734,6 +2742,7 @@ export const VISUALS: Record<string, VisualDef> = {
     },
     walkRef: 5,
   },
+  // -- cosmetic body skin (class-agnostic; both the skin preview and a live
   //    player whose skinCatalog === 'mech', see visualKeyFor) ----------------
   player_mech: swims({
     url: `${PLAYERS}/Mech/characters/CombatMech.glb`,
@@ -3270,11 +3279,13 @@ export const VISUALS: Record<string, VisualDef> = {
   },
   // Priston Tale imports (scripts/pt-port/glb_assembler.ts). PT clips use
   // uppercase state names (STAND, WALK, ATTACK, DAMAGE, DEAD). No hit-react
-  // for Hopy; Bargon's death is a separate model (bargon-die.glb) so the
-  // main body has no death clip — the mob simply stops on kill.
+  // for Hopy; Bargon's death is a separate model (Monbagon-die.glb) with a
+  // DIFFERENT skeleton (bone names differ), so the DEAD clip cannot be
+  // merged via animUrls. deathModelUrl swaps the entire visual to the die
+  // GLB on death and plays its DEAD clip on the die model's own mixer.
   mob_hopy: {
     url: `${CREATURES}/hopy.glb`,
-    height: 1.2,
+    height: 1.6,
     clips: {
       idle: 'STAND',
       walk: 'WALK',
@@ -3285,14 +3296,15 @@ export const VISUALS: Record<string, VisualDef> = {
     },
   },
   mob_bargon: {
-    url: `${CREATURES}/bargon.glb`,
-    height: 2.5,
+    url: `${CREATURES}/Monbagon.glb`,
+    deathModelUrl: `${CREATURES}/Monbagon-die.glb`,
+    height: 4.0,
     clips: {
       idle: 'STAND',
       walk: 'WALK',
       run: 'WALK',
       attack: ['ATTACK'],
-      death: 'DAMAGE', // death anim is in separate bargon-die.glb (future swap)
+      death: 'DEAD',
       hit: ['DAMAGE'],
       cast: 'EAT',
     },
@@ -4448,12 +4460,12 @@ export const VISUALS: Record<string, VisualDef> = {
 // Driven by ALL_CLASSES rather than a local copy: a tenth class would otherwise
 // get no modular def at all and fall back to the warrior's clips through
 // modularKeyFor, silently, with no test able to see it.
-// The PT Tempskron Fighter is skipped: it uses a fixed PT GLB (player_tempskron_fighter)
-// with its own Bip01 skeleton, not a composed KayKit modular body. A modular def for
-// it would point the PT clips (Bip01 nodes) at the warrior_modular.glb rig (mixamorig
-// nodes), which the clipmaps gate rejects as unbindable, and the runtime would never
-// use it (modularLookForClass returns null for tempskron_fighter, and startOffline
-// leaves modularAppearance unset so inWorldLookFor returns null).
+// PT classes use fixed GLBs with their own Bip01 skeleton, not a composed
+// KayKit modular body. A modular def for a PT class would point the PT clips
+// (Bip01 nodes) at the warrior_modular.glb rig (mixamorig nodes), which the
+// clipmaps gate rejects as unbindable, and the runtime would never use it
+// (modularLookForClass returns null for PT classes, and startOffline leaves
+// modularAppearance unset so inWorldLookFor returns null).
 for (const cls of ALL_CLASSES) {
   if (cls === 'tempskron_fighter' || cls === 'tempskron_mechanician' || cls === 'tempskron_pikeman' || cls === 'tempskron_archer' || cls === 'morion_knight' || cls === 'morion_atalanta' || cls === 'morion_priestess' || cls === 'morion_magician' || cls === 'atlanteon_assassin' || cls === 'atlanteon_martial_artist' || cls === 'atlanteon_shaman') continue;
   const {
@@ -4862,6 +4874,7 @@ export function manifestUrls(): string[] {
     if (def.lazyPreload) continue; // fetched on demand, not at boot
     urls.add(def.url);
     for (const url of def.animUrls ?? []) urls.add(url);
+    if (def.deathModelUrl) urls.add(def.deathModelUrl);
     for (const a of def.attach ?? []) urls.add(a.url);
   }
   // Equipped-weapon models a player may swap to at runtime (any nearby player's

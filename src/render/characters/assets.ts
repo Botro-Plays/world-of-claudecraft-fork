@@ -1724,6 +1724,30 @@ export function assembleModel(
   return root;
 }
 
+/** Build a death model clone from `VisualDef.deathModelUrl`. The death GLB is
+ *  a separate file with its own skeleton (Priston Tale ships separate die
+ *  models), so it cannot share the main body's mixer. This clones the
+ *  optimized scene for the death URL, applies the same material tinting as the
+ *  main body, and returns the model ready for its own AnimationMixer. The
+ *  caller is responsible for adding it to the scene graph, creating a mixer,
+ *  and managing shadow casters. */
+export function buildDeathModel(
+  def: VisualDef,
+  entityColor: number,
+  skinTex: THREE.Texture | null = null,
+  emisTex: THREE.Texture | null = null,
+  claims: TintedMaterialClaims,
+): THREE.Object3D {
+  if (!def.deathModelUrl) throw new Error('buildDeathModel requires def.deathModelUrl');
+  const root = cloneSkinned(optimizedScene(def.deathModelUrl));
+  shareRigSkeleton(root);
+  root.traverse((o) => {
+    if ((o as THREE.Mesh).isMesh) o.userData.bodyMesh = true;
+  });
+  applyMaterials(root, def, entityColor, skinTex, emisTex, claims);
+  return root;
+}
+
 // The target bone for one attachment: its authored bone normally, the chest bone
 // while a handslot prop is sheathed. GLTFLoader sanitizes node names
 // (PropertyBinding strips [].:/ chars), so "handslot.r" arrives as "handslotr";
@@ -2369,6 +2393,13 @@ export interface PreparedVisual {
   /** click-capsule radius in world units (from measured XZ body extents —
    *  long/wide creatures like wolves need far more than a humanoid sliver) */
   clickRadius: number;
+  /** Death model swap (VisualDef.deathModelUrl): separate normalization for
+   *  the death GLB, which has its own raw bounds. The death model is placed
+   *  inside modelWrap (which carries the MAIN body's normScale), so the
+   *  renderer applies a counter-scale deathNormScale / normScale to a
+   *  wrapper group so the death model lands at the same world height as the
+   *  main body. Zero when the def has no deathModelUrl. */
+  deathNormScale: number;
 }
 
 const prepared = new Map<string, PreparedVisual>();
@@ -2414,6 +2445,13 @@ export function prepareVisual(key: string): PreparedVisual {
   for (const clip of gltf.animations) clips.set(clip.name, clip);
   for (const url of def.animUrls ?? []) {
     for (const clip of resolvedGltf(url).animations) clips.set(clip.name, clip);
+  }
+  // The death model (deathModelUrl) is a separate GLB with its own skeleton.
+  // Its clips cannot be played on the main body's mixer, but we load them
+  // here so the DEAD clip is in the clip map for the clipmap gate and so
+  // CharacterVisual can resolve it when building the death model's mixer.
+  if (def.deathModelUrl) {
+    for (const clip of resolvedGltf(def.deathModelUrl).animations) clips.set(clip.name, clip);
   }
   // The modular paladin mirrors the classic clip map (attackByAbility includes
   // the synthesized Verdict and Sweep names), so it needs the same synthesis:
@@ -2515,6 +2553,53 @@ export function prepareVisual(key: string): PreparedVisual {
   // and reading the live count one high.
   releaseModularVariant(temp);
 
+  // Death model swap (VisualDef.deathModelUrl): measure the death GLB's raw
+  // bounds so the renderer can normalize it to the SAME world height as the
+  // main body. The death GLB has its own skeleton and raw bounds, so the main
+  // body's normScale would scale it wrong (e.g. Monbagon-die is 77.2 raw units
+  // vs Monbagon's 82.7, so the main body's normScale renders the death model
+  // ~7% too small). The death model is placed inside modelWrap (which carries
+  // the main body's normScale), so the renderer applies deathNormScale /
+  // normScale as a counter-scale on a wrapper group.
+  let deathNormScale = 0;
+  if (def.deathModelUrl) {
+    const deathTemp = cloneSkinned(optimizedScene(def.deathModelUrl));
+    deathTemp.updateMatrixWorld(true);
+    const deathBounds = new THREE.Box3();
+    deathTemp.traverse((o) => {
+      const sm = o as THREE.SkinnedMesh;
+      if (!sm.isSkinnedMesh || !meshChainVisible(sm, deathTemp)) return;
+      const pos = sm.geometry.getAttribute('position');
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos as THREE.BufferAttribute, i);
+        sm.applyBoneTransform(i, v);
+        v.applyMatrix4(sm.matrixWorld);
+        deathBounds.expandByPoint(v);
+      }
+    });
+    if (deathBounds.isEmpty()) {
+      deathTemp.traverse((o) => {
+        const mesh = o as THREE.Mesh;
+        if (
+          !mesh.isMesh ||
+          (mesh as unknown as THREE.SkinnedMesh).isSkinnedMesh ||
+          !meshChainVisible(mesh, deathTemp)
+        )
+          return;
+        const pos = mesh.geometry.getAttribute('position') as THREE.BufferAttribute | undefined;
+        if (!pos) return;
+        for (let i = 0; i < pos.count; i++) {
+          v.fromBufferAttribute(pos, i);
+          v.applyMatrix4(mesh.matrixWorld);
+          deathBounds.expandByPoint(v);
+        }
+      });
+    }
+    const deathRawHeight = Math.max(1e-3, deathBounds.max.y - deathBounds.min.y);
+    deathNormScale = def.height / deathRawHeight;
+    releaseModularVariant(deathTemp);
+  }
+
   const prep: PreparedVisual = {
     key,
     def,
@@ -2526,6 +2611,7 @@ export function prepareVisual(key: string): PreparedVisual {
     idleSrcMats: mats,
     idleSrcIsBody: isBody,
     clickRadius,
+    deathNormScale,
   };
   prepared.set(key, prep);
   return prep;

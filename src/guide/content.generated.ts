@@ -22827,12 +22827,12 @@ export const GUIDE_MODELS: Record<string, GuideModelSpec> = {
   "mob_hopy": {
     "url": "models/creatures/hopy.glb",
     "idle": "STAND",
-    "height": 1.2
+    "height": 1.6
   },
   "mob_bargon": {
-    "url": "models/creatures/bargon.glb",
+    "url": "models/creatures/Monbagon.glb",
     "idle": "STAND",
-    "height": 2.5
+    "height": 4
   },
   "mob_spider_egg_sac": {
     "url": "models/creatures/spider_egg_sac.glb",
