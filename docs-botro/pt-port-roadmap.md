@@ -5,30 +5,40 @@ complete game on the WoC engine. Each phase is a vertical slice that delivers a
 testable behavior. Re-verify against live code before starting a phase; paths and
 symbols here are anchors, not frozen line numbers.
 
+## Developer attribution
+
+| Dev | Role | Work done |
+|-----|------|----------|
+| Botro | Repo owner, asset pipeline, monster wiring | Phase 0 (NPC conversion), Phase 2.1 (item 3D models), Phase 4 partial (Bargon + Hopy), Phase 8.1 (mount models), death-model swap, Bargon rename, repo independence, GM account, smd_parser/viewer enhancements, all conversion tooling |
+| Jhing | PT class system integration | Phase 7 Phase A (11 PT class foundations), tribe select UI, PT starting stats, PT tribe definitions, class visual wiring (11 classes x 3 hair variants), i18n catalog entries, equipment rules, dev kit roles, loot archetypes, community test accounts |
+| Devin (AI) | Audit and cleanup | Post-merge cleanup commit (env asset restore, test pin fixes, .gitignore restore, package-lock removal, duplicate Bargon deletion, manifest regeneration, i18n attributes, character_clipmaps death-model fix) |
+
 ## Phase status summary
 
-| Phase | Name | Status |
-|-------|------|--------|
-| 0 | NPC model conversion | DONE |
-| 1 | NPC visual wiring | pending |
-| 2 | Item port | PARTIAL (2.1 done, 2.2-2.4 pending) |
-| 3 | Map/zone port | pending |
-| 4 | Monster content wiring | PARTIAL (Bargon + Hopy wired, rest pending) |
-| 5 | Skill port | pending |
-| 6 | Quest port | pending |
-| 7 | Class system | pending |
-| 8 | Mount port | PARTIAL (8.1 done, 8.2-8.3 pending) |
-| 9 | Polish and integration | pending |
-| 10 | Particle/effect port | pending |
+| Phase | Name | Status | Dev | Last updated |
+|-------|------|--------|-----|--------------|
+| 0 | NPC model conversion | DONE | Botro | Pre-merge |
+| 1 | NPC visual wiring | PENDING | - | - |
+| 2 | Item port | PARTIAL (2.1 done, 2.2-2.4 pending) | Botro (2.1) | Pre-merge |
+| 3 | Map/zone port | PENDING | - | - |
+| 4 | Monster content wiring | PARTIAL (Bargon + Hopy wired, 316 pending) | Botro (Bargon + Hopy) | Pre-merge |
+| 5 | Skill port | PENDING | - | - |
+| 6 | Quest port | PENDING | - | - |
+| 7 | Class system | PARTIAL (Phase A done, Phase B pending) | Jhing (Phase A) | Merge commit 62853e1a5c |
+| 8 | Mount port | PARTIAL (8.1 done, 8.2-8.3 pending) | Botro (8.1) | Pre-merge |
+| 9 | Polish and integration | PENDING | - | - |
+| 10 | Particle/effect port | PENDING | - | - |
 
 ### Completed work outside the phase list
 
-- Monster model conversion: 318 monster dirs converted to GLB in `scripts/pt-port/converted/monster/`.
-- Bargon + Hopy wired in-game with PT-proportionate sizes and separate-skeleton death model swap.
-- GM account set (account: Botro, character: Viking, is_gm: true).
-- Repository made independent from `levy-street/world-of-claudecraft` (orphan history, new remote).
-- DropItem 3D model conversion: 1,925 GLBs in `scripts/pt-port/converted/item/DropItem/` (see Phase 2 notes).
-- Mount model conversion: 17 GLBs in `scripts/pt-port/converted/mount/` (see Phase 8 notes).
+- Monster model conversion: 318 monster dirs converted to GLB in `scripts/pt-port/converted/monster/`. (Botro)
+- Bargon + Hopy wired in-game with PT-proportionate sizes and separate-skeleton death model swap. (Botro)
+- GM account set (account: Botro, character: Viking, is_gm: true). (Botro)
+- Repository made independent from `levy-street/world-of-claudecraft` (orphan history, new remote). (Botro)
+- DropItem 3D model conversion: 1,925 GLBs in `scripts/pt-port/converted/item/DropItem/` (see Phase 2 notes). (Botro)
+- Mount model conversion: 17 GLBs in `scripts/pt-port/converted/mount/` (see Phase 8 notes). (Botro)
+- Post-merge cleanup: env asset restore, test pin fixes, .gitignore restore, package-lock removal, duplicate Bargon deletion, manifest regeneration, i18n attributes, character_clipmaps death-model fix. (Devin)
+- Pre-existing gaps documented in `docs-botro/known-gaps-after-pt-merge.md`. (Devin)
 
 ## PT source inventory (what we have)
 
@@ -38,12 +48,12 @@ Root: `D:\From Luis Cezar Matias - Chinese MagicPT\`
 
 | Folder | Count | Format | Status |
 |--------|-------|--------|--------|
-| `monster\` | 318 dirs | SMD + SMB + INX + BMP/TGA | DONE: converted to `scripts/pt-port/converted/monster/*.glb` |
-| `npc\` | 89 dirs | SMD + SMB + INX + BMP/TGA | DONE: converted to `scripts/pt-port/converted/npc/*.glb` |
-| `tmABCD\` | 7,740 files | 2,200 SMD + 90 SMB + 2,513 INX + 1,201 TGA + 447 BMP + 130 PNG | Player character models (modular: body + head + face + equipment per class/gender) |
-| `Items\` | 13 subfolders | BMP + SMD + TGA + PNG | Item 3D drop models (DropItem) and 2D inventory icons (Weapon, Defense, Accessory, Event, Potion, Premium, Quest, Skins, Wing, ElementIcon, ItemInfoBox, Make) |
-| `mount\` | 17 dirs | SMD + SMB + PNG (no INX) | DONE: converted to `scripts/pt-port/converted/mount/*.glb` (14 Ver 0.62 + 3 Ver 0.66) |
-| `Flag\` | 8 files | SMD + SMB | Flag/banner models |
+| `monster\` | 318 dirs | SMD + SMB + INX + BMP/TGA | DONE: converted to `scripts/pt-port/converted/monster/*.glb` (Botro) |
+| `npc\` | 89 dirs | SMD + SMB + INX + BMP/TGA | DONE: converted to `scripts/pt-port/converted/npc/*.glb` (Botro) |
+| `tmABCD\` | 7,740 files | 2,200 SMD + 90 SMB + 2,513 INX + 1,201 TGA + 447 BMP + 130 PNG | Player character models (modular: body + head + face + equipment per class/gender). 11 classes converted to GLB by Jhing (body + 3 hair variants each) |
+| `Items\` | 13 subfolders | BMP + SMD + TGA + PNG | Item 3D drop models (DropItem) and 2D inventory icons (Weapon, Defense, Accessory, Event, Potion, Premium, Quest, Skins, Wing, ElementIcon, ItemInfoBox, Make). DropItem 3D models converted by Botro; icons not yet converted |
+| `mount\` | 17 dirs | SMD + SMB + PNG (no INX) | DONE: converted to `scripts/pt-port/converted/mount/*.glb` (14 Ver 0.62 + 3 Ver 0.66) (Botro) |
+| `Flag\` | 8 files | SMD + SMB | Flag/banner models (not converted) |
 
 ### Field/map assets (`Client\Field\`)
 
@@ -142,7 +152,7 @@ Skadi, SkillMaster, SN-001-005, stella, T_Messenger, Teacher, TN-001-017, Zarad
 | Zones/maps | `ZoneDef` in `src/sim/content/zone*.ts` + terrain in `src/sim/world.ts` | New PT zone defs; terrain is the hard part |
 | Skills/abilities | ability defs in `src/sim/content/` | Port PT skill.ini data to WoC ability format |
 | Quests | `QuestDef` in `src/sim/content/zone*.ts` | Port PT quest data to WoC quest format |
-| Classes | class defs in `src/sim/content/` | Map PT classes to WoC classes or add new |
+| Classes | class defs in `src/sim/content/classes.ts` | DONE: 11 PT classes added as new WoC classes (Jhing) |
 
 ## Key architectural constraints (from CLAUDE.md)
 
@@ -155,55 +165,71 @@ Skadi, SkillMaster, SN-001-005, stella, T_Messenger, Teacher, TN-001-017, Zarad
 
 ## Decisions already made
 
-1. Monster GLB filenames keep the converted folder name (e.g. `Monbagon.glb`), only the in-game display name changes (e.g. "Bargon").
-2. Death models with incompatible skeletons use the separate-skeleton death model swap (implemented for Bargon, pattern is reusable).
-3. Monster sizes use PT proportions applied through WoC's normalization system (Hopy 1.6, Bargon 4.0).
-4. The repo is fully independent from `levy-street/world-of-claudecraft`.
-5. Git LFS is used for large binaries.
-6. Runtime creature assets are selectively copied to `public/models/creatures/`.
+1. Monster GLB filenames keep the converted folder name (e.g. `Monbagon.glb`), only the in-game display name changes (e.g. "Bargon"). (Botro)
+2. Death models with incompatible skeletons use the separate-skeleton death model swap (implemented for Bargon, pattern is reusable). (Botro)
+3. Monster sizes use PT proportions applied through WoC's normalization system (Hopy 1.6, Bargon 4.0). (Botro)
+4. The repo is fully independent from `levy-street/world-of-claudecraft`. (Botro)
+5. Git LFS is used for large binaries. (Botro)
+6. Runtime creature assets are selectively copied to `public/models/creatures/`. (Botro)
+7. PT classes are added as NEW WoC classes (Option B from the open decisions), not mapped onto existing WoC classes. 11 PT classes join the 9 original WoC classes for a total of 20. (Jhing)
+8. PT tribe structure (Tempskron, Morion, Atlanteon) is preserved in the character select UI with a tribe-first selection flow. (Jhing)
 
 ## Open decisions (need user input before the phase that needs them)
 
-1. **PT classes vs WoC classes**: PT has 2 base classes (Fighter, Mechanician) that branch into subclasses (Pikeman, Knight, Archer, etc. at job change level 5). WoC has 8 classes (warrior, mage, rogue, hunter, warlock, druid, shaman, barbarian). Do we map PT classes onto WoC classes, or add PT classes as new WoC classes?
+1. ~~PT classes vs WoC classes~~ RESOLVED: Option B, add as new WoC classes. (Jhing implemented)
 2. **PT maps vs WoC zones**: PT maps are tile-based BMP heightmaps. WoC zones are procedural terrain. Do we import PT heightmaps as stamps, or rebuild PT maps as WoC procedural zones?
 3. **PT skills vs WoC abilities**: PT skills are level-scaled in skill.ini. WoC abilities are rank-based with talents. Do we port PT skill data into WoC's ability system, or rebuild PT skills as WoC abilities?
 4. **NPC visual system**: WoC NPCs currently use KayKit player models with modular composition. PT NPC GLBs are self-contained rigged meshes. Do we add a new `npc_pt_*` visual path for PT NPCs, or replace the modular system?
 5. **Item system**: PT items have different stat ranges and slot systems. Do we map PT items onto WoC's item system, or extend WoC items to support PT item properties?
+6. **PT job change**: PT has job change at level 5 (Fighter branches into Pikeman/Archer, Mechanician branches into Assassin/Martial Artist, etc.). WoC has no branching class system. Do we implement job change as a class swap at level 5, or keep the 11 classes flat?
+7. **PT max level**: PT goes to 249 (hotuk.ini). WoC caps at MAX_LEVEL. Do we raise the cap for PT, or keep WoC's cap and rescale PT content?
 
 ---
 
 ## Phase 0: NPC model conversion (DONE)
 
+**Dev**: Botro
 **Goal**: Convert all 89 PT NPC model directories to GLB using the existing monster pipeline.
 
 **Why first**: NPCs are the next asset category, the pipeline already exists (glb_assembler.ts handles SMD/SMB/INX/BMP/TGA), and NPCs are needed before we can populate PT towns.
 
-### 0.1 Batch-convert NPC models
-- Extend `scripts/pt-port/batch_convert.ts` to accept a category argument (monster/npc/mount) or write a parallel `batch_convert_npcs.ts`
+### 0.1 Batch-convert NPC models (DONE, Botro)
+- Extended `scripts/pt-port/batch_convert.ts` to accept a category argument (monster/npc/mount) or write a parallel `batch_convert_npcs.ts`
 - Source: `D:\From Luis Cezar Matias - Chinese MagicPT\Client\char\npc\`
 - Output: `scripts/pt-port/converted/npc/*.glb`
 - The glb_assembler.ts already handles the SMD/SMB/INX/BMP/TGA format; NPC dirs use the same structure
 - Verify with the viewer: `http://localhost:3002/viewer.html?model=npc/Ahin.glb`
 
-### 0.2 Verify and catalog NPC GLBs
-- Run the viewer against each converted NPC
-- Catalog: which NPCs have animations, which are static, which have texture issues
-- Identify any NPC models that need manual fixes (missing textures, broken skeletons)
-- Write a `_report.json` summary like the monster conversion did
+### 0.2 Verify and catalog NPC GLBs (DONE, Botro)
+- Ran the viewer against each converted NPC
+- Cataloged: which NPCs have animations, which are static, which have texture issues
+- Identified any NPC models that need manual fixes (missing textures, broken skeletons)
+- Wrote a `_report.json` summary like the monster conversion did
 
-### 0.3 Copy runtime NPC assets
-- Copy the PT NPC GLBs that will be used at runtime to `public/models/npcs/`
-- Follow the monster precedent: keep the converted folder name, change only the in-game display name
+### 0.3 Copy runtime NPC assets (DONE, Botro)
+- Copied the PT NPC GLBs that will be used at runtime to `public/models/npcs/`
+- Followed the monster precedent: keep the converted folder name, change only the in-game display name
 
-**Exit criteria**: 89 NPC GLBs in `scripts/pt-port/converted/npc/`, a report showing success/fail counts, runtime copies in `public/models/npcs/` for the ones we will place in the world.
+**Exit criteria**: 89 NPC GLBs in `scripts/pt-port/converted/npc/`, a report showing success/fail counts, runtime copies in `public/models/npcs/` for the ones we will place in the world. MET.
 
 **State for next phase**: NPC GLBs ready to wire into VisualDefs.
 
 ---
 
-## Phase 1: NPC visual wiring
+## Phase 1: NPC visual wiring (PENDING)
 
+**Dev**: Unassigned
 **Goal**: Make PT NPC models render in-game by adding `npc_pt_*` VisualDefs to the manifest.
+
+### What is done
+- 89 NPC GLBs are converted and available in `scripts/pt-port/converted/npc/`. (Botro)
+- Runtime copies are in `public/models/npcs/`. (Botro)
+
+### What is missing
+- No `npc_pt_*` VisualDef entries in `src/render/characters/manifest.ts`.
+- No `NpcDef` entries for PT NPCs in `src/sim/content/`.
+- No NPC placement data (which NPCs go in which PT town/zone).
+- No PT NPC role mapping (vendor, quest giver, skill master, class trainer, etc.).
 
 ### 1.1 Add npc_pt_* VisualDefs
 - In `src/render/characters/manifest.ts`, add one `VisualDef` per PT NPC that uses a PT GLB
@@ -225,9 +251,10 @@ Skadi, SkillMaster, SN-001-005, stella, T_Messenger, Teacher, TN-001-017, Zarad
 
 ## Phase 2: Item port (PARTIAL)
 
+**Dev**: Botro (2.1)
 **Goal**: Convert PT item models/icons and port PT item data into WoC's item system.
 
-### 2.1 Convert item 3D models (DONE)
+### 2.1 Convert item 3D models (DONE, Botro)
 
 - Source: `Client\image\Sinimage\Items\DropItem\` (1,508 SMD files, the canonical PT client location)
 - Fallback source: `Client\char\Items\DropItem\` (1,838 SMD files, includes non-standard variants)
@@ -255,20 +282,17 @@ These 7 GLBs have mesh data but no embedded texture because the referenced textu
 Fixing these requires sourcing the textures from another PT client or extracting them from the game data.
 
 ### 2.2 Convert item icons (PENDING)
-
 - Source: `Client\char\Items\` (13 subfolders of BMP/TGA icons)
 - Convert BMP to PNG using the existing `bmp_to_png.ts` / `tga_to_png.ts`
 - Output: `public/icons/items/` (or wherever WoC item icons live)
 - Catalog: map PT item icon names to WoC item IDs
 
 ### 2.3 Port item stats (PENDING)
-
 - Extract PT item stats from the rPTDB database backup or the C++ source
 - Map PT item properties (attack, defense, level requirement, class restriction) to WoC's `ItemDef` format
 - PT item rarity from `Rarity.ini` maps to WoC's rarity tiers
 
 ### 2.4 Define PT items in WoC (PENDING)
-
 - Add `ItemDef` entries in `src/sim/content/` for PT items
 - Wire item icons to the icon system
 - Wire item models to the equipment rendering system
@@ -277,9 +301,20 @@ Fixing these requires sourcing the textures from another PT client or extracting
 
 ---
 
-## Phase 3: Map/zone port
+## Phase 3: Map/zone port (PENDING)
 
+**Dev**: Unassigned
 **Goal**: Recreate PT maps as WoC zones. This is the hardest phase.
+
+### What is done
+- PT source maps are cataloged (72 maps, 34 directories). (Botro)
+- Map format is documented (BMP heightmap tiles + TGA texture splats + SMD props). (Botro)
+
+### What is missing
+- No heightmap import tool.
+- No texture splat converter.
+- No PT zone definitions.
+- No PT town (Ricarten) implementation.
 
 ### 3.1 Analyze PT map format
 - 72 maps defined in `PT-Source\field.cpp` (SetName calls), across 34 top-level `Client\Field\` directories
@@ -314,24 +349,38 @@ Fixing these requires sourcing the textures from another PT client or extracting
 
 ## Phase 4: Monster content wiring (PARTIAL: Bargon + Hopy done)
 
+**Dev**: Botro (Bargon + Hopy)
 **Goal**: Wire the 318 converted monster GLBs into WoC as playable mob templates with PT stats.
+
+### What is done (Botro)
+- 318 monster GLBs converted and available in `scripts/pt-port/converted/monster/`.
+- `mob_bargon` VisualDef in `manifest.ts` with `deathModelUrl` for separate-skeleton death swap.
+- `mob_hopy` VisualDef in `manifest.ts`.
+- `pt_hopy` and `pt_bargon` MobTemplate entries in `zone1.ts` with PT-style stats.
+- Both placed in camps in zone1 (offStream, temporary placement near Sableweb Lurker).
+- Runtime GLBs copied to `public/models/creatures/` (Monbagon.glb, Monbagon-die.glb, hopy.glb).
+
+### What is missing
+- 316 of 318 monsters have no MobTemplate, no VisualDef, and no camp placement.
+- No monster stats extracted from rPTDB (all current stats are hand-tuned estimates).
+- No PT-specific zone placement (monsters are in WoC zone1, not PT zones).
 
 ### 4.1 Extract monster stats (PENDING)
 - Source: rPTDB database backup (monster HP, damage, defense, level, XP)
 - Parse the MSSQL backup or extract from `PT-Source\SrcServer\gameSQL.cpp`
 - Output: a JSON/TS data file mapping monster names to stats
 
-### 4.2 Define PT mob templates
+### 4.2 Define PT mob templates (PENDING: 2 of 318 done)
 - Add `MobTemplate` entries for PT monsters in `src/sim/content/pt_mobs.ts`
 - Map PT stats to WoC's MobTemplate format (hpBase, hpPerLevel, dmgBase, dmgPerLevel, etc.)
 - Set aggroRadius, moveSpeed, attackSpeed from PT data or reasonable defaults
 
-### 4.3 Wire PT mob visuals
+### 4.3 Wire PT mob visuals (PENDING: 2 of 318 done)
 - Add `VisualDef` entries for each PT monster in manifest.ts (pattern: mob_bargon)
 - Copy runtime GLBs to `public/models/creatures/`
 - Handle death models (the separate-skeleton swap pattern) for monsters that have `-die.glb` variants
 
-### 4.4 Place PT monsters in PT zones
+### 4.4 Place PT monsters in PT zones (PENDING)
 - Add `CampDef` entries in the PT zone files placing monsters at their PT spawn positions
 - PT spawn data may be in the rPTDB or the field files
 
@@ -339,9 +388,20 @@ Fixing these requires sourcing the textures from another PT client or extracting
 
 ---
 
-## Phase 5: Skill port
+## Phase 5: Skill port (PENDING)
 
+**Dev**: Unassigned
 **Goal**: Port PT skills into WoC's ability system.
+
+### What is done
+- Nothing. PT skills are not ported. All 11 PT classes currently use the Warrior ability kit as a placeholder. (Jhing left this as Phase A foundation; ability kit to be replaced in a later phase.)
+
+### What is missing
+- No `skill.ini` parser.
+- No PT ability definitions in `src/sim/content/`.
+- No PT skill visuals (effects from `Client\Effect\`).
+- No PT-specific combat suites (no `combat/tempskron_*.ts` or `combat/morion_*.ts` files).
+- All 11 PT classes use `WARRIOR_DEF.abilities` (warrior's heroic_strike, revenge, charge, etc.).
 
 ### 5.1 Parse skill.ini
 - `Server\skill.ini` has per-level damage, mana cost, range, cooldown for each PT skill
@@ -357,13 +417,27 @@ Fixing these requires sourcing the textures from another PT client or extracting
 - Map PT skill effects (damage, buff, debuff, heal) to WoC's ability effect system
 - Port PT skill visuals (effects from `Client\Effect\`)
 
+### 5.4 Build per-class combat suites
+- Create `combat/tempskron_fighter.ts`, `combat/tempskron_mechanician.ts`, etc.
+- Each PT class needs its own combat module following the WoC pattern (every class has one: `combat/paladin_*.ts`, `warrior_stances.ts`, etc.)
+- Replace the `WARRIOR_DEF.abilities` reference in each PT class def with its own authentic ability list
+
 **Exit criteria**: PT skills are castable in-game with correct damage, mana cost, and visuals.
 
 ---
 
-## Phase 6: Quest port
+## Phase 6: Quest port (PENDING)
 
+**Dev**: Unassigned
 **Goal**: Port PT quests into WoC's quest system.
+
+### What is done
+- Nothing. PT quests are not ported.
+
+### What is missing
+- No PT quest data extracted.
+- No `QuestDef` entries for PT quests.
+- No PT quest giver NPC wiring (depends on Phase 1).
 
 ### 6.1 Extract PT quest data
 - Source: `Client\image\Sinimage\Quest\*.txt` (quest text), `PT-Source\sinbaram\HaQuest.cpp` (quest logic)
@@ -379,9 +453,106 @@ Fixing these requires sourcing the textures from another PT client or extracting
 
 ---
 
-## Phase 7: Class system
+## Phase 7: Class system (PARTIAL: Phase A done by Jhing)
 
-**Goal**: Port PT's class system. Depends on the open decision about PT vs WoC classes.
+**Dev**: Jhing (Phase A)
+**Goal**: Port PT's class system. Decision resolved: Option B, add PT classes as new WoC classes.
+
+### What is done (Jhing, Phase A: class identity foundation)
+
+Jhing implemented "Phase A" of the class system: the class identity and visual foundation.
+All 11 PT classes are playable with authentic stats and visuals, but they all reuse the
+Warrior's ability kit, talent trees, and equipment as placeholders.
+
+**Class definitions (DONE, Jhing):**
+- 11 PT classes added to `ALL_CLASSES` in `src/sim/content/classes.ts` (20 total with 9 WoC classes):
+  - Tempskron: `tempskron_fighter`, `tempskron_mechanician`, `tempskron_pikeman`, `tempskron_archer`
+  - Morion: `morion_knight`, `morion_atalanta`, `morion_priestess`, `morion_magician`
+  - Atlanteon: `atlanteon_assassin`, `atlanteon_shaman`, `atlanteon_martial_artist`
+- Each has a dedicated `ClassDef` with authentic PT base stats mapped from PT's 5-stat system (Strength, Spirit, Talent, Defence, Health) to WoC's 6-attribute system (str, agi, sta, int, spi, armor).
+- Source citations from `HoLogin.cpp`, `fileread.cpp`, `sinInvenTory.cpp`, `smPacket.h` in each class def.
+- HP and mana pools derived from PT's `LifeFunction` and `ManaFunction` formulas.
+- `tempskron_fighter` uses `rage` resource (inherits from warrior); all other PT classes use `mana`.
+
+**PT starting stats (DONE, Jhing):**
+- `src/sim/content/pt_starting_stats.ts`: authentic PT 5-stat starting values from `TempNewCharacterInit` and `MorNewCharacterInit` tables.
+- Used by the character-select info panel to show authentic PT identity alongside WoC gameplay stats.
+
+**Tribe system (DONE, Jhing):**
+- `src/sim/content/pt_tribes.ts`: 3 tribes (Tempskron, Morion, Atlanteon) with class rosters.
+- Each tribe has `classIds` (all intended classes) and `implementedClassIds` (subset with full implementation).
+- Atlanteon has 3 classes (intentionally, no placeholder for a fourth).
+- Tribe logos: Tempskron and Morion have SVG logos; Atlanteon uses a Tempskron placeholder.
+
+**Tribe select UI (DONE, Jhing):**
+- `src/ui/pt_tribe_select.ts`: tribe card clicks, back navigation, filtering class list by tribe.
+- `src/ui/pt_formation.ts`: 3D formation roster showing tribe members standing in the scene.
+- `index.html`: PT tribe select panel with tribe cards and class buttons.
+- `data-i18n` and `data-i18n-aria` attributes on all PT class buttons (added by Devin in cleanup).
+
+**Class visuals (DONE, Jhing):**
+- 33 VisualDefs in `src/render/characters/manifest.ts` (11 classes x body + 2 hair variants).
+- Each PT class has a converted PT character GLB (e.g. `pt_fighter.glb`, `pt_mechanician.glb`).
+- `rawHeight` pinned to 49.91 across hair variants to keep body scale constant.
+- Clips mapped from PT INX state names (STAND, WALK, ATTACK, DAMAGE, DEAD, etc.).
+- Per-class assembler scripts in `scripts/pt-port/` (fighter_assembler.ts, mechanician_assembler.ts, etc.).
+
+**System wiring (DONE, Jhing):**
+- Equipment rules: all 11 PT classes in `src/sim/equipment_rules.ts` (mail armor, warrior weapons).
+- Dev kit roles: all 11 PT classes in `src/sim/content/dev_kit_roles.ts`.
+- Loot archetypes: `src/sim/content/delves/drowned_litany_loot.ts` maps PT classes to WoC archetypes (WAR for physical, MAG for priestess/magician, ROG for assassin).
+- REWARD_ARCHETYPE: all 11 PT classes mapped to `'warrior'` in `src/sim/data.ts`.
+- Community test accounts: all 11 PT classes in `tests/community_test_accounts.test.ts`.
+- PBE boost roles: all 11 PT classes wired.
+- Skin counts: all 11 PT classes set to 6 (same as warrior).
+- Class details: `src/ui/class_details_data.ts` has role/armor/weapons info for each PT class.
+- i18n: catalog entries for all class names and aria labels in resolved bundles.
+
+**Test count pins (FIXED, Devin):**
+- 8 test files updated from stale WoC class counts (10/15) to 20 classes.
+- `character_clipmaps.test.ts` fixed to load `deathModelUrl` for death clip resolution.
+
+### What is missing (Phase B: authentic class kits)
+
+**Abilities (PENDING):**
+- All 11 PT classes use `WARRIOR_DEF.abilities` (heroic_strike, revenge, charge, thunder_clap, etc.).
+- No PT-specific abilities defined. Each class needs its own skill kit from `skill.ini`.
+- No `combat/tempskron_*.ts` or `combat/morion_*.ts` combat suite files exist.
+
+**Talents (PENDING):**
+- All 11 PT classes use `WARRIOR_ROWS` (warrior's 6-row talent tree).
+- All 11 PT classes use `WARRIOR_TALENTS.specs` (Arms, Fury, Protection).
+- No PT-specific talent trees or specs exist.
+- PT has no spec system; subclasses are job-change at level 5, not talent specs.
+
+**Starting equipment (PENDING):**
+- All 11 PT classes use `worn_sword` + `eastbrook_buckler` + `recruit_tunic` (warrior's starting gear).
+- No PT-specific weapons (spear, bow, wand, hammer, etc.) or armor defined.
+
+**Class colors (PARTIAL):**
+- Some PT classes have authentic colors (Archer green, Knight blue, Magician orange, Priestess pink, Atalanta teal, Assassin purple, Shaman cyan, Martial Artist gold).
+- Fighter, Mechanician, Pikeman reuse warrior's `0xd67a54`.
+
+**Job change system (PENDING):**
+- PT has job change at level 5 (`*CHANGE_JOB_LEVEL 5` in `hotuk.ini`).
+- Fighter -> Pikeman or Archer at level 5.
+- Mechanician -> Assassin or Martial Artist at level 5.
+- Morion classes (Knight, Atalanta, Priestess, Magician) are already post-job-change.
+- WoC has no branching class system. Open decision #6.
+
+**Max level (PENDING):**
+- PT goes to 249 (`*MAX_LEVEL 249` in `hotuk.ini`).
+- WoC caps at `MAX_LEVEL`. No adjustment for PT. Open decision #7.
+
+**Guide stills (PENDING, pre-existing gap):**
+- 10 of 11 PT class guide stills are missing (only `player_tempskron_fighter.webp` exists).
+- `npm run wiki:stills` script is broken (esbuild can't handle `import.meta.url` in IIFE format).
+- `tests/guide.test.ts` fails on the 10 missing stills. See `docs-botro/known-gaps-after-pt-merge.md`.
+
+**Tribe card labels (PENDING, pre-existing gap):**
+- Tribe card names (TEMPSKRON, MORION, ATLANTEON) and class lists in `index.html` are hardcoded English.
+- Class buttons and subtitle ARE i18n-wired (fixed by Devin in cleanup).
+- Tribe labels need new catalog keys for proper nouns / brand names.
 
 ### 7.1 PT class structure
 - PT has 2 tribes: Tempskron (physical) and Morion (magical)
@@ -396,10 +567,15 @@ Fixing these requires sourcing the textures from another PT client or extracting
 - The `tmABCD` folder has 7,740 files: 2,200 SMD, 90 SMB, 2,513 INX, 447 BMP, 1,201 TGA, 130 PNG, 870 INF, 272 INI
 - Class suffixes in filenames: FS (Fighter), MS (Mechanician), AS (Archer), PS (Pikeman), ASS (Assassin), MA (Martial Artist), ATA (Atalanta), KS (Knight), MGS (Magician), PRS (Priest), SHM (Shaman)
 
-### 7.2 Implementation (pending decision)
-- Option A: Map PT classes onto WoC's 8 classes (simpler, loses PT identity)
-- Option B: Add PT classes as new WoC classes (more work, preserves PT feel)
-- Option C: Replace WoC classes with PT classes (full conversion)
+### 7.2 Phase B: Authentic class kits (PENDING)
+- Replace `WARRIOR_DEF.abilities` with PT-specific ability lists for each class
+- Create per-class combat suites (`combat/tempskron_fighter.ts`, etc.)
+- Define PT-specific talent trees (or decide PT uses a different progression system)
+- Add PT-specific starting equipment (PT weapons and armor)
+- Implement job change system (open decision #6)
+- Adjust max level if needed (open decision #7)
+- Fix guide stills for 10 missing PT classes
+- i18n-wire tribe card labels
 
 **Exit criteria**: PT class system works with job change, class skills, and progression.
 
@@ -407,9 +583,10 @@ Fixing these requires sourcing the textures from another PT client or extracting
 
 ## Phase 8: Mount port (PARTIAL: 8.1 done)
 
+**Dev**: Botro (8.1)
 **Goal**: Convert PT mount models and add them as WoC mounts.
 
-### 8.1 Convert mount models (DONE)
+### 8.1 Convert mount models (DONE, Botro)
 
 - Source: `Client\char\mount\` (17 mount dirs: chicken, horse, raptor, wolf, unicorn, piggy, turtle, etc.)
 - Mounts use two SMD format variants:
@@ -444,8 +621,9 @@ Fixing these requires sourcing the textures from another PT client or extracting
 
 ---
 
-## Phase 9: Polish and integration
+## Phase 9: Polish and integration (PENDING)
 
+**Dev**: Unassigned
 **Goal**: Tie everything together into a cohesive PT game.
 
 ### 9.1 PT-specific UI
@@ -473,8 +651,9 @@ Fixing these requires sourcing the textures from another PT client or extracting
 
 ---
 
-## Phase 10: Particle/effect port
+## Phase 10: Particle/effect port (PENDING)
 
+**Dev**: Unassigned
 **Goal**: Port PT's particle system and skill/monster visual effects into WoC so that when skills and monster abilities are wired in (Phase 5), their effects are ready to attach from the start.
 
 **Why before skills**: Porting skills without their particle effects means retrofitting every effect later. By converting the particle assets and building the emitter bridge first, skill porting (Phase 5) and monster ability wiring (Phase 4) can attach effects inline, no second pass.
@@ -538,11 +717,11 @@ PT uses a custom text-based particle script format (`.part` files):
 ## Phase dependency graph
 
 ```
-Phase 0 (NPC models) ──> Phase 1 (NPC visuals) ──┐
-                                                  ├──> Phase 3 (Maps) ──> Phase 4 (Monsters) ──> Phase 6 (Quests)
-Phase 2 (Items) ──────────────────────────────────┘
-                                                  Phase 10 (Particles) ──> Phase 5 (Skills) ──> Phase 7 (Classes)
-                                                  Phase 8 (Mounts) ───────────────────────────────────────────> Phase 9 (Polish)
+Phase 0 (NPC models) DONE ──> Phase 1 (NPC visuals) PENDING ──┐
+                                                               ├──> Phase 3 (Maps) PENDING ──> Phase 4 (Monsters) PARTIAL ──> Phase 6 (Quests) PENDING
+Phase 2 (Items) PARTIAL ────────────────────────────────────────┘
+                                                               Phase 10 (Particles) PENDING ──> Phase 5 (Skills) PENDING ──> Phase 7 (Classes) PARTIAL
+                                                               Phase 8 (Mounts) PARTIAL ───────────────────────────────────────────────────> Phase 9 (Polish) PENDING
 ```
 
 Phases 0, 2, 8, 10 can run in parallel (independent asset conversions).
@@ -552,16 +731,16 @@ Phase 5 (skills) and 7 (classes) are coupled.
 
 ## Recommended execution order
 
-1. **Phase 0**: NPC model conversion (DONE)
-2. **Phase 2**: Item 3D model conversion (DONE); item icons, stats, and defs (PENDING)
-3. **Phase 8**: Mount model conversion (parallel asset conversion, not started)
+1. **Phase 0**: NPC model conversion (DONE, Botro)
+2. **Phase 2.1**: Item 3D model conversion (DONE, Botro); item icons, stats, and defs (PENDING)
+3. **Phase 8.1**: Mount model conversion (DONE, Botro); mount visuals and runtime (PENDING)
 4. **Phase 10**: Particle/effect asset conversion (parse .part files, convert effect textures; parallel with 2 and 8, not started)
 5. **Phase 1**: NPC visual wiring (after 0, not started)
-6. **Phase 4**: Monster content wiring (Bargon + Hopy done, rest pending)
+6. **Phase 4**: Monster content wiring (Bargon + Hopy done by Botro, 316 pending)
 7. **Phase 3**: Map/zone port (the hard one, needs focused effort, not started)
 8. **Phase 5**: Skill port (after 10 so effects are ready, and after class decision, not started)
 9. **Phase 6**: Quest port (after 1, 3, 4 are done, not started)
-10. **Phase 7**: Class system (after 5, not started)
+10. **Phase 7 Phase B**: Authentic class kits (after 5, replaces warrior placeholder abilities)
 11. **Phase 9**: Polish (last, not started)
 
 The key insight: all asset conversion (models, icons, textures, particles) happens first
@@ -571,19 +750,25 @@ with effects attached from the start, no retrofitting.
 ## Tools we have and need
 
 ### Existing tools (reuse)
-- `scripts/pt-port/glb_assembler.ts`: SMD/SMB/INX/BMP/TGA -> GLB (works for monsters, NPCs, mounts)
-- `scripts/pt-port/batch_convert.ts`: batch converter (extend for npc/mount categories)
-- `scripts/pt-port/converter_api.ts`: HTTP API for the converter UI
-- `scripts/pt-port/viewer.html`: GLB viewer with animation/skeleton/wireframe
-- `scripts/pt-port/bmp_to_png.ts` / `tga_to_png.ts`: texture converters
-- `scripts/pt-port/smd_parser.ts` / `inx_parser.ts`: PT format parsers
+- `scripts/pt-port/glb_assembler.ts`: SMD/SMB/INX/BMP/TGA -> GLB (works for monsters, NPCs, mounts) (Botro)
+- `scripts/pt-port/batch_convert.ts`: batch converter (extend for npc/mount categories) (Botro)
+- `scripts/pt-port/converter_api.ts`: HTTP API for the converter UI (Botro)
+- `scripts/pt-port/viewer.html`: GLB viewer with animation/skeleton/wireframe + category/search filtering (Botro)
+- `scripts/pt-port/bmp_to_png.ts` / `tga_to_png.ts`: texture converters (Botro)
+- `scripts/pt-port/smd_parser.ts` / `inx_parser.ts`: PT format parsers (Botro)
+- `scripts/pt-port/mount_glb_assembler.ts`: mount-specific GLB assembler (Botro)
+- `scripts/pt-port/static_glb_assembler.ts`: skeletonless item GLB assembler (Botro)
+- `scripts/pt-port/*_assembler.ts`: per-class character model assemblers (Jhing, 11 files)
+- `scripts/pt-port/diag_physique.ts`: physique/skinning diagnostics (Botro)
+- `scripts/pt-port/verify_glbs.ts`: GLB validation (Botro)
+- `scripts/pt-port/check_mount.ts`: mount-specific validation (Botro)
 
 ### Tools to build
 - PT heightmap -> WoC HeightStamp converter (Phase 3)
 - PT skill.ini parser (Phase 5)
 - PT quest text parser (Phase 6)
 - PT rPTDB database extractor (Phase 4, for monster/item stats)
-- PT item icon batch converter (Phase 2)
+- PT item icon batch converter (Phase 2.2)
 - PT `.part` particle script parser (Phase 10)
 - PT particle emitter -> WoC VFX bridge (Phase 10)
 
@@ -597,6 +782,11 @@ with effects attached from the start, no retrofitting.
 - Item system: `src/sim/content/` (ItemDef), `src/ui/icons` (icons)
 - Zone system: `src/sim/types.ts` (ZoneDef), `src/sim/content/zone*.ts`, `src/sim/world.ts` (terrain)
 - Quest system: `src/sim/types.ts` (QuestDef), `src/sim/content/zone*.ts` (ZONE*_QUESTS)
-- Class system: `src/sim/content/` (class defs)
+- Class system: `src/sim/content/classes.ts` (ClassDef), `src/sim/content/pt_tribes.ts` (PtTribeDef), `src/sim/content/pt_starting_stats.ts`
+- Class visuals: `src/render/characters/manifest.ts` (`player_tempskron_*`, `player_morion_*`, `player_atlanteon_*` entries)
+- Class talents: `src/sim/content/talent_rows.ts`, `src/sim/content/talents.ts`
+- Class combat: `src/sim/combat/` (per-class suites, no PT files yet)
 - Mount system: `src/sim/` (mount logic), `src/render/characters/manifest.ts` (mount visuals)
 - Death model swap: `src/render/characters/visual.ts` (enterDeath/revive), `tests/death_model_swap.test.ts`
+- Tribe select UI: `src/ui/pt_tribe_select.ts`, `src/ui/pt_formation.ts`, `index.html`
+- i18n: `src/ui/i18n.locales/` (per-locale overlays), `src/ui/i18n.resolved.generated/` (resolved bundles)
