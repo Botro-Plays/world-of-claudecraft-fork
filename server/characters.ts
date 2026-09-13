@@ -45,7 +45,7 @@ import type * as http from 'node:http';
 import { resolveActiveWeaponSkin } from '../src/sim/content/weapon_skin_rules';
 import { DEEDS_RECENT_CAP } from '../src/sim/deeds';
 import type { CharacterState } from '../src/sim/sim';
-import type { PlayerClass } from '../src/sim/types';
+import { ALL_CLASSES, type PlayerClass } from '../src/sim/types';
 // The shared, host-agnostic bounds check for an untrusted look (the
 // action_bar.ts pattern). The renderer owns what the values MEAN; the server
 // only guarantees the stored document is small and well shaped.
@@ -145,18 +145,10 @@ const REROLL_NOT_AVAILABLE = {
 const CHARACTER_RESOURCE = 'character';
 /** Per-account character cap (mirrors the legacy createCharacterCapped default). */
 const CHARACTER_LIMIT = 10;
-/** The nine playable classes accepted by create (mirrors the legacy inline list). */
-const VALID_CLASSES: readonly string[] = [
-  'warrior',
-  'paladin',
-  'hunter',
-  'rogue',
-  'priest',
-  'shaman',
-  'mage',
-  'warlock',
-  'druid',
-];
+/** The playable classes accepted by create. Mirrors ALL_CLASSES from the sim
+ *  (9 WoC classes + 11 PT classes), so the server accepts the same set the
+ *  client's character-select UI offers and the sim's addPlayer supports. */
+const VALID_CLASSES: readonly string[] = ALL_CLASSES;
 /** Highest selectable skin index (mirrors the legacy Math.min(7, ...) clamp). */
 const MAX_SKIN = 7;
 /** The free-redesign window: every character created before this instant carries
