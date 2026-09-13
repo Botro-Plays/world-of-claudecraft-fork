@@ -630,6 +630,7 @@ export const en = {
     characterNamePlaceholder: 'Character name',
     enterWorld: 'Enter World',
     offlineCharacter: 'Offline Character',
+    selectTribe: 'Select Your Tribe',
     create: 'Create',
     twoFactorLabel: 'Authentication code',
     twoFactorPlaceholder: '6-digit or recovery code',
@@ -841,6 +842,28 @@ export const en = {
     mage: 'Mage',
     warlock: 'Warlock',
     druid: 'Druid',
+    // PT Tempskron Fighter POC: distinct display name, reuses warrior gameplay
+    tempskron_fighter: 'Tempskron Fighter',
+    // PT Tempskron Mechanician POC: distinct display name, reuses warrior gameplay
+    tempskron_mechanician: 'Tempskron Mechanician',
+    // PT Tempskron Pikeman POC: distinct display name, reuses warrior gameplay
+    tempskron_pikeman: 'Tempskron Pikeman',
+    // PT Tempskron Archer POC: distinct display name, reuses warrior gameplay
+    tempskron_archer: 'Tempskron Archer',
+    // PT Morion Knight POC: distinct display name, reuses warrior gameplay
+    morion_knight: 'Morion Knight',
+    // PT Morion Atalanta POC: distinct display name, reuses warrior gameplay
+    morion_atalanta: 'Morion Atalanta',
+    // PT Morion Priestess POC: distinct display name, reuses priest gameplay
+    morion_priestess: 'Morion Priestess',
+    // PT Morion Magician POC: distinct display name, reuses mage gameplay
+    morion_magician: 'Morion Magician',
+    // PT Atlanteon Assassin POC: distinct display name, reuses rogue gameplay
+    atlanteon_assassin: 'Atlanteon Assassin',
+    // PT Atlanteon Martial Artist POC: distinct display name, reuses warrior gameplay
+    atlanteon_martial_artist: 'Atlanteon Martial Artist',
+    // PT Atlanteon Shaman POC: distinct display name, reuses shaman gameplay
+    atlanteon_shaman: 'Atlanteon Shaman',
     warriorAria: 'Warrior class',
     paladinAria: 'Paladin class',
     hunterAria: 'Hunter class',
@@ -850,6 +873,17 @@ export const en = {
     mageAria: 'Mage class',
     warlockAria: 'Warlock class',
     druidAria: 'Druid class',
+    tempskron_fighterAria: 'Tempskron Fighter class',
+    tempskron_mechanicianAria: 'Tempskron Mechanician class',
+    tempskron_pikemanAria: 'Tempskron Pikeman class',
+    tempskron_archerAria: 'Tempskron Archer class',
+    morion_knightAria: 'Morion Knight class',
+    morion_atalantaAria: 'Morion Atalanta class',
+    morion_priestessAria: 'Morion Priestess class',
+    morion_magicianAria: 'Morion Magician class',
+    atlanteon_assassinAria: 'Atlanteon Assassin class',
+    atlanteon_martial_artistAria: 'Atlanteon Martial Artist class',
+    atlanteon_shamanAria: 'Atlanteon Shaman class',
   },
   controls: {
     title: 'Controls Guide',

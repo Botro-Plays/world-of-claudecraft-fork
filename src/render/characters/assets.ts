@@ -2488,7 +2488,7 @@ export function prepareVisual(key: string): PreparedVisual {
       }
     });
   }
-  const rawHeight = Math.max(1e-3, bounds.max.y - bounds.min.y);
+  const rawHeight = Math.max(1e-3, def.rawHeight ?? (bounds.max.y - bounds.min.y));
   const normScale = def.height / rawHeight;
   const yOffset = (def.hover ?? 0) - bounds.min.y * normScale;
   const clickRadius = Math.min(

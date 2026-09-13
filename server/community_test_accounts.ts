@@ -97,6 +97,25 @@ function encodeNameToken(value: bigint): string {
   return chars.join('');
 }
 
+// PT class ids contain underscores and exceed the character-name length limit
+// (validCharNameShape caps at 16 chars and forbids underscores), and the 8-char
+// encoded token leaves room for at most an 8-char prefix. These short, unique
+// prefixes avoid collisions with the original WoC class names (e.g. `shaman`
+// the class vs `atlanteon_shaman` the PT class) and stay within the budget.
+const PT_NAME_PREFIXES: Partial<Record<PlayerClass, string>> = {
+  tempskron_fighter: 'Fighter',
+  tempskron_mechanician: 'Mech',
+  tempskron_pikeman: 'Pikeman',
+  tempskron_archer: 'Archer',
+  morion_knight: 'Knight',
+  morion_atalanta: 'Atalanta',
+  morion_priestess: 'Holy',
+  morion_magician: 'Magician',
+  atlanteon_assassin: 'Assassin',
+  atlanteon_martial_artist: 'Martial',
+  atlanteon_shaman: 'Spirit',
+};
+
 export function generatedTestCharacterName(
   accountId: number,
   cls: PlayerClass,
@@ -105,7 +124,7 @@ export function generatedTestCharacterName(
   const safeAccountId = Math.max(0, Math.floor(accountId));
   const safeAttempt = Math.max(0, Math.floor(attempt));
   const encoded = BigInt(safeAccountId) * BigInt(GENERATED_NAME_ATTEMPTS) + BigInt(safeAttempt);
-  const prefix = `${cls[0].toUpperCase()}${cls.slice(1)}`;
+  const prefix = PT_NAME_PREFIXES[cls] ?? `${cls[0].toUpperCase()}${cls.slice(1)}`;
   return `${prefix}${encodeNameToken(encoded)}`;
 }
 

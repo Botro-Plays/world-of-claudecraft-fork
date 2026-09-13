@@ -125,6 +125,28 @@ export const SKIN_COUNTS: Record<PlayerClass, number> = {
   warlock: 6,
   shaman: 6,
   druid: 6,
+  // PT Tempskron Fighter POC: reuse warrior's skin count
+  tempskron_fighter: 6,
+  // PT Tempskron Mechanician POC: reuse warrior's skin count
+  tempskron_mechanician: 6,
+  // PT Tempskron Pikeman POC: reuse warrior's skin count
+  tempskron_pikeman: 6,
+  // PT Tempskron Archer POC: reuse warrior's skin count
+  tempskron_archer: 6,
+  // PT Morion Knight POC: reuse warrior's skin count
+  morion_knight: 6,
+  // PT Morion Atalanta POC: reuse warrior's skin count
+  morion_atalanta: 6,
+  // PT Morion Priestess POC: reuse priest's skin count
+  morion_priestess: 6,
+  // PT Morion Magician POC: reuse mage's skin count
+  morion_magician: 6,
+  // PT Atlanteon Assassin POC: reuse rogue's skin count
+  atlanteon_assassin: 6,
+  // PT Atlanteon Martial Artist POC: reuse warrior's skin count
+  atlanteon_martial_artist: 6,
+  // PT Atlanteon Shaman POC: reuse shaman's skin count
+  atlanteon_shaman: 6,
 };
 
 /** Whether `skin` is a valid appearance index for `cls` (0 = default). */

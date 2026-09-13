@@ -1381,6 +1381,10 @@ export class Renderer {
   // prefers-reduced-motion query in reducedMotion(). Initialized from Settings
   // and kept live by main.ts's applySetting dispatcher (mirrors showDevBadges).
   reduceMotionSetting = false;
+  // Run/walk gait toggle: when true, the local player's locomotion gait is
+  // forced to walk regardless of speed. Set from main.ts when the player
+  // toggles run/walk (KeyR by default, see run_walk_toggle.ts).
+  forceWalk = false;
   showNameplates = true;
   // settings-backed developer-badge display toggle (nameplate glyph + outline);
   // initialized from Settings and kept live by main.ts's applySetting dispatcher.
@@ -10926,7 +10930,7 @@ export class Renderer {
       const st = this.animScratch;
       st.speed = loco.speed;
       st.moving = moving;
-      st.running = loco.running;
+      st.running = isSelf && this.forceWalk ? false : loco.running;
       // A mounted rider stays planted in the saddle: the MOUNT carries the
       // jump arc (its anim scratch below keeps the real airborne flag), while
       // the rider holds the seated pose instead of replaying the jump clip.
@@ -11037,7 +11041,7 @@ export class Renderer {
             this.surfaceAtForAudio,
           );
         } else if (moving && !airborne) {
-          const running = loco.speed >= FOOT_RUN_SPEED;
+          const running = !isSelf || !this.forceWalk ? loco.speed >= FOOT_RUN_SPEED : false;
           if (strideHit(v, loco.speed, dt, running ? FOOT_STRIDE_RUN : FOOT_STRIDE_WALK))
             sink.footstep(ax, ay, az, this.surfaceAt(ax, az, ay), running, isSelf);
         } else {

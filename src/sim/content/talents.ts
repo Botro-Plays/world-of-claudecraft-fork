@@ -418,6 +418,104 @@ export const TALENTS = {
   mage: MAGE_TALENTS,
   warlock: WARLOCK_TALENTS,
   druid: DRUID_TALENTS,
+  // Priston Tale Tempskron Fighter POC: reuse the warrior's talent tree so
+  // the class is fully playable (talent pane opens, points spend, effects
+  // resolve). The visual + animation set is the PT Fighter's; the gameplay
+  // kit is the warrior's. The specs' class field is remapped to
+  // tempskron_fighter so validateTalentTree accepts the tree.
+  tempskron_fighter: {
+    ...WARRIOR_TALENTS,
+    class: 'tempskron_fighter' as const,
+    specs: WARRIOR_TALENTS.specs.map((s) => ({ ...s, class: 'tempskron_fighter' as const })),
+  },
+  // PT Tempskron Mechanician POC: same approach as the Fighter. Reuses the
+  // warrior's talent tree so the class is fully playable (talent pane opens,
+  // points spend, effects resolve). The visual + animation set is the PT
+  // Mechanician's; the gameplay kit is the warrior's.
+  tempskron_mechanician: {
+    ...WARRIOR_TALENTS,
+    class: 'tempskron_mechanician' as const,
+    specs: WARRIOR_TALENTS.specs.map((s) => ({ ...s, class: 'tempskron_mechanician' as const })),
+  },
+  // PT Tempskron Pikeman POC: same approach as the Fighter and Mechanician.
+  // Reuses the warrior's talent tree so the class is fully playable (talent
+  // pane opens, points spend, effects resolve). The visual + animation set
+  // is the PT Pikeman's; the gameplay kit is the warrior's.
+  tempskron_pikeman: {
+    ...WARRIOR_TALENTS,
+    class: 'tempskron_pikeman' as const,
+    specs: WARRIOR_TALENTS.specs.map((s) => ({ ...s, class: 'tempskron_pikeman' as const })),
+  },
+  // PT Tempskron Archer POC: same approach as the Fighter, Mechanician, and
+  // Pikeman. Reuses the warrior's talent tree so the class is fully playable
+  // (talent pane opens, points spend, effects resolve). The visual +
+  // animation set is the PT Archer's; the gameplay kit is the warrior's.
+  tempskron_archer: {
+    ...WARRIOR_TALENTS,
+    class: 'tempskron_archer' as const,
+    specs: WARRIOR_TALENTS.specs.map((s) => ({ ...s, class: 'tempskron_archer' as const })),
+  },
+  // PT Morion Knight POC: same approach as the Tempskron classes. Reuses the
+  // warrior's talent tree so the class is fully playable (talent pane opens,
+  // points spend, effects resolve). The visual + animation set is the PT
+  // Knight's; the gameplay kit is the warrior's.
+  morion_knight: {
+    ...WARRIOR_TALENTS,
+    class: 'morion_knight' as const,
+    specs: WARRIOR_TALENTS.specs.map((s) => ({ ...s, class: 'morion_knight' as const })),
+  },
+  // PT Morion Atalanta POC: same approach as the Morion Knight. Reuses the
+  // warrior's talent tree so the class is fully playable (talent pane opens,
+  // points spend, effects resolve). The visual + animation set is the PT
+  // Atalanta's; the gameplay kit is the warrior's.
+  morion_atalanta: {
+    ...WARRIOR_TALENTS,
+    class: 'morion_atalanta' as const,
+    specs: WARRIOR_TALENTS.specs.map((s) => ({ ...s, class: 'morion_atalanta' as const })),
+  },
+  // PT Morion Priestess POC: same approach as the existing PT classes. Reuses
+  // the warrior's talent tree so the class is fully playable (talent pane
+  // opens, points spend, effects resolve). The visual + animation set is the
+  // PT Priestess's; the gameplay kit is the warrior's.
+  morion_priestess: {
+    ...WARRIOR_TALENTS,
+    class: 'morion_priestess' as const,
+    specs: WARRIOR_TALENTS.specs.map((s) => ({ ...s, class: 'morion_priestess' as const })),
+  },
+  // PT Morion Magician POC: same approach as the existing PT classes. Reuses
+  // the warrior's talent tree so the class is fully playable (talent pane
+  // opens, points spend, effects resolve). The visual + animation set is the
+  // PT Magician's; the gameplay kit is the warrior's.
+  morion_magician: {
+    ...WARRIOR_TALENTS,
+    class: 'morion_magician' as const,
+    specs: WARRIOR_TALENTS.specs.map((s) => ({ ...s, class: 'morion_magician' as const })),
+  },
+  // PT Atlanteon Assassin POC: same approach as the existing PT classes. Reuses
+  // the warrior's talent tree so the class is fully playable (talent pane
+  // opens, points spend, effects resolve). The visual + animation set is the
+  // PT Assassin's; the gameplay kit is the warrior's.
+  atlanteon_assassin: {
+    ...WARRIOR_TALENTS,
+    class: 'atlanteon_assassin' as const,
+    specs: WARRIOR_TALENTS.specs.map((s) => ({ ...s, class: 'atlanteon_assassin' as const })),
+  },
+  // PT Atlanteon Martial Artist POC: reuse warrior's talent tree (melee
+  // brawler).
+  atlanteon_martial_artist: {
+    ...WARRIOR_TALENTS,
+    class: 'atlanteon_martial_artist' as const,
+    specs: WARRIOR_TALENTS.specs.map((s) => ({ ...s, class: 'atlanteon_martial_artist' as const })),
+  },
+  // PT Atlanteon Shaman POC: same approach as the existing PT classes. Reuses
+  // the warrior's talent tree so the class is fully playable (talent pane
+  // opens, points spend, effects resolve). The visual + animation set is the
+  // PT Shaman's; the gameplay kit is the warrior's.
+  atlanteon_shaman: {
+    ...WARRIOR_TALENTS,
+    class: 'atlanteon_shaman' as const,
+    specs: WARRIOR_TALENTS.specs.map((s) => ({ ...s, class: 'atlanteon_shaman' as const })),
+  },
 } satisfies Record<PlayerClass, ClassTalents>;
 
 export function talentsFor(cls: PlayerClass): ClassTalents | null {

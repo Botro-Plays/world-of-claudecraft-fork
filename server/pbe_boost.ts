@@ -277,6 +277,108 @@ export const CLASS_ROLES: Record<PlayerClass, readonly BoostRole[]> = {
     { id: 'balance', weights: { int: 1, spi: 0.7, sta: 0.5 }, melee: false },
     { id: 'feral', weights: { str: 1, agi: 0.6, sta: 0.6 }, melee: true },
   ],
+  // PT Tempskron Fighter POC: reuse warrior's roles
+  tempskron_fighter: [
+    { id: 'arms', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true },
+    { id: 'fury', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true, hands: 'dualWield' },
+    {
+      id: 'prot',
+      weights: { sta: 1, str: 0.6, agi: 0.3 },
+      melee: true,
+      tank: true,
+      hands: 'shield',
+    },
+  ],
+  // PT Tempskron Mechanician POC: reuse warrior's roles
+  tempskron_mechanician: [
+    { id: 'arms', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true },
+    { id: 'fury', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true, hands: 'dualWield' },
+    {
+      id: 'prot',
+      weights: { sta: 1, str: 0.6, agi: 0.3 },
+      melee: true,
+      tank: true,
+      hands: 'shield',
+    },
+  ],
+  // PT Tempskron Pikeman POC: reuse warrior's roles
+  tempskron_pikeman: [
+    { id: 'arms', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true },
+    { id: 'fury', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true, hands: 'dualWield' },
+    {
+      id: 'prot',
+      weights: { sta: 1, str: 0.6, agi: 0.3 },
+      melee: true,
+      tank: true,
+      hands: 'shield',
+    },
+  ],
+  // PT Tempskron Archer POC: reuse warrior's roles
+  tempskron_archer: [
+    { id: 'arms', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true },
+    { id: 'fury', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true, hands: 'dualWield' },
+    {
+      id: 'prot',
+      weights: { sta: 1, str: 0.6, agi: 0.3 },
+      melee: true,
+      tank: true,
+      hands: 'shield',
+    },
+  ],
+  // PT Morion Knight POC: reuse warrior's roles
+  morion_knight: [
+    { id: 'arms', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true },
+    { id: 'fury', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true, hands: 'dualWield' },
+    {
+      id: 'prot',
+      weights: { sta: 1, str: 0.6, agi: 0.3 },
+      melee: true,
+      tank: true,
+      hands: 'shield',
+    },
+  ],
+  // PT Morion Atalanta POC: reuse warrior's roles
+  morion_atalanta: [
+    { id: 'arms', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true },
+    { id: 'fury', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true, hands: 'dualWield' },
+    {
+      id: 'prot',
+      weights: { sta: 1, str: 0.6, agi: 0.3 },
+      melee: true,
+      tank: true,
+      hands: 'shield',
+    },
+  ],
+  // PT Morion Priestess POC: reuse warrior's roles (Phase A)
+  morion_priestess: [
+    { id: 'arms', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true },
+    { id: 'fury', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true, hands: 'dualWield' },
+    { id: 'prot', weights: { sta: 1, str: 0.6, agi: 0.3 }, melee: true, tank: true, hands: 'shield' },
+  ],
+  // PT Morion Magician POC: reuse warrior's roles (Phase A)
+  morion_magician: [
+    { id: 'arms', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true },
+    { id: 'fury', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true, hands: 'dualWield' },
+    { id: 'prot', weights: { sta: 1, str: 0.6, agi: 0.3 }, melee: true, tank: true, hands: 'shield' },
+  ],
+  // PT Atlanteon Assassin POC: reuse warrior's roles (Phase A)
+  atlanteon_assassin: [
+    { id: 'arms', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true },
+    { id: 'fury', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true, hands: 'dualWield' },
+    { id: 'prot', weights: { sta: 1, str: 0.6, agi: 0.3 }, melee: true, tank: true, hands: 'shield' },
+  ],
+  // PT Atlanteon Martial Artist POC: reuse warrior's roles (melee brawler)
+  atlanteon_martial_artist: [
+    { id: 'arms', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true },
+    { id: 'fury', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true, hands: 'dualWield' },
+    { id: 'prot', weights: { sta: 1, str: 0.6, agi: 0.3 }, melee: true, tank: true, hands: 'shield' },
+  ],
+  // PT Atlanteon Shaman POC: reuse warrior's roles (Phase A)
+  atlanteon_shaman: [
+    { id: 'arms', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true },
+    { id: 'fury', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true, hands: 'dualWield' },
+    { id: 'prot', weights: { sta: 1, str: 0.6, agi: 0.3 }, melee: true, tank: true, hands: 'shield' },
+  ],
 };
 
 const ARMOR_PER_POINT = 12;

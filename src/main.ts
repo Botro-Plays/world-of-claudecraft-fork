@@ -113,7 +113,9 @@ import {
 } from './game/graphics_rebuild_crash_guard';
 import { Input } from './game/input';
 import { InputActivityMeter, installInputActivityTracking } from './game/input_activity';
+import { createGatherEffectConfirm, interactKeyGatherOptions } from './game/interact_key_gather';
 import { stopAutorunForInteraction } from './game/interaction_autorun';
+import { loadGaitMode, saveGaitMode, toggleGaitMode, type GaitMode } from './game/run_walk_toggle';
 import {
   activePvpOpponentIds,
   HoverPickGate,
@@ -480,7 +482,18 @@ import {
   setReferralProvider,
   setStandingProvider,
 } from './ui/hud/player_card/player_card_share';
-import { gatherEffectPrompt, gatherToolNoNodeKey } from './ui/hud/professions/gathering_view';
+import { gatherToolNoNodeKey } from './ui/hud/professions/gathering_view';
+import {
+  filterOfflineSelectForTribe,
+  resetOfflineSelectTribeFilter,
+  wirePtTribeSelect,
+  type PtTribeId,
+} from './ui/pt_tribe_select';
+import {
+  tribeStageEntries,
+} from './ui/pt_formation';
+import { PT_TRIBES } from './sim/content/pt_tribes';
+import { ptStartingStatsFor } from './sim/content/pt_starting_stats';
 import {
   ensureLocaleLoaded,
   formatNumber,
@@ -669,6 +682,12 @@ const RESOURCE_KEYS = {
 
 function classDisplayDescription(className: PlayerClass): string {
   return tEntity({ kind: 'class', id: className, field: 'description' });
+}
+
+/** Returns the PT tribe display name for a PT class, or null for WoC classes. */
+function ptTribeNameForClass(className: PlayerClass): string | null {
+  const tribe = PT_TRIBES.find((t) => t.implementedClassIds.includes(className));
+  return tribe ? tribe.name : null;
 }
 
 function formatClassDetailNumber(value: number): string {
@@ -2219,6 +2238,35 @@ async function startGame(
         break;
     }
   }
+  // Run/walk gait toggle: load the persisted mode, wire the Input callback so
+  // KeyR flips it, and keep the renderer's forceWalk flag in sync. The HUD
+  // indicator (below) also subscribes via onGaitModeChange.
+  {
+    const stored = loadGaitMode(localStorage);
+    input.gaitMode = stored;
+    renderer.forceWalk = stored === 'walk';
+    input.onGaitModeChange = (mode: GaitMode) => {
+      renderer.forceWalk = mode === 'walk';
+      saveGaitMode(localStorage, mode);
+      updateRunWalkIndicator(mode);
+    };
+  }
+  // Run/walk HUD indicator: a clickable pill below the minimap zoom control.
+  // Clicking it toggles the gait mode the same way KeyR does.
+  const runWalkBtn = document.getElementById('run-walk-toggle');
+  function updateRunWalkIndicator(mode: GaitMode): void {
+    if (!runWalkBtn) return;
+    const label = runWalkBtn.querySelector('.rw-label');
+    if (label) label.textContent = mode === 'run' ? 'Run' : 'Walk';
+    runWalkBtn.setAttribute('aria-pressed', mode === 'walk' ? 'true' : 'false');
+  }
+  if (runWalkBtn) {
+    updateRunWalkIndicator(input.gaitMode);
+    runWalkBtn.addEventListener('click', () => {
+      input.gaitMode = toggleGaitMode(input.gaitMode);
+      input.onGaitModeChange?.(input.gaitMode);
+    });
+  }
   const syncXhbPadMode = () => crossHotbar.syncPadMode(gamepad);
   const gamepad = new GamepadManager(input, gamepadBindings, {
     onAction: (id) => dispatchGamepadAction(id),
@@ -3364,16 +3412,9 @@ async function startGame(
     if (world.bgInfo?.match) world.bgFlagAction();
   }
 
-  // The R40 per-use effect confirm gate, shared by the explicit gather entry
-  // points (world click, gathering-tool use): the pure question from the view
-  // core, the ask through the HUD's confirm-dialog family. The harvest
-  // proceeds on either answer; only the charge follows it. The generic
-  // interact key never gathers, so it takes no part in this.
-  const gatherEffectConfirm = {
-    needed: (nodeId: string) => gatherEffectPrompt(world, nodeId),
-    ask: (prompt: { effectId: string; charges: number }, proceed: (confirmed: boolean) => void) =>
-      hud.confirmToolEffectUse(prompt, proceed),
-  };
+  // The R40 per-use effect confirm gate, shared by every gather entry point
+  // (world click, interact key, gathering-tool use).
+  const gatherEffectConfirm = createGatherEffectConfirm(world, hud);
   function interactKey(preferNpcId?: number | null): void {
     if (shouldRouteInteractToBgFlag(world.bgInfo, world.player, world.entities)) {
       world.bgFlagAction();
@@ -3387,6 +3428,7 @@ async function startGame(
         t('errors.nothingInteract'),
         undefined,
         preferNpcId,
+        interactKeyGatherOptions(world, gatherEffectConfirm),
       ),
       input,
       mobileControls,
@@ -5189,6 +5231,7 @@ async function startOffline(
   skin = 0,
   world?: WorldContent,
   seedOverride?: number,
+  ptHair = 0,
 ): Promise<void> {
   stopShaderWarmup();
   if (!(await prepareWorldEntry())) return;
@@ -5222,7 +5265,27 @@ async function startOffline(
     // The entity field is deliberately opaque (the sim must not depend on the
     // render layer's ModularAppearance), so the interface needs the cast an
     // online wire payload does not.
-    offlinePlayer.modularAppearance = modularAppearance as unknown as Record<string, unknown>;
+    // The PT Tempskron Fighter uses a fixed PT GLB, not a composed modular
+    // body, so it must NOT carry a modularAppearance: leaving it null makes
+    // inWorldLookFor return null and the renderer fall back to visualKeyFor
+    // (player_tempskron_fighter), showing the converted PT model directly.
+    // The PT Tempskron classes (Fighter, Mechanician, Pikeman) use fixed PT
+    // GLBs, not composed modular bodies, so they must NOT carry a
+    // modularAppearance: leaving it null makes inWorldLookFor return null and
+    // the renderer fall back to visualKeyFor (player_tempskron_fighter /
+    // player_tempskron_mechanician / player_tempskron_pikeman /
+    // player_tempskron_archer / player_morion_knight / player_morion_atalanta), showing the
+    // converted PT model directly.
+    const isPtClass = playerClass === 'tempskron_fighter' || playerClass === 'tempskron_mechanician' || playerClass === 'tempskron_pikeman' || playerClass === 'tempskron_archer' || playerClass === 'morion_knight' || playerClass === 'morion_atalanta' || playerClass === 'morion_priestess' || playerClass === 'morion_magician' || playerClass === 'atlanteon_assassin' || playerClass === 'atlanteon_martial_artist' || playerClass === 'atlanteon_shaman';
+    if (!isPtClass) {
+      offlinePlayer.modularAppearance = modularAppearance as unknown as Record<string, unknown>;
+    } else if (ptHair > 0) {
+      // PT hair variant: override the in-world visual key to the selected
+      // hair GLB (e.g. player_tempskron_fighter_hair2 /
+      // player_tempskron_mechanician_hair3 / player_tempskron_pikeman_hair2).
+      const vk = ptVisualKey(playerClass, ptHair);
+      if (vk) offlinePlayer.visualKeyOverride = vk;
+    }
     offlinePlayer.helmHidden = !creationHelm;
   }
   // Dev convenience: ?mech drops an offline session straight into the Combat Mech
@@ -5320,6 +5383,139 @@ let characterPreview: CharacterPreview | null = null;
 let authModeApply: ((mode: 'login' | 'register') => void) | null = null;
 let offlineSkin = 0; // chosen appearance skin for the offline quick-start character
 let onlineSkin = 0; // chosen appearance skin for new online characters
+let offlinePtHair = 0; // chosen PT hair style (0-2) for the offline quick-start
+// Currently selected tribe for the offline character-select formation.
+// Null when no tribe has been selected yet (e.g. on the tribe-select screen).
+let offlineSelectedTribe: PtTribeId | null = null;
+
+// PT hair style -> visual key. Each PT class has 3 hair GLB variants.
+// The base GLB uses the default hair; the two variants swap the head mesh.
+const PT_FIGHTER_HAIR_KEYS = [
+  'player_tempskron_fighter',
+  'player_tempskron_fighter_hair2',
+  'player_tempskron_fighter_hair3',
+] as const;
+
+const PT_MECHANICIAN_HAIR_KEYS = [
+  'player_tempskron_mechanician',
+  'player_tempskron_mechanician_hair2',
+  'player_tempskron_mechanician_hair3',
+] as const;
+
+const PT_PIKEMAN_HAIR_KEYS = [
+  'player_tempskron_pikeman',
+  'player_tempskron_pikeman_hair2',
+  'player_tempskron_pikeman_hair3',
+] as const;
+
+const PT_ARCHER_HAIR_KEYS = [
+  'player_tempskron_archer',
+  'player_tempskron_archer_hair2',
+  'player_tempskron_archer_hair3',
+] as const;
+
+const PT_KNIGHT_HAIR_KEYS = [
+  'player_morion_knight',
+  'player_morion_knight_hair2',
+  'player_morion_knight_hair3',
+] as const;
+
+const PT_ATALANTA_HAIR_KEYS = [
+  'player_morion_atalanta',
+  'player_morion_atalanta_hair2',
+  'player_morion_atalanta_hair3',
+] as const;
+
+const PT_PRIESTESS_HAIR_KEYS = [
+  'player_morion_priestess',
+  'player_morion_priestess_hair2',
+  'player_morion_priestess_hair3',
+] as const;
+
+const PT_MAGICIAN_HAIR_KEYS = [
+  'player_morion_magician',
+  'player_morion_magician_hair2',
+  'player_morion_magician_hair3',
+] as const;
+
+const PT_ASSASSIN_HAIR_KEYS = [
+  'player_atlanteon_assassin',
+  'player_atlanteon_assassin_hair2',
+  'player_atlanteon_assassin_hair3',
+] as const;
+
+const PT_MARTIAL_ARTIST_HAIR_KEYS = [
+  'player_atlanteon_martial_artist',
+  'player_atlanteon_martial_artist_hair2',
+  'player_atlanteon_martial_artist_hair3',
+] as const;
+
+const PT_SHAMAN_HAIR_KEYS = [
+  'player_atlanteon_shaman',
+  'player_atlanteon_shaman_hair2',
+  'player_atlanteon_shaman_hair3',
+] as const;
+
+function ptFighterVisualKey(hair: number): string {
+  return PT_FIGHTER_HAIR_KEYS[hair] ?? PT_FIGHTER_HAIR_KEYS[0];
+}
+
+function ptMechanicianVisualKey(hair: number): string {
+  return PT_MECHANICIAN_HAIR_KEYS[hair] ?? PT_MECHANICIAN_HAIR_KEYS[0];
+}
+
+function ptPikemanVisualKey(hair: number): string {
+  return PT_PIKEMAN_HAIR_KEYS[hair] ?? PT_PIKEMAN_HAIR_KEYS[0];
+}
+
+function ptArcherVisualKey(hair: number): string {
+  return PT_ARCHER_HAIR_KEYS[hair] ?? PT_ARCHER_HAIR_KEYS[0];
+}
+
+function ptKnightVisualKey(hair: number): string {
+  return PT_KNIGHT_HAIR_KEYS[hair] ?? PT_KNIGHT_HAIR_KEYS[0];
+}
+
+function ptAtalantaVisualKey(hair: number): string {
+  return PT_ATALANTA_HAIR_KEYS[hair] ?? PT_ATALANTA_HAIR_KEYS[0];
+}
+
+function ptPriestessVisualKey(hair: number): string {
+  return PT_PRIESTESS_HAIR_KEYS[hair] ?? PT_PRIESTESS_HAIR_KEYS[0];
+}
+
+function ptMagicianVisualKey(hair: number): string {
+  return PT_MAGICIAN_HAIR_KEYS[hair] ?? PT_MAGICIAN_HAIR_KEYS[0];
+}
+
+function ptAssassinVisualKey(hair: number): string {
+  return PT_ASSASSIN_HAIR_KEYS[hair] ?? PT_ASSASSIN_HAIR_KEYS[0];
+}
+
+function ptMartialArtistVisualKey(hair: number): string {
+  return PT_MARTIAL_ARTIST_HAIR_KEYS[hair] ?? PT_MARTIAL_ARTIST_HAIR_KEYS[0];
+}
+
+function ptShamanVisualKey(hair: number): string {
+  return PT_SHAMAN_HAIR_KEYS[hair] ?? PT_SHAMAN_HAIR_KEYS[0];
+}
+
+/** Resolve the PT hair selection to a visual key for the given PT class.
+ *  Returns null for non-PT classes (they do not use the hair override system). */
+function ptVisualKey(cls: PlayerClass, hair: number): string | null {
+  if (cls === 'tempskron_fighter') return ptFighterVisualKey(hair);
+  if (cls === 'tempskron_mechanician') return ptMechanicianVisualKey(hair);
+  if (cls === 'tempskron_pikeman') return ptPikemanVisualKey(hair);
+  if (cls === 'tempskron_archer') return ptArcherVisualKey(hair);
+  if (cls === 'morion_knight') return ptKnightVisualKey(hair);
+  if (cls === 'morion_atalanta') return ptAtalantaVisualKey(hair);
+  if (cls === 'morion_priestess') return ptPriestessVisualKey(hair);
+  if (cls === 'morion_magician') return ptMagicianVisualKey(hair);
+  if (cls === 'atlanteon_assassin') return ptAssassinVisualKey(hair);
+  if (cls === 'atlanteon_martial_artist') return ptMartialArtistVisualKey(hair);
+  if (cls === 'atlanteon_shaman') return ptShamanVisualKey(hair);
+  return null;
+}
 
 function releaseStartScreenPreview(): void {
   if (!characterPreview) return;
@@ -5503,6 +5699,11 @@ function readStoredArmorSet(cls: PlayerClass): ArmorSetId {
  *  live, so editing the look in creation is reflected the next time a visual
  *  is built. */
 function modularLookForClass(cls: PlayerClass): ModularLook | null {
+  // The PT Tempskron classes (Fighter, Mechanician, Pikeman) use fixed PT
+  // GLBs, not composed modular bodies, so they have no modular look.
+  // Returning null here makes the appearance customizer hide itself and
+  // makes previewClassBody fall back to setVisualKey.
+  if (cls === 'tempskron_fighter' || cls === 'tempskron_mechanician' || cls === 'tempskron_pikeman' || cls === 'tempskron_archer' || cls === 'morion_knight' || cls === 'morion_atalanta' || cls === 'morion_priestess' || cls === 'morion_magician' || cls === 'atlanteon_assassin' || cls === 'atlanteon_martial_artist' || cls === 'atlanteon_shaman') return null;
   return { app: modularAppearance, worn: creationLoadout(cls) };
 }
 
@@ -5529,12 +5730,51 @@ function creationLoadout(cls: PlayerClass): ArmorLoadout {
 
 /** Drive the creation/offline turntable for a class chip: every class composes
  *  from the stored appearance, wearing its class kit, through its own modular
- *  def (class clips + starter weapons). */
+ *  def (class clips + starter weapons). Classes without a modular def (the PT
+ *  Tempskron Fighter POC, which uses a fixed PT GLB) fall back to setClass so
+ *  the preview shows the class's own GLB directly. */
 function previewClassBody(cls: PlayerClass): void {
   if (!characterPreview) return;
   const look = modularLookForClass(cls);
   if (look) characterPreview.setModular(look.app, look.worn, cls);
-  else characterPreview.setClass(cls);
+  else if (cls === 'tempskron_fighter' || cls === 'tempskron_mechanician' || cls === 'tempskron_pikeman' || cls === 'tempskron_archer' || cls === 'morion_knight' || cls === 'morion_atalanta' || cls === 'morion_priestess' || cls === 'morion_magician' || cls === 'atlanteon_assassin' || cls === 'atlanteon_martial_artist' || cls === 'atlanteon_shaman') {
+    // PT classes have 3 hair style GLB variants; swap the visual key by hair choice.
+    const vk = ptVisualKey(cls, offlinePtHair);
+    if (vk) characterPreview.setVisualKey(vk);
+    else characterPreview.setClass(cls);
+  } else characterPreview.setClass(cls);
+}
+
+/**
+ * Show the tribe formation as a persistent clickable 3D stage: one
+ * StageMember per implemented class, each at its own HOME position. No
+ * character is automatically selected — the stage stays unselected until
+ * the player explicitly clicks a 3D character. Clicking a character in
+ * the stage selects it (via the stage click callback) without rebuilding
+ * the formation.
+ */
+function showTribeFormation(tribeId: PtTribeId): void {
+  if (!characterPreview) return;
+  offlineSelectedTribe = tribeId;
+  // Build the persistent stage: all classes in the tribe at their HOME
+  // positions, no automatic selection.
+  const entries = tribeStageEntries(tribeId);
+  characterPreview.setStageFormation(entries);
+}
+
+/**
+ * Select a class on the stage. The previously selected character walks
+ * back to its HOME position; the newly selected character walks from its
+ * own HOME to the presentation center. Updates the details panel, hair
+ * controls, and skin controls. Does NOT rebuild the formation.
+ */
+function selectStageClass(cls: PlayerClass): void {
+  if (!characterPreview) return;
+  characterPreview.selectStageMember(cls);
+  renderClassDetails('offline-class-details', cls);
+  const startBtn = $('#btn-start-offline') as HTMLButtonElement | null;
+  startBtn?.removeAttribute('disabled');
+  refreshOfflineSkins(cls);
 }
 
 /** The class each panel's customizer is currently editing. The customizer
@@ -5634,7 +5874,22 @@ function hideSkinPicker(rowId: string): void {
 /** Reset to the default skin and (re)render the offline picker for a class. */
 function refreshOfflineSkins(cls: PlayerClass): void {
   offlineSkin = 0;
+  offlinePtHair = 0;
   characterPreview?.setSkin(0);
+  // Show the 3-choice hair selector for PT classes (Fighter, Mechanician,
+  // Pikeman).
+  const hairRow = document.getElementById('offline-pt-hair-row');
+  if (hairRow) {
+    const isPtClass = cls === 'tempskron_fighter' || cls === 'tempskron_mechanician' || cls === 'tempskron_pikeman' || cls === 'tempskron_archer' || cls === 'morion_knight' || cls === 'morion_atalanta' || cls === 'morion_priestess' || cls === 'morion_magician' || cls === 'atlanteon_assassin' || cls === 'atlanteon_martial_artist' || cls === 'atlanteon_shaman';
+    hairRow.hidden = !isPtClass;
+    if (isPtClass) {
+      hairRow.querySelectorAll('.pt-hair-card').forEach((b, i) => {
+        const sel = i === 0;
+        b.classList.toggle('sel', sel);
+        b.setAttribute('aria-pressed', sel ? 'true' : 'false');
+      });
+    }
+  }
   if (!CREATION_SKIN_PRESETS) {
     hideSkinPicker('#offline-skin-row');
     return;
@@ -5675,6 +5930,11 @@ function updatePreviewContainer(panelId: string): void {
   if (!container) return;
   characterPreview.setContainer(container);
 
+  // The offline-select uses the wider stage framing so the full tribe
+  // formation (up to 4 characters) fits in frame. Other panels keep the
+  // close-up sheet framing.
+  characterPreview.setFraming(panelId === '#offline-select' ? 'stage' : 'sheet');
+
   if (panelId === '#charselect-panel') {
     // The selected roster row drives the showcase: its full real appearance
     // (class or Combat Mech body + chroma + equipped mainhand), matching the
@@ -5693,16 +5953,20 @@ function updatePreviewContainer(panelId: string): void {
     return;
   }
 
-  const selSelector =
-    panelId === '#charcreate-panel'
-      ? '#charcreate-panel .mini-class.sel'
-      : '#offline-select .mini-class.sel';
+  if (panelId === '#offline-select') {
+    // The offline-select now uses a persistent 3D stage: the selected
+    // class lives on the stage, not in a .mini-class.sel card. If a stage
+    // is already active (re-mount), keep it; otherwise the tribe-select
+    // flow will build it. The stage framing is applied above.
+    return;
+  }
+
+  const selSelector = '#charcreate-panel .mini-class.sel';
   const selEl = document.querySelector(selSelector) as HTMLElement | null;
   if (selEl) {
     const cls = selEl.dataset.class as PlayerClass;
     previewClassBody(cls);
-    if (panelId === '#charcreate-panel') refreshOnlineSkins(cls);
-    else refreshOfflineSkins(cls);
+    refreshOnlineSkins(cls);
   }
 
   syncPreviewAfterPanelLayout();
@@ -5776,7 +6040,7 @@ function switchMainView(targetId: string): void {
     if (backdrop) backdrop.classList.toggle('trailer-off', !onPlayPage);
 
     if (targetId === '#hero-view') {
-      const activePlayPanel = ['#charselect-panel', '#charcreate-panel', '#offline-select'].find(
+      const activePlayPanel = ['#charselect-panel', '#charcreate-panel', '#offline-select', '#pt-tribe-select'].find(
         (id) => {
           const el = $(id);
           return el && !el.hasAttribute('hidden');
@@ -5823,7 +6087,10 @@ function show(el: string): void {
   }
 
   const isPlayPanel =
-    el === '#charselect-panel' || el === '#charcreate-panel' || el === '#offline-select';
+    el === '#charselect-panel' ||
+    el === '#charcreate-panel' ||
+    el === '#offline-select' ||
+    el === '#pt-tribe-select';
   const logoImg = $('#title-logo');
   if (logoImg) logoImg.toggleAttribute('hidden', isPlayPanel);
 
@@ -7154,9 +7421,17 @@ function renderClassDetails(
   // preview must update even when the class details panel does not. A char-select
   // caller passes the character's real appearance (setAppearance); the create and
   // offline pickers pass none and rebuild the class body only when the class changes.
+  // When the 3D stage is active (offline PT character select), the stage manages
+  // its own visuals via selectStageMember — previewClassBody must NOT be called
+  // because setVisualKey would dispose the selected stage member's visual and
+  // create a replacement in the hidden characterGroup, making the character
+  // disappear.
   if (characterPreview) {
     if (preview) characterPreview.setAppearance(preview);
-    else if (currentlyRenderedClass[panelId] !== className) previewClassBody(className);
+    else if (
+      currentlyRenderedClass[panelId] !== className &&
+      !characterPreview.isStageActive()
+    ) previewClassBody(className);
   }
 
   // Show the part/colour pickers for a composed body, hide them for a fixed
@@ -7348,6 +7623,57 @@ function renderClassDetails(
   panel.classList.add('visible');
 
   const performUpdate = () => {
+    // PT classes show authentic MagicPT starting stats (STR/SPI/TAL/DEX/HP)
+    // and the PT tribe name. They do NOT show inherited WoC role/armor/
+    // weapons/resource/signature-ability data — that data is from the WoC
+    // Warrior/Mage/Priest/etc. and is not authentic to the PT class.
+    const ptStats = ptStartingStatsFor(className);
+    const ptTribeName = ptTribeNameForClass(className);
+    const isPtClass = ptStats !== null;
+
+    if (isPtClass) {
+      // PT class: show class name, tribe, description, and PT starting stats.
+      const ptStatsHtml = `
+        <div class="pt-starting-stats">
+          <h4 class="details-section-title">Starting Stats</h4>
+          <div class="pt-stat-grid">
+            <div class="pt-stat-row"><span class="pt-stat-label">Strength</span><span class="pt-stat-val">${ptStats!.str}</span></div>
+            <div class="pt-stat-row"><span class="pt-stat-label">Spirit</span><span class="pt-stat-val">${ptStats!.spi}</span></div>
+            <div class="pt-stat-row"><span class="pt-stat-label">Talent</span><span class="pt-stat-val">${ptStats!.tal}</span></div>
+            <div class="pt-stat-row"><span class="pt-stat-label">Dexterity</span><span class="pt-stat-val">${ptStats!.dex}</span></div>
+            <div class="pt-stat-row"><span class="pt-stat-label">Health</span><span class="pt-stat-val">${ptStats!.hp}</span></div>
+          </div>
+        </div>`;
+      panel.innerHTML = `
+        <div class="class-details-content fade-out">
+          <div class="class-details-header">
+            <div class="class-details-header-text">
+              <h3 class="class-details-name">${esc(classLabel)}</h3>
+              ${ptTribeName ? `<span class="class-details-tribe">${esc(ptTribeName.toUpperCase())}</span>` : ''}
+            </div>
+          </div>
+          <p class="class-details-lore">${esc(classDisplayDescription(className))}</p>
+          ${ptStatsHtml}
+        </div>
+      `;
+      panel.setAttribute(
+        'aria-label',
+        `${classLabel}${ptTribeName ? ', ' + ptTribeName : ''}`,
+      );
+      const contentWrapper = panel.querySelector('.class-details-content') as HTMLElement | null;
+      if (contentWrapper) {
+        const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (isReducedMotion) {
+          contentWrapper.classList.remove('fade-out');
+        } else {
+          void contentWrapper.offsetHeight;
+          contentWrapper.classList.remove('fade-out');
+        }
+      }
+      return;
+    }
+
+    // Non-PT (WoC) class: show the full WoC class details.
     panel.innerHTML = `
       <div class="class-details-content fade-out">
         <div class="class-details-header">
@@ -7590,12 +7916,15 @@ function refreshLocalizedDynamicShell(): void {
     }
     return;
   }
-  const offlineSelected = document.querySelector(
-    '#offline-select .mini-class.sel',
-  ) as HTMLElement | null;
-  if (activePanel === 'offline-select' && offlineSelected) {
-    currentlyRenderedClass['offline-class-details'] = null;
-    renderClassDetails('offline-class-details', offlineSelected.dataset.class as PlayerClass);
+  if (activePanel === 'offline-select') {
+    const stageCls = characterPreview?.getStageSelectedClass() as
+      | PlayerClass
+      | null
+      | undefined;
+    if (stageCls) {
+      currentlyRenderedClass['offline-class-details'] = null;
+      renderClassDetails('offline-class-details', stageCls);
+    }
   }
 }
 
@@ -9580,31 +9909,14 @@ function wireStartScreens(): void {
     music.init();
     sfx.init();
     const name = sanitizeOfflineName(rawName);
-    void startOffline(cls, name, selectedSkin('#offline-skin-row', offlineSkin));
+    void startOffline(cls, name, selectedSkin('#offline-skin-row', offlineSkin), undefined, undefined, offlinePtHair);
   };
 
   const handleOfflineSelect = () => {
-    // Defensive: inert no-op in production even if some caller reaches this
-    // (e.g. a stale E2E script driving the hidden #btn-offline trigger),
-    // since the dropdown option and trigger are also not wired below.
+    // Tribe-first flow: show tribe selection before the class roster.
+    // The tribe callbacks below wire the transition into #offline-select.
     if (!offlineAvailable) return;
-    show('#offline-select');
-
-    // Select warrior by default and render details
-    const warriorCard = document.querySelector(
-      '#offline-select .mini-class[data-class="warrior"]',
-    ) as HTMLElement | null;
-    if (warriorCard) {
-      document.querySelectorAll('#offline-select .mini-class').forEach((c) => {
-        c.classList.remove('sel');
-        c.setAttribute('aria-pressed', 'false');
-      });
-      warriorCard.classList.add('sel');
-      warriorCard.setAttribute('aria-pressed', 'true');
-      renderClassDetails('offline-class-details', 'warrior');
-      btnStartOffline.removeAttribute('disabled');
-      refreshOfflineSkins('warrior');
-    }
+    show('#pt-tribe-select');
   };
 
   onlineBtn.addEventListener('click', handleOnlineSelect);
@@ -9776,127 +10088,100 @@ function wireStartScreens(): void {
 
   if (btnStartOffline) {
     btnStartOffline.addEventListener('click', () => {
-      const selCard = document.querySelector(
-        '#offline-select .mini-class.sel',
-      ) as HTMLElement | null;
-      if (selCard) {
-        handleOfflineStart(selCard.dataset.class as PlayerClass);
+      // The selected class now lives on the persistent 3D stage, not in a
+      // .mini-class.sel card. Read it from the preview's stage state.
+      const stageCls = characterPreview?.getStageSelectedClass() as
+        | PlayerClass
+        | null
+        | undefined;
+      if (stageCls) {
+        handleOfflineStart(stageCls);
       } else {
         offlineError.textContent = t('errors.selectClass');
       }
     });
   }
 
-  // offline class chips
-  document.querySelectorAll('#offline-select .mini-class').forEach((card) => {
-    const handleClassSelect = () => {
-      if (hoverTimeouts['offline-class-details'] !== null) {
-        window.clearTimeout(hoverTimeouts['offline-class-details']);
-        hoverTimeouts['offline-class-details'] = null;
-      }
-      if (revertTimeouts['offline-class-details'] !== null) {
-        window.clearTimeout(revertTimeouts['offline-class-details']);
-        revertTimeouts['offline-class-details'] = null;
-      }
-      document.querySelectorAll('#offline-select .mini-class').forEach((c) => {
-        c.classList.remove('sel');
-        c.setAttribute('aria-pressed', 'false');
+  // Stage click selection: clicking a 3D character in the formation
+  // selects that class. The preview raycasts the click and fires the
+  // callback with the clicked class id. We route it through the same
+  // selection path the old .mini-class cards used.
+  // NOTE: characterPreview is created async after assets load, so the
+  // callback is registered there (after construction). This is a no-op
+  // if the preview isn't ready yet.
+
+  // PT hair style selector: 3 choices swap the GLB visual key.
+  // Shared by all PT classes. The selected stage character's visual is
+  // rebuilt with the new hair variant; its position and selection state
+  // are preserved (no walk restart, no formation rebuild).
+  document.querySelectorAll('#offline-pt-hair-row .pt-hair-card').forEach((btn) => {
+    const handleHairSelect = () => {
+      const hair = Number((btn as HTMLElement).dataset.hair ?? '0');
+      offlinePtHair = hair;
+      document.querySelectorAll('#offline-pt-hair-row .pt-hair-card').forEach((b) => {
+        const sel = b === btn;
+        b.classList.toggle('sel', sel);
+        b.setAttribute('aria-pressed', sel ? 'true' : 'false');
       });
-      card.classList.add('sel');
-      card.setAttribute('aria-pressed', 'true');
-
-      const cls = (card as HTMLElement).dataset.class as PlayerClass;
-      renderClassDetails('offline-class-details', cls);
-      btnStartOffline.removeAttribute('disabled');
-      refreshOfflineSkins(cls);
+      // Rebuild the selected stage member's visual with the new hair. The
+      // member stays at its current position (presentation or home).
+      const selCls = characterPreview?.getStageSelectedClass() as
+        | PlayerClass
+        | null
+        | undefined;
+      if (selCls && characterPreview) {
+        const vk = ptVisualKey(selCls, hair);
+        if (vk) characterPreview.rebuildSelectedStageVisual(vk);
+      }
     };
-    card.addEventListener('click', handleClassSelect);
-    card.addEventListener('keydown', (e) =>
-      handleKeyboardActivation(e as KeyboardEvent, handleClassSelect),
+    btn.addEventListener('click', handleHairSelect);
+    btn.addEventListener('keydown', (e) =>
+      handleKeyboardActivation(e as KeyboardEvent, handleHairSelect),
     );
-
-    // A11y focus updates details
-    card.addEventListener('focus', () => {
-      if (revertTimeouts['offline-class-details'] !== null) {
-        window.clearTimeout(revertTimeouts['offline-class-details']);
-        revertTimeouts['offline-class-details'] = null;
-      }
-      if (hoverTimeouts['offline-class-details'] !== null) {
-        window.clearTimeout(hoverTimeouts['offline-class-details']);
-        hoverTimeouts['offline-class-details'] = null;
-      }
-      const cls = (card as HTMLElement).dataset.class as PlayerClass;
-      renderClassDetails('offline-class-details', cls);
-    });
-
-    // Hover updates details with 50ms debounce
-    card.addEventListener('mouseenter', () => {
-      if (revertTimeouts['offline-class-details'] !== null) {
-        window.clearTimeout(revertTimeouts['offline-class-details']);
-        revertTimeouts['offline-class-details'] = null;
-      }
-      if (hoverTimeouts['offline-class-details'] !== null) {
-        window.clearTimeout(hoverTimeouts['offline-class-details']);
-      }
-      const cls = (card as HTMLElement).dataset.class as PlayerClass;
-      hoverTimeouts['offline-class-details'] = window.setTimeout(() => {
-        renderClassDetails('offline-class-details', cls);
-        hoverTimeouts['offline-class-details'] = null;
-      }, 50);
-    });
-
-    // Mouseleave reverts to currently selected class details with a 100ms debounce
-    card.addEventListener('mouseleave', () => {
-      if (hoverTimeouts['offline-class-details'] !== null) {
-        window.clearTimeout(hoverTimeouts['offline-class-details']);
-        hoverTimeouts['offline-class-details'] = null;
-      }
-      if (revertTimeouts['offline-class-details'] !== null) {
-        window.clearTimeout(revertTimeouts['offline-class-details']);
-      }
-      revertTimeouts['offline-class-details'] = window.setTimeout(() => {
-        const selCard = document.querySelector(
-          '#offline-select .mini-class.sel',
-        ) as HTMLElement | null;
-        if (selCard) {
-          const cls = selCard.dataset.class as PlayerClass;
-          renderClassDetails('offline-class-details', cls);
-        }
-        revertTimeouts['offline-class-details'] = null;
-      }, 100);
-    });
-
-    // Blur reverts to currently selected class details with a 100ms debounce (matches mouseleave)
-    card.addEventListener('blur', () => {
-      if (hoverTimeouts['offline-class-details'] !== null) {
-        window.clearTimeout(hoverTimeouts['offline-class-details']);
-        hoverTimeouts['offline-class-details'] = null;
-      }
-      if (revertTimeouts['offline-class-details'] !== null) {
-        window.clearTimeout(revertTimeouts['offline-class-details']);
-      }
-      revertTimeouts['offline-class-details'] = window.setTimeout(() => {
-        const selCard = document.querySelector(
-          '#offline-select .mini-class.sel',
-        ) as HTMLElement | null;
-        if (selCard) {
-          const cls = selCard.dataset.class as PlayerClass;
-          renderClassDetails('offline-class-details', cls);
-        }
-        revertTimeouts['offline-class-details'] = null;
-      }, 100);
-    });
   });
 
   const offlineBackBtn = $('#btn-offline-back');
   const handleOfflineBack = () => {
-    show('#mode-select');
+    // Back from the class roster returns to tribe selection (tribe-first flow).
+    show('#pt-tribe-select');
+    resetOfflineSelectTribeFilter($('#offline-select') as HTMLElement | null);
     offlineError.textContent = '';
     offlineNameInput.value = '';
     offlineNameInput.classList.remove('user-invalid-fallback');
     offlineNameInput.removeAttribute('aria-invalid');
+    // Clear the persistent stage so all characters return to their HOME
+    // positions and the tribe-select screen is clean. Re-entering a tribe
+    // rebuilds the formation normally.
+    offlineSelectedTribe = null;
+    characterPreview?.clearStage();
   };
   if (offlineBackBtn) offlineBackBtn.addEventListener('click', handleOfflineBack);
+
+  // Wire the tribe selection panel: tribe cards navigate into #offline-select
+  // filtered to that tribe; Back on the tribe screen returns to #mode-select.
+  wirePtTribeSelect($('#pt-tribe-select') as HTMLElement | null, {
+    onTribeSelected(tribeId, first) {
+      filterOfflineSelectForTribe($('#offline-select') as HTMLElement | null, tribeId);
+      show('#offline-select');
+      if (first) {
+        renderClassDetails('offline-class-details', first as PlayerClass);
+        btnStartOffline.removeAttribute('disabled');
+        refreshOfflineSkins(first as PlayerClass);
+        // Build the persistent 3D stage: all implemented classes stand at
+        // their HOME positions. No character is automatically selected —
+        // the player must click a 3D character to start walking forward.
+        // The info panel above shows the first class as a default preview,
+        // but that is separate from the 3D stage selection state.
+        showTribeFormation(tribeId);
+      } else {
+        // No implemented classes for this tribe yet.
+        btnStartOffline.setAttribute('disabled', '');
+      }
+    },
+    onBack() {
+      show('#mode-select');
+    },
+  });
 
   // login
   const doAuth = async (mode: 'login' | 'register') => {
@@ -10360,15 +10645,17 @@ function wireStartScreens(): void {
     });
   });
 
-  // Default select warrior in online character creator
+  // Default select Tempskron Fighter in online character creator. The default
+  // WoC classes were removed from Character Select; the first PT class is the
+  // default selection.
   const defaultOnlineClass = document.querySelector(
-    '#charcreate-panel .mini-class[data-class="warrior"]',
+    '#charcreate-panel .mini-class[data-class="tempskron_fighter"]',
   ) as HTMLElement | null;
   if (defaultOnlineClass) {
     defaultOnlineClass.classList.add('sel');
     defaultOnlineClass.setAttribute('aria-pressed', 'true');
-    renderClassDetails('charcreate-class-details', 'warrior');
-    refreshOnlineSkins('warrior');
+    renderClassDetails('charcreate-class-details', 'tempskron_fighter');
+    refreshOnlineSkins('tempskron_fighter');
   }
   const newCharNameInput = $('#new-char-name') as HTMLInputElement;
   const charselectError = $('#charselect-error');
@@ -11224,18 +11511,30 @@ function wireStartScreens(): void {
           // (assets/preload.ts: "a 12 GB iPhone 17 Pro was killed 1.6s into the LAUNCHER").
           constrainedMemory: GFX.constrainedMemory,
         });
+        // Register the stage click callback now that the preview exists.
+        // Clicking a 3D character in the formation selects that class via
+        // raycasting; routed through the same selection path the old
+        // .mini-class cards used.
+        characterPreview.setStageClickCallback((classId) => {
+          selectStageClass(classId as PlayerClass);
+        });
         // If a token auto-login already rendered the roster and selected a
         // character before assets finished, show its real appearance; otherwise
-        // fall back to the selected class chip (create/offline panels).
+        // fall back to the selected class chip (create panel) or the default
+        // PT fighter (offline panel, which uses the 3D stage and will build
+        // its formation when a tribe is selected).
         if (charselectSelected) {
           showCharselectCharacter(charselectSelected);
+        } else if (activePanelId === '#offline-select') {
+          // The offline-select uses the persistent 3D stage; the stage is
+          // built when a tribe is selected. Until then, show the default
+          // fighter body so the canvas isn't blank.
+          previewClassBody('tempskron_fighter');
         } else {
-          const selSelector =
-            activePanelId === '#offline-select'
-              ? '#offline-select .mini-class.sel'
-              : '#charcreate-panel .mini-class.sel';
-          const selEl = document.querySelector(selSelector) as HTMLElement | null;
-          const cls = selEl ? (selEl.dataset.class as PlayerClass) : 'warrior';
+          const selEl = document.querySelector(
+            '#charcreate-panel .mini-class.sel',
+          ) as HTMLElement | null;
+          const cls = selEl ? (selEl.dataset.class as PlayerClass) : 'tempskron_fighter';
           previewClassBody(cls);
         }
       }

@@ -28,6 +28,28 @@ const PALETTE: Record<PlayerClass, number> = {
   shaman: 0x4e8aea,
   warlock: 0xa785e6,
   druid: 0xff8c1a,
+  // PT Tempskron Fighter POC: reuse warrior's color
+  tempskron_fighter: 0xd67a54,
+  // PT Tempskron Mechanician POC: reuse warrior's color
+  tempskron_mechanician: 0xd67a54,
+  // PT Tempskron Pikeman POC: reuse warrior's color
+  tempskron_pikeman: 0xd67a54,
+  // PT Tempskron Archer POC: distinct green color (ranged/dexterity class)
+  tempskron_archer: 0x4a9c5a,
+  // PT Morion Knight POC: distinct Morion blue color (strength/melee class)
+  morion_knight: 0x6b8fb5,
+  // PT Morion Atalanta POC: distinct Morion gold color (spear/dexterity class)
+  morion_atalanta: 0xc4a070,
+  // PT Morion Priestess POC: distinct light purple color (holy healer)
+  morion_priestess: 0xe8d0ff,
+  // PT Morion Magician POC: distinct orange-red color (fire/elemental caster)
+  morion_magician: 0xff6b3d,
+  // PT Atlanteon Assassin POC: distinct dark blue-gray color (dual-wield DPS)
+  atlanteon_assassin: 0x4a4a6b,
+  // PT Atlanteon Martial Artist POC: distinct gold color (unarmed brawler)
+  atlanteon_martial_artist: 0xd4a040,
+  // PT Atlanteon Shaman POC: distinct teal color (spiritual caster)
+  atlanteon_shaman: 0x3d6b5c,
 };
 const CLASS_IDS = Object.keys(PALETTE) as PlayerClass[];
 

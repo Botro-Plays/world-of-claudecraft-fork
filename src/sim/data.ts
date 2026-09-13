@@ -708,6 +708,28 @@ export const REWARD_ARCHETYPE: Record<PlayerClass, PlayerClass> = {
   priest: 'mage',
   warlock: 'mage',
   druid: 'mage',
+  // PT Tempskron Fighter POC: reuse warrior's reward archetype
+  tempskron_fighter: 'warrior',
+  // PT Tempskron Mechanician POC: reuse warrior's reward archetype
+  tempskron_mechanician: 'warrior',
+  // PT Tempskron Pikeman POC: reuse warrior's reward archetype
+  tempskron_pikeman: 'warrior',
+  // PT Tempskron Archer POC: reuse warrior's reward archetype
+  tempskron_archer: 'warrior',
+  // PT Morion Knight POC: reuse warrior's reward archetype
+  morion_knight: 'warrior',
+  // PT Morion Atalanta POC: reuse warrior's reward archetype
+  morion_atalanta: 'warrior',
+  // PT Morion Priestess POC: reuse warrior's reward archetype (Phase A)
+  morion_priestess: 'warrior',
+  // PT Morion Magician POC: reuse warrior's reward archetype (Phase A)
+  morion_magician: 'warrior',
+  // PT Atlanteon Assassin POC: reuse warrior's reward archetype (Phase A)
+  atlanteon_assassin: 'warrior',
+  // PT Atlanteon Martial Artist POC: reuse warrior's reward archetype
+  atlanteon_martial_artist: 'warrior',
+  // PT Atlanteon Shaman POC: reuse warrior's reward archetype (Phase A)
+  atlanteon_shaman: 'warrior',
 };
 
 // Resolve the item a quest awards a given class: a class-specific reward if the

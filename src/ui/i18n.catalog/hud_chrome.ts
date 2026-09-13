@@ -1613,6 +1613,9 @@ export const hudChromeStrings = {
     sheathe: 'Sheathe/Unsheathe Weapon',
     // Swimming: Jump swims up, this swims down.
     dive: 'Swim Down',
+    // Run/walk gait toggle (KeyR by default). Click the HUD indicator or
+    // press the key to switch between running and walking.
+    toggleRunWalk: 'Toggle Run/Walk',
     // Pet bar (Ctrl+1..5 by default) key-binding rows + category header.
     categoryPet: 'Pet',
     petAttack: 'Pet: Attack',

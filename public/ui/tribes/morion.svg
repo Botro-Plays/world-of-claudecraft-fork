@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="mg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8ab4e0"/>
+      <stop offset="100%" stop-color="#3a6090"/>
+    </linearGradient>
+  </defs>
+  <!-- Outer circle -->
+  <circle cx="60" cy="60" r="50" fill="none" stroke="url(#mg)" stroke-width="2.5" opacity="0.7"/>
+  <!-- Crescent moon -->
+  <path d="M60 18 A42 42 0 1 1 60 102 A28 28 0 1 0 60 18 Z"
+        fill="url(#mg)" opacity="0.85"/>
+  <!-- Star -->
+  <polygon points="60,32 63,42 74,42 65,49 68,60 60,53 52,60 55,49 46,42 57,42"
+           fill="#c8e0f8" opacity="0.9"/>
+</svg>

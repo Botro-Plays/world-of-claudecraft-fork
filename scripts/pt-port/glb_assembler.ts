@@ -217,6 +217,43 @@ export interface GlbBuildOptions {
   inxPath: string;
   bmpPath: string;
   outputPath: string;
+  /** Optional additional SMD files whose mesh objects are merged into the
+   *  output (e.g. a character body + head pair that share one skeleton).
+   *  Material indices are offset by the primary SMD's material count. */
+  extraSmdPaths?: string[];
+  /** Optional override for the texture resolution root. When provided,
+   *  relative texture paths (e.g. "char\tmABCD\foo.bmp") resolve under this
+   *  directory instead of the legacy hardcoded client root. */
+  clientRoot?: string;
+  /** Optional additional SMB (skeleton+animation) files whose keyframes
+   *  are concatenated with tick offsets into one merged skeleton. PT
+   *  character motion data is split across M1-motion1..M1-motion14.smb;
+   *  the INX frame numbers index into the combined keyframe range. */
+  extraSmbPaths?: string[];
+  /** Optional texture override map: source texture path (as referenced in
+   *  the SMD material textureNames, e.g. "char\tmABCD\hair_style02.tga")
+   *  -> replacement texture path (resolved under clientRoot). Used to swap
+   *  the hair texture for the Fighter's 3-choice hair selection. */
+  textureOverrides?: Record<string, string>;
+  /** Optional clip name override map: INX state name (e.g. "STAND") ->
+   *  exported clip name. Used when the INX state names don't match the
+   *  actual visual content of the motion data (the PT Fighter's STAND
+   *  frame range contains a walk cycle, WALK contains a run cycle, and
+   *  RUN contains a standing pose, so the names are swapped to match
+   *  what the clips actually show). */
+  clipNameOverrides?: Record<string, string>;
+  /** Optional reversed clips to export: each entry creates a new clip by
+   *  playing an existing INX state's keyframes in reverse (time-mirrored).
+   *  Used to create e.g. a jump clip from FALLSTAND reversed (crouch down
+   *  to launch) while the normal FALLSTAND plays forward for the landing. */
+  reversedClips?: { sourceState: string; exportName: string }[];
+  /** Optional allowlist of mesh object names to include. When provided, mesh
+   *  objects whose `nodeName` is NOT in this set are silently dropped.
+   *  Used to filter out multi-tier body part SMDs (e.g. the Pikeman TmbC01.smd
+   *  contains both C01 and C03 tier objects; only the C01 objects should be
+   *  rendered for the default C001 armor). When omitted, all mesh objects
+   *  are included (preserving existing behavior for Fighter/Mechanician). */
+  meshObjectFilter?: string[];
 }
 
 export async function buildGlb(opts: GlbBuildOptions): Promise<void> {
@@ -224,7 +261,81 @@ export async function buildGlb(opts: GlbBuildOptions): Promise<void> {
   const smb = parseSmd(readFileSync(opts.smbPath));
   const inx = parseInx(readFileSync(opts.inxPath));
 
-  // Find ALL mesh objects (has vertices)
+  // Apply the mesh object filter to the PRIMARY SMD only, before extra SMDs
+  // (heads, weapons) are merged. PT body SMDs can contain multiple armor
+  // tiers in one file (e.g. Pikeman TmbC01.smd has C01 + C03 objects); the
+  // INX model groups name only the objects for the current armor. Extra SMDs
+  // (heads, hair) have their own object names that are NOT in the body model
+  // groups, so filtering after merge would wrongly drop them.
+  if (opts.meshObjectFilter && opts.meshObjectFilter.length > 0) {
+    const allow = new Set(opts.meshObjectFilter);
+    const before = smd.objects.filter((o) => o.nVertex > 0).length;
+    smd.objects = smd.objects.filter((o) => o.nVertex === 0 || allow.has(o.nodeName));
+    const after = smd.objects.filter((o) => o.nVertex > 0).length;
+    if (after === 0) throw new Error('No mesh object remained after filter');
+    if (after < before) {
+      console.log(`Mesh filter: ${before} -> ${after} body objects (dropped ${before - after})`);
+    }
+  }
+
+  // Merge extra SMD mesh objects + materials into the primary model so the
+  // single-pipeline GLB assembly below produces one combined skinned mesh.
+  // Material indices of extra objects are offset by the primary mat count.
+  if (opts.extraSmdPaths && opts.extraSmdPaths.length > 0) {
+    for (const extraPath of opts.extraSmdPaths) {
+      const extra = parseSmd(readFileSync(extraPath));
+      const matOffset = smd.materials.length;
+      for (const mat of extra.materials) smd.materials.push(mat);
+      for (const obj of extra.objects) {
+        if (obj.nVertex === 0) continue;
+        // Remap face material indices into the merged material table.
+        for (const face of obj.faces) face.materialIndex += matOffset;
+        smd.objects.push(obj);
+      }
+    }
+  }
+
+  // Merge extra SMB (skeleton+animation) files. PT character motion data is
+  // split across multiple SMB files (M1-motion1..M1-motion14.smb). Each file
+  // contains the same bone hierarchy but different keyframe ranges. We
+  // concatenate keyframes with a tick offset so the INX frame numbers (which
+  // are direct indices into the combined range) resolve correctly.
+  if (opts.extraSmbPaths && opts.extraSmbPaths.length > 0) {
+    // Build a name->index map for the primary SMB's bones.
+    const boneIdxByName = new Map<string, number>();
+    smb.objects.forEach((b, i) => boneIdxByName.set(b.nodeName, i));
+    let tickOffset = 0;
+    // Find the max keyframe tick across all bones in the primary SMB.
+    for (const bone of smb.objects) {
+      for (const kf of bone.tmRot) if (kf.frame > tickOffset) tickOffset = kf.frame;
+      for (const kf of bone.tmPos) if (kf.frame > tickOffset) tickOffset = kf.frame;
+      for (const kf of bone.tmScale) if (kf.frame > tickOffset) tickOffset = kf.frame;
+    }
+    tickOffset += TICKS_PER_FRAME; // one-frame gap between files
+    for (const extraSmbPath of opts.extraSmbPaths) {
+      const extraSmb = parseSmd(readFileSync(extraSmbPath));
+      for (const extraBone of extraSmb.objects) {
+        const idx = boneIdxByName.get(extraBone.nodeName);
+        if (idx === undefined) continue; // bone not in primary skeleton
+        const bone = smb.objects[idx];
+        // Append keyframes with tick offset.
+        for (const kf of extraBone.tmRot) bone.tmRot.push({ ...kf, frame: kf.frame + tickOffset });
+        for (const kf of extraBone.tmPos) bone.tmPos.push({ ...kf, frame: kf.frame + tickOffset });
+        for (const kf of extraBone.tmScale) bone.tmScale.push({ ...kf, frame: kf.frame + tickOffset });
+        for (const m of extraBone.tmPrevRot) bone.tmPrevRot.push(m);
+      }
+      // Advance the offset past this file's keyframes.
+      let fileMax = 0;
+      for (const bone of extraSmb.objects) {
+        for (const kf of bone.tmRot) if (kf.frame > fileMax) fileMax = kf.frame;
+        for (const kf of bone.tmPos) if (kf.frame > fileMax) fileMax = kf.frame;
+        for (const kf of bone.tmScale) if (kf.frame > fileMax) fileMax = kf.frame;
+      }
+      tickOffset += fileMax + TICKS_PER_FRAME;
+    }
+  }
+
+  // Find ALL mesh objects (has vertices).
   const meshObjs = smd.objects.filter((o) => o.nVertex > 0);
   if (meshObjs.length === 0) throw new Error('No mesh object found in SMD');
   const meshObj = meshObjs[0]; // keep for backward compat
@@ -264,11 +375,19 @@ export async function buildGlb(opts: GlbBuildOptions): Promise<void> {
   const textureCache = new Map<string, Uint8Array | null>();
   function getTexturePng(texPath: string): Uint8Array | null {
     if (!texPath) return null;
+    // PT SMD material textureNames can carry a pipe-separated fallback list
+    // (e.g. "char\tmABCD\TmhA02.tga|char\tmABCD\TmhA02.tga"). Take the first
+    // entry before any pipe so the file path resolves cleanly.
+    const pipeIdx = texPath.indexOf('|');
+    if (pipeIdx >= 0) texPath = texPath.slice(0, pipeIdx);
+    // Apply texture overrides (e.g. hair style swap) before cache/resolution.
+    const override = opts.textureOverrides?.[texPath];
+    if (override) texPath = override;
     if (textureCache.has(texPath)) return textureCache.get(texPath)!;
     try {
-      const clientRoot = 'D:\\From Luis Cezar Matias - Chinese MagicPT\\Client\\';
+      const clientRoot = opts.clientRoot ?? 'D:\\From Luis Cezar Matias - Chinese MagicPT\\Client\\';
       let fullPath = texPath;
-      if (!fullPath.startsWith('D:')) {
+      if (!fullPath.startsWith('D:') && !fullPath.startsWith(clientRoot)) {
         fullPath = clientRoot + texPath;
       }
       const lower = fullPath.toLowerCase();
@@ -448,7 +567,8 @@ export async function buildGlb(opts: GlbBuildOptions): Promise<void> {
   }
 
   // Mesh node (with skin)
-  const meshNode = doc.createNode('hopy')
+  const meshNodeName = opts.outputPath.split(/[\\/]/).pop()!.replace(/\.glb$/i, '') || 'mesh';
+  const meshNode = doc.createNode(meshNodeName)
     .setMesh(mesh)
     .setSkin(skin);
 
@@ -465,11 +585,57 @@ export async function buildGlb(opts: GlbBuildOptions): Promise<void> {
   const scene = doc.createScene('scene').addChild(rootNode);
 
   // Animations from INX + SMB (doc.createAnimation adds to root automatically)
+  // PT ships village (mapPos=1) and field/combat (mapPos=2) motion variants per
+  // state. The village STAND is a relaxed weight-shifting idle; the field STAND
+  // is a braced combat stance. Export the first motion per state as the default
+  // clip (village/server), and also export the first field STAND as
+  // STAND_COMBAT so the renderer can switch to a combat stance when engaged.
+  // When clipNameOverrides is provided, the INX state name is remapped to the
+  // exported clip name (e.g. the Fighter's STAND frame range contains a walk
+  // cycle, so it is exported as "WALK" instead of "STAND").
+  const clipName = (stateName: string): string =>
+    opts.clipNameOverrides?.[stateName] ?? stateName;
   const seenStates = new Set<string>();
   for (const motion of inx.motions) {
     if (seenStates.has(motion.stateName)) continue;
     seenStates.add(motion.stateName);
-    buildAnimation(doc, buffer, motion, bones, boneNodeMap, smb.tmFrames, boneIndexMap, tmGltf);
+    buildAnimation(doc, buffer, { ...motion, stateName: clipName(motion.stateName) }, bones, boneNodeMap, smb.tmFrames, boneIndexMap, tmGltf);
+  }
+  // Export the first field STAND (mapPos=2) as STAND_COMBAT for the combatIdle
+  // stance. PT uses this in field/combat areas; the renderer switches to it
+  // when the player is engaged (desiredBaseState returns combatIdle).
+  // Note: STAND_COMBAT always keeps its name regardless of clipNameOverrides,
+  // since the field STAND variant is the braced combat stance by visual
+  // confirmation.
+  const fieldStand = inx.motions.find(
+    (m) => m.stateName === 'STAND' && m.mapPosition === 2,
+  );
+  if (fieldStand) {
+    buildAnimation(
+      doc, buffer,
+      { ...fieldStand, stateName: 'STAND_COMBAT' },
+      bones, boneNodeMap, smb.tmFrames, boneIndexMap, tmGltf,
+    );
+  }
+
+  // Build reversed clips (e.g. a jump clip from FALLSTAND reversed: crouch
+  // down to launch). The source INX state's keyframes are time-mirrored so
+  // the clip plays from end to start.
+  if (opts.reversedClips) {
+    for (const spec of opts.reversedClips) {
+      const source = inx.motions.find(m => m.stateName === spec.sourceState);
+      if (!source) {
+        console.warn(`Reversed clip "${spec.exportName}": source state "${spec.sourceState}" not found`);
+        continue;
+      }
+      buildAnimation(
+        doc, buffer,
+        { ...source, stateName: spec.exportName },
+        bones, boneNodeMap, smb.tmFrames, boneIndexMap, tmGltf,
+        true, // reverse
+      );
+      console.log(`  Reversed clip "${spec.exportName}" from "${spec.sourceState}"`);
+    }
   }
 
   // Write GLB
@@ -477,6 +643,23 @@ export async function buildGlb(opts: GlbBuildOptions): Promise<void> {
   await io.write(opts.outputPath, doc);
   const stats = readFileSync(opts.outputPath);
   console.log(`Written GLB: ${opts.outputPath} (${stats.length} bytes)`);
+}
+
+// Reverse the order of keyframes in both times and values arrays (values has
+// `stride` elements per keyframe). Used to create reversed clips where the
+// keyframe times are mirrored (t' = duration - t), which puts them in
+// descending order; reversing the array order restores ascending order.
+function reverseKeyframes(times: number[], values: number[], stride: number): void {
+  times.reverse();
+  const n = times.length;
+  for (let i = 0; i < Math.floor(n / 2); i++) {
+    const j = n - 1 - i;
+    for (let s = 0; s < stride; s++) {
+      const tmp = values[i * stride + s];
+      values[i * stride + s] = values[j * stride + s];
+      values[j * stride + s] = tmp;
+    }
+  }
 }
 
 function buildAnimation(
@@ -488,6 +671,7 @@ function buildAnimation(
   tmFrames: PTFramePos[],
   boneIndexMap: Map<string, number>,
   tmGltf: Mat4[],
+  reverse = false,
 ): Animation | null {
   // PT offsets each animation's frame range by TmFrame[MotionFrame-1].StartFrame.
   // character.cpp:689-691: sframe = TmFrame[MotionFrame-1].StartFrame / 160;
@@ -497,7 +681,13 @@ function buildAnimation(
   //              = INX.startFrame * 160 + TmFrame.startFrame
   const motionIdx = motion.motionFrame - 1; // 1-based to 0-based
   const tmFrame = (motionIdx >= 0 && motionIdx < tmFrames.length) ? tmFrames[motionIdx] : null;
-  const frameOffset = tmFrame ? tmFrame.startFrame : 0;
+  // Character SMBs (M1-motion*.smb etc.) ship with uninitialized TmFrame
+  // entries (0xCDCDCDCD, MSVC debug heap fill). When the offset is negative
+  // or otherwise implausible, treat it as 0: the INX frame numbers are then
+  // direct frame indices, which is the correct interpretation for character
+  // motion files (monster SMBs use the TmFrame offset mechanism instead).
+  const rawOffset = tmFrame ? tmFrame.startFrame : 0;
+  const frameOffset = (rawOffset >= 0 && rawOffset < 10_000_000) ? rawOffset : 0;
   const startTick = motion.startFrame * TICKS_PER_FRAME + frameOffset;
   const endTick = motion.endFrame * TICKS_PER_FRAME + frameOffset;
   const duration = (endTick - startTick) / TICKS_PER_FRAME / FPS;
@@ -505,6 +695,13 @@ function buildAnimation(
   if (duration <= 0) return null;
 
   const anim = doc.createAnimation(motion.stateName);
+  // When reverse is true, keyframe times are mirrored (t' = duration - t) so
+  // the clip plays from end to start. The keyframe array is then reversed to
+  // keep times in ascending order (glTF requires monotonic time accessors).
+  const timeOf = (frame: number) => {
+    const t = (frame - startTick) / TICKS_PER_FRAME / FPS;
+    return reverse ? duration - t : t;
+  };
 
   for (let bi = 0; bi < bones.length; bi++) {
     const bone = bones[bi];
@@ -518,7 +715,7 @@ function buildAnimation(
       for (let ri = 0; ri < bone.tmRot.length; ri++) {
         const kf = bone.tmRot[ri];
         if (kf.frame >= startTick && kf.frame <= endTick) {
-          times.push((kf.frame - startTick) / TICKS_PER_FRAME / FPS);
+          times.push(timeOf(kf.frame));
           // PrevRot[ri] is the bone's LOCAL rotation matrix at keyframe ri (Z-up, row-vector).
           // Convert to glTF Y-up column-vector using the same CONV sandwich as the bind pose.
           // The delta quaternion (kf.x,y,z,w) is only for PT's internal slerp and is not needed here.
@@ -527,6 +724,7 @@ function buildAnimation(
           values.push(qGltf[0], qGltf[1], qGltf[2], qGltf[3]);
         }
       }
+      if (reverse && times.length > 0) reverseKeyframes(times, values, 4);
       if (times.length > 0) {
         const timeAcc = doc.createAccessor(`t_${motion.stateName}_${bone.nodeName}_r`, buffer)
           .setType('SCALAR').setArray(new Float32Array(times));
@@ -551,10 +749,11 @@ function buildAnimation(
       const values: number[] = [];
       for (const kf of bone.tmPos) {
         if (kf.frame >= startTick && kf.frame <= endTick) {
-          times.push((kf.frame - startTick) / TICKS_PER_FRAME / FPS);
+          times.push(timeOf(kf.frame));
           values.push(kf.x, kf.z, -kf.y);
         }
       }
+      if (reverse && times.length > 0) reverseKeyframes(times, values, 3);
       if (times.length > 0) {
         const timeAcc = doc.createAccessor(`t_${motion.stateName}_${bone.nodeName}_t`, buffer)
           .setType('SCALAR').setArray(new Float32Array(times));
@@ -579,11 +778,12 @@ function buildAnimation(
       const values: number[] = [];
       for (const kf of bone.tmScale) {
         if (kf.frame >= startTick && kf.frame <= endTick) {
-          times.push((kf.frame - startTick) / TICKS_PER_FRAME / FPS);
+          times.push(timeOf(kf.frame));
           const sx = kf.x / FONE, sy = kf.y / FONE, sz = kf.z / FONE;
           values.push(sx, sz, sy);
         }
       }
+      if (reverse && times.length > 0) reverseKeyframes(times, values, 3);
       if (times.length > 0) {
         const timeAcc = doc.createAccessor(`t_${motion.stateName}_${bone.nodeName}_s`, buffer)
           .setType('SCALAR').setArray(new Float32Array(times));

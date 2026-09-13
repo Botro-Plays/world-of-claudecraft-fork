@@ -19,6 +19,9 @@ const CHRMOTION_EXT = 10;
 const OFF_szModelFile = 0;       // char[64]
 const OFF_szMotionFile = 64;     // char[64]
 const OFF_szSubModelFile = 128;  // char[64]
+const OFF_HighModel = 192;       // _MODELGROUP (4 + 4*16 = 68 bytes)
+const OFF_DefaultModel = 260;    // _MODELGROUP
+const OFF_LowModel = 328;        // _MODELGROUP
 const OFF_MotionInfo = 396;      // smMOTIONINFO[512]
 const OFF_MotionCount = 88460;   // DWORD
 
@@ -70,12 +73,21 @@ export interface PTMotionInfo {
   repeat: boolean;
   motionFrame: number; // 1-based index into SMB TmFrame array
   eventFrames: number[];
+  mapPosition: number; // bitfield: 1=village, 2=field, 3=server
+}
+
+export interface PTModelGroup {
+  nameCount: number;
+  names: string[];
 }
 
 export interface PTModelInfo {
   modelFile: string;
   motionFile: string;
   subModelFile: string;
+  highModel: PTModelGroup;
+  defaultModel: PTModelGroup;
+  lowModel: PTModelGroup;
   motionCount: number;
   motions: PTMotionInfo[];
 }
@@ -95,6 +107,17 @@ function readInt32(buf: Buffer, off: number): number {
 function readFixedString(buf: Buffer, off: number, len: number): string {
   const end = buf.indexOf(0, off);
   return buf.toString('ascii', off, end === -1 ? off + len : Math.min(end, off + len));
+}
+
+// Read a _MODELGROUP struct: int ModelNameCnt followed by char szModelName[4][16].
+function readModelGroup(buf: Buffer, off: number): PTModelGroup {
+  const nameCount = buf.readInt32LE(off);
+  const names: string[] = [];
+  for (let i = 0; i < 4; i++) {
+    const name = readFixedString(buf, off + 4 + i * 16, 16);
+    if (name) names.push(name);
+  }
+  return { nameCount, names };
 }
 
 // ---------------------------------------------------------------------------
@@ -131,6 +154,9 @@ export function parseInx(buf: Buffer): PTModelInfo {
   const modelFile = readFixedString(buf, OFF_szModelFile, 64);
   const motionFile = readFixedString(buf, OFF_szMotionFile, 64);
   const subModelFile = readFixedString(buf, OFF_szSubModelFile, 64);
+  const highModel = readModelGroup(buf, OFF_HighModel);
+  const defaultModel = readModelGroup(buf, OFF_DefaultModel);
+  const lowModel = readModelGroup(buf, OFF_LowModel);
   const motionCount = readUInt32(buf, OFF_MotionCount);
 
   const motions: PTMotionInfo[] = [];
@@ -145,6 +171,7 @@ export function parseInx(buf: Buffer): PTModelInfo {
     const rawEnd = readUInt32(buf, off + MOFF_EndFrame);
     const repeat = readUInt32(buf, off + MOFF_Repeat) !== 0;
     const motionFrame = readInt32(buf, off + MOFF_MotionFrame);
+    const mapPosition = readInt32(buf, off + MOFF_MapPosition);
 
     const eventFrames: number[] = [];
     for (let j = 0; j < 4; j++) {
@@ -175,10 +202,11 @@ export function parseInx(buf: Buffer): PTModelInfo {
       repeat,
       motionFrame,
       eventFrames,
+      mapPosition,
     });
   }
 
-  return { modelFile, motionFile, subModelFile, motionCount, motions };
+  return { modelFile, motionFile, subModelFile, highModel, defaultModel, lowModel, motionCount, motions };
 }
 
 // ---------------------------------------------------------------------------
@@ -198,6 +226,9 @@ if (process.argv[1] && process.argv[1].endsWith('inx_parser.ts')) {
   console.log(`Model: ${info.modelFile}`);
   console.log(`Motion: ${info.motionFile}`);
   console.log(`SubModel: ${info.subModelFile || '(none)'}`);
+  console.log(`HighModel: ${info.highModel.names.join(', ')}`);
+  console.log(`DefaultModel: ${info.defaultModel.names.join(', ')}`);
+  console.log(`LowModel: ${info.lowModel.names.join(', ')}`);
   console.log(`MotionCount: ${info.motionCount}`);
   console.log('\nAnimations:');
   for (const m of info.motions) {

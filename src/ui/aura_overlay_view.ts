@@ -40,7 +40,29 @@ export type AuraOverlayTheme =
   | 'priest'
   | 'shaman'
   | 'warlock'
-  | 'druid';
+  | 'druid'
+  // PT Tempskron Fighter POC: reuse warrior's theme
+  | 'tempskron_fighter'
+  // PT Tempskron Mechanician POC: reuse warrior's theme
+  | 'tempskron_mechanician'
+  // PT Tempskron Pikeman POC: reuse warrior's theme
+  | 'tempskron_pikeman'
+  // PT Tempskron Archer POC: reuse warrior's theme
+  | 'tempskron_archer'
+  // PT Morion Knight POC: reuse warrior's theme
+  | 'morion_knight'
+  // PT Morion Atalanta POC: reuse warrior's theme
+  | 'morion_atalanta'
+  // PT Morion Priestess POC: reuse priest's theme
+  | 'morion_priestess'
+  // PT Morion Magician POC: reuse mage's theme
+  | 'morion_magician'
+  // PT Atlanteon Assassin POC: reuse rogue's theme
+  | 'atlanteon_assassin'
+  // PT Atlanteon Martial Artist POC: reuse warrior's theme
+  | 'atlanteon_martial_artist'
+  // PT Atlanteon Shaman POC: reuse shaman's theme
+  | 'atlanteon_shaman';
 
 export interface AuraOverlayProcDef {
   id: AuraOverlayProcId;

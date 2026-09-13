@@ -35,7 +35,30 @@ export const FIVE_MAN_WEAPON_RATING = 50; // 50 rating = 5.0%
 const RAID_WEAPON_PRIMARY_RATING = 65; // 65 rating = 6.5%
 const RAID_SECONDARY_RATING = 20; // 20 rating = 2.0%
 
-const HEAVY = ['warrior', 'paladin', 'shaman'] as ItemDef['requiredClass']; // plate/mail
+const HEAVY = [
+  'warrior',
+  'paladin',
+  'shaman',
+  // PT Tempskron classes reuse warrior's armor/weapon proficiency (plate/mail)
+  'tempskron_fighter',
+  'tempskron_mechanician',
+  'tempskron_pikeman',
+  'tempskron_archer',
+  // PT Morion Knight reuses warrior's armor/weapon proficiency (plate/mail)
+  'morion_knight',
+  // PT Morion Atalanta reuses warrior's armor/weapon proficiency (plate/mail)
+  'morion_atalanta',
+  // PT Morion Priestess reuses warrior's armor/weapon proficiency (plate/mail)
+  'morion_priestess',
+  // PT Morion Magician reuses warrior's armor/weapon proficiency (plate/mail)
+  'morion_magician',
+  // PT Atlanteon Assassin reuses warrior's armor/weapon proficiency (plate/mail)
+  'atlanteon_assassin',
+  // PT Atlanteon Martial Artist reuses warrior's armor/weapon proficiency (plate/mail)
+  'atlanteon_martial_artist',
+  // PT Atlanteon Shaman reuses warrior's armor/weapon proficiency (plate/mail)
+  'atlanteon_shaman',
+] as ItemDef['requiredClass']; // plate/mail
 const HEAL_MAIL = ['paladin', 'shaman'] as ItemDef['requiredClass']; // int/spi mail wearers
 const HEAL_LEATHER = ['druid'] as ItemDef['requiredClass']; // int/spi leather wearers
 const AGILE = ['rogue', 'hunter'] as ItemDef['requiredClass'];

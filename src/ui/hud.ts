@@ -45,6 +45,7 @@ import {
   isComposedPortraitKey,
   onPortraitsReady,
   onPortraitUpdate,
+  prewarmVisualKeyPortrait,
 } from '../render/characters/portrait';
 import { currentDayNightPhase } from '../render/day_night_clock';
 import { globalDayness, skyTintForDayness } from '../render/day_night_core';
@@ -2577,15 +2578,29 @@ export class Hud {
       }
       if (!visualKey.startsWith('player_')) return;
       const playerClass = visualKey.slice('player_'.length) as PlayerClass;
+      // A PT hair variant visual key (e.g. player_tempskron_mechanician_hair2)
+      // is NOT player_<class>, so the class-slice check below misses it. The
+      // player frame uses drawVisualOverride for the override, so a capture
+      // landing for the override visual key must also repaint the frame.
+      const override = this.sim.player?.visualKeyOverride ?? null;
+      if (
+        visualKey === override &&
+        skin === (this.sim.player?.skin ?? 0)
+      ) {
+        this.drawPlayerFramePortrait();
+      }
       if (playerClass === this.sim.cfg.playerClass && skin === (this.sim.player.skin ?? 0)) {
         this.drawPlayerFramePortrait();
       }
       // The target and target-of-target frames stay on the stock class art, so
-      // each repaints on exactly the (class, skin) pair it framed.
+      // each repaints on exactly the (class, skin) pair it framed. A PT hair
+      // override visual key (e.g. player_tempskron_mechanician_hair2) also
+      // matches a framed subject whose visualKeyOverride equals visualKey.
       const framed = (subject: Entity | null): boolean =>
         subject?.kind === 'player' &&
-        subject.templateId === playerClass &&
-        (subject.skin ?? 0) === skin;
+        (subject.skin ?? 0) === skin &&
+        (subject.templateId === playerClass ||
+          subject.visualKeyOverride === visualKey);
       if (framed(this.targetPortraitSubject)) this.targetFramePainter.invalidatePortrait();
       if (framed(this.totPortraitSubject)) this.totFramePainter.invalidatePortrait();
     });
@@ -6016,9 +6031,12 @@ export class Hud {
     // `skin` is a chroma index that means nothing to the class atlas.
     const mech = isMechWearer(self);
     const look = self && !mech ? modularLookFor(self) : null;
+    const override = self?.visualKeyOverride ?? null;
     if (self && mech) this.portraits.drawMech(canvas, skin, cls);
     else if (self && look)
       this.portraits.drawModularPlayer(canvas, modularKeyFor(self), look, cls, skin);
+    else if (self && override)
+      this.portraits.drawVisualOverride(canvas, override, cls, skin);
     else this.portraits.drawClass(canvas, cls, skin);
   }
 
@@ -6031,11 +6049,11 @@ export class Hud {
     const target = this.targetPortraitSubject;
     if (!target) return;
     if (target.kind === 'player') {
-      this.portraits.drawClass(
-        this.targetPortraitEl,
-        target.templateId as PlayerClass,
-        target.skin ?? 0,
-      );
+      const cls = target.templateId as PlayerClass;
+      const skin = target.skin ?? 0;
+      const override = target.visualKeyOverride ?? null;
+      if (override) this.portraits.drawVisualOverride(this.targetPortraitEl, override, cls, skin);
+      else this.portraits.drawClass(this.targetPortraitEl, cls, skin);
     } else {
       this.drawNonPlayerPortrait(this.targetPortraitEl, target);
     }
@@ -6063,7 +6081,11 @@ export class Hud {
     const tot = this.totPortraitSubject;
     if (!tot) return;
     if (tot.kind === 'player') {
-      this.portraits.drawClass(this.totPortraitEl, tot.templateId as PlayerClass, tot.skin ?? 0);
+      const cls = tot.templateId as PlayerClass;
+      const skin = tot.skin ?? 0;
+      const override = tot.visualKeyOverride ?? null;
+      if (override) this.portraits.drawVisualOverride(this.totPortraitEl, override, cls, skin);
+      else this.portraits.drawClass(this.totPortraitEl, cls, skin);
     } else {
       this.drawNonPlayerPortrait(this.totPortraitEl, tot);
     }
@@ -16312,7 +16334,7 @@ export class Hud {
     // (body is Inspect-only, lazy on open). See each flag's doc on the plan.
     const self = this.sim.player;
     const looksModular = !isMechWearer(self) && modularLookFor(self) != null;
-    return buildHudPreviewPrewarmUnits<(typeof CARD_POSES)[number]>({
+    const units = buildHudPreviewPrewarmUnits<(typeof CARD_POSES)[number]>({
       playerClass: this.sim.cfg.playerClass,
       cardPoses: CARD_POSES,
       includeCharFamily,
@@ -16325,6 +16347,19 @@ export class Hud {
       prewarmCharSkin: (skin) => this.charPreview?.prewarm([skin]),
       prewarmCardPose: (pose) => this.charPreview?.prewarmCloseupPoses([pose]),
     });
+    // Prewarm the PT hair variant portrait so the HUD player frame shows the
+    // selected hair immediately on entry rather than falling back to the class
+    // crest while the live capture completes. The default class portrait is
+    // already warmed by the plan above; this covers the visualKeyOverride.
+    const override = self?.visualKeyOverride ?? null;
+    if (override) {
+      units.push({
+        family: 'char',
+        label: `preview:portrait-override:${override}`,
+        run: () => prewarmVisualKeyPortrait(override, self?.skin ?? 0),
+      });
+    }
+    return units;
   }
 
   /** Build the paperdoll window shell + its preview context behind the loading
@@ -16535,6 +16570,7 @@ export class Hud {
       this.sim.cfg.playerClass,
       this.sim.player.skin ?? 0,
       this.sim.player.skinCatalog ?? 'class',
+      this.sim.player.visualKeyOverride ?? null,
     );
     if (preview.visualKey !== 'player_mech') {
       this.mountCharPreview(container, this.sim.cfg.playerClass, preview.skin, preview.visualKey);
@@ -16550,6 +16586,7 @@ export class Hud {
           this.sim.cfg.playerClass,
           this.sim.player.skin ?? 0,
           this.sim.player.skinCatalog ?? 'class',
+          this.sim.player.visualKeyOverride ?? null,
         );
         if (currentPreview.visualKey === 'player_mech') {
           this.mountCharPreview(
@@ -17456,7 +17493,7 @@ export class Hud {
     el.classList.remove(CTX_MENU_PICKER_CLASS);
     this.ctxMenuOpener = opener;
     const party = this.sim.partyInfo;
-    let html = `<div class="ctx-title ctx-title-player">${portraitChipHtml({ cls: this.sim.cfg.playerClass, skin: this.sim.player.skin ?? 0, name: this.sim.player.name, variant: 'sm', catalog: this.sim.player.skinCatalog })}<span class="ctx-title-name">${esc(this.sim.player.name)}</span></div>`;
+    let html = `<div class="ctx-title ctx-title-player">${portraitChipHtml({ cls: this.sim.cfg.playerClass, skin: this.sim.player.skin ?? 0, name: this.sim.player.name, variant: 'sm', catalog: this.sim.player.skinCatalog, visualKeyOverride: this.sim.player.visualKeyOverride ?? null })}<span class="ctx-title-name">${esc(this.sim.player.name)}</span></div>`;
     // Party membership actions (convert, loot, leave), the dungeon-difficulty
     // toggle, the reset-dungeons action, and close, resolved by the pure
     // selfPlayerContextActions. Leaving the party lives here now, not a

@@ -103,10 +103,76 @@ export const DEV_KIT_ROLES: Readonly<Record<PlayerClass, readonly DevKitRole[]>>
     { spec: 'feral', weights: TANK_AGI, melee: true, tank: true },
     { spec: 'restoration', weights: HEALER, melee: false, healer: true },
   ],
+  // PT Tempskron Fighter POC: reuse warrior's dev kit roles
+  tempskron_fighter: [
+    { spec: 'arms', weights: PHYS_STR, melee: true },
+    { spec: 'fury', weights: PHYS_STR, melee: true, hands: 'dualWield' },
+    { spec: 'prot', weights: TANK_STR, melee: true, tank: true, hands: 'shield' },
+  ],
+  // PT Tempskron Mechanician POC: reuse warrior's dev kit roles
+  tempskron_mechanician: [
+    { spec: 'arms', weights: PHYS_STR, melee: true },
+    { spec: 'fury', weights: PHYS_STR, melee: true, hands: 'dualWield' },
+    { spec: 'prot', weights: TANK_STR, melee: true, tank: true, hands: 'shield' },
+  ],
+  // PT Tempskron Pikeman POC: reuse warrior's dev kit roles
+  tempskron_pikeman: [
+    { spec: 'arms', weights: PHYS_STR, melee: true },
+    { spec: 'fury', weights: PHYS_STR, melee: true, hands: 'dualWield' },
+    { spec: 'prot', weights: TANK_STR, melee: true, tank: true, hands: 'shield' },
+  ],
+  // PT Tempskron Archer POC: reuse warrior's dev kit roles
+  tempskron_archer: [
+    { spec: 'arms', weights: PHYS_STR, melee: true },
+    { spec: 'fury', weights: PHYS_STR, melee: true, hands: 'dualWield' },
+    { spec: 'prot', weights: TANK_STR, melee: true, tank: true, hands: 'shield' },
+  ],
+  // PT Morion Knight POC: reuse warrior's dev kit roles
+  morion_knight: [
+    { spec: 'arms', weights: PHYS_STR, melee: true },
+    { spec: 'fury', weights: PHYS_STR, melee: true, hands: 'dualWield' },
+    { spec: 'prot', weights: TANK_STR, melee: true, tank: true, hands: 'shield' },
+  ],
+  // PT Morion Atalanta POC: reuse warrior's dev kit roles
+  morion_atalanta: [
+    { spec: 'arms', weights: PHYS_STR, melee: true },
+    { spec: 'fury', weights: PHYS_STR, melee: true, hands: 'dualWield' },
+    { spec: 'prot', weights: TANK_STR, melee: true, tank: true, hands: 'shield' },
+  ],
+  // PT Morion Priestess POC: reuse warrior's dev kit roles (Phase A)
+  morion_priestess: [
+    { spec: 'arms', weights: PHYS_STR, melee: true },
+    { spec: 'fury', weights: PHYS_STR, melee: true, hands: 'dualWield' },
+    { spec: 'prot', weights: TANK_STR, melee: true, tank: true, hands: 'shield' },
+  ],
+  // PT Morion Magician POC: reuse warrior's dev kit roles (Phase A)
+  morion_magician: [
+    { spec: 'arms', weights: PHYS_STR, melee: true },
+    { spec: 'fury', weights: PHYS_STR, melee: true, hands: 'dualWield' },
+    { spec: 'prot', weights: TANK_STR, melee: true, tank: true, hands: 'shield' },
+  ],
+  // PT Atlanteon Assassin POC: reuse warrior's dev kit roles (Phase A)
+  atlanteon_assassin: [
+    { spec: 'arms', weights: PHYS_STR, melee: true },
+    { spec: 'fury', weights: PHYS_STR, melee: true, hands: 'dualWield' },
+    { spec: 'prot', weights: TANK_STR, melee: true, tank: true, hands: 'shield' },
+  ],
+  // PT Atlanteon Martial Artist POC: reuse warrior's dev kit roles (melee brawler)
+  atlanteon_martial_artist: [
+    { spec: 'arms', weights: PHYS_STR, melee: true },
+    { spec: 'fury', weights: PHYS_STR, melee: true, hands: 'dualWield' },
+    { spec: 'prot', weights: TANK_STR, melee: true, tank: true, hands: 'shield' },
+  ],
+  // PT Atlanteon Shaman POC: reuse warrior's dev kit roles (Phase A)
+  atlanteon_shaman: [
+    { spec: 'arms', weights: PHYS_STR, melee: true },
+    { spec: 'fury', weights: PHYS_STR, melee: true, hands: 'dualWield' },
+    { spec: 'prot', weights: TANK_STR, melee: true, tank: true, hands: 'shield' },
+  ],
 });
 
-// Every class-and-spec pair, flattened. 27 entries: 9 classes times 3 specs.
-export const DEV_KIT_ROLE_COUNT = 27;
+// Every class-and-spec pair, flattened. 60 entries: 20 classes times 3 specs.
+export const DEV_KIT_ROLE_COUNT = 60;
 
 export function devKitRole(cls: PlayerClass, spec: string): DevKitRole | null {
   return DEV_KIT_ROLES[cls]?.find((role) => role.spec === spec) ?? null;

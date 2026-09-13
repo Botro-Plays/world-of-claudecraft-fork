@@ -59,6 +59,11 @@ import {
 } from './world';
 
 export const BACKPEDAL_MULT = 0.65;
+/** Walk-mode speed multiplier: when the player toggles to walk mode, movement
+ *  speed is reduced to this fraction of run speed so the walk animation and
+ *  the world speed stay in sync (the walk clip plays at a natural cadence at
+ *  this speed, and the player visibly covers less ground than when running). */
+export const WALK_MODE_SPEED_MULT = 0.45;
 export const GRAVITY = 16;
 export const JUMP_VELOCITY = 6; // apex = v^2/2g ≈ 1.125 yd
 // A mounted rider springs higher so a paddock show-jump reads as clearable: the
@@ -402,6 +407,7 @@ export function stepPlayerMotion(deps: PlayerMotionDeps, p: Entity, inp: MoveInp
     mx /= len;
     mz /= len;
     let speed = RUN_SPEED * deps.moveSpeedMult(p);
+    if (inp.walkMode) speed *= WALK_MODE_SPEED_MULT;
     if (mz < 0) speed *= BACKPEDAL_MULT;
     if (swimming) speed *= swimSpeedMult(p.swimStroke, submerged);
     // Shallow water pushes back. Reuses the waterline this tick already

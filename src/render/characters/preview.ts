@@ -31,6 +31,7 @@ import {
 import { PREVIEW_FRAMING, type PreviewFramingName } from './preview_framing';
 import { createPreviewOpenGate, type PreviewOpenGate } from './preview_open_gate_core';
 import { characterPreviewFrameVisible, resolveCharacterPreviewPolicy } from './preview_policy';
+import { stagePresentationTarget } from './formation';
 import { CharacterVisual } from './visual';
 
 export type { PreviewAppearance } from './preview_appearance';
@@ -76,6 +77,89 @@ const PREVIEW_ANIM_STATE = {
 
 const LIVE_PREVIEW_X = 0;
 
+/** Walk duration in seconds for the formation-to-center presentation walk. */
+const FORMATION_WALK_DURATION_S = 0.9;
+
+/** AnimState fed to CharacterVisual.update while the formation walk is active.
+ *  `moving: true` selects the walk clip per the existing semantic mapping. */
+const PREVIEW_WALK_STATE = {
+  ...PREVIEW_ANIM_STATE,
+  moving: true,
+  speed: 3.5,
+} as const;
+
+// -------------------------------------------------------------------------
+// Stage: 3D character-select stage with authentic PT walking.
+//
+// Characters stand in a permanent horizontal row (their HOME positions).
+// The selected character WALKS toward the presentation point (centered X,
+// forward Z — see stagePresentationTarget in formation.ts), playing the
+// real MagicPT WALK clip and facing its movement direction. On arrival it
+// stops and enters the PT STAND (idle) clip. When another character is
+// selected, the previous one WALKS back to its home while the new one
+// WALKS toward the presentation point simultaneously. Scale emphasis
+// settles in only after arrival — no pop.
+// -------------------------------------------------------------------------
+
+/** Modest scale of the selected (focus) character after arrival. */
+const STAGE_FOCUS_SCALE = 1.08;
+/** Scale of the background (unselected) characters. */
+const STAGE_BACKGROUND_SCALE = 0.92;
+/** Walking speed in world units per second (diagonal X+Z). */
+const STAGE_WALK_SPEED = 3.0;
+/** Scale lerp speed: how fast the scale emphasis settles after arrival. */
+const STAGE_SCALE_LERP_SPEED = 4.0;
+/** Position arrival threshold (world units) to consider the walk done. */
+const STAGE_ARRIVAL_THRESHOLD = 0.03;
+/** Rotation lerp speed for facing the movement direction. */
+const STAGE_FACING_LERP_SPEED = 8.0;
+/** Oscillation frequency (radians/sec) for the selected character's rotation. */
+const STAGE_OSCILLATION_FREQ = 0.8;
+/** Oscillation amplitude (radians, ~±29 degrees). */
+const STAGE_OSCILLATION_AMP = 0.5;
+
+/** Walk direction: forward toward center, or back toward home. */
+type StageWalkDir = 'forward' | 'back' | null;
+
+/** Shortest-angle lerp between two yaw values (radians). */
+function lerpAngle(current: number, target: number, t: number): number {
+  let diff = target - current;
+  // Wrap to [-PI, PI] for the shortest rotation.
+  while (diff > Math.PI) diff -= Math.PI * 2;
+  while (diff < -Math.PI) diff += Math.PI * 2;
+  return current + diff * t;
+}
+
+/**
+ * A persistent stage member in the 3D character-select stage. Each member
+ * has a permanent HOME position (its slot in the background row). When
+ * selected, the character WALKS toward the CENTER of the stage (X=0, Z=0),
+ * facing its movement direction; when deselected, it WALKS back to its
+ * home. The animate loop drives the physical movement at a fixed speed
+ * and switches the animation between the PT WALK clip (while moving) and
+ * the PT STAND/idle clip (at rest).
+ */
+interface StageMember {
+  visual: CharacterVisual;
+  classId: string;
+  // Permanent HOME position: the character's slot in the background row.
+  homeX: number;
+  homeZ: number;
+  // Target X/Z: where this character is currently walking toward (home or
+  // center). When idle, these equal homeX/homeZ.
+  targetX: number;
+  targetZ: number;
+  // Target scale: settles in after arrival (no pop).
+  targetScale: number;
+  // Current animated scale (lerped toward targetScale).
+  currentScale: number;
+  // Walk state: 'forward' = walking to center, 'back' = walking home,
+  // null = arrived/idle.
+  walkDir: StageWalkDir;
+  // Whether this member is currently selected.
+  selected: boolean;
+}
+
 export class CharacterPreview {
   private container: HTMLElement;
   private canvas: HTMLCanvasElement;
@@ -85,6 +169,33 @@ export class CharacterPreview {
   private characterGroup: THREE.Group;
   private currentVisual: CharacterVisual | null = null;
   private currentVisualSig: string | null = null;
+  // Formation: background characters standing in the scene while the selected
+  // character presents at the center. Each entry is a CharacterVisual rooted
+  // under formationGroup. Cleared by clearFormation().
+  private formationGroup: THREE.Group;
+  private formationVisuals: CharacterVisual[] = [];
+  // Stage: persistent tribe formation. All characters live here with rest
+  // positions; the selected one moves forward, scales up, and receives a
+  // spotlight. When the stage is active, characterGroup/formationGroup
+  // are unused.
+  private stageGroup: THREE.Group;
+  private stageMembers: StageMember[] = [];
+  private stageSelectedClass: string | null = null;
+  // Presentation target for the selected character, computed from the
+  // formation size when the stage is built. Centered on X and sufficiently
+  // forward in Z to be clearly in front of every formation member.
+  private stagePresentationX = 0;
+  private stagePresentationZ = 0;
+  private stageElapsed = 0; // for oscillation sine wave
+  private stageSpotlight: THREE.SpotLight | null = null;
+  private stageSpotlightTarget: THREE.Object3D | null = null;
+  private raycaster = new THREE.Raycaster();
+  private stageClickCallback: ((classId: string) => void) | null = null;
+  // Inline formation-walk state (legacy, used when stage is NOT active).
+  private walkPhase: 'idle' | 'walking' = 'idle';
+  private walkStartX = 0;
+  private walkStartZ = 0;
+  private walkElapsed = 0;
   private currentSkin = 0;
   // The active Armory weapon-skin cosmetic, persisted across visual rebuilds
   // exactly like currentSkin so a class/appearance swap keeps the skinned
@@ -135,7 +246,6 @@ export class CharacterPreview {
   private touchQueue: LinkedProgramTouchQueue | null = null;
   private yieldToMain: () => Promise<void> = yieldToMainThread;
   private destroyed = false;
-
   // Drag controls
   private isDragging = false;
   private previousMouseX = 0;
@@ -182,6 +292,32 @@ export class CharacterPreview {
     // 4. Initialize Character Group
     this.characterGroup = new THREE.Group();
     this.scene.add(this.characterGroup);
+    // Formation group: holds background characters in the tribe formation.
+    // Added before the characterGroup so the selected character renders on top.
+    this.formationGroup = new THREE.Group();
+    this.scene.add(this.formationGroup);
+    // Stage group: persistent tribe formation for the clickable 3D
+    // character selector. All characters live here with rest positions;
+    // the selected one moves forward, scales up, and receives a spotlight.
+    this.stageGroup = new THREE.Group();
+    this.scene.add(this.stageGroup);
+    // Stage spotlight: follows the selected character to visually
+    // emphasize it (Jere Codes inspired). Hidden until the stage is
+    // active and a character is selected.
+    this.stageSpotlightTarget = new THREE.Object3D();
+    this.scene.add(this.stageSpotlightTarget);
+    this.stageSpotlight = new THREE.SpotLight(
+      0xffffff,
+      0, // intensity set when a character is selected
+      12, // distance
+      Math.PI / 6, // angle (~30 degrees)
+      0.5, // penumbra
+      1.5, // decay
+    );
+    this.stageSpotlight.position.set(0, 5, 2);
+    this.stageSpotlight.target = this.stageSpotlightTarget;
+    this.stageSpotlight.visible = false;
+    this.scene.add(this.stageSpotlight);
 
     // 5. Add Lights
     const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.4);
@@ -340,6 +476,369 @@ export class CharacterPreview {
     if (this.destroyed) return;
     this.currentWeaponSkinId = weaponSkinId;
     this.currentVisual?.setWeaponSkin(weaponSkinId);
+  }
+
+  /** Start the formation-to-center presentation walk. The characterGroup is
+   *  snapped to the formation slot (startX, startZ) immediately, then the
+   *  animate loop lerps it to (0, 0) over FORMATION_WALK_DURATION_S seconds
+   *  using easeOutQuad. While walking, the walk clip plays (`moving: true`);
+   *  on arrival, the character enters idle.
+   *
+   *  Call this AFTER setClass/setVisualKey so the correct visual is mounted.
+   *  Do NOT call it for a hair change: hair swaps preserve the current
+   *  position and idle state. */
+  startFormationWalk(startX: number, startZ: number): void {
+    if (this.destroyed) return;
+    this.walkPhase = 'walking';
+    this.walkStartX = startX;
+    this.walkStartZ = startZ;
+    this.walkElapsed = 0;
+    // Snap to the formation slot immediately so there is no single-frame
+    // flash at the previous center position.
+    this.characterGroup.position.x = startX;
+    this.characterGroup.position.z = startZ;
+  }
+
+  /**
+   * Populate the formation background with the given characters at the given
+   * formation slots. Each entry renders a CharacterVisual at its slot's X/Z.
+   * The selected character (selectedClass) is NOT included in the formation
+   * (it presents at the center via characterGroup); the formation holds the
+   * OTHER characters so the player sees the full tribe standing in the scene.
+   *
+   * Pass an empty array (or call clearFormation()) to remove all background
+   * characters.
+   */
+  setFormation(
+    entries: readonly {
+      readonly visualKey: string;
+      readonly x: number;
+      readonly z: number;
+    }[],
+  ): void {
+    if (this.destroyed) return;
+    this.clearFormation();
+    for (const e of entries) {
+      try {
+        const v = new CharacterVisual(e.visualKey, 0xffffff, 0, null, null, null, null);
+        v.root.position.set(e.x, 0, e.z);
+        this.formationGroup.add(v.root);
+        this.formationVisuals.push(v);
+      } catch (err) {
+        console.warn(`[preview] formation visual ${e.visualKey} failed:`, err);
+      }
+    }
+  }
+
+  /** Remove all formation background characters and dispose their resources. */
+  clearFormation(): void {
+    if (this.destroyed) return;
+    for (const v of this.formationVisuals) {
+      this.formationGroup.remove(v.root);
+      v.dispose();
+    }
+    this.formationVisuals = [];
+  }
+
+  // -------------------------------------------------------------------------
+  // Stage: Jere Codes-inspired 3D character-select stage.
+  //
+  // All tribe characters live as StageMembers in stageGroup, each with a
+  // rest position in a horizontal row. The selected member's target moves
+  // it forward (z → 0), scales it up, and the spotlight follows it;
+  // background members' targets keep them in the row at a smaller scale.
+  // The animate loop lerps each member toward its target every frame
+  // (asymptotic ease-out). Clicking a member (via raycasting) selects it.
+  // The formation is created once per tribe and NEVER rebuilt on click.
+  // -------------------------------------------------------------------------
+
+  /**
+   * Create the persistent stage: one StageMember per entry, each at its
+   * rest position in the background row. The first entry is auto-selected
+   * (moves forward, scales up, spotlight). Disposes any previous stage.
+   */
+  setStageFormation(
+    entries: readonly {
+      readonly cls: string;
+      readonly visualKey: string;
+      readonly x: number;
+      readonly z: number;
+    }[],
+  ): void {
+    if (this.destroyed) return;
+    this.clearStage();
+    // Hide the legacy character/formation groups so they don't render over
+    // the stage.
+    this.characterGroup.visible = false;
+    this.formationGroup.visible = false;
+
+    // Compute the presentation target for this formation size. Centered on
+    // X and sufficiently forward in Z that the selected character is clearly
+    // in front of every formation member — including the middle character of
+    // a 3-member formation, whose home X is also 0.
+    const target = stagePresentationTarget(entries.length);
+    this.stagePresentationX = target.x;
+    this.stagePresentationZ = target.z;
+
+    for (const e of entries) {
+      try {
+        const visual = new CharacterVisual(
+          e.visualKey,
+          0xffffff,
+          0,
+          null,
+          null,
+          null,
+          null,
+        );
+        visual.root.position.set(e.x, 0, e.z);
+        visual.root.scale.setScalar(1);
+        this.stageGroup.add(visual.root);
+        this.stageMembers.push({
+          visual,
+          classId: e.cls,
+          homeX: e.x,
+          homeZ: e.z,
+          targetX: e.x,
+          targetZ: e.z,
+          targetScale: 1,
+          currentScale: 1,
+          walkDir: null,
+          selected: false,
+        });
+      } catch (err) {
+        console.warn(`[preview] stage visual ${e.visualKey} failed:`, err);
+      }
+    }
+    // No automatic selection: every character stays at its HOME position in
+    // formation idle until the player explicitly clicks one. The spotlight
+    // stays off until a selection exists.
+  }
+
+  /** Remove all stage members and dispose their resources. */
+  clearStage(): void {
+    if (this.destroyed) return;
+    for (const m of this.stageMembers) {
+      this.stageGroup.remove(m.visual.root);
+      m.visual.dispose();
+    }
+    this.stageMembers = [];
+    this.stageSelectedClass = null;
+    this.stagePresentationX = 0;
+    this.stagePresentationZ = 0;
+    this.currentVisual = null;
+    this.currentVisualSig = null;
+    if (this.stageSpotlight) this.stageSpotlight.visible = false;
+    // Restore legacy group visibility for non-stage panels.
+    this.characterGroup.visible = true;
+    this.formationGroup.visible = true;
+  }
+
+  /** The class currently selected on the stage, or null. */
+  getStageSelectedClass(): string | null {
+    return this.stageSelectedClass;
+  }
+
+  /**
+   * Select a stage member by class id. The previously selected member
+   * begins WALKING back to its home position (target → homeX/homeZ); the
+   * newly selected member begins WALKING from its current position to
+   * the presentation point (target → stagePresentationX/stagePresentationZ),
+   * facing its movement direction. Scale emphasis settles in after
+   * arrival — no instant pop. If the same member is already selected,
+   * this is a no-op. The formation is NOT rebuilt — only walk targets
+   * change. Both transitions can occur simultaneously.
+   */
+  selectStageMember(classId: string): void {
+    if (this.destroyed) return;
+    const newMember = this.stageMembers.find((m) => m.classId === classId);
+    if (!newMember) return;
+    if (this.stageSelectedClass === classId) return;
+
+    // Demote the previously selected member: walk back home, scale to
+    // background. The walk starts from wherever the character currently is.
+    if (this.stageSelectedClass) {
+      const oldMember = this.stageMembers.find(
+        (m) => m.classId === this.stageSelectedClass,
+      );
+      if (oldMember) {
+        oldMember.selected = false;
+        oldMember.targetX = oldMember.homeX;
+        oldMember.targetZ = oldMember.homeZ;
+        oldMember.targetScale = STAGE_BACKGROUND_SCALE;
+        // Start walking back only if not already at home.
+        const dx = Math.abs(oldMember.visual.root.position.x - oldMember.homeX);
+        const dz = Math.abs(oldMember.visual.root.position.z - oldMember.homeZ);
+        if (dx > STAGE_ARRIVAL_THRESHOLD || dz > STAGE_ARRIVAL_THRESHOLD) {
+          oldMember.walkDir = 'back';
+        } else {
+          oldMember.walkDir = null;
+        }
+      }
+    }
+
+    // Promote the newly selected member: walk toward the presentation point,
+    // scale up (settles after arrival).
+    newMember.selected = true;
+    newMember.targetX = this.stagePresentationX;
+    newMember.targetZ = this.stagePresentationZ;
+    newMember.targetScale = STAGE_FOCUS_SCALE;
+    // Start walking forward only if not already at the presentation point.
+    const dx = Math.abs(newMember.visual.root.position.x - this.stagePresentationX);
+    const dz = Math.abs(newMember.visual.root.position.z - this.stagePresentationZ);
+    if (dx > STAGE_ARRIVAL_THRESHOLD || dz > STAGE_ARRIVAL_THRESHOLD) {
+      newMember.walkDir = 'forward';
+    } else {
+      newMember.walkDir = null;
+    }
+
+    // Set all other background members to background scale, stay at home.
+    for (const m of this.stageMembers) {
+      if (m !== newMember) {
+        m.targetScale = STAGE_BACKGROUND_SCALE;
+        m.targetX = m.homeX;
+        m.targetZ = m.homeZ;
+      }
+    }
+
+    this.stageSelectedClass = classId;
+    // Point currentVisual at the selected member so existing appearance/skin/
+    // hair machinery operates on the right visual.
+    this.currentVisual = newMember.visual;
+    this.currentVisualSig = null;
+
+    // Activate the spotlight on the selected character.
+    if (this.stageSpotlight) {
+      this.stageSpotlight.visible = true;
+      this.stageSpotlight.intensity = 1.5;
+    }
+  }
+
+  /**
+   * Rebuild the selected member's visual with a new visual key (for hair
+   * changes). The member stays at its current position, scale, and walk
+   * state — no target change, no stage transition, no walk restart.
+   */
+  rebuildSelectedStageVisual(visualKey: string): void {
+    if (this.destroyed || !this.stageSelectedClass) return;
+    const member = this.stageMembers.find(
+      (m) => m.classId === this.stageSelectedClass,
+    );
+    if (!member) return;
+    const currentX = member.visual.root.position.x;
+    const currentZ = member.visual.root.position.z;
+    const currentScale = member.currentScale;
+    const currentRotY = member.visual.root.rotation.y;
+    const savedWalkDir = member.walkDir;
+    try {
+      this.stageGroup.remove(member.visual.root);
+      member.visual.dispose();
+      const visual = new CharacterVisual(
+        visualKey,
+        0xffffff,
+        this.currentSkin,
+        null,
+        null,
+        null,
+        null,
+      );
+      visual.root.position.set(currentX, 0, currentZ);
+      visual.root.scale.setScalar(currentScale);
+      visual.root.rotation.y = currentRotY;
+      this.stageGroup.add(visual.root);
+      member.visual = visual;
+      member.walkDir = savedWalkDir;
+      this.currentVisual = visual;
+      this.currentVisualSig = null;
+    } catch (err) {
+      console.error(`[preview] stage visual rebuild ${visualKey} failed:`, err);
+    }
+  }
+
+  /** Register a callback fired when the player clicks a stage character. */
+  setStageClickCallback(cb: ((classId: string) => void) | null): void {
+    this.stageClickCallback = cb;
+  }
+
+  /** True if the stage formation is active (members exist). */
+  isStageActive(): boolean {
+    return this.stageMembers.length > 0;
+  }
+
+  /** Get the home position of a stage member by class id (for tests). */
+  getStageHomePosition(classId: string): { x: number; z: number } | null {
+    const m = this.stageMembers.find((m) => m.classId === classId);
+    return m ? { x: m.homeX, z: m.homeZ } : null;
+  }
+
+  /** Get the current world position of a stage member by class id (tests). */
+  getStageCurrentPosition(classId: string): { x: number; z: number } | null {
+    const m = this.stageMembers.find((m) => m.classId === classId);
+    return m
+      ? { x: m.visual.root.position.x, z: m.visual.root.position.z }
+      : null;
+  }
+
+  /** Get the target X of a stage member by class id (tests). */
+  getStageTargetX(classId: string): number | null {
+    const m = this.stageMembers.find((m) => m.classId === classId);
+    return m ? m.targetX : null;
+  }
+
+  /** Get the target Z of a stage member by class id (tests). */
+  getStageTargetZ(classId: string): number | null {
+    const m = this.stageMembers.find((m) => m.classId === classId);
+    return m ? m.targetZ : null;
+  }
+
+  /** Get the walk direction of a stage member by class id (tests). */
+  getStageWalkDir(classId: string): string | null {
+    const m = this.stageMembers.find((m) => m.classId === classId);
+    return m ? m.walkDir : null;
+  }
+
+  /** Get the current scale of a stage member by class id (tests). */
+  getStageScale(classId: string): number | null {
+    const m = this.stageMembers.find((m) => m.classId === classId);
+    return m ? m.currentScale : null;
+  }
+
+  /** Get the target scale of a stage member by class id (tests). */
+  getStageTargetScale(classId: string): number | null {
+    const m = this.stageMembers.find((m) => m.classId === classId);
+    return m ? m.targetScale : null;
+  }
+
+  /** True if the stage member is selected (tests). */
+  isStageMemberSelected(classId: string): boolean {
+    const m = this.stageMembers.find((m) => m.classId === classId);
+    return m ? m.selected : false;
+  }
+
+  /**
+   * Raycast from screen coordinates and return the class id of the clicked
+   * stage member, or null if empty space was clicked. Uses the member's
+   * root group for hit detection (covers the full body).
+   */
+  private raycastStageMember(clientX: number, clientY: number): string | null {
+    if (this.stageMembers.length === 0) return null;
+    const rect = this.canvas.getBoundingClientRect();
+    const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+    const ndcY = -((clientY - rect.top) / rect.height) * 2 + 1;
+    this.raycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), this.camera);
+    const targets: THREE.Object3D[] = this.stageMembers.map(
+      (m) => m.visual.root,
+    );
+    const hits = this.raycaster.intersectObjects(targets, true);
+    if (hits.length === 0) return null;
+    // Walk up the parent chain to find which member's root was hit.
+    let obj: THREE.Object3D | null = hits[0].object;
+    while (obj) {
+      const member = this.stageMembers.find((m) => m.visual.root === obj);
+      if (member) return member.classId;
+      obj = obj.parent;
+    }
+    return null;
   }
 
   /** Swap the previewed skin (alternate body texture); persists across setClass. */
@@ -641,20 +1140,45 @@ export class CharacterPreview {
   }
 
   private setupDragControls(): void {
+    // Track whether the pointer moved between mousedown and mouseup so a
+    // click (no drag) can be distinguished from a drag-then-release.
+    let downX = 0;
+    let downY = 0;
+    let moved = false;
+
     const onMouseDown = (e: MouseEvent) => {
       this.isDragging = true;
       this.previousMouseX = e.clientX;
+      downX = e.clientX;
+      downY = e.clientY;
+      moved = false;
     };
 
     const onMouseMove = (e: MouseEvent) => {
       if (!this.isDragging) return;
       const deltaX = e.clientX - this.previousMouseX;
-      this.characterGroup.rotation.y += deltaX * 0.01;
+      if (Math.abs(e.clientX - downX) > 4 || Math.abs(e.clientY - downY) > 4) {
+        moved = true;
+      }
+      // Drag rotates the selected stage member (if active) or characterGroup.
+      if (this.stageMembers.length > 0 && this.stageSelectedClass) {
+        const m = this.stageMembers.find(
+          (m) => m.classId === this.stageSelectedClass,
+        );
+        if (m) m.visual.root.rotation.y += deltaX * 0.01;
+      } else {
+        this.characterGroup.rotation.y += deltaX * 0.01;
+      }
       this.previousMouseX = e.clientX;
     };
 
-    const onMouseUp = () => {
+    const onMouseUp = (e: MouseEvent) => {
       this.isDragging = false;
+      // If the pointer didn't move, treat it as a click for stage selection.
+      if (!moved && this.stageMembers.length > 0) {
+        const classId = this.raycastStageMember(e.clientX, e.clientY);
+        if (classId) this.stageClickCallback?.(classId);
+      }
     };
 
     // Touch support
@@ -662,18 +1186,40 @@ export class CharacterPreview {
       if (e.touches.length === 1) {
         this.isDragging = true;
         this.previousMouseX = e.touches[0].clientX;
+        downX = e.touches[0].clientX;
+        downY = e.touches[0].clientY;
+        moved = false;
       }
     };
 
     const onTouchMove = (e: TouchEvent) => {
       if (!this.isDragging || e.touches.length !== 1) return;
       const deltaX = e.touches[0].clientX - this.previousMouseX;
-      this.characterGroup.rotation.y += deltaX * 0.01;
+      if (
+        Math.abs(e.touches[0].clientX - downX) > 4 ||
+        Math.abs(e.touches[0].clientY - downY) > 4
+      ) {
+        moved = true;
+      }
+      if (this.stageMembers.length > 0 && this.stageSelectedClass) {
+        const m = this.stageMembers.find(
+          (m) => m.classId === this.stageSelectedClass,
+        );
+        if (m) m.visual.root.rotation.y += deltaX * 0.01;
+      } else {
+        this.characterGroup.rotation.y += deltaX * 0.01;
+      }
       this.previousMouseX = e.touches[0].clientX;
     };
 
-    const onTouchEnd = () => {
+    const onTouchEnd = (e: TouchEvent) => {
       this.isDragging = false;
+      // Tap (no move) selects a stage character.
+      if (!moved && this.stageMembers.length > 0 && e.changedTouches.length > 0) {
+        const t = e.changedTouches[0];
+        const classId = this.raycastStageMember(t.clientX, t.clientY);
+        if (classId) this.stageClickCallback?.(classId);
+      }
     };
 
     this.canvas.addEventListener('mousedown', onMouseDown);
@@ -729,9 +1275,126 @@ export class CharacterPreview {
     // No idle auto-rotation: the character holds its face-on pose (the classic
     // character-screen behavior) and only the player's drag spins the turntable.
 
-    // Update animations inside visual
+    // Stage mode: 3D character-select stage with authentic PT walking.
+    // Each member WALKS toward its target (center or home) at a fixed speed
+    // (frame-rate independent), moving on both X and Z diagonally. While
+    // moving, the real PT WALK clip plays and the character faces its
+    // movement direction; at rest, the PT STAND/idle clip plays and the
+    // selected character settles into presentation orientation. Scale
+    // emphasis settles in after arrival (no pop). The selected character
+    // gently oscillates once at center.
+    if (this.stageMembers.length > 0) {
+      this.stageElapsed += dt;
+      const scaleLerp = Math.min(dt * STAGE_SCALE_LERP_SPEED, 1);
+      const facingLerp = Math.min(dt * STAGE_FACING_LERP_SPEED, 1);
+      for (const m of this.stageMembers) {
+        // Physical X+Z movement: walk toward (targetX, targetZ) at
+        // STAGE_WALK_SPEED. The movement vector is normalized so diagonal
+        // walks are not faster than straight walks.
+        if (m.walkDir !== null) {
+          const cx = m.visual.root.position.x;
+          const cz = m.visual.root.position.z;
+          const dx = m.targetX - cx;
+          const dz = m.targetZ - cz;
+          const dist = Math.sqrt(dx * dx + dz * dz);
+          const step = STAGE_WALK_SPEED * dt;
+          if (dist <= step || dist === 0) {
+            // Arrived this frame.
+            m.visual.root.position.x = m.targetX;
+            m.visual.root.position.z = m.targetZ;
+            m.walkDir = null;
+          } else {
+            m.visual.root.position.x += (dx / dist) * step;
+            m.visual.root.position.z += (dz / dist) * step;
+          }
+        }
+
+        // Scale settles toward target (no instant pop).
+        m.currentScale += (m.targetScale - m.currentScale) * scaleLerp;
+        m.visual.root.scale.setScalar(m.currentScale);
+
+        // Rotation: while walking, face the movement direction. At rest,
+        // the selected character oscillates (sine wave) once at center and
+        // not dragging; background characters face forward.
+        if (m.walkDir !== null) {
+          // Face the movement direction (shortest rotation toward target).
+          const targetYaw = Math.atan2(
+            m.targetX - m.visual.root.position.x,
+            m.targetZ - m.visual.root.position.z,
+          );
+          // Shortest-angle lerp toward the target yaw.
+          m.visual.root.rotation.y = lerpAngle(
+            m.visual.root.rotation.y,
+            targetYaw,
+            facingLerp,
+          );
+        } else if (m.selected && !this.isDragging) {
+          // Arrived at center: settle into presentation oscillation.
+          m.visual.root.rotation.y =
+            Math.sin(this.stageElapsed * STAGE_OSCILLATION_FREQ) *
+            STAGE_OSCILLATION_AMP;
+        } else if (!m.selected) {
+          // Background: face forward.
+          m.visual.root.rotation.y +=
+            (0 - m.visual.root.rotation.y) * scaleLerp;
+        }
+
+        // Animation: WALK clip while moving, STAND/idle at rest.
+        const isMoving = m.walkDir !== null;
+        m.visual.update(
+          dt,
+          isMoving ? PREVIEW_WALK_STATE : PREVIEW_ANIM_STATE,
+          true,
+        );
+      }
+
+      // Move the spotlight to follow the selected character.
+      if (this.stageSpotlight && this.stageSpotlightTarget && this.stageSelectedClass) {
+        const sel = this.stageMembers.find(
+          (m) => m.classId === this.stageSelectedClass,
+        );
+        if (sel) {
+          this.stageSpotlight.position.set(
+            sel.visual.root.position.x,
+            5,
+            sel.visual.root.position.z + 2,
+          );
+          this.stageSpotlightTarget.position.set(
+            sel.visual.root.position.x,
+            0,
+            sel.visual.root.position.z,
+          );
+        }
+      }
+
+      this.renderer.render(this.scene, this.camera);
+      return;
+    }
+
+    // Legacy mode: single selected character in characterGroup + background
+    // formation in formationGroup. Used by non-stage panels (charselect,
+    // charcreate, inspect).
+    // Formation walk: if active, lerp the characterGroup from its formation
+    // slot to the presentation center (0, 0) using easeOutQuad. While
+    // walking, the walk clip plays; on arrival, the character enters idle.
+    // Hair changes do NOT reset the walk state, so they inherit the current
+    // position without restarting the walk.
     if (this.currentVisual) {
-      this.currentVisual.update(dt, PREVIEW_ANIM_STATE, true);
+      if (this.walkPhase === 'walking') {
+        this.walkElapsed += dt;
+        const t = Math.min(this.walkElapsed / FORMATION_WALK_DURATION_S, 1);
+        const e = 1 - (1 - t) * (1 - t); // easeOutQuad
+        this.characterGroup.position.x = this.walkStartX + (0 - this.walkStartX) * e;
+        this.characterGroup.position.z = this.walkStartZ + (0 - this.walkStartZ) * e;
+        if (t >= 1) this.walkPhase = 'idle';
+      }
+      const animState = this.walkPhase === 'walking' ? PREVIEW_WALK_STATE : PREVIEW_ANIM_STATE;
+      this.currentVisual.update(dt, animState, true);
+    }
+    // Formation background characters: idle-animate in place. They are not
+    // combat-active and do not move; only their idle clip advances.
+    for (const v of this.formationVisuals) {
+      v.update(dt, PREVIEW_ANIM_STATE, true);
     }
 
     this.renderer.render(this.scene, this.camera);
@@ -890,6 +1553,8 @@ export class CharacterPreview {
     this.cleanupDragControls = null;
     this.openGate.cancel();
     this.hideStandIn();
+    this.clearStage();
+    this.clearFormation();
     if (this.currentVisual) {
       this.characterGroup.remove(this.currentVisual.root);
       this.currentVisual.dispose();

@@ -6867,6 +6867,37 @@
     letter-spacing: 0.3px;
   }
 
+  /* Run/walk gait toggle: a compact gold pill pinned below the minimap zoom
+     control. Click or press KeyR to flip between Run and Walk. The
+     aria-pressed attribute reflects the current mode. */
+  .run-walk-toggle {
+    position: absolute;
+    left: 50%;
+    bottom: -28px;
+    transform: translateX(-50%);
+    padding: 1px 10px;
+    z-index: 2;
+    background: radial-gradient(circle at 50% 30%, #2c2c3a, #15151f);
+    border: 1px solid #4a3d1d;
+    border-radius: 9px;
+    box-shadow: 0 1px 3px #000a;
+    color: var(--gold);
+    font-size: 11px;
+    font-family: var(--title-font);
+    text-shadow: 1px 1px 2px #000;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .run-walk-toggle:hover {
+    color: #fff;
+    background: #ffffff1a;
+  }
+  .run-walk-toggle[aria-pressed='true'] {
+    border-color: #6b5a2d;
+    color: #c7b46a;
+  }
+
   /* wraps the round minimap canvas so the raid-lockout badge can anchor to the
      canvas box (not the taller wrap that also holds coords/compass/zoom). */
   #minimap-disc {

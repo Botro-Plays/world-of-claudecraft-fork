@@ -299,6 +299,19 @@ function prewarmVisualPortrait(
   });
 }
 
+/** Prewarm a portrait for any visual key (not just `player_<class>`), so the
+ *  HUD portrait can show a PT hair variant immediately on entry rather than
+ *  falling back to the class crest while the live capture completes. Used by
+ *  the post-entry preview prewarm plan for a local player carrying a
+ *  `visualKeyOverride` (e.g. `player_tempskron_mechanician_hair2`). */
+export function prewarmVisualKeyPortrait(
+  visualKey: string,
+  skin = 0,
+  framing: PortraitFraming = 'headshot',
+): Promise<void> {
+  return prewarmVisualPortrait(visualKey, skin, framing);
+}
+
 /** The composed twin of {@link prewarmVisualPortrait}: the same off-thread
  *  steps (sliced uploads, async link, one render, async encode) around a body
  *  built from `look` rather than from a (class, skin) pair. The composed body

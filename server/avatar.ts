@@ -21,6 +21,28 @@ export const PLAYER_CLASSES: readonly PlayerClass[] = [
   'mage',
   'warlock',
   'druid',
+  // PT Tempskron Fighter POC: reuse warrior's color (CLASSES spreads warrior)
+  'tempskron_fighter',
+  // PT Tempskron Mechanician POC: reuse warrior's color (CLASSES spreads warrior)
+  'tempskron_mechanician',
+  // PT Tempskron Pikeman POC: reuse warrior's color (CLASSES spreads warrior)
+  'tempskron_pikeman',
+  // PT Tempskron Archer POC: distinct green color (ranged/dexterity class)
+  'tempskron_archer',
+  // PT Morion Knight POC: distinct Morion blue color (strength/melee class)
+  'morion_knight',
+  // PT Morion Atalanta POC: distinct Morion gold color (spear/javelin warrior)
+  'morion_atalanta',
+  // PT Morion Priestess POC: distinct light purple color (holy healer)
+  'morion_priestess',
+  // PT Morion Magician POC: distinct orange-red color (fire/elemental caster)
+  'morion_magician',
+  // PT Atlanteon Assassin POC: distinct dark blue-gray color (dual-wield DPS)
+  'atlanteon_assassin',
+  // PT Atlanteon Martial Artist POC: distinct gold color (unarmed brawler)
+  'atlanteon_martial_artist',
+  // PT Atlanteon Shaman POC: distinct teal color (spiritual caster)
+  'atlanteon_shaman',
 ];
 
 export const MAX_SKIN = 7;

@@ -263,6 +263,7 @@ export class SelfMotionPredictor {
     jump: false,
     dive: false,
     surface: false,
+    walkMode: false,
   };
   private readonly out: Vec3Like = { x: 0, y: 0, z: 0 };
 
@@ -494,6 +495,7 @@ export class SelfMotionPredictor {
     inp.dive = frame.moveInput.dive;
     inp.surface = frame.moveInput.surface;
     inp.swimSteer = frame.moveInput.swimSteer;
+    inp.walkMode = frame.moveInput.walkMode;
     // A blocked step needs NO special handling, and must never get any. The
     // kernel runs the same swept static collision as the server, so when the
     // display stops at a wall it is already RIGHT and the authoritative anchor

@@ -13,7 +13,30 @@ import {
 
 type WeaponArchetype = 'warrior' | 'caster' | 'rogue';
 
-const MAIL_CLASSES = new Set<PlayerClass>(['warrior', 'paladin', 'shaman']);
+const MAIL_CLASSES = new Set<PlayerClass>([
+  'warrior',
+  'paladin',
+  'shaman',
+  // PT Tempskron classes reuse warrior's armor proficiency (mail)
+  'tempskron_fighter',
+  'tempskron_mechanician',
+  'tempskron_pikeman',
+  'tempskron_archer',
+  // PT Morion Knight reuses warrior's armor proficiency (mail)
+  'morion_knight',
+  // PT Morion Atalanta reuses warrior's armor proficiency (mail)
+  'morion_atalanta',
+  // PT Morion Priestess reuses warrior's armor proficiency (mail) (Phase A)
+  'morion_priestess',
+  // PT Morion Magician reuses warrior's armor proficiency (mail) (Phase A)
+  'morion_magician',
+  // PT Atlanteon Assassin reuses warrior's armor proficiency (mail) (Phase A)
+  'atlanteon_assassin',
+  // PT Atlanteon Martial Artist reuses warrior's armor proficiency (mail)
+  'atlanteon_martial_artist',
+  // PT Atlanteon Shaman reuses warrior's armor proficiency (mail) (Phase A)
+  'atlanteon_shaman',
+]);
 const LEATHER_CLASSES = new Set<PlayerClass>(['druid', 'rogue', 'hunter']);
 const WARRIOR_WEAPON_CLASSES = new Set<PlayerClass>([
   'warrior',
@@ -31,6 +54,29 @@ const CASTER_WEAPON_CLASSES = new Set<PlayerClass>([
   'druid',
 ]);
 const ROGUE_WEAPON_CLASSES = new Set<PlayerClass>(['rogue', 'hunter']);
+
+// PT classes reuse the warrior's weapon proficiency. The weapon
+// archetype sets stay pinned to the original proficiency groups (so
+// sameClassSet detection against item.requiredClass keeps matching), and the
+// PT classes are admitted here as a warrior-equivalent fallback.
+// Despite the historical name, this set covers all PT classes that reuse the
+// warrior kit (Tempskron, Morion, and Atlanteon), not just Tempskron ones.
+const PT_TEMPSKRON_CLASSES: ReadonlySet<PlayerClass> = new Set<PlayerClass>([
+  'tempskron_fighter',
+  'tempskron_mechanician',
+  'tempskron_pikeman',
+  'tempskron_archer',
+  'morion_knight',
+  'morion_atalanta',
+  'morion_priestess',
+  'morion_magician',
+  'atlanteon_assassin',
+  'atlanteon_martial_artist',
+  'atlanteon_shaman',
+]);
+function isPtTempskron(cls: PlayerClass): boolean {
+  return PT_TEMPSKRON_CLASSES.has(cls);
+}
 
 const ARMOR_RANK: Record<ArmorType, number> = {
   cloth: 0,
@@ -400,12 +446,19 @@ export function canDualWield(cls: PlayerClass, spec?: string | null): boolean {
   return (
     cls === 'rogue' ||
     (cls === 'warrior' && spec === 'fury') ||
-    (cls === 'shaman' && spec === 'enhancement')
+    (cls === 'shaman' && spec === 'enhancement') ||
+    // PT Tempskron classes reuse the warrior's ability kit, including the
+    // fury spec's dual-wield capability.
+    (isPtTempskron(cls) && spec === 'fury')
   );
 }
 
 export function canDualWieldTwoHand(cls: PlayerClass, spec?: string | null): boolean {
-  return cls === 'warrior' && spec === 'fury';
+  return (
+    (cls === 'warrior' && spec === 'fury') ||
+    // PT Tempskron classes reuse the warrior's fury dual-wield two-hand.
+    (isPtTempskron(cls) && spec === 'fury')
+  );
 }
 
 export function weaponHand(item: WeaponItemDef): WeaponItemDef['hand'] {
@@ -414,12 +467,21 @@ export function weaponHand(item: WeaponItemDef): WeaponItemDef['hand'] {
 
 export function canEquipItem(cls: PlayerClass, item: ItemDef): boolean {
   if (isShieldItem(item)) {
-    return !item.requiredClass || item.requiredClass.includes(cls);
+    if (!item.requiredClass) return true;
+    if (item.requiredClass.includes(cls)) return true;
+    // PT Tempskron classes reuse the warrior's armor proficiency: if a shield
+    // admits the warrior, it admits the PT classes too.
+    if (isPtTempskron(cls) && item.requiredClass.includes('warrior')) return true;
+    return false;
   }
   // Held offhands (caster orbs/tomes) carry no armor class or weapon proficiency:
   // the literal requiredClass list is the whole rule, like shields.
   if (item.kind === 'held_offhand') {
-    return !item.requiredClass || item.requiredClass.includes(cls);
+    if (!item.requiredClass) return true;
+    if (item.requiredClass.includes(cls)) return true;
+    // PT Tempskron classes reuse the warrior's held-offhand proficiency.
+    if (isPtTempskron(cls) && item.requiredClass.includes('warrior')) return true;
+    return false;
   }
   const armorType = armorTypeForItem(item);
   if (armorType) return ARMOR_RANK[armorType] <= ARMOR_RANK[maxArmorTypeForClass(cls)];
@@ -430,10 +492,18 @@ export function canEquipItem(cls: PlayerClass, item: ItemDef): boolean {
     return false;
   }
   const weaponArchetype = weaponArchetypeForItem(item);
-  if (weaponArchetype === 'warrior') return WARRIOR_WEAPON_CLASSES.has(cls);
+  if (weaponArchetype === 'warrior') return WARRIOR_WEAPON_CLASSES.has(cls) || isPtTempskron(cls);
   if (weaponArchetype === 'caster') return CASTER_WEAPON_CLASSES.has(cls);
   if (weaponArchetype === 'rogue') return ROGUE_WEAPON_CLASSES.has(cls);
-  if (item.requiredClass) return item.requiredClass.includes(cls);
+  if (item.requiredClass) {
+    if (item.requiredClass.includes(cls)) return true;
+    // PT Tempskron classes reuse the warrior's weapon proficiency for bespoke
+    // (non-archetype) weapon locks that name the warrior explicitly.
+    if (isPtTempskron(cls) && item.kind === 'weapon' && item.requiredClass.includes('warrior')) {
+      return true;
+    }
+    return false;
+  }
   return true;
 }
 

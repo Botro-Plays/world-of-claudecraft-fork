@@ -383,6 +383,28 @@ const CLASS_LABELS: Record<PlayerClass, string> = {
   mage: 'Mage',
   warlock: 'Warlock',
   druid: 'Druid',
+  // PT Tempskron Fighter POC: reuse warrior's label
+  tempskron_fighter: 'Warrior',
+  // PT Tempskron Mechanician POC: reuse warrior's label
+  tempskron_mechanician: 'Warrior',
+  // PT Tempskron Pikeman POC: reuse warrior's label
+  tempskron_pikeman: 'Warrior',
+  // PT Tempskron Archer POC: reuse warrior's label
+  tempskron_archer: 'Warrior',
+  // PT Morion Knight POC: reuse warrior's label
+  morion_knight: 'Warrior',
+  // PT Morion Atalanta POC: reuse warrior's label
+  morion_atalanta: 'Warrior',
+  // PT Morion Priestess POC: reuse warrior's label (Phase A)
+  morion_priestess: 'Warrior',
+  // PT Morion Magician POC: reuse warrior's label (Phase A)
+  morion_magician: 'Warrior',
+  // PT Atlanteon Assassin POC: reuse warrior's label (Phase A)
+  atlanteon_assassin: 'Warrior',
+  // PT Atlanteon Martial Artist POC: reuse warrior's label
+  atlanteon_martial_artist: 'Warrior',
+  // PT Atlanteon Shaman POC: reuse warrior's label (Phase A)
+  atlanteon_shaman: 'Warrior',
 };
 
 export function splitCopper(copper: number): MoneySplit {

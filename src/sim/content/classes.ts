@@ -81,71 +81,625 @@ const START_RATIONS_MANA = [
   { itemId: 'spring_water', count: 5 },
 ];
 
+const WARRIOR_DEF: ClassDef = {
+  id: 'warrior',
+  name: 'Warrior',
+  baseStats: { str: 23, agi: 20, sta: 22, int: 10, spi: 11, armor: 50 },
+  statsPerLevel: { str: 2, agi: 1, sta: 2, int: 0, spi: 0, armor: 12 },
+  baseHp: 50,
+  hpPerLevel: 18,
+  baseMana: 100, // rage cap
+  manaPerLevel: 0,
+  resourceType: 'rage',
+  startWeapon: 'worn_sword',
+  startOffhand: 'eastbrook_buckler',
+  startChest: 'recruit_tunic',
+  startItems: START_RATIONS,
+  abilities: [
+    'heroic_strike',
+    'revenge',
+    'battle_shout',
+    'charge',
+    'thunder_clap',
+    'hamstring',
+    'bloodrage',
+    'overpower',
+    'raging_gale',
+    'raised_guard',
+    'pummel',
+    // Seething Fury: authored as a plain L10 active (def below) but orphaned
+    // when the v2 talent integration deleted the v1 class-tree grant
+    // (war_berserker_rage) without re-homing it - abilitiesKnownAt could
+    // never return it (owner report: unfindable on a live L20 warrior).
+    'berserker_rage',
+    'execute',
+    'furious_mending',
+    'iron_resolve',
+    'slam',
+    'red_harvest',
+    'whirlwind',
+    'faultline',
+    'heroic_leap',
+    'cleave',
+    'rallying_cry',
+    'emboldening_roar',
+    'defiant_bellow',
+    'battle_stance',
+    'berserker_stance',
+    'defensive_stance',
+    'demoralizing_shout',
+    'intimidating_shout',
+    'sunder_armor',
+    'taunt',
+    'measured_fury',
+    'seasoned_soldier',
+    'sudden_death',
+    'diabolical_twinstrike',
+    'cleaving_blows',
+    'breachmaker',
+    // Arms restructure 2026-07-08: a cleave window and the Deep Wounds bleed
+    // passive (replacing the retired Deep Gash). Die by the Sword is row-granted.
+    'sweeping_strikes',
+    'deep_wounds',
+    'enrage_passive',
+  ],
+  color: 0xd67a54,
+};
+
+// PT Tempskron Mechanician class foundation (Phase A).
+//
+// Source: MagicPT-Chinese
+//   PT-Source\HoBaram\HoLogin.cpp:91  (TempNewCharacterInit starting stats)
+//   PT-Source\fileread.cpp:6441       (JobDataBase: LifeFunction=2, ManaFunction=2,
+//                                     StaminaFunction=2)
+//   PT-Source\sinbaram\sinInvenTory.cpp:6416-6457 (HP/mana/stamina formulas)
+//   PT-Source\smPacket.h:2983         (JOBCODE_MECHANICIAN = 2)
+//
+// PT stat -> WoC attribute mapping:
+// PT uses 5 stats (Strength, Spirit, Talent, Defence, Health); WoC uses 6
+// (str, agi, sta, int, spi, armor). Each PT stat maps to the WoC attribute
+// that serves the same semantic role:
+//
+//   PT Strength  (24) -> WoC str   (24)  physical power
+//   PT Spirit    (8)  -> WoC int   (8)   mana pool driver (PT Spirit drives
+//                                        mana; WoC Intellect drives mana)
+//   PT Spirit    (8)  -> WoC spi   (8)   mana regen (PT Spirit also drives
+//                                        mana regen; WoC Spirit is regen)
+//   PT Talent    (25) -> WoC agi   (25)  technique/dexterity (PT Talent
+//                                        affects move speed; WoC Agility is
+//                                        dodge/crit/technique)
+//   PT Defence   (18) -> WoC armor (18)  damage mitigation (PT "Defence"
+//                                        column; WoC Armor is mitigation)
+//   PT Health    (24) -> WoC sta   (24)  HP pool (PT Health drives HP;
+//                                        WoC Stamina drives HP)
+//
+// PT Spirit maps to BOTH WoC int and WoC spi because PT Spirit serves both
+// roles (mana pool and mana regen) in PT, while WoC splits them into two
+// attributes.
+const MECHANICIAN_DEF: ClassDef = {
+  id: 'tempskron_mechanician',
+  name: 'Tempskron Mechanician',
+  baseStats: { str: 24, agi: 25, sta: 24, int: 8, spi: 8, armor: 18 },
+  // PT does not publish a per-level stat growth table (players allocate
+  // points manually). These values follow WoC's classic-era growth curve
+  // for a mana-based utility/tank hybrid: moderate strength and intellect
+  // growth, high stamina (tanky), low spirit (regen).
+  statsPerLevel: { str: 2, agi: 1, sta: 2, int: 2, spi: 1, armor: 10 },
+  // HP: Mechanician is a tanky hybrid. baseHp/hpPerLevel sit between mage
+  // (40/12) and warrior (50/18). PT LifeFunction=2 (sinInvenTory.cpp:6416)
+  // uses the same formula as Fighter (LifeFunction=1) in the non-WUJIAQI
+  // build, so the HP difference comes from the starting Health stat, not
+  // the formula. The WoC values reflect a durable utility class.
+  baseHp: 44,
+  hpPerLevel: 15,
+  // Mana: PT ManaFunction=2 (sinInvenTory.cpp:6450):
+  //   level * 0.7 + spirit * 1.8
+  // which is the middle growth tier (more than Fighter's 0.6, less than
+  // Priest's 0.9). WoC's mana formula is baseMana + manaPerLevel * (lvl-1)
+  // + manaFromIntellect(int). These values sit between paladin (80/20) and
+  // mage (100/24), reflecting a mana class with a moderate pool.
+  baseMana: 90,
+  manaPerLevel: 22,
+  resourceType: 'mana',
+  // Weapon/equipment: the PT Mechanician class weapon is sinWC1
+  // (sinItem.h:63, 0x01020000). The WoC item system does not yet have a
+  // sinWC1-equivalent category, so the temporary Warrior starting equipment
+  // is preserved until a dedicated weapon foundation phase. The shield
+  // (eastbrook_buckler) is appropriate: PT Mechanician uses shields
+  // (sinDS1) for skills like Extreme Shield.
+  startWeapon: 'worn_sword',
+  startOffhand: 'eastbrook_buckler',
+  startChest: 'recruit_tunic',
+  startItems: START_RATIONS_MANA,
+  // Abilities: the temporary Warrior ability kit is preserved until a
+  // dedicated Mechanician abilities phase. This is the Phase A foundation:
+  // the class identity (stats, resource, growth) is authentic; the ability
+  // kit will be replaced in a later phase.
+  abilities: WARRIOR_DEF.abilities,
+  color: 0xd67a54,
+};
+
+// PT Tempskron Pikeman class foundation (Phase A).
+//
+// Source: MagicPT-Chinese
+//   PT-Source\HoBaram\HoLogin.cpp:93   (TempNewCharacterInit starting stats)
+//   PT-Source\fileread.cpp:6443        (JobDataBase: LifeFunction=1, ManaFunction=3,
+//                                      StaminaFunction=1)
+//   PT-Source\sinbaram\sinInvenTory.cpp:6410-6457 (HP/mana/stamina formulas)
+//   PT-Source\smPacket.h:2985          (JOBCODE_PIKEMAN = 4)
+//
+// PT stat -> WoC attribute mapping (same scheme as Mechanician):
+//   PT Strength  (26) -> WoC str   (26)  physical power
+//   PT Spirit    (9)  -> WoC int   (9)   mana pool driver
+//   PT Spirit    (9)  -> WoC spi   (9)   mana regen
+//   PT Talent    (20) -> WoC agi   (20)  technique/dexterity
+//   PT Defence   (19) -> WoC armor (19)  damage mitigation
+//   PT Health    (25) -> WoC sta   (25)  HP pool
+//
+// The Pikeman shares the same LifeFunction (1) and ManaFunction (3) as the
+// Fighter, so the HP and mana formulas are identical. The difference is the
+// starting stats: the Pikeman has lower Strength and Health (less HP/damage)
+// but higher Spirit and Defence (more mana and armor). This makes the Pikeman
+// a slightly more defensive mana-melee hybrid compared to the Fighter.
+const PIKEMAN_DEF: ClassDef = {
+  id: 'tempskron_pikeman',
+  name: 'Tempskron Pikeman',
+  baseStats: { str: 26, agi: 20, sta: 25, int: 9, spi: 9, armor: 19 },
+  // PT does not publish a per-level stat growth table (players allocate
+  // points manually). These values follow WoC's classic-era growth curve
+  // for a mana-melee hybrid: moderate strength growth, high stamina (durable
+  // melee), low intellect/spirit (low mana growth tier).
+  statsPerLevel: { str: 2, agi: 1, sta: 2, int: 1, spi: 1, armor: 10 },
+  // HP: Pikeman has LifeFunction=1 (same as Fighter), the highest HP growth
+  // tier. The Pikeman's starting Health (25) is lower than the Fighter's
+  // (27) but higher than the Mechanician's (24). The WoC values sit between
+  // the Mechanician (44/15) and the Warrior (50/18), reflecting a durable
+  // melee class with slightly less HP than the Fighter.
+  baseHp: 46,
+  hpPerLevel: 16,
+  // Mana: PT ManaFunction=3 (sinInvenTory.cpp:6454):
+  //   level * 0.6 + spirit * 1.8
+  // which is the lowest mana growth tier (same as Fighter). The Pikeman's
+  // starting Spirit (9) is higher than the Fighter's (6), giving a larger
+  // starting pool, but the per-level growth is the lowest tier. The WoC
+  // values sit below the Mechanician (90/22, ManaFunction=2) reflecting the
+  // lower growth rate.
+  baseMana: 85,
+  manaPerLevel: 16,
+  resourceType: 'mana',
+  // Weapon/equipment: the PT Pikeman class weapon is sinWP1 (pike/spear,
+  // sinItem.h). The WoC item system does not yet have a sinWP1-equivalent
+  // category, so the temporary Warrior starting equipment is preserved
+  // until a dedicated weapon foundation phase. The shield
+  // (eastbrook_buckler) is appropriate: PT Pikeman uses shields (sinDS1).
+  startWeapon: 'worn_sword',
+  startOffhand: 'eastbrook_buckler',
+  startChest: 'recruit_tunic',
+  startItems: START_RATIONS_MANA,
+  // Abilities: the temporary Warrior ability kit is preserved until a
+  // dedicated Pikeman abilities phase. This is the Phase A foundation:
+  // the class identity (stats, resource, growth) is authentic; the ability
+  // kit will be replaced in a later phase.
+  abilities: WARRIOR_DEF.abilities,
+  color: 0xd67a54,
+};
+
+// PT Tempskron Archer class foundation (Phase A).
+//
+// Source: MagicPT-Chinese
+//   PT-Source\HoBaram\HoLogin.cpp:94   (TempNewCharacterInit starting stats)
+//   PT-Source\fileread.cpp:6444        (JobDataBase: LifeFunction=3, ManaFunction=3,
+//                                      StaminaFunction=2)
+//   PT-Source\sinbaram\sinInvenTory.cpp:6410-6457 (HP/mana/stamina formulas)
+//   PT-Source\smPacket.h:2986          (JOBCODE_ARCHER = 3)
+//   PT-Source\sinbaram\sinSubMain.cpp:4087 (GetSex: Archer -> BROOD_CODE_WOMAN)
+//
+// PT stat -> WoC attribute mapping (same scheme as Mechanician/Pikeman):
+//   PT Strength  (17) -> WoC str   (17)  physical power (lowest Tempskron: ranged)
+//   PT Spirit    (11) -> WoC int   (11)  mana pool driver
+//   PT Spirit    (11) -> WoC spi   (11)  mana regen
+//   PT Talent    (21) -> WoC agi   (21)  technique/dexterity (highest Tempskron)
+//   PT Defence   (27) -> WoC armor (27)  damage mitigation (highest Tempskron)
+//   PT Health    (23) -> WoC sta   (23)  HP pool (lowest Tempskron)
+//
+// The Archer is a female ranged-dexterity class. LifeFunction=3 gives the
+// lowest HP growth among Tempskron melee/ranged (3.2/level vs Fighter's 3.4),
+// reflecting a squishier ranged class. ManaFunction=3 is the same tier as
+// Fighter/Pikeman (0.6/level), but the higher starting Spirit (11 vs 9/6)
+// gives a larger starting mana pool. The high Talent (21) and Defence (27)
+// make the Archer a dexterity/armor-focused ranged class.
+const ARCHER_DEF: ClassDef = {
+  id: 'tempskron_archer',
+  name: 'Tempskron Archer',
+  baseStats: { str: 17, agi: 21, sta: 23, int: 11, spi: 11, armor: 27 },
+  // PT does not publish a per-level stat growth table (players allocate
+  // points manually). These values follow WoC's classic-era growth curve
+  // for a ranged-dexterity class: low strength growth, high agility growth
+  // (primary stat), moderate stamina, low intellect/spirit.
+  statsPerLevel: { str: 1, agi: 3, sta: 1, int: 1, spi: 1, armor: 10 },
+  // HP: Archer has LifeFunction=3 (sinInvenTory.cpp:6420):
+  //   level * 3.2 + strength * 2.0 + health * 2.2
+  // This is the lowest HP growth tier among Tempskron (3.2 vs Fighter's 3.4).
+  // The Archer's starting Health (23) is the lowest among Tempskron. The WoC
+  // values sit below the Pikeman (46/16), reflecting a squishier ranged class.
+  baseHp: 42,
+  hpPerLevel: 14,
+  // Mana: PT ManaFunction=3 (sinInvenTory.cpp:6454):
+  //   level * 0.6 + spirit * 1.8
+  // which is the lowest mana growth tier (same as Fighter/Pikeman). The
+  // Archer's starting Spirit (11) is the highest among the ManaFunction=3
+  // classes, giving a larger starting pool. The WoC values match the
+  // Pikeman (85/16) with a slightly higher base from the higher Spirit.
+  baseMana: 90,
+  manaPerLevel: 16,
+  resourceType: 'mana',
+  // Weapon/equipment: the PT Archer class weapon is sinWS1 (bow,
+  // sinItem.h). The WoC item system does not yet have a sinWS1-equivalent
+  // category, so the temporary Warrior starting equipment is preserved
+  // until a dedicated weapon foundation phase.
+  startWeapon: 'worn_sword',
+  startOffhand: 'eastbrook_buckler',
+  startChest: 'recruit_tunic',
+  startItems: START_RATIONS_MANA,
+  // Abilities: the temporary Warrior ability kit is preserved until a
+  // dedicated Archer abilities phase. This is the Phase A foundation:
+  // the class identity (stats, resource, growth) is authentic; the ability
+  // kit will be replaced in a later phase.
+  abilities: WARRIOR_DEF.abilities,
+  color: 0x4a9c5a,
+};
+
+// PT Morion Knight class foundation (Phase A).
+//
+// Source: MagicPT-Chinese
+//   PT-Source\HoBaram\HoLogin.cpp:99-102 (MorNewCharacterInit starting stats)
+//   PT-Source\fileread.cpp:6476         (JobDataBase: LifeFunction=2, ManaFunction=2,
+//                                       StaminaFunction=2)
+//   PT-Source\sinbaram\sinInvenTory.cpp:6410-6457 (HP/mana/stamina formulas)
+//   PT-Source\smPacket.h:2989          (JOBCODE_KNIGHT = 6)
+//   PT-Source\HoBaram\HoLogin.cpp:1915  (Knight is first Morion class in creation)
+//   PT-Source\HoBaram\HoLogin.cpp:56    (szMorMechBodyName = "char\tmABCD\ma001.ini")
+//   PT-Source\HoBaram\HoLogin.cpp:69    (szMorMechFaceName = Mmh-A01/A02/A03.inf)
+//
+// PT stat -> WoC attribute mapping (same scheme as Tempskron classes):
+//   PT Strength  (26) -> WoC str   (26)  physical power (highest Morion: swordsman)
+//   PT Spirit    (13) -> WoC int   (13)  mana pool driver
+//   PT Spirit    (13) -> WoC spi   (13)  mana regen
+//   PT Talent    (17) -> WoC agi   (17)  technique/dexterity
+//   PT Defence   (19) -> WoC armor (19)  damage mitigation (lowest Morion)
+//   PT Health    (24) -> WoC sta   (24)  HP pool
+//
+// The Knight is a Morion male melee class (BROOD_CODE_MORAYION,
+// BROOD_CODE_MAN). LifeFunction=2 gives the same HP growth tier as the
+// Mechanician (3.4/level), reflecting a durable melee class. ManaFunction=2
+// is the mid-tier mana growth (0.7/level, same as Mechanician), higher than
+// the Fighter/Pikeman/Archer tier (0.6/level). The high Strength (26, highest
+// among all PT classes) and moderate Health (24) make the Knight a
+// strength-focused melee class, the Morion counterpart to the Tempskron
+// Fighter.
+const KNIGHT_DEF: ClassDef = {
+  id: 'morion_knight',
+  name: 'Morion Knight',
+  baseStats: { str: 26, agi: 17, sta: 24, int: 13, spi: 13, armor: 19 },
+  // PT does not publish a per-level stat growth table (players allocate
+  // points manually). These values follow WoC's classic-era growth curve
+  // for a strength-melee class: high strength growth (primary stat),
+  // moderate stamina, low agility/intellect/spirit.
+  statsPerLevel: { str: 3, agi: 1, sta: 2, int: 1, spi: 1, armor: 10 },
+  // HP: Knight has LifeFunction=2 (sinInvenTory.cpp:6416):
+  //   level * 3.4 + strength * 2.0 + health * 2.2
+  // This is the same HP growth tier as the Mechanician (3.4/level). The
+  // Knight's starting Health (24) matches the Mechanician's. The WoC values
+  // match the Mechanician (48/16), reflecting a durable melee class.
+  baseHp: 48,
+  hpPerLevel: 16,
+  // Mana: PT ManaFunction=2 (sinInvenTory.cpp:6450):
+  //   level * 0.7 + spirit * 1.8
+  // which is the mid-tier mana growth (same as Mechanician). The Knight's
+  // starting Spirit (13) is higher than the Mechanician's (10), giving a
+  // larger starting pool. The WoC values sit above the Pikeman (85/16,
+  // ManaFunction=3) reflecting the higher growth rate.
+  baseMana: 95,
+  manaPerLevel: 18,
+  resourceType: 'mana',
+  // Weapon/equipment: the PT Knight class weapon is sinWS2 (sword,
+  // sinItem.h, confirmed by quest mapping sinWS2|sin23 in playsub.cpp).
+  // The WoC item system does not yet have a sinWS2-equivalent category,
+  // so the temporary Warrior starting equipment is preserved until a
+  // dedicated weapon foundation phase.
+  startWeapon: 'worn_sword',
+  startOffhand: 'eastbrook_buckler',
+  startChest: 'recruit_tunic',
+  startItems: START_RATIONS_MANA,
+  // Abilities: the temporary Warrior ability kit is preserved until a
+  // dedicated Knight abilities phase. This is the Phase A foundation:
+  // the class identity (stats, resource, growth) is authentic; the ability
+  // kit will be replaced in a later phase.
+  abilities: WARRIOR_DEF.abilities,
+  color: 0x6b8fb5,
+};
+
+// PT Morion Atalanta class foundation (Phase A).
+//
+// Source: MagicPT-Chinese
+//   PT-Source\HoBaram\HoLogin.cpp:99-108   (MorNewCharacterInit starting stats)
+//   PT-Source\fileread.cpp:6477            (JobDataBase: LifeFunction=2, ManaFunction=2,
+//                                          StaminaFunction=2)
+//   PT-Source\sinbaram\sinInvenTory.cpp:6410-6457 (HP/mana/stamina formulas)
+//   PT-Source\smPacket.h:2989              (JOBCODE_ATALANTA = 5)
+//   PT-Source\HoBaram\HoLogin.cpp:855      (Atalanta is case 1 in Morion creation)
+//   PT-Source\HoBaram\HoLogin.cpp:57        (szMorFighterBodyName = "char\tmABCD\mb001.ini")
+//   PT-Source\HoBaram\HoLogin.cpp:70        (szMorFighterFaceName = Mfh-B01/B02/B03.inf)
+//
+// PT stat -> WoC attribute mapping (same scheme as Tempskron classes):
+//   PT Strength  (23) -> WoC str   (23)  physical power
+//   PT Spirit    (15) -> WoC int   (15)  mana pool driver
+//   PT Spirit    (15) -> WoC spi   (15)  mana regen
+//   PT Talent    (19) -> WoC agi   (19)  technique/dexterity
+//   PT Defence   (19) -> WoC armor (19)  damage mitigation
+//   PT Health    (23) -> WoC sta   (23)  HP pool
+//
+// The Atalanta is a Morion female class (BROOD_CODE_MORAYION,
+// BROOD_CODE_WOMAN). LifeFunction=2 gives the same HP growth tier as the
+// Knight and Mechanician (3.4/level). ManaFunction=2 is the mid-tier mana
+// growth (0.7/level). The balanced stats (Strength 23, Talent 19, Defence 19,
+// Health 23) make the Atalanta a versatile melee/spear class, the Morion
+// counterpart to the Tempskron Pikeman. The Atalanta uses the female m2.smb
+// skeleton (67 bones, shared with the Archer), NOT the male m1.smb.
+const ATALANTA_DEF: ClassDef = {
+  id: 'morion_atalanta',
+  name: 'Morion Atalanta',
+  baseStats: { str: 23, agi: 19, sta: 23, int: 15, spi: 15, armor: 19 },
+  // PT does not publish a per-level stat growth table (players allocate
+  // points manually). These values follow WoC's classic-era growth curve
+  // for a balanced melee class: moderate strength growth (primary stat),
+  // moderate agility, moderate stamina, low intellect/spirit.
+  statsPerLevel: { str: 2, agi: 2, sta: 2, int: 1, spi: 1, armor: 10 },
+  // HP: Atalanta has LifeFunction=2 (sinInvenTory.cpp:6416):
+  //   level * 3.4 + strength * 2.0 + health * 2.2
+  // This is the same HP growth tier as the Knight and Mechanician (3.4/level).
+  // The Atalanta's starting Health (23) is between the Knight (24) and the
+  // Archer (22). The WoC values match the Knight (48/16), reflecting a
+  // durable melee class.
+  baseHp: 48,
+  hpPerLevel: 16,
+  // Mana: PT ManaFunction=2 (sinInvenTory.cpp:6450):
+  //   level * 0.7 + spirit * 1.8
+  // which is the mid-tier mana growth (same as Knight and Mechanician). The
+  // Atalanta's starting Spirit (15) is higher than the Knight's (13), giving
+  // a larger starting pool. The WoC values match the Knight (95/18).
+  baseMana: 95,
+  manaPerLevel: 18,
+  resourceType: 'mana',
+  // Weapon/equipment: the PT Atalanta class weapon is sinWS1 (spear/javelin,
+  // sinItem.h, confirmed by quest mapping sinWS1|sin22 in playsub.cpp).
+  // The WoC item system does not yet have a sinWS1-equivalent category,
+  // so the temporary Warrior starting equipment is preserved until a
+  // dedicated weapon foundation phase.
+  startWeapon: 'worn_sword',
+  startOffhand: 'eastbrook_buckler',
+  startChest: 'recruit_tunic',
+  startItems: START_RATIONS_MANA,
+  // Abilities: the temporary Warrior ability kit is preserved until a
+  // dedicated Atalanta abilities phase. This is the Phase A foundation:
+  // the class identity (stats, resource, growth) is authentic; the ability
+  // kit will be replaced in a later phase.
+  abilities: WARRIOR_DEF.abilities,
+  color: 0xc4a070,
+};
+
+// PT Morion Priestess class foundation (Phase A).
+//
+// Source: MagicPT-Chinese
+//   PT-Source\HoBaram\HoLogin.cpp:104        (MorNewCharacterInit: Str 15, Spi 28, Talent 21, Def 15, Health 20)
+//   PT-Source\fileread.cpp:6478              (JobDataBase: LifeFunction=4, ManaFunction=1, StaminaFunction=3)
+//   PT-Source\sinbaram\sinInvenTory.cpp:6400,6446 (HP/mana formulas)
+//   PT-Source\smPacket.h:2990               (JOBCODE_PRIESTESS = 8)
+//   PT-Source\HoBaram\HoLogin.cpp:858        (Priestess is case 2 in Morion creation)
+//   PT-Source\HoBaram\HoLogin.cpp:58         (szMorPikeBodyName = "char\tmABCD\mc001.ini")
+//   PT-Source\HoBaram\HoLogin.cpp:71         (szMorPikeFaceName = Mfh-C01/C02/C03.inf)
+//
+// PT stat -> WoC attribute mapping:
+//   PT Strength  (15) -> WoC str   (15)  physical power (low)
+//   PT Spirit    (28) -> WoC int   (28)  mana pool driver (highest Morion)
+//   PT Spirit    (28) -> WoC spi   (28)  mana regen
+//   PT Talent    (21) -> WoC agi   (21)  technique/dexterity
+//   PT Defence   (15) -> WoC armor (15)  damage mitigation (low)
+//   PT Health    (20) -> WoC sta   (20)  HP pool
+//
+// The Priestess is a Morion female class (BROOD_CODE_MORAYION,
+// BROOD_CODE_WOMAN). LifeFunction=4 gives the highest HP growth tier
+// (4.2/level, sinInvenTory.cpp:6400). ManaFunction=1 gives the highest mana
+// growth tier (0.9/level, sinInvenTory.cpp:6446). The high Spirit (28) and
+// high HP growth make the Priestess a durable holy healer/support caster.
+const PRIESTESS_DEF: ClassDef = {
+  id: 'morion_priestess',
+  name: 'Morion Priestess',
+  baseStats: { str: 15, agi: 21, sta: 20, int: 28, spi: 28, armor: 15 },
+  statsPerLevel: { str: 1, agi: 2, sta: 2, int: 3, spi: 3, armor: 10 },
+  baseHp: 52,
+  hpPerLevel: 18,
+  baseMana: 110,
+  manaPerLevel: 22,
+  resourceType: 'mana',
+  startWeapon: 'worn_sword',
+  startOffhand: 'eastbrook_buckler',
+  startChest: 'recruit_tunic',
+  startItems: START_RATIONS_MANA,
+  abilities: WARRIOR_DEF.abilities,
+  color: 0xe8d0ff,
+};
+
+// PT Morion Magician class foundation (Phase A).
+//
+// Source: MagicPT-Chinese
+//   PT-Source\HoBaram\HoLogin.cpp:105        (MorNewCharacterInit: Str 16, Spi 29, Talent 19, Def 14, Health 21)
+//   PT-Source\fileread.cpp:6479              (JobDataBase: LifeFunction=5, ManaFunction=1, StaminaFunction=2)
+//   PT-Source\sinbaram\sinInvenTory.cpp:6428,6446 (HP/mana formulas)
+//   PT-Source\smPacket.h:2991               (JOBCODE_MAGICIAN = 7)
+//   PT-Source\HoBaram\HoLogin.cpp:863        (Magician is case 3 in Morion creation)
+//   PT-Source\HoBaram\HoLogin.cpp:59         (szMorArcherBodyName = "char\tmABCD\md001.ini")
+//   PT-Source\HoBaram\HoLogin.cpp:72         (szMorArcherFaceName = Mmh-D01/D02/D03.inf)
+//
+// PT stat -> WoC attribute mapping:
+//   PT Strength  (16) -> WoC str   (16)  physical power (low)
+//   PT Spirit    (29) -> WoC int   (29)  mana pool driver (highest in game)
+//   PT Spirit    (29) -> WoC spi   (29)  mana regen
+//   PT Talent    (19) -> WoC agi   (19)  technique/dexterity
+//   PT Defence   (14) -> WoC armor (14)  damage mitigation (lowest Morion)
+//   PT Health    (21) -> WoC sta   (21)  HP pool
+//
+// The Magician is a Morion male class (BROOD_CODE_MORAYION,
+// BROOD_CODE_MAN). LifeFunction=5 gives the lowest HP growth tier
+// (3.2/level, sinInvenTory.cpp:6428). ManaFunction=1 gives the highest mana
+// growth tier (0.9/level). The highest Spirit (29) and lowest HP growth make
+// the Magician a squishy fire/elemental caster.
+const MAGICIAN_DEF: ClassDef = {
+  id: 'morion_magician',
+  name: 'Morion Magician',
+  baseStats: { str: 16, agi: 19, sta: 21, int: 29, spi: 29, armor: 14 },
+  statsPerLevel: { str: 1, agi: 1, sta: 1, int: 3, spi: 3, armor: 10 },
+  baseHp: 40,
+  hpPerLevel: 12,
+  baseMana: 115,
+  manaPerLevel: 22,
+  resourceType: 'mana',
+  startWeapon: 'worn_sword',
+  startOffhand: 'eastbrook_buckler',
+  startChest: 'recruit_tunic',
+  startItems: START_RATIONS_MANA,
+  abilities: WARRIOR_DEF.abilities,
+  color: 0xff6b3d,
+};
+
+// PT Atlanteon Assassin class foundation (Phase A).
+//
+// Source: MagicPT-Chinese
+//   PT-Source\HoBaram\HoLogin.cpp:95         (TempNewCharacterInit: Str 25, Spi 10, Talent 22, Def 20, Health 22)
+//   PT-Source\fileread.cpp:6445              (JobDataBase: LifeFunction=3, ManaFunction=3, StaminaFunction=2)
+//   PT-Source\sinbaram\sinInvenTory.cpp:6420,6454 (HP/mana formulas)
+//   PT-Source\smPacket.h                    (JOBCODE_ASSASSIN = 9)
+//   PT-Source\HoBaram\HoLogin.cpp:827        (Assassin is case 4 in Tempskron creation)
+//   PT-Source\HoBaram\HoLogin.cpp:53         (szTempAssaBodyName = "char\tmABCD\e001.ini")
+//   PT-Source\HoBaram\HoLogin.cpp:66         (szTempAssaFaceName = tfh-E01/E02/E03.inf)
+//
+// PT stat -> WoC attribute mapping:
+//   PT Strength  (25) -> WoC str   (25)  physical power (high)
+//   PT Spirit    (10) -> WoC int   (10)  mana pool driver (low)
+//   PT Spirit    (10) -> WoC spi   (10)  mana regen
+//   PT Talent    (22) -> WoC agi   (22)  technique/dexterity (highest Tempskron)
+//   PT Defence   (20) -> WoC armor (20)  damage mitigation
+//   PT Health    (22) -> WoC sta   (22)  HP pool
+//
+// The Assassin is a Tempskron female class in MagicPT (BROOD_CODE_TEMPSKRON,
+// BROOD_CODE_WOMAN), reassigned to Atlanteon in the Botro fork.
+// LifeFunction=3 gives medium HP growth (3.2/level). ManaFunction=3 gives
+// the lowest mana growth (0.6/level). High Strength (25) and Talent (22) make
+// the Assassin a dual-wield melee DPS class.
+const ASSASSIN_DEF: ClassDef = {
+  id: 'atlanteon_assassin',
+  name: 'Atlanteon Assassin',
+  baseStats: { str: 25, agi: 22, sta: 22, int: 10, spi: 10, armor: 20 },
+  statsPerLevel: { str: 3, agi: 2, sta: 2, int: 1, spi: 1, armor: 10 },
+  baseHp: 48,
+  hpPerLevel: 15,
+  baseMana: 65,
+  manaPerLevel: 10,
+  resourceType: 'mana',
+  startWeapon: 'worn_sword',
+  startOffhand: 'eastbrook_buckler',
+  startChest: 'recruit_tunic',
+  startItems: START_RATIONS_MANA,
+  abilities: WARRIOR_DEF.abilities,
+  color: 0x4a4a6b,
+};
+
+// PT Atlanteon Martial Artist class foundation (Phase A).
+//
+// Source: MagicPT-Chinese
+//   PT-Source\HoBaram\HoLogin.cpp:96         (TempNewCharacterInit: Str 26, Spi 9, Talent 20, Def 20, Health 24)
+//   PT-Source\fileread.cpp:6446              (JobDataBase: LifeFunction=3, ManaFunction=3, StaminaFunction=2)
+//   PT-Source\sinbaram\sinInvenTory.cpp:6420,6454 (HP/mana formulas)
+//   PT-Source\smPacket.h                    (JOBCODE_MARTIALARTIST = 11)
+//   PT-Source\HoBaram\HoLogin.cpp:832        (Martial Artist is case 5 in Tempskron creation)
+//   PT-Source\HoBaram\HoLogin.cpp:54         (szTempMartialBodyName = "char\tmABCD\f001.ini")
+//   PT-Source\HoBaram\HoLogin.cpp:67         (szTempMartialFaceName = tfh-F01/F02/F03.inf)
+//
+// PT stat -> WoC attribute mapping:
+//   PT Strength  (26) -> WoC str   (26)  physical power (high, tied with Knight)
+//   PT Spirit     (9) -> WoC int    (9)  mana pool driver (lowest)
+//   PT Spirit     (9) -> WoC spi    (9)  mana regen
+//   PT Talent    (20) -> WoC agi   (20)  technique/dexterity
+//   PT Defence   (20) -> WoC armor (20)  damage mitigation
+//   PT Health    (24) -> WoC sta   (24)  HP pool (high)
+//
+// The Martial Artist is a Tempskron female class in MagicPT
+// (BROOD_CODE_TEMPSKRON, BROOD_CODE_WOMAN), reassigned to Atlanteon in the
+// Botro fork. LifeFunction=3 gives medium HP growth (3.2/level).
+// ManaFunction=3 gives the lowest mana growth (0.6/level). High Strength
+// (26) and Health (24) make the Martial Artist a physical brawler.
+const MARTIAL_ARTIST_DEF: ClassDef = {
+  id: 'atlanteon_martial_artist',
+  name: 'Atlanteon Martial Artist',
+  baseStats: { str: 26, agi: 20, sta: 24, int: 9, spi: 9, armor: 20 },
+  statsPerLevel: { str: 3, agi: 2, sta: 2, int: 1, spi: 1, armor: 10 },
+  baseHp: 50,
+  hpPerLevel: 16,
+  baseMana: 60,
+  manaPerLevel: 10,
+  resourceType: 'mana',
+  startWeapon: 'worn_sword',
+  startOffhand: 'eastbrook_buckler',
+  startChest: 'recruit_tunic',
+  startItems: START_RATIONS_MANA,
+  abilities: WARRIOR_DEF.abilities,
+  color: 0xd4a040,
+};
+
+// PT Atlanteon Shaman class foundation (Phase A).
+//
+// Source: MagicPT-Chinese
+//   PT-Source\HoBaram\HoLogin.cpp:106        (MorNewCharacterInit: Str 15, Spi 27, Talent 20, Def 15, Health 22)
+//   PT-Source\fileread.cpp:6480              (JobDataBase: LifeFunction=5, ManaFunction=1, StaminaFunction=2)
+//   PT-Source\sinbaram\sinInvenTory.cpp:6428,6446 (HP/mana formulas)
+//   PT-Source\smPacket.h                    (JOBCODE_SHAMAN = 10)
+//   PT-Source\HoBaram\HoLogin.cpp:868        (Shaman is case 4 in Morion creation)
+//   PT-Source\HoBaram\HoLogin.cpp:60         (szMorAssaBodyName = "char\tmABCD\me001.ini")
+//   PT-Source\HoBaram\HoLogin.cpp:73         (szMorAssaFaceName = Mmh-E01/E02/E03.inf)
+//
+// PT stat -> WoC attribute mapping:
+//   PT Strength  (15) -> WoC str   (15)  physical power (low)
+//   PT Spirit    (27) -> WoC int   (27)  mana pool driver (high)
+//   PT Spirit    (27) -> WoC spi   (27)  mana regen
+//   PT Talent    (20) -> WoC agi   (20)  technique/dexterity
+//   PT Defence   (15) -> WoC armor (15)  damage mitigation (low)
+//   PT Health    (22) -> WoC sta   (22)  HP pool
+//
+// The Shaman is a Morion male class in MagicPT (BROOD_CODE_MORAYION,
+// BROOD_CODE_MAN), reassigned to Atlanteon in the Botro fork.
+// LifeFunction=5 gives the lowest HP growth tier (3.2/level).
+// ManaFunction=1 gives the highest mana growth tier (0.9/level). High Spirit
+// (27) and low HP growth make the Shaman a squishy dark/spiritual caster.
+const SHAMAN_DEF: ClassDef = {
+  id: 'atlanteon_shaman',
+  name: 'Atlanteon Shaman',
+  baseStats: { str: 15, agi: 20, sta: 22, int: 27, spi: 27, armor: 15 },
+  statsPerLevel: { str: 1, agi: 1, sta: 1, int: 3, spi: 3, armor: 10 },
+  baseHp: 42,
+  hpPerLevel: 12,
+  baseMana: 108,
+  manaPerLevel: 22,
+  resourceType: 'mana',
+  startWeapon: 'worn_sword',
+  startOffhand: 'eastbrook_buckler',
+  startChest: 'recruit_tunic',
+  startItems: START_RATIONS_MANA,
+  abilities: WARRIOR_DEF.abilities,
+  color: 0x3d6b5c,
+};
+
 export const CLASSES: Record<PlayerClass, ClassDef> = {
-  warrior: {
-    id: 'warrior',
-    name: 'Warrior',
-    baseStats: { str: 23, agi: 20, sta: 22, int: 10, spi: 11, armor: 50 },
-    statsPerLevel: { str: 2, agi: 1, sta: 2, int: 0, spi: 0, armor: 12 },
-    baseHp: 50,
-    hpPerLevel: 18,
-    baseMana: 100, // rage cap
-    manaPerLevel: 0,
-    resourceType: 'rage',
-    startWeapon: 'worn_sword',
-    startOffhand: 'eastbrook_buckler',
-    startChest: 'recruit_tunic',
-    startItems: START_RATIONS,
-    abilities: [
-      'heroic_strike',
-      'revenge',
-      'battle_shout',
-      'charge',
-      'thunder_clap',
-      'hamstring',
-      'bloodrage',
-      'overpower',
-      'raging_gale',
-      'raised_guard',
-      'pummel',
-      // Seething Fury: authored as a plain L10 active (def below) but orphaned
-      // when the v2 talent integration deleted the v1 class-tree grant
-      // (war_berserker_rage) without re-homing it - abilitiesKnownAt could
-      // never return it (owner report: unfindable on a live L20 warrior).
-      'berserker_rage',
-      'execute',
-      'furious_mending',
-      'iron_resolve',
-      'slam',
-      'red_harvest',
-      'whirlwind',
-      'faultline',
-      'heroic_leap',
-      'cleave',
-      'rallying_cry',
-      'emboldening_roar',
-      'defiant_bellow',
-      'battle_stance',
-      'berserker_stance',
-      'defensive_stance',
-      'demoralizing_shout',
-      'intimidating_shout',
-      'sunder_armor',
-      'taunt',
-      'measured_fury',
-      'seasoned_soldier',
-      'sudden_death',
-      'diabolical_twinstrike',
-      'cleaving_blows',
-      'breachmaker',
-      // Arms restructure 2026-07-08: a cleave window and the Deep Wounds bleed
-      // passive (replacing the retired Deep Gash). Die by the Sword is row-granted.
-      'sweeping_strikes',
-      'deep_wounds',
-      'enrage_passive',
-    ],
-    color: 0xd67a54,
-  },
+  warrior: WARRIOR_DEF,
   mage: {
     id: 'mage',
     name: 'Mage',
@@ -620,6 +1174,91 @@ export const CLASSES: Record<PlayerClass, ClassDef> = {
     ],
     color: 0xff8c1a,
   },
+  // PT Tempskron Fighter POC: reuse warrior's data with different id/name.
+  // The visual + animation set is the converted MagicPT-Chinese PT Fighter
+  // (player_tempskron_fighter VisualDef). See scripts/pt-port/fighter_assembler.ts.
+  tempskron_fighter: { ...WARRIOR_DEF, id: 'tempskron_fighter', name: 'Tempskron Fighter' },
+  // PT Tempskron Mechanician: dedicated class foundation (Phase A).
+  // The visual + animation set is the converted MagicPT-Chinese PT Mechanician
+  // (player_tempskron_mechanician VisualDef). See
+  // scripts/pt-port/mechanician_assembler.ts.
+  //
+  // The stat/resource foundation is derived from the MagicPT-Chinese source
+  // (PT-Source\HoBaram\HoLogin.cpp:91, PT-Source\fileread.cpp:6441,
+  // PT-Source\sinbaram\sinInvenTory.cpp:6416-6457). The ability kit and
+  // talent tree temporarily reuse the warrior's (Phase A scope); they will
+  // be replaced in a later phase.
+  tempskron_mechanician: MECHANICIAN_DEF,
+  // PT Tempskron Pikeman: dedicated class foundation (Phase A).
+  // The visual + animation set is the converted MagicPT-Chinese PT Pikeman
+  // (player_tempskron_pikeman VisualDef). See
+  // scripts/pt-port/pikeman_assembler.ts.
+  //
+  // The stat/resource foundation is derived from the MagicPT-Chinese source
+  // (PT-Source\HoBaram\HoLogin.cpp:93, PT-Source\fileread.cpp:6443,
+  // PT-Source\sinbaram\sinInvenTory.cpp:6410-6457). The ability kit and
+  // talent tree temporarily reuse the warrior's (Phase A scope); they will
+  // be replaced in a later phase.
+  tempskron_pikeman: PIKEMAN_DEF,
+  // PT Tempskron Archer: dedicated class foundation (Phase A).
+  // The visual + animation set is the converted MagicPT-Chinese PT Archer
+  // (player_tempskron_archer VisualDef). See
+  // scripts/pt-port/archer_assembler.ts.
+  //
+  // The stat/resource foundation is derived from the MagicPT-Chinese source
+  // (PT-Source\HoBaram\HoLogin.cpp:94, PT-Source\fileread.cpp:6444,
+  // PT-Source\sinbaram\sinInvenTory.cpp:6410-6457). The ability kit and
+  // talent tree temporarily reuse the warrior's (Phase A scope); they will
+  // be replaced in a later phase.
+  tempskron_archer: ARCHER_DEF,
+  // PT Morion Knight: dedicated class foundation (Phase A).
+  // The visual + animation set is the converted MagicPT-Chinese PT Knight
+  // (player_morion_knight VisualDef). See
+  // scripts/pt-port/knight_assembler.ts.
+  //
+  // The stat/resource foundation is derived from the MagicPT-Chinese source
+  // (PT-Source\HoBaram\HoLogin.cpp:99, PT-Source\fileread.cpp:6476,
+  // PT-Source\sinbaram\sinInvenTory.cpp:6410-6457). The ability kit and
+  // talent tree temporarily reuse the warrior's (Phase A scope); they will
+  // be replaced in a later phase.
+  morion_knight: KNIGHT_DEF,
+  // PT Morion Atalanta: dedicated class foundation (Phase A).
+  // The visual + animation set is the converted MagicPT-Chinese PT Atalanta
+  // (player_morion_atalanta VisualDef). See
+  // scripts/pt-port/atalanta_assembler.ts.
+  //
+  // The stat/resource foundation is derived from the MagicPT-Chinese source
+  // (PT-Source\HoBaram\HoLogin.cpp:99, PT-Source\fileread.cpp:6477,
+  // PT-Source\sinbaram\sinInvenTory.cpp:6410-6457). The ability kit and
+  // talent tree temporarily reuse the warrior's (Phase A scope); they will
+  // be replaced in a later phase.
+  morion_atalanta: ATALANTA_DEF,
+  // PT Morion Priestess: dedicated class foundation (Phase A).
+  // The visual + animation set is the converted MagicPT-Chinese Priestess
+  // (player_morion_priestess VisualDef). See
+  // scripts/pt-port/priestess_assembler.ts.
+  morion_priestess: PRIESTESS_DEF,
+  // PT Morion Magician: dedicated class foundation (Phase A).
+  // The visual + animation set is the converted MagicPT-Chinese Magician
+  // (player_morion_magician VisualDef). See
+  // scripts/pt-port/magician_assembler.ts.
+  morion_magician: MAGICIAN_DEF,
+  // PT Atlanteon Assassin (reassigned from Tempskron in the Botro fork):
+  // dedicated class foundation (Phase A). The visual + animation set is the
+  // converted MagicPT-Chinese Assassin (player_atlanteon_assassin VisualDef).
+  // See scripts/pt-port/assassin_assembler.ts.
+  atlanteon_assassin: ASSASSIN_DEF,
+  // PT Atlanteon Martial Artist (reassigned from Tempskron in the Botro fork):
+  // dedicated class foundation (Phase A). The visual + animation set is the
+  // converted MagicPT-Chinese Martial Artist
+  // (player_atlanteon_martial_artist VisualDef). See
+  // scripts/pt-port/martial_artist_assembler.ts.
+  atlanteon_martial_artist: MARTIAL_ARTIST_DEF,
+  // PT Atlanteon Shaman (reassigned from Morion in the Botro fork):
+  // dedicated class foundation (Phase A). The visual + animation set is the
+  // converted MagicPT-Chinese Shaman (player_atlanteon_shaman VisualDef).
+  // See scripts/pt-port/shaman_assembler.ts.
+  atlanteon_shaman: SHAMAN_DEF,
 };
 
 // ---------------------------------------------------------------------------

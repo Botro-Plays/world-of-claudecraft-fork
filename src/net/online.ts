@@ -2207,6 +2207,7 @@ export class ClientWorld extends ReconWireState implements IWorld {
             : 0,
         dv: mi.dive ? 1 : 0,
         sf: mi.surface ? 1 : 0,
+        wm: mi.walkMode ? 1 : 0,
       },
     };
     // Swim camera steer is sparse: absent means full rate and preserves the

@@ -388,8 +388,8 @@ describe('guide.html shell', () => {
 });
 
 describe('Guide generated class content', () => {
-  it('covers all nine classes with grounded data', () => {
-    expect(GUIDE_CLASSES).toHaveLength(9);
+  it('covers all twenty classes with grounded data', () => {
+    expect(GUIDE_CLASSES).toHaveLength(20);
     for (const c of GUIDE_CLASSES) {
       expect(c.color).toMatch(/^#[0-9a-f]{6}$/);
       expect(['rage', 'mana', 'energy', 'focus']).toContain(c.resource);
@@ -6723,7 +6723,10 @@ describe('Guide wiki completeness corrections (Phase 20, 2026-09-03)', () => {
     expect(mobile).toContain('the attack button with four action buttons beside it');
     // The More tray, read from the live markup: no Vale Cup button, and every
     // window the prose names has one.
-    const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+    const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8').replace(
+      /\r\n/g,
+      '\n',
+    );
     const grid = /<div id="mobile-extra-grid">([\s\S]*?)\n\s*<\/div>\n/.exec(indexHtml);
     expect(grid).not.toBeNull();
     const trayIds = [...(grid as RegExpExecArray)[1].matchAll(/ id="(mobile-[a-z-]+)"/g)].map(

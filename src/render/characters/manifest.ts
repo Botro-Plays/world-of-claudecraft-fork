@@ -162,6 +162,13 @@ export interface VisualDef {
   animUrls?: string[];
   /** world-unit height (pivot->crown) at e.scale = 1 */
   height: number;
+  /** Optional override for the model's raw (unscaled) bounding-box height.
+   *  When set, the normalizer uses this instead of measuring the posed skinned
+   *  mesh bounds. Used by PT Fighter hair variants whose different head/hair
+   *  geometry would otherwise produce different scales (taller hair = smaller
+   *  body). Pinning all variants to the default's raw height keeps the body
+   *  size constant across hair swaps. */
+  rawHeight?: number;
   clips: ClipMap;
   /** floating rigs hover: mesh bottom sits this far above the pivot. NEGATIVE
    *  sinks a grounded rig whose posed bounds dip BELOW its feet (a dragging
@@ -1929,7 +1936,804 @@ export const VISUALS: Record<string, VisualDef> = {
     offhandSlot: 1,
   }),
 
-  // -- cosmetic body skin (class-agnostic; both the skin preview and a live
+  // -- Priston Tale Tempskron Fighter (player character) -------------------
+  // The converted MagicPT-Chinese PT Fighter (scripts/pt-port/fighter_assembler.ts).
+  // This is a PLAYER visual keyed by visualKeyFor when the local player's
+  // templateId is 'tempskron_fighter'. The GLB ships its own PT animation
+  // clips (uppercase state names from M1Bip.inx), so the ClipMap points
+  // directly at those instead of the KayKit set the other classes share.
+  // No swim/jump/emote clips: the PT rig does not carry them, so those states
+  // fall back to the renderer's idle (a known POC limitation).
+  player_tempskron_fighter: {
+    url: `${CREATURES}/pt_fighter.glb`,
+    height: HUMANOID_H,
+    // Pin rawHeight to the same value as the hair variants so the body scale
+    // stays constant across hair swaps. Without this the default measures its
+    // posed skinned bounds dynamically (which differs from the pinned 49.91
+    // of hair2/hair3), so switching hair changes the body size.
+    rawHeight: 49.91,
+    clips: {
+      // With the complete m1.smb motion file, the INX state names match their
+      // actual visual content (confirmed by user review):
+      // STAND = standing pose, WALK = walking, RUN = running
+      // STAND_COMBAT = braced combat stance (field STAND, mapPos=2)
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+      // The PT Fighter reuses the warrior's ability kit (CLASSES.tempskron_fighter
+      // spreads CLASSES.warrior). Without attackByAbility overrides the renderer
+      // falls back to the default attack[] clip, so every warrior ability plays
+      // the PT ATTACK swing. That is the intended POC behavior.
+    },
+    // walkRef is tuned so the WALK clip plays at a natural pace at the player's
+    // movement speed (RUN_SPEED=7 yd/s). The default walkRef (2.2) would clamp
+    // the timeScale to 1.8x (legs spinning too fast); walkRef=5 gives 1.4x for
+    // a slower, more natural walk cadence. runRef stays at the default (7)
+    // so RUN plays at 1.0x.
+    walkRef: 5,
+  },
+  // Hair style variants for the PT Fighter's 3-choice hair selection.
+  // Same body/animation clips, different head/hair mesh (tmh-B02/B03.smd).
+  // rawHeight is pinned to the default variant's measured height so the body
+  // scale stays constant across hair swaps (different hair geometry would
+  // otherwise produce different bounding-box heights and thus different scales).
+  player_tempskron_fighter_hair2: {
+    url: `${CREATURES}/pt_fighter_hair2.glb`,
+    height: HUMANOID_H,
+    rawHeight: 49.91,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  player_tempskron_fighter_hair3: {
+    url: `${CREATURES}/pt_fighter_hair3.glb`,
+    height: HUMANOID_H,
+    rawHeight: 49.91,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+
+  // -- Priston Tale Tempskron Mechanician (player character) ----------------
+  // The converted MagicPT-Chinese PT Mechanician
+  // (scripts/pt-port/mechanician_assembler.ts). This is a PLAYER visual keyed
+  // by visualKeyFor when the local player's templateId is
+  // 'tempskron_mechanician'. The GLB ships its own PT animation clips
+  // (uppercase state names from M1Bip.inx, shared with the Fighter via the
+  // same m1.smb motion file), so the ClipMap points directly at those instead
+  // of the KayKit set the other classes share. No swim/emote clips: the PT
+  // rig does not carry them, so those states fall back to the renderer's idle
+  // (a known POC limitation).
+  player_tempskron_mechanician: {
+    url: `${CREATURES}/pt_mechanician.glb`,
+    height: HUMANOID_H,
+    // Pin rawHeight to the same value as the hair variants so the body scale
+    // stays constant across hair swaps. Without this the default measures its
+    // posed skinned bounds dynamically (which differs from the pinned 49.91
+    // of hair2/hair3), so switching hair changes the body size.
+    rawHeight: 49.91,
+    clips: {
+      // The Mechanician shares the same m1.smb and M1Bip.inx as the Fighter
+      // (both are Tempskron classes using the Bip01 skeleton), so the INX
+      // state names match their actual visual content:
+      // STAND = standing pose, WALK = walking, RUN = running
+      // STAND_COMBAT = braced combat stance (field STAND, mapPos=2)
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+      // The PT Mechanician reuses the warrior's ability kit
+      // (CLASSES.tempskron_mechanician spreads CLASSES.warrior). Without
+      // attackByAbility overrides the renderer falls back to the default
+      // attack[] clip, so every warrior ability plays the PT ATTACK swing.
+      // That is the intended POC behavior.
+    },
+    // walkRef is tuned so the WALK clip plays at a natural pace at the
+    // player's movement speed (RUN_SPEED=7 yd/s). The default walkRef (2.2)
+    // would clamp the timeScale to 1.8x (legs spinning too fast); walkRef=5
+    // gives 1.4x for a slower, more natural walk cadence. runRef stays at the
+    // default (7) so RUN plays at 1.0x. Same tuning as the Fighter since both
+    // share the same motion data.
+    walkRef: 5,
+  },
+  // Hair style variants for the PT Mechanician's 3-choice hair selection.
+  // Same body/animation clips, different head/hair mesh (tmh-A02/A03.smd).
+  // rawHeight is pinned to the default variant's measured height so the body
+  // scale stays constant across hair swaps (different hair geometry would
+  // otherwise produce different bounding-box heights and thus different
+  // scales).
+  player_tempskron_mechanician_hair2: {
+    url: `${CREATURES}/pt_mechanician_hair2.glb`,
+    height: HUMANOID_H,
+    rawHeight: 49.91,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  player_tempskron_mechanician_hair3: {
+    url: `${CREATURES}/pt_mechanician_hair3.glb`,
+    height: HUMANOID_H,
+    rawHeight: 49.91,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+
+  // -- Priston Tale Tempskron Pikeman (player character) --------------------
+  // The converted MagicPT-Chinese PT Pikeman
+  // (scripts/pt-port/pikeman_assembler.ts). This is a PLAYER visual keyed
+  // by visualKeyFor when the local player's templateId is
+  // 'tempskron_pikeman'. The GLB ships its own PT animation clips
+  // (uppercase state names from M1Bip.inx, shared with the Fighter and
+  // Mechanician via the same m1.smb motion file), so the ClipMap points
+  // directly at those instead of the KayKit set the other classes share.
+  // No swim/emote clips: the PT rig does not carry them, so those states
+  // fall back to the renderer's idle (a known POC limitation).
+  player_tempskron_pikeman: {
+    url: `${CREATURES}/pt_pikeman.glb`,
+    height: HUMANOID_H,
+    // Pin rawHeight to the same value as the hair variants so the body scale
+    // stays constant across hair swaps. Without this the default measures its
+    // posed skinned bounds dynamically (which differs from the pinned 49.91
+    // of hair2/hair3), so switching hair changes the body size.
+    rawHeight: 49.91,
+    clips: {
+      // The Pikeman shares the same m1.smb and M1Bip.inx as the Fighter and
+      // Mechanician (all are Tempskron classes using the Bip01 skeleton), so
+      // the INX state names match their actual visual content:
+      // STAND = standing pose, WALK = walking, RUN = running
+      // STAND_COMBAT = braced combat stance (field STAND, mapPos=2)
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+      // The PT Pikeman reuses the warrior's ability kit
+      // (CLASSES.tempskron_pikeman spreads CLASSES.warrior). Without
+      // attackByAbility overrides the renderer falls back to the default
+      // attack[] clip, so every warrior ability plays the PT ATTACK swing.
+      // That is the intended POC behavior.
+    },
+    // walkRef is tuned so the WALK clip plays at a natural pace at the
+    // player's movement speed (RUN_SPEED=7 yd/s). The default walkRef (2.2)
+    // would clamp the timeScale to 1.8x (legs spinning too fast); walkRef=5
+    // gives 1.4x for a slower, more natural walk cadence. runRef stays at the
+    // default (7) so RUN plays at 1.0x. Same tuning as the Fighter and
+    // Mechanician since all share the same motion data.
+    walkRef: 5,
+  },
+  // Hair style variants for the PT Pikeman's 3-choice hair selection.
+  // Same body/animation clips, different head/hair mesh (tmh-C02/C03.smd).
+  // rawHeight is pinned to the default variant's measured height so the body
+  // scale stays constant across hair swaps (different hair geometry would
+  // otherwise produce different bounding-box heights and thus different
+  // scales).
+  player_tempskron_pikeman_hair2: {
+    url: `${CREATURES}/pt_pikeman_hair2.glb`,
+    height: HUMANOID_H,
+    rawHeight: 49.91,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  player_tempskron_pikeman_hair3: {
+    url: `${CREATURES}/pt_pikeman_hair3.glb`,
+    height: HUMANOID_H,
+    rawHeight: 49.91,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+
+  // PT Tempskron Archer (female). The visual is the converted MagicPT-Chinese
+  // PT Archer GLB (scripts/pt-port/archer_assembler.ts). The Archer uses its
+  // own motion file (m2.smb / M2Bip.inx, 67 bones, 108 motions), distinct from
+  // the Fighter (m1.smb, 66 bones) and Pikeman (m4.smb, 58 bones). The
+  // Archer skeleton includes female-specific hair bones (Bip-hair01-15),
+  // bow weapon bones (Bip in01-04), and tail bones.
+  // No swim/emote clips: the PT rig does not carry them, so those states
+  // fall back to the renderer's idle (a known POC limitation).
+  player_tempskron_archer: {
+    url: `${CREATURES}/pt_archer.glb`,
+    height: HUMANOID_H,
+    // Pin rawHeight to the same value as the hair variants so the body scale
+    // stays constant across hair swaps. Without this the default measures its
+    // posed skinned bounds dynamically (which differs from the hair variants),
+    // so switching hair changes the body size.
+    rawHeight: 51.3,
+    clips: {
+      // The Archer uses M2Bip.inx (108 motions) with Archer-specific frame
+      // ranges. The INX state names match their actual visual content:
+      // STAND = standing pose, WALK = walking, RUN = running
+      // STAND_COMBAT = braced combat stance (field STAND, mapPos=2)
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+      // The PT Archer reuses the warrior's ability kit
+      // (CLASSES.tempskron_archer spreads CLASSES.warrior). Without
+      // attackByAbility overrides the renderer falls back to the default
+      // attack[] clip, so every warrior ability plays the PT ATTACK swing.
+      // That is the intended POC behavior.
+    },
+    // walkRef is tuned so the WALK clip plays at a natural pace at the
+    // player's movement speed (RUN_SPEED=7 yd/s). Same tuning as the other
+    // PT classes since all share the same motion data structure.
+    walkRef: 5,
+  },
+  // Hair style variants for the PT Archer's 3-choice hair selection.
+  // Same body/animation clips, different head/hair mesh (Tfh-D02/D03.smd).
+  // rawHeight is pinned to the default variant's measured height so the body
+  // scale stays constant across hair swaps (different hair geometry would
+  // otherwise produce different bounding-box heights and thus different
+  // scales).
+  player_tempskron_archer_hair2: {
+    url: `${CREATURES}/pt_archer_hair2.glb`,
+    height: HUMANOID_H,
+    rawHeight: 51.3,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  player_tempskron_archer_hair3: {
+    url: `${CREATURES}/pt_archer_hair3.glb`,
+    height: HUMANOID_H,
+    rawHeight: 51.3,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  // The converted MagicPT-Chinese PT Morion Knight (scripts/pt-port/knight_assembler.ts).
+  // This is a PLAYER visual keyed by visualKeyFor when the local player's
+  // templateId is 'morion_knight'. The GLB ships its own PT animation clips
+  // (uppercase state names from M1Bip.inx, shared with the Fighter,
+  // Mechanician, and Pikeman via the same m1.smb motion file), so the ClipMap
+  // points directly at those instead of the KayKit set the other classes
+  // share. No swim/emote clips: the PT rig does not carry them, so those
+  // states fall back to the renderer's idle (a known POC limitation).
+  player_morion_knight: {
+    url: `${CREATURES}/pt_knight.glb`,
+    height: HUMANOID_H,
+    // Pin rawHeight to the same value as the hair variants so the body scale
+    // stays constant across hair swaps. The Knight shares the same m1.smb
+    // skeleton as the Fighter/Mechanician/Pikeman, so the posed skinned
+    // bounds are the same (49.91).
+    rawHeight: 49.91,
+    clips: {
+      // The Knight shares the same m1.smb and M1Bip.inx as the Fighter,
+      // Mechanician, and Pikeman (all are male classes using the Bip01
+      // skeleton), so the INX state names match their actual visual content:
+      // STAND = standing pose, WALK = walking, RUN = running
+      // STAND_COMBAT = braced combat stance (field STAND, mapPos=2)
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    // walkRef is tuned so the WALK clip plays at a natural pace at the
+    // player's movement speed (RUN_SPEED=7 yd/s). Same tuning as the
+    // Fighter/Mechanician/Pikeman since all share the same motion data.
+    walkRef: 5,
+  },
+  // Hair style variants for the PT Knight's 3-choice hair selection.
+  // Same body/animation clips, different head/hair mesh (MmhA02/A03.smd).
+  // rawHeight is pinned to the default variant's measured height so the body
+  // scale stays constant across hair swaps (different hair geometry would
+  // otherwise produce different bounding-box heights and thus different
+  // scales).
+  player_morion_knight_hair2: {
+    url: `${CREATURES}/pt_knight_hair2.glb`,
+    height: HUMANOID_H,
+    rawHeight: 49.91,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  player_morion_knight_hair3: {
+    url: `${CREATURES}/pt_knight_hair3.glb`,
+    height: HUMANOID_H,
+    rawHeight: 49.91,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  // The converted MagicPT-Chinese PT Morion Atalanta (scripts/pt-port/atalanta_assembler.ts).
+  // This is a PLAYER visual keyed by visualKeyFor when the local player's
+  // templateId is 'morion_atalanta'. The GLB ships its own PT animation clips
+  // (uppercase state names from M2Bip.inx, shared with the Archer via the
+  // same m2.smb female motion file), so the ClipMap points directly at those
+  // instead of the KayKit set the other classes share. No swim/emote clips:
+  // the PT rig does not carry them, so those states fall back to the
+  // renderer's idle (a known POC limitation).
+  player_morion_atalanta: {
+    url: `${CREATURES}/pt_atalanta.glb`,
+    height: HUMANOID_H,
+    // Pin rawHeight to the same value as the hair variants so the body scale
+    // stays constant across hair swaps. The Atalanta shares the same m2.smb
+    // skeleton as the Archer (both female classes), so the posed skinned
+    // bounds are the same (51.3).
+    rawHeight: 51.3,
+    clips: {
+      // The Atalanta shares the same m2.smb and M2Bip.inx as the Archer
+      // (both are female classes using the female Bip01 skeleton), so the
+      // INX state names match their actual visual content:
+      // STAND = standing pose, WALK = walking, RUN = running
+      // STAND_COMBAT = braced combat stance (field STAND, mapPos=2)
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    // walkRef is tuned so the WALK clip plays at a natural pace at the
+    // player's movement speed (RUN_SPEED=7 yd/s). Same tuning as the
+    // Archer since both share the same m2.smb motion data.
+    walkRef: 5,
+  },
+  // Hair style variants for the PT Atalanta's 3-choice hair selection.
+  // Same body/animation clips, different head/hair mesh (MfhB02/B03.smd).
+  // rawHeight is pinned to the default variant's measured height so the body
+  // scale stays constant across hair swaps (different hair geometry would
+  // otherwise produce different bounding-box heights and thus different
+  // scales).
+  player_morion_atalanta_hair2: {
+    url: `${CREATURES}/pt_atalanta_hair2.glb`,
+    height: HUMANOID_H,
+    rawHeight: 51.3,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  player_morion_atalanta_hair3: {
+    url: `${CREATURES}/pt_atalanta_hair3.glb`,
+    height: HUMANOID_H,
+    rawHeight: 51.3,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  // The converted MagicPT-Chinese PT Morion Priestess
+  // (scripts/pt-port/priestess_assembler.ts). Uses m5.smb / M5Bip.inx (75
+  // motions), its own dedicated motion file distinct from all other classes.
+  player_morion_priestess: {
+    url: `${CREATURES}/pt_priestess.glb`,
+    height: HUMANOID_H,
+    rawHeight: 45.30,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  player_morion_priestess_hair2: {
+    url: `${CREATURES}/pt_priestess_hair2.glb`,
+    height: HUMANOID_H,
+    rawHeight: 45.30,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  player_morion_priestess_hair3: {
+    url: `${CREATURES}/pt_priestess_hair3.glb`,
+    height: HUMANOID_H,
+    rawHeight: 45.30,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  // The converted MagicPT-Chinese PT Morion Magician
+  // (scripts/pt-port/magician_assembler.ts). Uses m3.smb / M3Bip.inx (75
+  // motions), its own dedicated motion file. Body SMD has 15 objects across
+  // 2 armor tiers; the D03-tier upgrade overlay is filtered out.
+  player_morion_magician: {
+    url: `${CREATURES}/pt_magician.glb`,
+    height: HUMANOID_H,
+    rawHeight: 45.30,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  player_morion_magician_hair2: {
+    url: `${CREATURES}/pt_magician_hair2.glb`,
+    height: HUMANOID_H,
+    rawHeight: 45.30,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  player_morion_magician_hair3: {
+    url: `${CREATURES}/pt_magician_hair3.glb`,
+    height: HUMANOID_H,
+    rawHeight: 45.30,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  // The converted MagicPT-Chinese PT Atlanteon Assassin
+  // (scripts/pt-port/assassin_assembler.ts). Reassigned from Tempskron to
+  // Atlanteon in the Botro fork. Uses m6.smb / M6Bip.inx (88 motions).
+  player_atlanteon_assassin: {
+    url: `${CREATURES}/pt_assassin.glb`,
+    height: HUMANOID_H,
+    rawHeight: 48.41,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  player_atlanteon_assassin_hair2: {
+    url: `${CREATURES}/pt_assassin_hair2.glb`,
+    height: HUMANOID_H,
+    rawHeight: 48.41,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  player_atlanteon_assassin_hair3: {
+    url: `${CREATURES}/pt_assassin_hair3.glb`,
+    height: HUMANOID_H,
+    rawHeight: 48.41,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  // The converted MagicPT-Chinese PT Atlanteon Martial Artist
+  // (scripts/pt-port/martial_artist_assembler.ts). Reassigned from Tempskron
+  // to Atlanteon in the Botro fork. Uses m8.smb / M8Bip.inx (91 motions).
+  // Body SMD has only 1 object (simplest body structure of any PT class).
+  player_atlanteon_martial_artist: {
+    url: `${CREATURES}/pt_martial_artist.glb`,
+    height: HUMANOID_H,
+    rawHeight: 45.71,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  player_atlanteon_martial_artist_hair2: {
+    url: `${CREATURES}/pt_martial_artist_hair2.glb`,
+    height: HUMANOID_H,
+    rawHeight: 45.71,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  player_atlanteon_martial_artist_hair3: {
+    url: `${CREATURES}/pt_martial_artist_hair3.glb`,
+    height: HUMANOID_H,
+    rawHeight: 45.71,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  // The converted MagicPT-Chinese PT Atlanteon Shaman
+  // (scripts/pt-port/shaman_assembler.ts). Reassigned from Morion to
+  // Atlanteon in the Botro fork. Uses m7.smb / M7Bip.inx (82 motions).
+  player_atlanteon_shaman: {
+    url: `${CREATURES}/pt_shaman.glb`,
+    height: HUMANOID_H,
+    rawHeight: 47.20,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  player_atlanteon_shaman_hair2: {
+    url: `${CREATURES}/pt_shaman_hair2.glb`,
+    height: HUMANOID_H,
+    rawHeight: 47.20,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
+  player_atlanteon_shaman_hair3: {
+    url: `${CREATURES}/pt_shaman_hair3.glb`,
+    height: HUMANOID_H,
+    rawHeight: 47.20,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
   //    player whose skinCatalog === 'mech', see visualKeyFor) ----------------
   player_mech: swims({
     url: `${PLAYERS}/Mech/characters/CombatMech.glb`,
@@ -3644,7 +4448,14 @@ export const VISUALS: Record<string, VisualDef> = {
 // Driven by ALL_CLASSES rather than a local copy: a tenth class would otherwise
 // get no modular def at all and fall back to the warrior's clips through
 // modularKeyFor, silently, with no test able to see it.
+// The PT Tempskron Fighter is skipped: it uses a fixed PT GLB (player_tempskron_fighter)
+// with its own Bip01 skeleton, not a composed KayKit modular body. A modular def for
+// it would point the PT clips (Bip01 nodes) at the warrior_modular.glb rig (mixamorig
+// nodes), which the clipmaps gate rejects as unbindable, and the runtime would never
+// use it (modularLookForClass returns null for tempskron_fighter, and startOffline
+// leaves modularAppearance unset so inWorldLookFor returns null).
 for (const cls of ALL_CLASSES) {
+  if (cls === 'tempskron_fighter' || cls === 'tempskron_mechanician' || cls === 'tempskron_pikeman' || cls === 'tempskron_archer' || cls === 'morion_knight' || cls === 'morion_atalanta' || cls === 'morion_priestess' || cls === 'morion_magician' || cls === 'atlanteon_assassin' || cls === 'atlanteon_martial_artist' || cls === 'atlanteon_shaman') continue;
   const {
     show: _show,
     tint: _tint,
@@ -4013,6 +4824,7 @@ const NPC_KEYS: Record<string, string> = {
 export function visualKeyFor(e: Entity): string {
   if (e.kind === 'player') {
     if (isMechWearer(e)) return 'player_mech';
+    if (e.visualKeyOverride && VISUALS[e.visualKeyOverride]) return e.visualKeyOverride;
     return VISUALS[`player_${e.templateId}`] ? `player_${e.templateId}` : 'player_warrior';
   }
   if (e.kind === 'mob') {

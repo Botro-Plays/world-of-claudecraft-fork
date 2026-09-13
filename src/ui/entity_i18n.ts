@@ -175,6 +175,28 @@ const CLASS_NAME_KEYS: Record<PlayerClass, string> = {
   mage: 'classes.mage',
   warlock: 'classes.warlock',
   druid: 'classes.druid',
+  // PT Tempskron Fighter POC: reuse warrior's class name key
+  tempskron_fighter: 'classes.warrior',
+  // PT Tempskron Mechanician POC: reuse warrior's class name key
+  tempskron_mechanician: 'classes.warrior',
+  // PT Tempskron Pikeman POC: reuse warrior's class name key
+  tempskron_pikeman: 'classes.warrior',
+  // PT Tempskron Archer POC: reuse warrior's class name key
+  tempskron_archer: 'classes.warrior',
+  // PT Morion Knight POC: reuse warrior's class name key
+  morion_knight: 'classes.warrior',
+  // PT Morion Atalanta POC: reuse warrior's class name key
+  morion_atalanta: 'classes.warrior',
+  // PT Morion Priestess POC: reuse priest's class name key
+  morion_priestess: 'classes.priest',
+  // PT Morion Magician POC: reuse mage's class name key
+  morion_magician: 'classes.mage',
+  // PT Atlanteon Assassin POC: reuse rogue's class name key
+  atlanteon_assassin: 'classes.rogue',
+  // PT Atlanteon Martial Artist POC: reuse warrior's class name key
+  atlanteon_martial_artist: 'classes.warrior',
+  // PT Atlanteon Shaman POC: reuse shaman's class name key
+  atlanteon_shaman: 'classes.shaman',
 };
 
 const CLASS_DESCRIPTION_KEYS: Record<PlayerClass, string> = {
@@ -187,6 +209,28 @@ const CLASS_DESCRIPTION_KEYS: Record<PlayerClass, string> = {
   mage: 'classDetails.lore.mage',
   warlock: 'classDetails.lore.warlock',
   druid: 'classDetails.lore.druid',
+  // PT Tempskron Fighter POC: reuse warrior's class description key
+  tempskron_fighter: 'classDetails.lore.warrior',
+  // PT Tempskron Mechanician POC: reuse warrior's class description key
+  tempskron_mechanician: 'classDetails.lore.warrior',
+  // PT Tempskron Pikeman POC: reuse warrior's class description key
+  tempskron_pikeman: 'classDetails.lore.warrior',
+  // PT Tempskron Archer POC: reuse warrior's class description key
+  tempskron_archer: 'classDetails.lore.warrior',
+  // PT Morion Knight POC: reuse warrior's class description key
+  morion_knight: 'classDetails.lore.warrior',
+  // PT Morion Atalanta POC: reuse warrior's class description key
+  morion_atalanta: 'classDetails.lore.warrior',
+  // PT Morion Priestess POC: reuse priest's class description key
+  morion_priestess: 'classDetails.lore.priest',
+  // PT Morion Magician POC: reuse mage's class description key
+  morion_magician: 'classDetails.lore.mage',
+  // PT Atlanteon Assassin POC: reuse rogue's class description key
+  atlanteon_assassin: 'classDetails.lore.rogue',
+  // PT Atlanteon Martial Artist POC: reuse warrior's class description key
+  atlanteon_martial_artist: 'classDetails.lore.warrior',
+  // PT Atlanteon Shaman POC: reuse shaman's class description key
+  atlanteon_shaman: 'classDetails.lore.shaman',
 };
 
 const fallbackLog = new Map<string, EntityTranslationFallback>();

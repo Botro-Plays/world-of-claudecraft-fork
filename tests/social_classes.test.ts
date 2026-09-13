@@ -34,7 +34,7 @@ const CLASS_WOLF_TEST_WORLD: WorldContent = {
   groundObjects: [],
 };
 
-describe('nine classes', () => {
+describe('ten classes', () => {
   it('every class spawns with a working kit and stats', () => {
     for (const cls of ALL_CLASSES) {
       const sim = new Sim({ seed: 42, playerClass: cls, world: CLASS_TEST_WORLD });
@@ -97,7 +97,8 @@ describe('nine classes', () => {
       // every class's core kit keeps scaling: something reaches rank 3+ by 20
       expect(kit.some((k) => k.rank >= 3)).toBe(true);
       // resource type sane
-      if (cls === 'warrior') expect(p.resourceType).toBe('rage');
+      if (cls === 'warrior' || cls === 'tempskron_fighter')
+        expect(p.resourceType).toBe('rage');
       else if (cls === 'rogue') expect(p.resourceType).toBe('energy');
       else if (cls === 'hunter') expect(p.resourceType).toBe('focus');
       else expect(p.resourceType).toBe('mana');

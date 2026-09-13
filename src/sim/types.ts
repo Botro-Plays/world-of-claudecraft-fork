@@ -275,7 +275,58 @@ export type PlayerClass =
   | 'shaman'
   | 'mage'
   | 'warlock'
-  | 'druid';
+  | 'druid'
+  // Priston Tale Tempskron Fighter proof-of-concept. A playable player class
+  // whose visual is the converted MagicPT-Chinese Fighter GLB. Reuses the
+  // warrior's class data (stats, abilities, resource) so it is immediately
+  // playable through the existing player controller; the visual + animation
+  // set is the PT Fighter's. See scripts/pt-port/fighter_assembler.ts.
+  | 'tempskron_fighter'
+  // Priston Tale Tempskron Mechanician proof-of-concept. A playable player
+  // class whose visual is the converted MagicPT-Chinese Mechanician GLB.
+  // Reuses the warrior's class data (stats, abilities, resource) so it is
+  // immediately playable through the existing player controller; the visual +
+  // animation set is the PT Mechanician's. See
+  // scripts/pt-port/mechanician_assembler.ts.
+  | 'tempskron_mechanician'
+  // Priston Tale Tempskron Pikeman proof-of-concept. A playable player class
+  // whose visual is the converted MagicPT-Chinese Pikeman GLB. See
+  // scripts/pt-port/pikeman_assembler.ts.
+  | 'tempskron_pikeman'
+  // Priston Tale Tempskron Archer proof-of-concept. A playable player class
+  // whose visual is the converted MagicPT-Chinese Archer GLB. See
+  // scripts/pt-port/archer_assembler.ts.
+  | 'tempskron_archer'
+  // Priston Tale Morion Knight proof-of-concept. A playable player class
+  // whose visual is the converted MagicPT-Chinese Knight GLB. See
+  // scripts/pt-port/knight_assembler.ts.
+  | 'morion_knight'
+  // Priston Tale Morion Atalanta proof-of-concept. A playable player class
+  // whose visual is the converted MagicPT-Chinese Atalanta GLB. See
+  // scripts/pt-port/atalanta_assembler.ts.
+  | 'morion_atalanta'
+  // Priston Tale Morion Priestess. A playable player class whose visual is the
+  // converted MagicPT-Chinese Priestess GLB. See
+  // scripts/pt-port/priestess_assembler.ts.
+  | 'morion_priestess'
+  // Priston Tale Morion Magician. A playable player class whose visual is the
+  // converted MagicPT-Chinese Magician GLB. See
+  // scripts/pt-port/magician_assembler.ts.
+  | 'morion_magician'
+  // Priston Tale Atlanteon Assassin (reassigned from Tempskron in the Botro
+  // fork). A playable player class whose visual is the converted
+  // MagicPT-Chinese Assassin GLB. See
+  // scripts/pt-port/assassin_assembler.ts.
+  | 'atlanteon_assassin'
+  // Priston Tale Atlanteon Martial Artist (reassigned from Tempskron in the
+  // Botro fork). A playable player class whose visual is the converted
+  // MagicPT-Chinese Martial Artist GLB. See
+  // scripts/pt-port/martial_artist_assembler.ts.
+  | 'atlanteon_martial_artist'
+  // Priston Tale Atlanteon Shaman (reassigned from Morion in the Botro fork).
+  // A playable player class whose visual is the converted MagicPT-Chinese
+  // Shaman GLB. See scripts/pt-port/shaman_assembler.ts.
+  | 'atlanteon_shaman';
 
 // Sanguine Aura's class-level melee recipient filter. It excludes the pure
 // casters and Hunter, whose primary attack loop is ranged.
@@ -285,6 +336,9 @@ export const MELEE_CLASSES: ReadonlySet<PlayerClass> = new Set([
   'rogue',
   'shaman',
   'druid',
+  'tempskron_fighter',
+  'tempskron_mechanician',
+  'tempskron_pikeman',
 ]);
 
 // Classes that command a persistent pet (hunter beast, warlock demon, the
@@ -330,6 +384,17 @@ export const ALL_CLASSES: PlayerClass[] = [
   'mage',
   'warlock',
   'druid',
+  'tempskron_fighter',
+  'tempskron_mechanician',
+  'tempskron_pikeman',
+  'tempskron_archer',
+  'morion_knight',
+  'morion_atalanta',
+  'morion_priestess',
+  'morion_magician',
+  'atlanteon_assassin',
+  'atlanteon_martial_artist',
+  'atlanteon_shaman',
 ];
 export type ResourceType = 'rage' | 'mana' | 'energy' | 'focus';
 export const OVERHEAD_EMOTE_IDS = [
@@ -5165,6 +5230,11 @@ export interface Entity extends ClientMirroredEntityFields {
   // the sim. Consumers normalize it (normalizeAppearance) before composing.
   // Null/absent = no authored look; the legacy class rig renders.
   modularAppearance?: Record<string, unknown> | null;
+  // Optional renderer-side visual key override (e.g. the PT Fighter's 3 hair
+  // style GLB variants: player_tempskron_fighter_hair2 / _hair3). The sim never
+  // reads it; it rides the entity so visualKeyFor() can pick the variant. Empty
+  // = fall back to the default class visual key.
+  visualKeyOverride?: string | null;
   // /afk display mirror: true while this player's PlayerMeta.away is in `afk`
   // mode. Kept in lockstep with meta.away by src/sim/social/away.ts so the flag
   // rides the entity (wire `ak` bit) to other clients' nameplates and the social
@@ -5427,6 +5497,10 @@ export interface Entity extends ClientMirroredEntityFields {
   lootable: boolean;
   loot: CorpseLoot | null;
   lootRecipientIds?: number[];
+  /** Runtime-only stable identity for a soulbound drop's party-trade window.
+   *  Captured synchronously when loot rolls, so a later disconnect cannot
+   *  erase a kill-eligible character from the copy's transfer group. */
+  lootPartyTradeEligibility?: { names: string[]; characterIds: number[] };
   xpValue: number;
   // npc
   questIds: string[];
@@ -7936,6 +8010,10 @@ export interface MoveInput {
    *  key binding, a bot, and any client that never sends it all read as 1
    *  (`swimSteerRate`), which is exactly the old on/off behaviour. */
   swimSteer?: number;
+  /** When true, the player moves at a reduced speed (walk mode). The run/walk
+   *  toggle sets this; the sim applies a speed multiplier so the player
+   *  covers less ground per second, matching the slower walk animation. */
+  walkMode?: boolean;
 }
 
 // A bounded height edit (the sculpt brush stamp), applied inside terrainHeight()
@@ -8345,6 +8423,7 @@ export function emptyMoveInput(): MoveInput {
     jump: false,
     dive: false,
     surface: false,
+    walkMode: false,
   };
 }
 

@@ -423,7 +423,15 @@ function reservationShapeIsKnown(
 ): boolean {
   if (maxGuildEffectDeltas !== 0) return false;
   if (surface === 'personal') return maxRows === 1 || maxRows === 2;
-  if (surface === 'vault') return maxRows === 1 || maxRows === VAULT_DEPOSIT_ALL_LEDGER_MAX_ROWS;
+  // Vault commands reserve a per-command bound read from the pre-mutation
+  // state (server/vault_ledger_row_bound.ts): one row per distinct ledger
+  // identity the command's stack(s) can touch, never below the table floor.
+  // So the known shape is a RANGE, positive up to the account row burst the
+  // bucket can hold at all; the dispatcher refuses anything above it before
+  // mutating rather than asking for a reservation that could never be granted.
+  if (surface === 'vault') {
+    return Number.isSafeInteger(maxRows) && maxRows >= 1 && maxRows <= BANK_VAULT_LEDGER_ROW_BURST;
+  }
   return false;
 }
 

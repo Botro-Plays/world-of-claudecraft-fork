@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="tg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#e8c36a"/>
+      <stop offset="100%" stop-color="#a07020"/>
+    </linearGradient>
+  </defs>
+  <!-- Shield outline -->
+  <path d="M60 8 L100 24 L100 68 Q100 96 60 112 Q20 96 20 68 L20 24 Z"
+        fill="none" stroke="url(#tg)" stroke-width="3" opacity="0.9"/>
+  <!-- Crossed swords -->
+  <line x1="38" y1="36" x2="82" y2="84" stroke="url(#tg)" stroke-width="4" stroke-linecap="round"/>
+  <line x1="82" y1="36" x2="38" y2="84" stroke="url(#tg)" stroke-width="4" stroke-linecap="round"/>
+  <!-- Sword hilts -->
+  <line x1="32" y1="42" x2="44" y2="42" stroke="url(#tg)" stroke-width="3" stroke-linecap="round"/>
+  <line x1="76" y1="42" x2="88" y2="42" stroke="url(#tg)" stroke-width="3" stroke-linecap="round"/>
+  <!-- Center gem -->
+  <circle cx="60" cy="60" r="6" fill="url(#tg)" opacity="0.8"/>
+</svg>

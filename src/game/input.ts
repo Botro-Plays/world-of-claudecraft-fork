@@ -195,6 +195,12 @@ export class Input {
   // startup restore / Reset path sets the field itself), so restoring never re-persists.
   onCameraDistChange?: (dist: number) => void;
   autorun = false;
+  // Run/walk gait toggle (KeyR by default). 'run' = hysteresis picks naturally,
+  // 'walk' = forced walk regardless of speed. See run_walk_toggle.ts.
+  gaitMode: 'run' | 'walk' = 'run';
+  // Notified whenever the gait mode flips, so the HUD indicator and the
+  // locomotion system stay in sync with the Input's toggle state.
+  onGaitModeChange?: (mode: 'run' | 'walk') => void;
   suspendMovement = false;
   // click-to-move (#95): a world destination the player clicked; the frame loop
   // walks toward it until arrival or until the player takes manual control.
@@ -1122,6 +1128,11 @@ export class Input {
         this.autorun = !this.autorun;
         this.noteMovementIntent();
         return;
+      case 'toggleRunWalk': {
+        this.gaitMode = this.gaitMode === 'run' ? 'walk' : 'run';
+        this.onGaitModeChange?.(this.gaitMode);
+        return;
+      }
       case 'target':
         this.cb.onTab();
         return;
@@ -1619,9 +1630,10 @@ export class Input {
         jump: false,
         dive: false,
         surface: false,
+        walkMode: this.gaitMode === 'walk',
       };
     }
-    if (this.controllerMoveInput) return { ...this.controllerMoveInput };
+    if (this.controllerMoveInput) return { ...this.controllerMoveInput, walkMode: this.gaitMode === 'walk' };
     const held = (id: string) => this.heldAction(id);
     const bothButtons = this.leftDown && this.rightDown;
     const forward =
@@ -1653,6 +1665,7 @@ export class Input {
         dive,
         surface,
         swimSteer,
+        walkMode: this.gaitMode === 'walk',
         turnLeft: false,
         turnRight: false,
         strafeLeft:
@@ -1678,6 +1691,7 @@ export class Input {
       dive,
       surface,
       swimSteer,
+      walkMode: this.gaitMode === 'walk',
       strafeLeft:
         held('strafeLeft') ||
         (mouselook && aHeld) ||

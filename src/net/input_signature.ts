@@ -12,6 +12,7 @@ export function inputSignature(mi: MoveInput, mouselookFacing: number | null): s
     mi.jump ? 1 : 0,
     mi.dive ? 1 : 0,
     mi.surface ? 1 : 0,
+    mi.walkMode ? 1 : 0,
     mi.swimSteer ?? 1,
     facing,
   ].join(',');

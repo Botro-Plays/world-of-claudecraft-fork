@@ -137,6 +137,21 @@ export class UnitPortraitPainter {
     else this.drawCrest(canvas, `class_${cls}`);
   }
 
+  /** Paint a headshot from an explicit visual key (e.g. a PT Fighter hair
+   *  variant), falling back to the class portrait and then the crest. Used
+   *  by the player frame when the local player carries a `visualKeyOverride`
+   *  but no composed modular look. */
+  drawVisualOverride(
+    canvas: HTMLCanvasElement,
+    visualKey: string,
+    cls: PlayerClass,
+    skin: number,
+  ): void {
+    const url = visualPortraitDataUrl(visualKey, skin);
+    if (url) this.drawHeadshot(canvas, url);
+    else this.drawClass(canvas, cls, skin);
+  }
+
   /** Paint the Combat Mech cosmetic body in its worn chroma, what a mech
    *  wearer actually looks like in the world. Falls back to the class portrait
    *  (skin 0: `skin` is a CHROMA index here, not a class-atlas index) until

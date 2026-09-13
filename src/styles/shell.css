@@ -2725,6 +2725,59 @@
   .mini-class[data-class="druid"] {
     --class-color: #ff8c1a;
   }
+  .mini-class[data-class="tempskron_fighter"] {
+    --class-color: #d67a54;
+  }
+  .mini-class[data-class="tempskron_mechanician"] {
+    --class-color: #d67a54;
+  }
+  .mini-class[data-class="tempskron_pikeman"] {
+    --class-color: #d67a54;
+  }
+  .mini-class[data-class="tempskron_archer"] {
+    --class-color: #4a9c5a;
+  }
+  .mini-class[data-class="morion_knight"] {
+    --class-color: #6b8fb5;
+  }
+  .mini-class[data-class="morion_atalanta"] {
+    --class-color: #c4a070;
+  }
+  .mini-class[data-class="morion_priestess"] {
+    --class-color: #e8d0ff;
+  }
+  .mini-class[data-class="morion_magician"] {
+    --class-color: #ff6b3d;
+  }
+  .mini-class[data-class="atlanteon_assassin"] {
+    --class-color: #4a4a6b;
+  }
+  .mini-class[data-class="atlanteon_martial_artist"] {
+    --class-color: #d4a040;
+  }
+  .mini-class[data-class="atlanteon_shaman"] {
+    --class-color: #3d6b5c;
+  }
+
+  /* Priston Tale Tempskron Fighter proof-of-concept: a separate tribe section
+     visually distinguishing the PT class from the base Botro classes. */
+  .pt-tribe-section {
+    width: 100%;
+    margin-top: var(--spacing-md);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--color-border-default);
+  }
+  .pt-tribe-label {
+    text-align: center;
+    font-family: var(--font-heading);
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: var(--color-text-muted);
+    margin-bottom: 6px;
+  }
+  .pt-class {
+    grid-column: 1 / -1;
+  }
 
   .mini-class {
     text-align: center;
@@ -2754,6 +2807,114 @@
     box-shadow: 0 0 10px var(--class-color);
   }
 
+  /* ---- PT tribe selection screen ----------------------------------------- */
+
+  /* Locked class: not yet implemented. Visually present but not selectable. */
+  .mini-class.pt-class-locked {
+    opacity: 0.38;
+    cursor: not-allowed;
+  }
+
+  /* Tribe name shown above the class row in #offline-select after a tribe is
+     selected. Hidden by resetOfflineSelectTribeFilter() on back-navigation. */
+  .pt-tribe-select-header {
+    font-family: var(--font-heading);
+    font-size: 0.85rem;
+    letter-spacing: 0.25em;
+    color: var(--color-primary);
+    text-align: center;
+    margin-bottom: 8px;
+    margin-top: 4px;
+  }
+
+  /* #pt-tribe-select full-screen tribe card layout. */
+  .pt-tribe-select-title {
+    font-family: var(--font-heading);
+    font-size: clamp(1.4rem, 4vw, 2.2rem);
+    letter-spacing: 0.15em;
+    color: var(--color-text-light);
+    margin: 0 0 4px;
+    text-align: center;
+  }
+  .pt-tribe-select-subtitle {
+    font-family: var(--font-heading);
+    font-size: clamp(0.85rem, 2vw, 1.05rem);
+    letter-spacing: 0.3em;
+    color: var(--color-primary);
+    margin: 0 0 clamp(16px, 4vh, 32px);
+    text-align: center;
+  }
+  .pt-tribe-cards-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: stretch;
+    gap: clamp(12px, 3vw, 28px);
+    padding: 0 clamp(12px, 4vw, 40px);
+    width: 100%;
+  }
+  .pt-tribe-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    min-width: 150px;
+    max-width: 220px;
+    flex: 1 1 150px;
+    padding: clamp(16px, 3vw, 28px) clamp(12px, 2vw, 20px);
+    border: 2px solid var(--color-border-default);
+    border-radius: 8px;
+    background: #0c0c18cc;
+    cursor: var(--cursor-point);
+    transition:
+      border-color var(--transition-speed),
+      box-shadow var(--transition-speed),
+      transform 0.15s ease;
+    text-align: center;
+  }
+  .pt-tribe-card:hover,
+  .pt-tribe-card:focus-visible {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 20px var(--color-primary-glow);
+    outline: none;
+    transform: translateY(-4px);
+  }
+  .pt-tribe-card:active {
+    transform: translateY(-1px);
+  }
+  .pt-tribe-card-logo {
+    width: clamp(56px, 8vw, 96px);
+    height: clamp(56px, 8vw, 96px);
+    object-fit: contain;
+    opacity: 0.88;
+    transition: opacity var(--transition-speed);
+  }
+  .pt-tribe-card:hover .pt-tribe-card-logo,
+  .pt-tribe-card:focus-visible .pt-tribe-card-logo {
+    opacity: 1;
+  }
+  /* Temporary logo reused for Atlanteon until its own emblem exists.
+     A distinct hue-rotate makes it visually differ from Tempskron while
+     staying clearly related (a sibling emblem family). */
+  .pt-tribe-logo-placeholder {
+    filter: hue-rotate(160deg) saturate(0.7);
+    opacity: 0.75;
+  }
+  .pt-tribe-card-name {
+    font-family: var(--font-heading);
+    font-size: clamp(0.95rem, 2.5vw, 1.25rem);
+    letter-spacing: 0.2em;
+    color: var(--color-primary);
+    line-height: 1.1;
+  }
+  .pt-tribe-card-classes {
+    font-size: clamp(0.68rem, 1.5vw, 0.8rem);
+    color: var(--color-text-muted);
+    letter-spacing: 0.04em;
+    line-height: 1.55;
+  }
+
   /* WoW-style full-screen character screens (the offline panel plus the two
      online panels carry the cs-wow class). Desktop only: below 861px the
      classic card layout above stays, and the ONLINE panels additionally keep
@@ -2774,6 +2935,7 @@
      */
   @media (min-width: 861px) {
     #offline-select.cs-wow,
+    #pt-tribe-select.cs-wow,
     body:not(.mobile-touch) :is(#charselect-panel, #charcreate-panel).cs-wow {
       position: fixed;
       inset: 0;
@@ -2792,6 +2954,23 @@
       background: linear-gradient(180deg, #0008 0%, #0002 18%, #0002 78%, #000c 100%);
       box-shadow: none;
       overflow: hidden;
+    }
+    /* #pt-tribe-select full-screen layout: vertically centered tribe cards. */
+    #pt-tribe-select.cs-wow {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      padding: 40px 20px 80px;
+    }
+    #pt-tribe-select.cs-wow .auth-actions {
+      position: absolute;
+      left: 26px;
+      bottom: 30px;
+    }
+    #pt-tribe-select.cs-wow #btn-tribe-select-back {
+      min-width: 140px;
     }
     /* The online panels' card layout is a grid, and grid-placement on an
        absolutely-positioned child would anchor it to its grid AREA rather
@@ -2856,8 +3035,19 @@
     }
     /* The 3D turntable IS the stage: full viewport, chrome-free, behind the
        UI. The online arms pin the container ids so this outranks the id-less
-       body:not(.mobile-touch) #charselect-panel .cs-preview sizing below. */
-    #offline-select.cs-wow .char-preview-container,
+       body:not(.mobile-touch) #charselect-panel .cs-preview sizing below.
+       The offline-select stage is constrained on the right so the formation
+       characters are never hidden behind the class-details panel. */
+    #offline-select.cs-wow .char-preview-container {
+      position: absolute;
+      inset: 0;
+      right: 340px;
+      height: auto;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      z-index: 1;
+    }
     body:not(.mobile-touch)
       :is(#charselect-panel, #charcreate-panel).cs-wow
       :is(#online-preview-container, #charcreate-preview-container) {
@@ -2989,7 +3179,8 @@
       border-color: var(--gold, #d4af37);
       box-shadow:
         0 0 0 2px #000,
-        0 0 16px var(--gold, #d4af37);
+        0 0 20px var(--gold, #d4af37),
+        0 0 8px var(--gold, #d4af37) inset;
     }
     #offline-select.cs-wow .mini-class .mini-class-label,
     body:not(.mobile-touch) #charcreate-panel.cs-wow .mini-class .mini-class-label {
@@ -3000,6 +3191,21 @@
     #offline-select.cs-wow .mini-class.sel .mini-class-label,
     body:not(.mobile-touch) #charcreate-panel.cs-wow .mini-class.sel .mini-class-label {
       color: #ffd100;
+      font-weight: 700;
+      text-shadow: 0 1px 3px #000, 0 0 8px rgba(255, 209, 0, 0.4);
+    }
+    /* Selected class indicator dot: a small gold dot under the selected
+       class label, making the selection state unmistakable. */
+    #offline-select.cs-wow .mini-class.sel::after,
+    body:not(.mobile-touch) #charcreate-panel.cs-wow .mini-class.sel::after {
+      content: '';
+      display: block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--gold, #d4af37);
+      box-shadow: 0 0 6px var(--gold, #d4af37);
+      margin-top: 2px;
     }
     /* Appearance swatches as the left column (the "race" slot: one race, many
        looks). display:flex is restated because the create panel's base
@@ -3023,8 +3229,22 @@
       height: 56px;
       aspect-ratio: auto;
     }
-    /* Class summary docks on the right, translucent so the stage shows through. */
-    #offline-select.cs-wow .class-details-panel,
+    /* Class summary docks on the right, translucent so the stage shows through.
+       The offline-select panel is sized to match the constrained 3D canvas
+       (right: 340px) so the two never overlap. */
+    #offline-select.cs-wow .class-details-panel {
+      position: absolute;
+      right: 20px;
+      top: 60px;
+      bottom: 120px;
+      width: 300px;
+      overflow-y: auto;
+      background: #0d0d16e6;
+      border: 1px solid var(--color-border-default);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      z-index: 2;
+    }
     body:not(.mobile-touch) #charcreate-panel.cs-wow .class-details-panel {
       position: absolute;
       right: 26px;
@@ -3079,6 +3299,11 @@
        panel still parks the whole chrome. The online arms keep the touch
        gate, matching their layout arms. */
     body[data-start-panel="offline-select"] :is(
+        .homepage-header,
+        .homepage-footer,
+        .official-site-copy
+      ),
+    body[data-start-panel="pt-tribe-select"] :is(
         .homepage-header,
         .homepage-footer,
         .official-site-copy
@@ -4676,6 +4901,97 @@
     pointer-events: auto;
   }
 
+  /* PT authentic starting stats (STR/SPI/TAL/DEX/HP from MagicPT source). */
+  .pt-starting-stats {
+    margin: var(--spacing-sm) 0;
+    padding: var(--spacing-sm);
+    background: rgba(40, 35, 20, 0.4);
+    border: 1px solid rgba(180, 150, 80, 0.3);
+    border-radius: var(--radius-sm);
+  }
+  .pt-stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 12px;
+    margin-top: 6px;
+  }
+  .pt-stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 2px 0;
+  }
+  .pt-stat-label {
+    color: #c8b888;
+    letter-spacing: 0.5px;
+  }
+  .pt-stat-val {
+    color: #fff;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* PT tribe name shown in the class details header (e.g. TEMPSKRON). */
+  .class-details-tribe {
+    display: block;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--gold, #d4af37);
+    text-transform: uppercase;
+    margin-top: 2px;
+    text-shadow: 0 1px 3px #000;
+  }
+
+  /* Hairstyle selector cards: visual hair-variant picker for PT classes. */
+  .pt-hair-row {
+    margin-top: var(--spacing-sm);
+  }
+  .pt-hair-row .pt-hair-label {
+    font-size: 12px;
+    color: #c8b888;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .pt-hair-choices {
+    display: flex;
+    gap: 8px;
+  }
+  .pt-hair-card {
+    flex: 1;
+    min-height: 56px;
+    padding: 8px 6px;
+    background: linear-gradient(160deg, rgba(40, 36, 24, 0.7), rgba(20, 18, 12, 0.85));
+    border: 2px solid rgba(180, 150, 80, 0.25);
+    border-radius: var(--radius-sm);
+    color: #d8c898;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-sans);
+  }
+  .pt-hair-card:hover {
+    border-color: rgba(220, 190, 110, 0.6);
+    background: linear-gradient(160deg, rgba(60, 52, 32, 0.8), rgba(30, 26, 16, 0.9));
+  }
+  .pt-hair-card.sel {
+    border-color: rgba(240, 210, 130, 0.9);
+    background: linear-gradient(160deg, rgba(80, 68, 40, 0.85), rgba(40, 34, 20, 0.95));
+    box-shadow: 0 0 12px rgba(240, 210, 130, 0.45), inset 0 0 8px rgba(240, 210, 130, 0.15);
+  }
+  .pt-hair-card:active {
+    transform: scale(0.97);
+  }
+  .pt-hair-card-label {
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+
   /* Character-select "News & Updates" panel: lives in the class-details
      sheet's old slot, shares its card chrome, but is always visible (no
      fade-in handshake with a renderer) and scrolls its feed internally. */
@@ -5971,6 +6287,39 @@
   }
   [data-class="druid"] {
     --class-color: #ff8c1a;
+  }
+  [data-class="tempskron_fighter"] {
+    --class-color: #d67a54;
+  }
+  [data-class="tempskron_mechanician"] {
+    --class-color: #d67a54;
+  }
+  [data-class="tempskron_pikeman"] {
+    --class-color: #d67a54;
+  }
+  [data-class="tempskron_archer"] {
+    --class-color: #4a9c5a;
+  }
+  [data-class="morion_knight"] {
+    --class-color: #6b8fb5;
+  }
+  [data-class="morion_atalanta"] {
+    --class-color: #c4a070;
+  }
+  [data-class="morion_priestess"] {
+    --class-color: #e8d0ff;
+  }
+  [data-class="morion_magician"] {
+    --class-color: #ff6b3d;
+  }
+  [data-class="atlanteon_assassin"] {
+    --class-color: #4a4a6b;
+  }
+  [data-class="atlanteon_martial_artist"] {
+    --class-color: #d4a040;
+  }
+  [data-class="atlanteon_shaman"] {
+    --class-color: #3d6b5c;
   }
 
   /* Portrait chip, a class-ringed headshot rendered from the 3D model.

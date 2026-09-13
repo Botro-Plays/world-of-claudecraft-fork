@@ -34,7 +34,7 @@ function everySpec(): { cls: PlayerClass; spec: string }[] {
 }
 
 describe('dev kit role table', () => {
-  it('covers all 27 class-and-spec pairs', () => {
+  it('covers all 60 class-and-spec pairs', () => {
     expect(everySpec()).toHaveLength(DEV_KIT_ROLE_COUNT);
     const missing = everySpec().filter(({ cls, spec }) => devKitRole(cls, spec) === null);
     expect(missing).toEqual([]);
@@ -280,6 +280,47 @@ describe('kit construction', () => {
       'warrior/prot',
       'paladin/protection',
       'paladin/retribution',
+      // PT Tempskron classes reuse warrior's str-based roles
+      'tempskron_fighter/arms',
+      'tempskron_fighter/fury',
+      'tempskron_fighter/prot',
+      'tempskron_mechanician/arms',
+      'tempskron_mechanician/fury',
+      'tempskron_mechanician/prot',
+      'tempskron_pikeman/arms',
+      'tempskron_pikeman/fury',
+      'tempskron_pikeman/prot',
+      'tempskron_archer/arms',
+      'tempskron_archer/fury',
+      'tempskron_archer/prot',
+      // PT Morion Knight reuses warrior's str-based roles
+      'morion_knight/arms',
+      'morion_knight/fury',
+      'morion_knight/prot',
+      // PT Morion Atalanta reuses warrior's str-based roles
+      'morion_atalanta/arms',
+      'morion_atalanta/fury',
+      'morion_atalanta/prot',
+      // PT Morion Priestess reuses warrior's str-based roles (Phase A)
+      'morion_priestess/arms',
+      'morion_priestess/fury',
+      'morion_priestess/prot',
+      // PT Morion Magician reuses warrior's str-based roles (Phase A)
+      'morion_magician/arms',
+      'morion_magician/fury',
+      'morion_magician/prot',
+      // PT Atlanteon Assassin reuses warrior's str-based roles (Phase A)
+      'atlanteon_assassin/arms',
+      'atlanteon_assassin/fury',
+      'atlanteon_assassin/prot',
+      // PT Atlanteon Martial Artist reuses warrior's str-based roles
+      'atlanteon_martial_artist/arms',
+      'atlanteon_martial_artist/fury',
+      'atlanteon_martial_artist/prot',
+      // PT Atlanteon Shaman reuses warrior's str-based roles (Phase A)
+      'atlanteon_shaman/arms',
+      'atlanteon_shaman/fury',
+      'atlanteon_shaman/prot',
     ];
     const AGI_SPECS = [
       'hunter/beast_mastery',

@@ -101,6 +101,61 @@
     <priority>0.55</priority>
   </url>
   <url>
+    <loc>https://worldofclaudecraft.com/wiki/classes/tempskron_fighter</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.55</priority>
+  </url>
+  <url>
+    <loc>https://worldofclaudecraft.com/wiki/classes/tempskron_mechanician</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.55</priority>
+  </url>
+  <url>
+    <loc>https://worldofclaudecraft.com/wiki/classes/tempskron_pikeman</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.55</priority>
+  </url>
+  <url>
+    <loc>https://worldofclaudecraft.com/wiki/classes/tempskron_archer</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.55</priority>
+  </url>
+  <url>
+    <loc>https://worldofclaudecraft.com/wiki/classes/morion_knight</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.55</priority>
+  </url>
+  <url>
+    <loc>https://worldofclaudecraft.com/wiki/classes/morion_atalanta</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.55</priority>
+  </url>
+  <url>
+    <loc>https://worldofclaudecraft.com/wiki/classes/morion_priestess</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.55</priority>
+  </url>
+  <url>
+    <loc>https://worldofclaudecraft.com/wiki/classes/morion_magician</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.55</priority>
+  </url>
+  <url>
+    <loc>https://worldofclaudecraft.com/wiki/classes/atlanteon_assassin</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.55</priority>
+  </url>
+  <url>
+    <loc>https://worldofclaudecraft.com/wiki/classes/atlanteon_martial_artist</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.55</priority>
+  </url>
+  <url>
+    <loc>https://worldofclaudecraft.com/wiki/classes/atlanteon_shaman</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.55</priority>
+  </url>
+  <url>
     <loc>https://worldofclaudecraft.com/wiki/bestiary</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>

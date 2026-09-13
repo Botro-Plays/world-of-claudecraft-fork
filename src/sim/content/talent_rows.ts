@@ -49,6 +49,28 @@ export const ROW_TREES = {
   mage: MAGE_CHOICE_ROWS.rows,
   warlock: WARLOCK_CHOICE_ROWS.rows,
   druid: DRUID_CHOICE_ROWS.rows,
+  // PT Tempskron Fighter POC: reuse warrior's talent rows
+  tempskron_fighter: WARRIOR_ROWS,
+  // PT Tempskron Mechanician POC: reuse warrior's talent rows
+  tempskron_mechanician: WARRIOR_ROWS,
+  // PT Tempskron Pikeman POC: reuse warrior's talent rows
+  tempskron_pikeman: WARRIOR_ROWS,
+  // PT Tempskron Archer POC: reuse warrior's talent rows
+  tempskron_archer: WARRIOR_ROWS,
+  // PT Morion Knight POC: reuse warrior's talent rows
+  morion_knight: WARRIOR_ROWS,
+  // PT Morion Atalanta POC: reuse warrior's talent rows
+  morion_atalanta: WARRIOR_ROWS,
+  // PT Morion Priestess POC: reuse warrior's talent rows (Phase A)
+  morion_priestess: WARRIOR_ROWS,
+  // PT Morion Magician POC: reuse warrior's talent rows (Phase A)
+  morion_magician: WARRIOR_ROWS,
+  // PT Atlanteon Assassin POC: reuse warrior's talent rows (Phase A)
+  atlanteon_assassin: WARRIOR_ROWS,
+  // PT Atlanteon Martial Artist POC: reuse warrior's talent rows
+  atlanteon_martial_artist: WARRIOR_ROWS,
+  // PT Atlanteon Shaman POC: reuse warrior's talent rows (Phase A)
+  atlanteon_shaman: WARRIOR_ROWS,
 } satisfies Record<PlayerClass, RowTree>;
 
 const ROW_LEVEL_SET = new Set<number>(ROW_LEVELS);

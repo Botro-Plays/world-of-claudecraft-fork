@@ -66,6 +66,13 @@ export interface PortraitChipOpts {
    *  class-atlas index, and any `look` is ignored (the world shows the mech,
    *  so the chip must too). */
   catalog?: SkinCatalog;
+  /** Override the visual key used to render this chip's portrait. Used by
+   *  the PT Tempskron Fighter, which carries its hair variant as a
+   *  `visualKeyOverride` on the entity (e.g. `player_tempskron_fighter_hair2`)
+   *  rather than as a composed modular look. When set, and no `look` is
+   *  present, the chip renders this visual key instead of the class default
+   *  so the portrait matches the in-world model. */
+  visualKeyOverride?: string | null;
 }
 
 /** Class crest data URL — the placeholder before the 3D portrait is ready and
@@ -89,6 +96,7 @@ export function portraitChipHtml(opts: PortraitChipOpts): string {
     deferSource = false,
     look = null,
     catalog = 'class',
+    visualKeyOverride = null,
   } = opts;
   const mech = catalog === 'mech';
   // A composed chip is never `deferSource`: that path re-derives the URL in
@@ -98,9 +106,11 @@ export function portraitChipHtml(opts: PortraitChipOpts): string {
     ? visualPortraitDataUrl('player_mech', skin, framing)
     : look
       ? modularPortraitDataUrl(modularVisualKey(cls), look, framing)
-      : deferSource
-        ? null
-        : playerPortraitDataUrl(cls, skin, framing);
+      : visualKeyOverride
+        ? visualPortraitDataUrl(visualKeyOverride, skin, framing)
+        : deferSource
+          ? null
+          : playerPortraitDataUrl(cls, skin, framing);
   const src = deferSource ? null : (portrait ?? crestUrl(cls));
   const source = src ? ` src="${src}"` : '';
   const crestId = `class_${cls}`;
@@ -119,12 +129,13 @@ export function portraitChipHtml(opts: PortraitChipOpts): string {
   // portrait from the data attributes: a look does not fit in one). The
   // builder re-renders such chips itself via onPortraitsReady.
   const composed = !mech && look && !portrait ? ' data-portrait-composed="1"' : '';
+  const overrideAttr = visualKeyOverride ? ` data-visual-key="${esc(visualKeyOverride)}"` : '';
   const alt = esc(t('character.portraitAlt', { name }));
   const badgeHtml = badge
     ? `<img class="portrait-badge" src="${crestUrl(cls)}" ${fallbackAttrs} alt="" aria-hidden="true" draggable="false">`
     : '';
   return (
-    `<span class="portrait-chip portrait-${variant}${fallbackCls}" data-class="${cls}" data-cls="${cls}" data-skin="${skin}" data-catalog="${catalog}" data-framing="${framing}"${pending}${composed}>` +
+    `<span class="portrait-chip portrait-${variant}${fallbackCls}" data-class="${cls}" data-cls="${cls}" data-skin="${skin}" data-catalog="${catalog}" data-framing="${framing}"${overrideAttr}${pending}${composed}>` +
     `<span class="portrait-ring"><img class="portrait-img"${source}${portraitFallbackAttrs} alt="${alt}" loading="lazy" decoding="async" draggable="false"></span>` +
     badgeHtml +
     `</span>`
@@ -149,10 +160,13 @@ export function hydratePortraits(
     const skin = Number(chip.dataset.skin ?? 0) || 0;
     if (onlyClass && (cls !== onlyClass || skin !== onlySkin)) return;
     const framing = (chip.dataset.framing as PortraitFraming | undefined) ?? 'headshot';
+    const visualKeyOverride = chip.dataset.visualKey || null;
     const url =
       chip.dataset.catalog === 'mech'
         ? visualPortraitDataUrl('player_mech', skin, framing)
-        : playerPortraitDataUrl(cls, skin, framing);
+        : visualKeyOverride
+          ? visualPortraitDataUrl(visualKeyOverride, skin, framing)
+          : playerPortraitDataUrl(cls, skin, framing);
     if (!url) return;
     const img = chip.querySelector<HTMLImageElement>('.portrait-img');
     if (img) {
@@ -173,6 +187,14 @@ onPortraitUpdate((visualKey, skin) => {
   // A mech chip carries the WEARER's class in data-cls and the chroma in
   // data-skin, so no class filter can name it: rehydrate the whole page.
   if (visualKey === 'player_mech') {
+    hydratePortraits(document);
+    return;
+  }
+  // A visual-key-override chip (PT Fighter hair variant) carries the override
+  // in data-visual-key, so the class filter cannot name it either: rehydrate
+  // the whole page. The override is rare (one local player), so the cost is
+  // the same as the mech case.
+  if (document.querySelector(`.portrait-chip[data-visual-key="${visualKey}"]`)) {
     hydratePortraits(document);
     return;
   }

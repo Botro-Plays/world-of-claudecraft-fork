@@ -344,6 +344,39 @@ export const shellStrings = {
           'Warlocks summon demons, apply curses and damage-over-time magic, and leech life from enemies to endure.',
         druid:
           'Druids channel nature, healing wounds, entangling foes, and shifting into animal forms for defense or damage.',
+        // PT Tempskron Fighter POC: reuse warrior's lore
+        tempskron_fighter:
+          'Warriors are battle-hardened melee fighters who build Rage as they deal or take damage. They absorb heavy hits or crush foes with powerful weapons.',
+        // PT Tempskron Mechanician POC: reuse warrior's lore
+        tempskron_mechanician:
+          'Warriors are battle-hardened melee fighters who build Rage as they deal or take damage. They absorb heavy hits or crush foes with powerful weapons.',
+        // PT Tempskron Pikeman POC: reuse warrior's lore
+        tempskron_pikeman:
+          'Warriors are battle-hardened melee fighters who build Rage as they deal or take damage. They absorb heavy hits or crush foes with powerful weapons.',
+        // PT Tempskron Archer POC: reuse warrior's lore
+        tempskron_archer:
+          'Warriors are battle-hardened melee fighters who build Rage as they deal or take damage. They absorb heavy hits or crush foes with powerful weapons.',
+        // PT Morion Knight POC: reuse warrior's lore
+        morion_knight:
+          'Warriors are battle-hardened melee fighters who build Rage as they deal or take damage. They absorb heavy hits or crush foes with powerful weapons.',
+        // PT Morion Atalanta POC: brief lore for the Atalanta (Morion female spear/javelin warrior)
+        morion_atalanta:
+          'Atalantas are agile Morion spear-warriors who hurl javelins and strike with polearms, blending martial discipline with ranged reach on the battlefield.',
+        // PT Morion Priestess POC: reuse priest's lore (holy caster/healer)
+        morion_priestess:
+          'Priestesses channel holy light to heal allies, shield them from harm, and smite the undead with radiant power.',
+        // PT Morion Magician POC: reuse mage's lore (elemental caster)
+        morion_magician:
+          'Magicians bend Fire, Frost, and arcane force to destroy enemies, summon water, and freeze threats in place.',
+        // PT Atlanteon Assassin POC: reuse rogue's lore (dual-wield melee DPS)
+        atlanteon_assassin:
+          'Assassins strike from the shadows with poisoned blades, building combo points to unleash deadly finishing moves.',
+        // PT Atlanteon Martial Artist POC: brief lore (unarmed melee brawler)
+        atlanteon_martial_artist:
+          'Martial Artists are disciplined unarmed brawlers who combine raw strength with kicking and striking techniques to overwhelm foes.',
+        // PT Atlanteon Shaman POC: reuse shaman's lore (spiritual caster)
+        atlanteon_shaman:
+          'Shamans command the elements, imbuing weapons with power, shocking enemies with lightning, and restoring allies.',
       },
       aria: 'Class details for {className}: role {role}. Starting stats: Strength {str}, Agility {agi}, Stamina {sta}, Intellect {int}, Spirit {spi}.',
       statBarAria: '{stat}: {value} out of 25',

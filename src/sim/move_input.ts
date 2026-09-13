@@ -10,6 +10,7 @@ const MOVE_FIELDS = [
   ['jump', 'j'],
   ['dive', 'dv'],
   ['surface', 'sf'],
+  ['walkMode', 'wm'],
 ] as const;
 const MAX_FACING_MAGNITUDE = 1000;
 

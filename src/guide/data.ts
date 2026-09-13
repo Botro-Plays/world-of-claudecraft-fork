@@ -43,6 +43,28 @@ export const CLASS_CHIPS: ClassChip[] = [
   { id: 'mage', nameKey: 'classes.mage', color: '#33c1f1' },
   { id: 'warlock', nameKey: 'classes.warlock', color: '#a785e6' },
   { id: 'druid', nameKey: 'classes.druid', color: '#ff8c1a' },
+  // PT Tempskron Fighter POC: reuse warrior's color + name key
+  { id: 'tempskron_fighter', nameKey: 'classes.warrior', color: '#d67a54' },
+  // PT Tempskron Mechanician POC: reuse warrior's color + name key
+  { id: 'tempskron_mechanician', nameKey: 'classes.warrior', color: '#d67a54' },
+  // PT Tempskron Pikeman POC: reuse warrior's color + name key
+  { id: 'tempskron_pikeman', nameKey: 'classes.warrior', color: '#d67a54' },
+  // PT Tempskron Archer POC: distinct green color (ranged/dexterity class)
+  { id: 'tempskron_archer', nameKey: 'classes.warrior', color: '#4a9c5a' },
+  // PT Morion Knight POC: distinct Morion blue color (strength/melee class)
+  { id: 'morion_knight', nameKey: 'classes.warrior', color: '#6b8fb5' },
+  // PT Morion Atalanta POC: distinct Morion gold color (spear/javelin warrior)
+  { id: 'morion_atalanta', nameKey: 'classes.warrior', color: '#c4a070' },
+  // PT Morion Priestess POC: distinct light purple color (holy healer)
+  { id: 'morion_priestess', nameKey: 'classes.warrior', color: '#e8d0ff' },
+  // PT Morion Magician POC: distinct orange-red color (fire/elemental caster)
+  { id: 'morion_magician', nameKey: 'classes.warrior', color: '#ff6b3d' },
+  // PT Atlanteon Assassin POC: distinct dark blue-gray color (dual-wield DPS)
+  { id: 'atlanteon_assassin', nameKey: 'classes.warrior', color: '#4a4a6b' },
+  // PT Atlanteon Martial Artist POC: distinct gold color (unarmed brawler)
+  { id: 'atlanteon_martial_artist', nameKey: 'classes.warrior', color: '#d4a040' },
+  // PT Atlanteon Shaman POC: distinct teal color (spiritual caster)
+  { id: 'atlanteon_shaman', nameKey: 'classes.warrior', color: '#3d6b5c' },
 ];
 
 export interface ZoneTeaser {

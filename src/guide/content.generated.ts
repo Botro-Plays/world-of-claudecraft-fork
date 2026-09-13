@@ -2110,6 +2110,2415 @@ export const GUIDE_CLASSES: GuideClassInfo[] = [
     ],
     "model": "player_druid",
     "still": "/guide-stills/player_druid.webp"
+  },
+  {
+    "id": "tempskron_fighter",
+    "color": "#d67a54",
+    "resource": "rage",
+    "roles": [
+      "tank",
+      "dps"
+    ],
+    "specs": [
+      {
+        "id": "arms",
+        "name": "Battlecraft",
+        "role": "dps",
+        "signature": "mortal_strike"
+      },
+      {
+        "id": "fury",
+        "name": "Bloodrush",
+        "role": "dps",
+        "signature": "bloodthirst"
+      },
+      {
+        "id": "prot",
+        "name": "Ironguard",
+        "role": "tank",
+        "signature": "shield_slam"
+      }
+    ],
+    "signatureAbilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      }
+    ],
+    "abilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      },
+      {
+        "id": "bloodrage",
+        "name": "Blood Toll"
+      },
+      {
+        "id": "overpower",
+        "name": "Redhand"
+      },
+      {
+        "id": "raging_gale",
+        "name": "Twinstrike"
+      },
+      {
+        "id": "raised_guard",
+        "name": "Raised Guard"
+      },
+      {
+        "id": "pummel",
+        "name": "Jawcrack"
+      },
+      {
+        "id": "berserker_rage",
+        "name": "Seething Fury"
+      },
+      {
+        "id": "execute",
+        "name": "Early Grave"
+      },
+      {
+        "id": "furious_mending",
+        "name": "Furious Mending"
+      },
+      {
+        "id": "iron_resolve",
+        "name": "Iron Resolve"
+      },
+      {
+        "id": "slam",
+        "name": "Brute Swing"
+      },
+      {
+        "id": "red_harvest",
+        "name": "Red Harvest"
+      },
+      {
+        "id": "whirlwind",
+        "name": "Bladed Gyre"
+      },
+      {
+        "id": "faultline",
+        "name": "Faultline"
+      },
+      {
+        "id": "heroic_leap",
+        "name": "Vaulting Charge"
+      },
+      {
+        "id": "cleave",
+        "name": "Reaping Arc"
+      },
+      {
+        "id": "rallying_cry",
+        "name": "Valor Roar"
+      },
+      {
+        "id": "emboldening_roar",
+        "name": "Emboldening Roar"
+      },
+      {
+        "id": "defiant_bellow",
+        "name": "Defiant Bellow"
+      },
+      {
+        "id": "battle_stance",
+        "name": "Battle Stance"
+      },
+      {
+        "id": "berserker_stance",
+        "name": "Berserker Stance"
+      },
+      {
+        "id": "defensive_stance",
+        "name": "Guarded Stance"
+      },
+      {
+        "id": "demoralizing_shout",
+        "name": "Direhowl"
+      },
+      {
+        "id": "intimidating_shout",
+        "name": "Intimidating Shout"
+      },
+      {
+        "id": "sunder_armor",
+        "name": "Armor Shear"
+      },
+      {
+        "id": "taunt",
+        "name": "Goad"
+      },
+      {
+        "id": "measured_fury",
+        "name": "Measured Fury"
+      },
+      {
+        "id": "seasoned_soldier",
+        "name": "Seasoned Soldier"
+      },
+      {
+        "id": "sudden_death",
+        "name": "Sudden Death"
+      },
+      {
+        "id": "diabolical_twinstrike",
+        "name": "Diabolical Twinstrike"
+      },
+      {
+        "id": "cleaving_blows",
+        "name": "Cleaving Blows"
+      },
+      {
+        "id": "breachmaker",
+        "name": "Breachmaker"
+      },
+      {
+        "id": "sweeping_strikes",
+        "name": "Widening Arc"
+      },
+      {
+        "id": "deep_wounds",
+        "name": "Gaping Wounds"
+      },
+      {
+        "id": "enrage_passive",
+        "name": "Mayhem"
+      }
+    ],
+    "model": "player_tempskron_fighter",
+    "still": "/guide-stills/player_tempskron_fighter.webp"
+  },
+  {
+    "id": "tempskron_mechanician",
+    "color": "#d67a54",
+    "resource": "mana",
+    "roles": [
+      "tank",
+      "dps"
+    ],
+    "specs": [
+      {
+        "id": "arms",
+        "name": "Battlecraft",
+        "role": "dps",
+        "signature": "mortal_strike"
+      },
+      {
+        "id": "fury",
+        "name": "Bloodrush",
+        "role": "dps",
+        "signature": "bloodthirst"
+      },
+      {
+        "id": "prot",
+        "name": "Ironguard",
+        "role": "tank",
+        "signature": "shield_slam"
+      }
+    ],
+    "signatureAbilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      }
+    ],
+    "abilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      },
+      {
+        "id": "bloodrage",
+        "name": "Blood Toll"
+      },
+      {
+        "id": "overpower",
+        "name": "Redhand"
+      },
+      {
+        "id": "raging_gale",
+        "name": "Twinstrike"
+      },
+      {
+        "id": "raised_guard",
+        "name": "Raised Guard"
+      },
+      {
+        "id": "pummel",
+        "name": "Jawcrack"
+      },
+      {
+        "id": "berserker_rage",
+        "name": "Seething Fury"
+      },
+      {
+        "id": "execute",
+        "name": "Early Grave"
+      },
+      {
+        "id": "furious_mending",
+        "name": "Furious Mending"
+      },
+      {
+        "id": "iron_resolve",
+        "name": "Iron Resolve"
+      },
+      {
+        "id": "slam",
+        "name": "Brute Swing"
+      },
+      {
+        "id": "red_harvest",
+        "name": "Red Harvest"
+      },
+      {
+        "id": "whirlwind",
+        "name": "Bladed Gyre"
+      },
+      {
+        "id": "faultline",
+        "name": "Faultline"
+      },
+      {
+        "id": "heroic_leap",
+        "name": "Vaulting Charge"
+      },
+      {
+        "id": "cleave",
+        "name": "Reaping Arc"
+      },
+      {
+        "id": "rallying_cry",
+        "name": "Valor Roar"
+      },
+      {
+        "id": "emboldening_roar",
+        "name": "Emboldening Roar"
+      },
+      {
+        "id": "defiant_bellow",
+        "name": "Defiant Bellow"
+      },
+      {
+        "id": "battle_stance",
+        "name": "Battle Stance"
+      },
+      {
+        "id": "berserker_stance",
+        "name": "Berserker Stance"
+      },
+      {
+        "id": "defensive_stance",
+        "name": "Guarded Stance"
+      },
+      {
+        "id": "demoralizing_shout",
+        "name": "Direhowl"
+      },
+      {
+        "id": "intimidating_shout",
+        "name": "Intimidating Shout"
+      },
+      {
+        "id": "sunder_armor",
+        "name": "Armor Shear"
+      },
+      {
+        "id": "taunt",
+        "name": "Goad"
+      },
+      {
+        "id": "measured_fury",
+        "name": "Measured Fury"
+      },
+      {
+        "id": "seasoned_soldier",
+        "name": "Seasoned Soldier"
+      },
+      {
+        "id": "sudden_death",
+        "name": "Sudden Death"
+      },
+      {
+        "id": "diabolical_twinstrike",
+        "name": "Diabolical Twinstrike"
+      },
+      {
+        "id": "cleaving_blows",
+        "name": "Cleaving Blows"
+      },
+      {
+        "id": "breachmaker",
+        "name": "Breachmaker"
+      },
+      {
+        "id": "sweeping_strikes",
+        "name": "Widening Arc"
+      },
+      {
+        "id": "deep_wounds",
+        "name": "Gaping Wounds"
+      },
+      {
+        "id": "enrage_passive",
+        "name": "Mayhem"
+      }
+    ],
+    "model": "player_tempskron_mechanician",
+    "still": "/guide-stills/player_tempskron_mechanician.webp"
+  },
+  {
+    "id": "tempskron_pikeman",
+    "color": "#d67a54",
+    "resource": "mana",
+    "roles": [
+      "tank",
+      "dps"
+    ],
+    "specs": [
+      {
+        "id": "arms",
+        "name": "Battlecraft",
+        "role": "dps",
+        "signature": "mortal_strike"
+      },
+      {
+        "id": "fury",
+        "name": "Bloodrush",
+        "role": "dps",
+        "signature": "bloodthirst"
+      },
+      {
+        "id": "prot",
+        "name": "Ironguard",
+        "role": "tank",
+        "signature": "shield_slam"
+      }
+    ],
+    "signatureAbilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      }
+    ],
+    "abilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      },
+      {
+        "id": "bloodrage",
+        "name": "Blood Toll"
+      },
+      {
+        "id": "overpower",
+        "name": "Redhand"
+      },
+      {
+        "id": "raging_gale",
+        "name": "Twinstrike"
+      },
+      {
+        "id": "raised_guard",
+        "name": "Raised Guard"
+      },
+      {
+        "id": "pummel",
+        "name": "Jawcrack"
+      },
+      {
+        "id": "berserker_rage",
+        "name": "Seething Fury"
+      },
+      {
+        "id": "execute",
+        "name": "Early Grave"
+      },
+      {
+        "id": "furious_mending",
+        "name": "Furious Mending"
+      },
+      {
+        "id": "iron_resolve",
+        "name": "Iron Resolve"
+      },
+      {
+        "id": "slam",
+        "name": "Brute Swing"
+      },
+      {
+        "id": "red_harvest",
+        "name": "Red Harvest"
+      },
+      {
+        "id": "whirlwind",
+        "name": "Bladed Gyre"
+      },
+      {
+        "id": "faultline",
+        "name": "Faultline"
+      },
+      {
+        "id": "heroic_leap",
+        "name": "Vaulting Charge"
+      },
+      {
+        "id": "cleave",
+        "name": "Reaping Arc"
+      },
+      {
+        "id": "rallying_cry",
+        "name": "Valor Roar"
+      },
+      {
+        "id": "emboldening_roar",
+        "name": "Emboldening Roar"
+      },
+      {
+        "id": "defiant_bellow",
+        "name": "Defiant Bellow"
+      },
+      {
+        "id": "battle_stance",
+        "name": "Battle Stance"
+      },
+      {
+        "id": "berserker_stance",
+        "name": "Berserker Stance"
+      },
+      {
+        "id": "defensive_stance",
+        "name": "Guarded Stance"
+      },
+      {
+        "id": "demoralizing_shout",
+        "name": "Direhowl"
+      },
+      {
+        "id": "intimidating_shout",
+        "name": "Intimidating Shout"
+      },
+      {
+        "id": "sunder_armor",
+        "name": "Armor Shear"
+      },
+      {
+        "id": "taunt",
+        "name": "Goad"
+      },
+      {
+        "id": "measured_fury",
+        "name": "Measured Fury"
+      },
+      {
+        "id": "seasoned_soldier",
+        "name": "Seasoned Soldier"
+      },
+      {
+        "id": "sudden_death",
+        "name": "Sudden Death"
+      },
+      {
+        "id": "diabolical_twinstrike",
+        "name": "Diabolical Twinstrike"
+      },
+      {
+        "id": "cleaving_blows",
+        "name": "Cleaving Blows"
+      },
+      {
+        "id": "breachmaker",
+        "name": "Breachmaker"
+      },
+      {
+        "id": "sweeping_strikes",
+        "name": "Widening Arc"
+      },
+      {
+        "id": "deep_wounds",
+        "name": "Gaping Wounds"
+      },
+      {
+        "id": "enrage_passive",
+        "name": "Mayhem"
+      }
+    ],
+    "model": "player_tempskron_pikeman",
+    "still": "/guide-stills/player_tempskron_pikeman.webp"
+  },
+  {
+    "id": "tempskron_archer",
+    "color": "#4a9c5a",
+    "resource": "mana",
+    "roles": [
+      "tank",
+      "dps"
+    ],
+    "specs": [
+      {
+        "id": "arms",
+        "name": "Battlecraft",
+        "role": "dps",
+        "signature": "mortal_strike"
+      },
+      {
+        "id": "fury",
+        "name": "Bloodrush",
+        "role": "dps",
+        "signature": "bloodthirst"
+      },
+      {
+        "id": "prot",
+        "name": "Ironguard",
+        "role": "tank",
+        "signature": "shield_slam"
+      }
+    ],
+    "signatureAbilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      }
+    ],
+    "abilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      },
+      {
+        "id": "bloodrage",
+        "name": "Blood Toll"
+      },
+      {
+        "id": "overpower",
+        "name": "Redhand"
+      },
+      {
+        "id": "raging_gale",
+        "name": "Twinstrike"
+      },
+      {
+        "id": "raised_guard",
+        "name": "Raised Guard"
+      },
+      {
+        "id": "pummel",
+        "name": "Jawcrack"
+      },
+      {
+        "id": "berserker_rage",
+        "name": "Seething Fury"
+      },
+      {
+        "id": "execute",
+        "name": "Early Grave"
+      },
+      {
+        "id": "furious_mending",
+        "name": "Furious Mending"
+      },
+      {
+        "id": "iron_resolve",
+        "name": "Iron Resolve"
+      },
+      {
+        "id": "slam",
+        "name": "Brute Swing"
+      },
+      {
+        "id": "red_harvest",
+        "name": "Red Harvest"
+      },
+      {
+        "id": "whirlwind",
+        "name": "Bladed Gyre"
+      },
+      {
+        "id": "faultline",
+        "name": "Faultline"
+      },
+      {
+        "id": "heroic_leap",
+        "name": "Vaulting Charge"
+      },
+      {
+        "id": "cleave",
+        "name": "Reaping Arc"
+      },
+      {
+        "id": "rallying_cry",
+        "name": "Valor Roar"
+      },
+      {
+        "id": "emboldening_roar",
+        "name": "Emboldening Roar"
+      },
+      {
+        "id": "defiant_bellow",
+        "name": "Defiant Bellow"
+      },
+      {
+        "id": "battle_stance",
+        "name": "Battle Stance"
+      },
+      {
+        "id": "berserker_stance",
+        "name": "Berserker Stance"
+      },
+      {
+        "id": "defensive_stance",
+        "name": "Guarded Stance"
+      },
+      {
+        "id": "demoralizing_shout",
+        "name": "Direhowl"
+      },
+      {
+        "id": "intimidating_shout",
+        "name": "Intimidating Shout"
+      },
+      {
+        "id": "sunder_armor",
+        "name": "Armor Shear"
+      },
+      {
+        "id": "taunt",
+        "name": "Goad"
+      },
+      {
+        "id": "measured_fury",
+        "name": "Measured Fury"
+      },
+      {
+        "id": "seasoned_soldier",
+        "name": "Seasoned Soldier"
+      },
+      {
+        "id": "sudden_death",
+        "name": "Sudden Death"
+      },
+      {
+        "id": "diabolical_twinstrike",
+        "name": "Diabolical Twinstrike"
+      },
+      {
+        "id": "cleaving_blows",
+        "name": "Cleaving Blows"
+      },
+      {
+        "id": "breachmaker",
+        "name": "Breachmaker"
+      },
+      {
+        "id": "sweeping_strikes",
+        "name": "Widening Arc"
+      },
+      {
+        "id": "deep_wounds",
+        "name": "Gaping Wounds"
+      },
+      {
+        "id": "enrage_passive",
+        "name": "Mayhem"
+      }
+    ],
+    "model": "player_tempskron_archer",
+    "still": "/guide-stills/player_tempskron_archer.webp"
+  },
+  {
+    "id": "morion_knight",
+    "color": "#6b8fb5",
+    "resource": "mana",
+    "roles": [
+      "tank",
+      "dps"
+    ],
+    "specs": [
+      {
+        "id": "arms",
+        "name": "Battlecraft",
+        "role": "dps",
+        "signature": "mortal_strike"
+      },
+      {
+        "id": "fury",
+        "name": "Bloodrush",
+        "role": "dps",
+        "signature": "bloodthirst"
+      },
+      {
+        "id": "prot",
+        "name": "Ironguard",
+        "role": "tank",
+        "signature": "shield_slam"
+      }
+    ],
+    "signatureAbilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      }
+    ],
+    "abilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      },
+      {
+        "id": "bloodrage",
+        "name": "Blood Toll"
+      },
+      {
+        "id": "overpower",
+        "name": "Redhand"
+      },
+      {
+        "id": "raging_gale",
+        "name": "Twinstrike"
+      },
+      {
+        "id": "raised_guard",
+        "name": "Raised Guard"
+      },
+      {
+        "id": "pummel",
+        "name": "Jawcrack"
+      },
+      {
+        "id": "berserker_rage",
+        "name": "Seething Fury"
+      },
+      {
+        "id": "execute",
+        "name": "Early Grave"
+      },
+      {
+        "id": "furious_mending",
+        "name": "Furious Mending"
+      },
+      {
+        "id": "iron_resolve",
+        "name": "Iron Resolve"
+      },
+      {
+        "id": "slam",
+        "name": "Brute Swing"
+      },
+      {
+        "id": "red_harvest",
+        "name": "Red Harvest"
+      },
+      {
+        "id": "whirlwind",
+        "name": "Bladed Gyre"
+      },
+      {
+        "id": "faultline",
+        "name": "Faultline"
+      },
+      {
+        "id": "heroic_leap",
+        "name": "Vaulting Charge"
+      },
+      {
+        "id": "cleave",
+        "name": "Reaping Arc"
+      },
+      {
+        "id": "rallying_cry",
+        "name": "Valor Roar"
+      },
+      {
+        "id": "emboldening_roar",
+        "name": "Emboldening Roar"
+      },
+      {
+        "id": "defiant_bellow",
+        "name": "Defiant Bellow"
+      },
+      {
+        "id": "battle_stance",
+        "name": "Battle Stance"
+      },
+      {
+        "id": "berserker_stance",
+        "name": "Berserker Stance"
+      },
+      {
+        "id": "defensive_stance",
+        "name": "Guarded Stance"
+      },
+      {
+        "id": "demoralizing_shout",
+        "name": "Direhowl"
+      },
+      {
+        "id": "intimidating_shout",
+        "name": "Intimidating Shout"
+      },
+      {
+        "id": "sunder_armor",
+        "name": "Armor Shear"
+      },
+      {
+        "id": "taunt",
+        "name": "Goad"
+      },
+      {
+        "id": "measured_fury",
+        "name": "Measured Fury"
+      },
+      {
+        "id": "seasoned_soldier",
+        "name": "Seasoned Soldier"
+      },
+      {
+        "id": "sudden_death",
+        "name": "Sudden Death"
+      },
+      {
+        "id": "diabolical_twinstrike",
+        "name": "Diabolical Twinstrike"
+      },
+      {
+        "id": "cleaving_blows",
+        "name": "Cleaving Blows"
+      },
+      {
+        "id": "breachmaker",
+        "name": "Breachmaker"
+      },
+      {
+        "id": "sweeping_strikes",
+        "name": "Widening Arc"
+      },
+      {
+        "id": "deep_wounds",
+        "name": "Gaping Wounds"
+      },
+      {
+        "id": "enrage_passive",
+        "name": "Mayhem"
+      }
+    ],
+    "model": "player_morion_knight",
+    "still": "/guide-stills/player_morion_knight.webp"
+  },
+  {
+    "id": "morion_atalanta",
+    "color": "#c4a070",
+    "resource": "mana",
+    "roles": [
+      "tank",
+      "dps"
+    ],
+    "specs": [
+      {
+        "id": "arms",
+        "name": "Battlecraft",
+        "role": "dps",
+        "signature": "mortal_strike"
+      },
+      {
+        "id": "fury",
+        "name": "Bloodrush",
+        "role": "dps",
+        "signature": "bloodthirst"
+      },
+      {
+        "id": "prot",
+        "name": "Ironguard",
+        "role": "tank",
+        "signature": "shield_slam"
+      }
+    ],
+    "signatureAbilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      }
+    ],
+    "abilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      },
+      {
+        "id": "bloodrage",
+        "name": "Blood Toll"
+      },
+      {
+        "id": "overpower",
+        "name": "Redhand"
+      },
+      {
+        "id": "raging_gale",
+        "name": "Twinstrike"
+      },
+      {
+        "id": "raised_guard",
+        "name": "Raised Guard"
+      },
+      {
+        "id": "pummel",
+        "name": "Jawcrack"
+      },
+      {
+        "id": "berserker_rage",
+        "name": "Seething Fury"
+      },
+      {
+        "id": "execute",
+        "name": "Early Grave"
+      },
+      {
+        "id": "furious_mending",
+        "name": "Furious Mending"
+      },
+      {
+        "id": "iron_resolve",
+        "name": "Iron Resolve"
+      },
+      {
+        "id": "slam",
+        "name": "Brute Swing"
+      },
+      {
+        "id": "red_harvest",
+        "name": "Red Harvest"
+      },
+      {
+        "id": "whirlwind",
+        "name": "Bladed Gyre"
+      },
+      {
+        "id": "faultline",
+        "name": "Faultline"
+      },
+      {
+        "id": "heroic_leap",
+        "name": "Vaulting Charge"
+      },
+      {
+        "id": "cleave",
+        "name": "Reaping Arc"
+      },
+      {
+        "id": "rallying_cry",
+        "name": "Valor Roar"
+      },
+      {
+        "id": "emboldening_roar",
+        "name": "Emboldening Roar"
+      },
+      {
+        "id": "defiant_bellow",
+        "name": "Defiant Bellow"
+      },
+      {
+        "id": "battle_stance",
+        "name": "Battle Stance"
+      },
+      {
+        "id": "berserker_stance",
+        "name": "Berserker Stance"
+      },
+      {
+        "id": "defensive_stance",
+        "name": "Guarded Stance"
+      },
+      {
+        "id": "demoralizing_shout",
+        "name": "Direhowl"
+      },
+      {
+        "id": "intimidating_shout",
+        "name": "Intimidating Shout"
+      },
+      {
+        "id": "sunder_armor",
+        "name": "Armor Shear"
+      },
+      {
+        "id": "taunt",
+        "name": "Goad"
+      },
+      {
+        "id": "measured_fury",
+        "name": "Measured Fury"
+      },
+      {
+        "id": "seasoned_soldier",
+        "name": "Seasoned Soldier"
+      },
+      {
+        "id": "sudden_death",
+        "name": "Sudden Death"
+      },
+      {
+        "id": "diabolical_twinstrike",
+        "name": "Diabolical Twinstrike"
+      },
+      {
+        "id": "cleaving_blows",
+        "name": "Cleaving Blows"
+      },
+      {
+        "id": "breachmaker",
+        "name": "Breachmaker"
+      },
+      {
+        "id": "sweeping_strikes",
+        "name": "Widening Arc"
+      },
+      {
+        "id": "deep_wounds",
+        "name": "Gaping Wounds"
+      },
+      {
+        "id": "enrage_passive",
+        "name": "Mayhem"
+      }
+    ],
+    "model": "player_morion_atalanta",
+    "still": "/guide-stills/player_morion_atalanta.webp"
+  },
+  {
+    "id": "morion_priestess",
+    "color": "#e8d0ff",
+    "resource": "mana",
+    "roles": [
+      "tank",
+      "dps"
+    ],
+    "specs": [
+      {
+        "id": "arms",
+        "name": "Battlecraft",
+        "role": "dps",
+        "signature": "mortal_strike"
+      },
+      {
+        "id": "fury",
+        "name": "Bloodrush",
+        "role": "dps",
+        "signature": "bloodthirst"
+      },
+      {
+        "id": "prot",
+        "name": "Ironguard",
+        "role": "tank",
+        "signature": "shield_slam"
+      }
+    ],
+    "signatureAbilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      }
+    ],
+    "abilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      },
+      {
+        "id": "bloodrage",
+        "name": "Blood Toll"
+      },
+      {
+        "id": "overpower",
+        "name": "Redhand"
+      },
+      {
+        "id": "raging_gale",
+        "name": "Twinstrike"
+      },
+      {
+        "id": "raised_guard",
+        "name": "Raised Guard"
+      },
+      {
+        "id": "pummel",
+        "name": "Jawcrack"
+      },
+      {
+        "id": "berserker_rage",
+        "name": "Seething Fury"
+      },
+      {
+        "id": "execute",
+        "name": "Early Grave"
+      },
+      {
+        "id": "furious_mending",
+        "name": "Furious Mending"
+      },
+      {
+        "id": "iron_resolve",
+        "name": "Iron Resolve"
+      },
+      {
+        "id": "slam",
+        "name": "Brute Swing"
+      },
+      {
+        "id": "red_harvest",
+        "name": "Red Harvest"
+      },
+      {
+        "id": "whirlwind",
+        "name": "Bladed Gyre"
+      },
+      {
+        "id": "faultline",
+        "name": "Faultline"
+      },
+      {
+        "id": "heroic_leap",
+        "name": "Vaulting Charge"
+      },
+      {
+        "id": "cleave",
+        "name": "Reaping Arc"
+      },
+      {
+        "id": "rallying_cry",
+        "name": "Valor Roar"
+      },
+      {
+        "id": "emboldening_roar",
+        "name": "Emboldening Roar"
+      },
+      {
+        "id": "defiant_bellow",
+        "name": "Defiant Bellow"
+      },
+      {
+        "id": "battle_stance",
+        "name": "Battle Stance"
+      },
+      {
+        "id": "berserker_stance",
+        "name": "Berserker Stance"
+      },
+      {
+        "id": "defensive_stance",
+        "name": "Guarded Stance"
+      },
+      {
+        "id": "demoralizing_shout",
+        "name": "Direhowl"
+      },
+      {
+        "id": "intimidating_shout",
+        "name": "Intimidating Shout"
+      },
+      {
+        "id": "sunder_armor",
+        "name": "Armor Shear"
+      },
+      {
+        "id": "taunt",
+        "name": "Goad"
+      },
+      {
+        "id": "measured_fury",
+        "name": "Measured Fury"
+      },
+      {
+        "id": "seasoned_soldier",
+        "name": "Seasoned Soldier"
+      },
+      {
+        "id": "sudden_death",
+        "name": "Sudden Death"
+      },
+      {
+        "id": "diabolical_twinstrike",
+        "name": "Diabolical Twinstrike"
+      },
+      {
+        "id": "cleaving_blows",
+        "name": "Cleaving Blows"
+      },
+      {
+        "id": "breachmaker",
+        "name": "Breachmaker"
+      },
+      {
+        "id": "sweeping_strikes",
+        "name": "Widening Arc"
+      },
+      {
+        "id": "deep_wounds",
+        "name": "Gaping Wounds"
+      },
+      {
+        "id": "enrage_passive",
+        "name": "Mayhem"
+      }
+    ],
+    "model": "player_morion_priestess",
+    "still": "/guide-stills/player_morion_priestess.webp"
+  },
+  {
+    "id": "morion_magician",
+    "color": "#ff6b3d",
+    "resource": "mana",
+    "roles": [
+      "tank",
+      "dps"
+    ],
+    "specs": [
+      {
+        "id": "arms",
+        "name": "Battlecraft",
+        "role": "dps",
+        "signature": "mortal_strike"
+      },
+      {
+        "id": "fury",
+        "name": "Bloodrush",
+        "role": "dps",
+        "signature": "bloodthirst"
+      },
+      {
+        "id": "prot",
+        "name": "Ironguard",
+        "role": "tank",
+        "signature": "shield_slam"
+      }
+    ],
+    "signatureAbilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      }
+    ],
+    "abilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      },
+      {
+        "id": "bloodrage",
+        "name": "Blood Toll"
+      },
+      {
+        "id": "overpower",
+        "name": "Redhand"
+      },
+      {
+        "id": "raging_gale",
+        "name": "Twinstrike"
+      },
+      {
+        "id": "raised_guard",
+        "name": "Raised Guard"
+      },
+      {
+        "id": "pummel",
+        "name": "Jawcrack"
+      },
+      {
+        "id": "berserker_rage",
+        "name": "Seething Fury"
+      },
+      {
+        "id": "execute",
+        "name": "Early Grave"
+      },
+      {
+        "id": "furious_mending",
+        "name": "Furious Mending"
+      },
+      {
+        "id": "iron_resolve",
+        "name": "Iron Resolve"
+      },
+      {
+        "id": "slam",
+        "name": "Brute Swing"
+      },
+      {
+        "id": "red_harvest",
+        "name": "Red Harvest"
+      },
+      {
+        "id": "whirlwind",
+        "name": "Bladed Gyre"
+      },
+      {
+        "id": "faultline",
+        "name": "Faultline"
+      },
+      {
+        "id": "heroic_leap",
+        "name": "Vaulting Charge"
+      },
+      {
+        "id": "cleave",
+        "name": "Reaping Arc"
+      },
+      {
+        "id": "rallying_cry",
+        "name": "Valor Roar"
+      },
+      {
+        "id": "emboldening_roar",
+        "name": "Emboldening Roar"
+      },
+      {
+        "id": "defiant_bellow",
+        "name": "Defiant Bellow"
+      },
+      {
+        "id": "battle_stance",
+        "name": "Battle Stance"
+      },
+      {
+        "id": "berserker_stance",
+        "name": "Berserker Stance"
+      },
+      {
+        "id": "defensive_stance",
+        "name": "Guarded Stance"
+      },
+      {
+        "id": "demoralizing_shout",
+        "name": "Direhowl"
+      },
+      {
+        "id": "intimidating_shout",
+        "name": "Intimidating Shout"
+      },
+      {
+        "id": "sunder_armor",
+        "name": "Armor Shear"
+      },
+      {
+        "id": "taunt",
+        "name": "Goad"
+      },
+      {
+        "id": "measured_fury",
+        "name": "Measured Fury"
+      },
+      {
+        "id": "seasoned_soldier",
+        "name": "Seasoned Soldier"
+      },
+      {
+        "id": "sudden_death",
+        "name": "Sudden Death"
+      },
+      {
+        "id": "diabolical_twinstrike",
+        "name": "Diabolical Twinstrike"
+      },
+      {
+        "id": "cleaving_blows",
+        "name": "Cleaving Blows"
+      },
+      {
+        "id": "breachmaker",
+        "name": "Breachmaker"
+      },
+      {
+        "id": "sweeping_strikes",
+        "name": "Widening Arc"
+      },
+      {
+        "id": "deep_wounds",
+        "name": "Gaping Wounds"
+      },
+      {
+        "id": "enrage_passive",
+        "name": "Mayhem"
+      }
+    ],
+    "model": "player_morion_magician",
+    "still": "/guide-stills/player_morion_magician.webp"
+  },
+  {
+    "id": "atlanteon_assassin",
+    "color": "#4a4a6b",
+    "resource": "mana",
+    "roles": [
+      "tank",
+      "dps"
+    ],
+    "specs": [
+      {
+        "id": "arms",
+        "name": "Battlecraft",
+        "role": "dps",
+        "signature": "mortal_strike"
+      },
+      {
+        "id": "fury",
+        "name": "Bloodrush",
+        "role": "dps",
+        "signature": "bloodthirst"
+      },
+      {
+        "id": "prot",
+        "name": "Ironguard",
+        "role": "tank",
+        "signature": "shield_slam"
+      }
+    ],
+    "signatureAbilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      }
+    ],
+    "abilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      },
+      {
+        "id": "bloodrage",
+        "name": "Blood Toll"
+      },
+      {
+        "id": "overpower",
+        "name": "Redhand"
+      },
+      {
+        "id": "raging_gale",
+        "name": "Twinstrike"
+      },
+      {
+        "id": "raised_guard",
+        "name": "Raised Guard"
+      },
+      {
+        "id": "pummel",
+        "name": "Jawcrack"
+      },
+      {
+        "id": "berserker_rage",
+        "name": "Seething Fury"
+      },
+      {
+        "id": "execute",
+        "name": "Early Grave"
+      },
+      {
+        "id": "furious_mending",
+        "name": "Furious Mending"
+      },
+      {
+        "id": "iron_resolve",
+        "name": "Iron Resolve"
+      },
+      {
+        "id": "slam",
+        "name": "Brute Swing"
+      },
+      {
+        "id": "red_harvest",
+        "name": "Red Harvest"
+      },
+      {
+        "id": "whirlwind",
+        "name": "Bladed Gyre"
+      },
+      {
+        "id": "faultline",
+        "name": "Faultline"
+      },
+      {
+        "id": "heroic_leap",
+        "name": "Vaulting Charge"
+      },
+      {
+        "id": "cleave",
+        "name": "Reaping Arc"
+      },
+      {
+        "id": "rallying_cry",
+        "name": "Valor Roar"
+      },
+      {
+        "id": "emboldening_roar",
+        "name": "Emboldening Roar"
+      },
+      {
+        "id": "defiant_bellow",
+        "name": "Defiant Bellow"
+      },
+      {
+        "id": "battle_stance",
+        "name": "Battle Stance"
+      },
+      {
+        "id": "berserker_stance",
+        "name": "Berserker Stance"
+      },
+      {
+        "id": "defensive_stance",
+        "name": "Guarded Stance"
+      },
+      {
+        "id": "demoralizing_shout",
+        "name": "Direhowl"
+      },
+      {
+        "id": "intimidating_shout",
+        "name": "Intimidating Shout"
+      },
+      {
+        "id": "sunder_armor",
+        "name": "Armor Shear"
+      },
+      {
+        "id": "taunt",
+        "name": "Goad"
+      },
+      {
+        "id": "measured_fury",
+        "name": "Measured Fury"
+      },
+      {
+        "id": "seasoned_soldier",
+        "name": "Seasoned Soldier"
+      },
+      {
+        "id": "sudden_death",
+        "name": "Sudden Death"
+      },
+      {
+        "id": "diabolical_twinstrike",
+        "name": "Diabolical Twinstrike"
+      },
+      {
+        "id": "cleaving_blows",
+        "name": "Cleaving Blows"
+      },
+      {
+        "id": "breachmaker",
+        "name": "Breachmaker"
+      },
+      {
+        "id": "sweeping_strikes",
+        "name": "Widening Arc"
+      },
+      {
+        "id": "deep_wounds",
+        "name": "Gaping Wounds"
+      },
+      {
+        "id": "enrage_passive",
+        "name": "Mayhem"
+      }
+    ],
+    "model": "player_atlanteon_assassin",
+    "still": "/guide-stills/player_atlanteon_assassin.webp"
+  },
+  {
+    "id": "atlanteon_martial_artist",
+    "color": "#d4a040",
+    "resource": "mana",
+    "roles": [
+      "tank",
+      "dps"
+    ],
+    "specs": [
+      {
+        "id": "arms",
+        "name": "Battlecraft",
+        "role": "dps",
+        "signature": "mortal_strike"
+      },
+      {
+        "id": "fury",
+        "name": "Bloodrush",
+        "role": "dps",
+        "signature": "bloodthirst"
+      },
+      {
+        "id": "prot",
+        "name": "Ironguard",
+        "role": "tank",
+        "signature": "shield_slam"
+      }
+    ],
+    "signatureAbilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      }
+    ],
+    "abilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      },
+      {
+        "id": "bloodrage",
+        "name": "Blood Toll"
+      },
+      {
+        "id": "overpower",
+        "name": "Redhand"
+      },
+      {
+        "id": "raging_gale",
+        "name": "Twinstrike"
+      },
+      {
+        "id": "raised_guard",
+        "name": "Raised Guard"
+      },
+      {
+        "id": "pummel",
+        "name": "Jawcrack"
+      },
+      {
+        "id": "berserker_rage",
+        "name": "Seething Fury"
+      },
+      {
+        "id": "execute",
+        "name": "Early Grave"
+      },
+      {
+        "id": "furious_mending",
+        "name": "Furious Mending"
+      },
+      {
+        "id": "iron_resolve",
+        "name": "Iron Resolve"
+      },
+      {
+        "id": "slam",
+        "name": "Brute Swing"
+      },
+      {
+        "id": "red_harvest",
+        "name": "Red Harvest"
+      },
+      {
+        "id": "whirlwind",
+        "name": "Bladed Gyre"
+      },
+      {
+        "id": "faultline",
+        "name": "Faultline"
+      },
+      {
+        "id": "heroic_leap",
+        "name": "Vaulting Charge"
+      },
+      {
+        "id": "cleave",
+        "name": "Reaping Arc"
+      },
+      {
+        "id": "rallying_cry",
+        "name": "Valor Roar"
+      },
+      {
+        "id": "emboldening_roar",
+        "name": "Emboldening Roar"
+      },
+      {
+        "id": "defiant_bellow",
+        "name": "Defiant Bellow"
+      },
+      {
+        "id": "battle_stance",
+        "name": "Battle Stance"
+      },
+      {
+        "id": "berserker_stance",
+        "name": "Berserker Stance"
+      },
+      {
+        "id": "defensive_stance",
+        "name": "Guarded Stance"
+      },
+      {
+        "id": "demoralizing_shout",
+        "name": "Direhowl"
+      },
+      {
+        "id": "intimidating_shout",
+        "name": "Intimidating Shout"
+      },
+      {
+        "id": "sunder_armor",
+        "name": "Armor Shear"
+      },
+      {
+        "id": "taunt",
+        "name": "Goad"
+      },
+      {
+        "id": "measured_fury",
+        "name": "Measured Fury"
+      },
+      {
+        "id": "seasoned_soldier",
+        "name": "Seasoned Soldier"
+      },
+      {
+        "id": "sudden_death",
+        "name": "Sudden Death"
+      },
+      {
+        "id": "diabolical_twinstrike",
+        "name": "Diabolical Twinstrike"
+      },
+      {
+        "id": "cleaving_blows",
+        "name": "Cleaving Blows"
+      },
+      {
+        "id": "breachmaker",
+        "name": "Breachmaker"
+      },
+      {
+        "id": "sweeping_strikes",
+        "name": "Widening Arc"
+      },
+      {
+        "id": "deep_wounds",
+        "name": "Gaping Wounds"
+      },
+      {
+        "id": "enrage_passive",
+        "name": "Mayhem"
+      }
+    ],
+    "model": "player_atlanteon_martial_artist",
+    "still": "/guide-stills/player_atlanteon_martial_artist.webp"
+  },
+  {
+    "id": "atlanteon_shaman",
+    "color": "#3d6b5c",
+    "resource": "mana",
+    "roles": [
+      "tank",
+      "dps"
+    ],
+    "specs": [
+      {
+        "id": "arms",
+        "name": "Battlecraft",
+        "role": "dps",
+        "signature": "mortal_strike"
+      },
+      {
+        "id": "fury",
+        "name": "Bloodrush",
+        "role": "dps",
+        "signature": "bloodthirst"
+      },
+      {
+        "id": "prot",
+        "name": "Ironguard",
+        "role": "tank",
+        "signature": "shield_slam"
+      }
+    ],
+    "signatureAbilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      }
+    ],
+    "abilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      },
+      {
+        "id": "bloodrage",
+        "name": "Blood Toll"
+      },
+      {
+        "id": "overpower",
+        "name": "Redhand"
+      },
+      {
+        "id": "raging_gale",
+        "name": "Twinstrike"
+      },
+      {
+        "id": "raised_guard",
+        "name": "Raised Guard"
+      },
+      {
+        "id": "pummel",
+        "name": "Jawcrack"
+      },
+      {
+        "id": "berserker_rage",
+        "name": "Seething Fury"
+      },
+      {
+        "id": "execute",
+        "name": "Early Grave"
+      },
+      {
+        "id": "furious_mending",
+        "name": "Furious Mending"
+      },
+      {
+        "id": "iron_resolve",
+        "name": "Iron Resolve"
+      },
+      {
+        "id": "slam",
+        "name": "Brute Swing"
+      },
+      {
+        "id": "red_harvest",
+        "name": "Red Harvest"
+      },
+      {
+        "id": "whirlwind",
+        "name": "Bladed Gyre"
+      },
+      {
+        "id": "faultline",
+        "name": "Faultline"
+      },
+      {
+        "id": "heroic_leap",
+        "name": "Vaulting Charge"
+      },
+      {
+        "id": "cleave",
+        "name": "Reaping Arc"
+      },
+      {
+        "id": "rallying_cry",
+        "name": "Valor Roar"
+      },
+      {
+        "id": "emboldening_roar",
+        "name": "Emboldening Roar"
+      },
+      {
+        "id": "defiant_bellow",
+        "name": "Defiant Bellow"
+      },
+      {
+        "id": "battle_stance",
+        "name": "Battle Stance"
+      },
+      {
+        "id": "berserker_stance",
+        "name": "Berserker Stance"
+      },
+      {
+        "id": "defensive_stance",
+        "name": "Guarded Stance"
+      },
+      {
+        "id": "demoralizing_shout",
+        "name": "Direhowl"
+      },
+      {
+        "id": "intimidating_shout",
+        "name": "Intimidating Shout"
+      },
+      {
+        "id": "sunder_armor",
+        "name": "Armor Shear"
+      },
+      {
+        "id": "taunt",
+        "name": "Goad"
+      },
+      {
+        "id": "measured_fury",
+        "name": "Measured Fury"
+      },
+      {
+        "id": "seasoned_soldier",
+        "name": "Seasoned Soldier"
+      },
+      {
+        "id": "sudden_death",
+        "name": "Sudden Death"
+      },
+      {
+        "id": "diabolical_twinstrike",
+        "name": "Diabolical Twinstrike"
+      },
+      {
+        "id": "cleaving_blows",
+        "name": "Cleaving Blows"
+      },
+      {
+        "id": "breachmaker",
+        "name": "Breachmaker"
+      },
+      {
+        "id": "sweeping_strikes",
+        "name": "Widening Arc"
+      },
+      {
+        "id": "deep_wounds",
+        "name": "Gaping Wounds"
+      },
+      {
+        "id": "enrage_passive",
+        "name": "Mayhem"
+      }
+    ],
+    "model": "player_atlanteon_shaman",
+    "still": "/guide-stills/player_atlanteon_shaman.webp"
   }
 ];
 
@@ -2595,6 +5004,15 @@ export const GUIDE_FAMILIES: GuideFamily[] = [
         "still": "/guide-stills/mob_crab__7a5a3a__s35.webp"
       },
       {
+        "name": "Hopy",
+        "min": 2,
+        "max": 4,
+        "rare": false,
+        "templateId": "pt_hopy",
+        "model": "mob_hopy",
+        "still": "/guide-stills/mob_hopy.webp"
+      },
+      {
         "name": "Wild Boar",
         "min": 2,
         "max": 3,
@@ -2604,6 +5022,15 @@ export const GUIDE_FAMILIES: GuideFamily[] = [
         "tint": "#935116",
         "tintStrength": 0.4,
         "still": "/guide-stills/mob_boar__935116.webp"
+      },
+      {
+        "name": "Bargon",
+        "min": 4,
+        "max": 6,
+        "rare": false,
+        "templateId": "pt_bargon",
+        "model": "mob_bargon",
+        "still": "/guide-stills/mob_bargon.webp"
       },
       {
         "name": "Old Greyjaw",
@@ -20250,6 +22677,61 @@ export const GUIDE_MODELS: Record<string, GuideModelSpec> = {
       }
     ]
   },
+  "player_tempskron_fighter": {
+    "url": "models/creatures/pt_fighter.glb",
+    "idle": "STAND",
+    "height": 2.6
+  },
+  "player_tempskron_mechanician": {
+    "url": "models/creatures/pt_mechanician.glb",
+    "idle": "STAND",
+    "height": 2.6
+  },
+  "player_tempskron_pikeman": {
+    "url": "models/creatures/pt_pikeman.glb",
+    "idle": "STAND",
+    "height": 2.6
+  },
+  "player_tempskron_archer": {
+    "url": "models/creatures/pt_archer.glb",
+    "idle": "STAND",
+    "height": 2.6
+  },
+  "player_morion_knight": {
+    "url": "models/creatures/pt_knight.glb",
+    "idle": "STAND",
+    "height": 2.6
+  },
+  "player_morion_atalanta": {
+    "url": "models/creatures/pt_atalanta.glb",
+    "idle": "STAND",
+    "height": 2.6
+  },
+  "player_morion_priestess": {
+    "url": "models/creatures/pt_priestess.glb",
+    "idle": "STAND",
+    "height": 2.6
+  },
+  "player_morion_magician": {
+    "url": "models/creatures/pt_magician.glb",
+    "idle": "STAND",
+    "height": 2.6
+  },
+  "player_atlanteon_assassin": {
+    "url": "models/creatures/pt_assassin.glb",
+    "idle": "STAND",
+    "height": 2.6
+  },
+  "player_atlanteon_martial_artist": {
+    "url": "models/creatures/pt_martial_artist.glb",
+    "idle": "STAND",
+    "height": 2.6
+  },
+  "player_atlanteon_shaman": {
+    "url": "models/creatures/pt_shaman.glb",
+    "idle": "STAND",
+    "height": 2.6
+  },
   "form_bear": {
     "url": "models/creatures/bear_form.glb",
     "idle": "Idle",
@@ -20341,6 +22823,16 @@ export const GUIDE_MODELS: Record<string, GuideModelSpec> = {
     "idle": "Idle_Combat",
     "height": 2.5,
     "tintStrength": 0.25
+  },
+  "mob_hopy": {
+    "url": "models/creatures/hopy.glb",
+    "idle": "STAND",
+    "height": 1.2
+  },
+  "mob_bargon": {
+    "url": "models/creatures/bargon.glb",
+    "idle": "STAND",
+    "height": 2.5
   },
   "mob_spider_egg_sac": {
     "url": "models/creatures/spider_egg_sac.glb",

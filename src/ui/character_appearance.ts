@@ -37,9 +37,12 @@ export function activeCharacterAppearancePreview(
   cls: PlayerClass,
   skin: number,
   catalog: SkinCatalog,
+  visualKeyOverride?: string | null,
 ): ActiveCharacterAppearancePreview {
   return {
     skin: Math.max(0, Math.floor(skin)),
-    visualKey: catalog === 'mech' ? 'player_mech' : `player_${cls}`,
+    visualKey: catalog === 'mech'
+      ? 'player_mech'
+      : visualKeyOverride ?? `player_${cls}`,
   };
 }

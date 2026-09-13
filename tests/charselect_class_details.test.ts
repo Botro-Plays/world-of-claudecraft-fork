@@ -10,6 +10,17 @@ import { CLASS_DETAILS, SIGNATURE_ABILITIES, SPEC_CARD_INFO } from '../src/ui/cl
 
 const classIds = Object.keys(CLASSES) as PlayerClass[];
 
+// The PT Tempskron Fighter, Mechanician, Pikeman, and Archer POCs, the
+// Morion Knight, Atalanta, Priestess, and Magician POCs, and the Atlanteon
+// Assassin, Martial Artist, and Shaman POCs reuse the warrior's ability kit,
+// so their signature and spec-card example abilities are authored with
+// class: 'warrior'. The drift guard accepts the reused source class.
+function abilityOwnerClass(cls: PlayerClass): PlayerClass {
+  return cls === 'tempskron_fighter' || cls === 'tempskron_mechanician' || cls === 'tempskron_pikeman' || cls === 'tempskron_archer' || cls === 'morion_knight' || cls === 'morion_atalanta' || cls === 'morion_priestess' || cls === 'morion_magician' || cls === 'atlanteon_assassin' || cls === 'atlanteon_martial_artist' || cls === 'atlanteon_shaman'
+    ? 'warrior'
+    : cls;
+}
+
 describe('character-select class details parity', () => {
   it('covers every playable class exactly once', () => {
     for (const cls of classIds) {
@@ -33,7 +44,9 @@ describe('character-select class details parity', () => {
         it(`"${id}" is a real ability that ${cls} can learn`, () => {
           const ability = ABILITIES[id];
           expect(ability, `ability "${id}" does not exist`).toBeTruthy();
-          expect(ability.class, `"${id}" belongs to ${ability?.class}, not ${cls}`).toBe(cls);
+          expect(ability.class, `"${id}" belongs to ${ability?.class}, not ${cls}`).toBe(
+            abilityOwnerClass(cls),
+          );
           expect(ability.hiddenFromPlayer, `"${id}" is hidden from players`).not.toBe(true);
           expect(
             CLASSES[cls].abilities,
@@ -46,12 +59,12 @@ describe('character-select class details parity', () => {
 });
 
 describe('specialization card metadata', () => {
-  it('covers all 27 specs of all nine classes with complete panel data', () => {
+  it('covers all 60 specs of all twenty classes with complete panel data', () => {
     const specCount = Object.values(TALENTS).reduce(
       (count, classTalents) => count + classTalents.specs.length,
       0,
     );
-    expect(specCount).toBe(27);
+    expect(specCount).toBe(60);
     for (const [cls, classTalents] of Object.entries(TALENTS) as [
       PlayerClass,
       (typeof TALENTS)[PlayerClass],
@@ -76,7 +89,7 @@ describe('specialization card metadata', () => {
           const ability = ABILITIES[abilityId];
           expect(ability, `ability "${abilityId}" does not exist (${cls}:${spec.id})`).toBeTruthy();
           expect(ability.class, `"${abilityId}" belongs to ${ability?.class}, not ${cls}`).toBe(
-            cls,
+            abilityOwnerClass(cls),
           );
           expect(
             ability.hiddenFromPlayer,

@@ -20,53 +20,55 @@ export const PARSE_BIS_SOURCE = Object.freeze({
 type ParseGear = Readonly<Partial<Record<EquipSlot, string>>>;
 type ClassParseGear = Readonly<Record<string, ParseGear>>;
 
-const LOADOUTS: Readonly<Record<PlayerClass, ClassParseGear>> = Object.freeze({
-  warrior: Object.freeze({
-    // Heroic DPS rank 1, build 0.38.2, fight 19300.
-    arms: Object.freeze({
-      feet: 'tideworn_warboots',
-      legs: 'bloodmane_war_legguards',
-      neck: 'medallion_of_endless_profit',
-      chest: 'heroic_boneguard_breastplate',
-      ring1: 'sutils_gambit',
-      ring2: 'sutils_gambit',
-      waist: 'gravescale_girdle',
-      gloves: 'crownforged_gauntlets',
-      helmet: 'heroic_crownforged_dreadhelm',
-      mainhand: 'deathless_greatblade',
-      shoulder: 'crownforged_warspaulders',
-    }),
-    // Heroic DPS rank 1, build 0.40.1, fight 51578.
-    fury: Object.freeze({
-      feet: 'deathlord_sabatons',
-      legs: 'deathlord_legguards',
-      neck: 'medallion_of_endless_profit',
-      chest: 'deathlord_warplate',
-      ring1: 'seal_of_the_nine_oaths',
-      ring2: 'seal_of_the_nine_oaths',
-      waist: 'crownforged_girdle',
-      gloves: 'crownforged_gauntlets',
-      helmet: 'heroic_crownforged_dreadhelm',
-      offhand: 'deathless_greatblade',
-      mainhand: 'deathless_greatblade',
-      shoulder: 'heroic_crownforged_warspaulders',
-    }),
-    // Heroic DTPS rank 1, build 0.40.1, fight 51084.
-    prot: Object.freeze({
-      feet: 'deathlord_sabatons',
-      legs: 'deathlord_legguards',
-      neck: 'medallion_of_endless_profit',
-      chest: 'deathlord_warplate',
-      ring1: 'riftbound_band_of_might',
-      ring2: 'riftbound_band_of_might',
-      waist: 'crownforged_girdle',
-      gloves: 'crownforged_gauntlets',
-      helmet: 'heroic_crownforged_dreadhelm',
-      offhand: 'heroic_bonewrought_bulwark',
-      mainhand: 'heroic_kingsbane_last_oath',
-      shoulder: 'heroic_crownforged_warspaulders',
-    }),
+const WARRIOR_LOADOUT = Object.freeze({
+  // Heroic DPS rank 1, build 0.38.2, fight 19300.
+  arms: Object.freeze({
+    feet: 'tideworn_warboots',
+    legs: 'bloodmane_war_legguards',
+    neck: 'medallion_of_endless_profit',
+    chest: 'heroic_boneguard_breastplate',
+    ring1: 'sutils_gambit',
+    ring2: 'sutils_gambit',
+    waist: 'gravescale_girdle',
+    gloves: 'crownforged_gauntlets',
+    helmet: 'heroic_crownforged_dreadhelm',
+    mainhand: 'deathless_greatblade',
+    shoulder: 'crownforged_warspaulders',
   }),
+  // Heroic DPS rank 1, build 0.40.1, fight 51578.
+  fury: Object.freeze({
+    feet: 'deathlord_sabatons',
+    legs: 'deathlord_legguards',
+    neck: 'medallion_of_endless_profit',
+    chest: 'deathlord_warplate',
+    ring1: 'seal_of_the_nine_oaths',
+    ring2: 'seal_of_the_nine_oaths',
+    waist: 'crownforged_girdle',
+    gloves: 'crownforged_gauntlets',
+    helmet: 'heroic_crownforged_dreadhelm',
+    offhand: 'deathless_greatblade',
+    mainhand: 'deathless_greatblade',
+    shoulder: 'heroic_crownforged_warspaulders',
+  }),
+  // Heroic DTPS rank 1, build 0.40.1, fight 51084.
+  prot: Object.freeze({
+    feet: 'deathlord_sabatons',
+    legs: 'deathlord_legguards',
+    neck: 'medallion_of_endless_profit',
+    chest: 'deathlord_warplate',
+    ring1: 'riftbound_band_of_might',
+    ring2: 'riftbound_band_of_might',
+    waist: 'crownforged_girdle',
+    gloves: 'crownforged_gauntlets',
+    helmet: 'heroic_crownforged_dreadhelm',
+    offhand: 'heroic_bonewrought_bulwark',
+    mainhand: 'heroic_kingsbane_last_oath',
+    shoulder: 'heroic_crownforged_warspaulders',
+  }),
+});
+
+const LOADOUTS: Readonly<Record<PlayerClass, ClassParseGear>> = Object.freeze({
+  warrior: WARRIOR_LOADOUT,
   paladin: Object.freeze({
     // Heroic HPS rank 2, build 0.40.1, fight 51621. Rank 1 was incomplete.
     holy: Object.freeze({
@@ -442,6 +444,28 @@ const LOADOUTS: Readonly<Record<PlayerClass, ClassParseGear>> = Object.freeze({
       shoulder: 'heroic_necromancers_soulspire_mantle',
     }),
   }),
+  // PT Tempskron Fighter POC: reuse warrior's loadouts
+  tempskron_fighter: WARRIOR_LOADOUT,
+  // PT Tempskron Mechanician POC: reuse warrior's loadouts
+  tempskron_mechanician: WARRIOR_LOADOUT,
+  // PT Tempskron Pikeman POC: reuse warrior's loadouts
+  tempskron_pikeman: WARRIOR_LOADOUT,
+  // PT Tempskron Archer POC: reuse warrior's loadouts
+  tempskron_archer: WARRIOR_LOADOUT,
+  // PT Morion Knight POC: reuse warrior's loadouts
+  morion_knight: WARRIOR_LOADOUT,
+  // PT Morion Atalanta POC: reuse warrior's loadouts
+  morion_atalanta: WARRIOR_LOADOUT,
+  // PT Morion Priestess POC: reuse warrior's loadouts (Phase A)
+  morion_priestess: WARRIOR_LOADOUT,
+  // PT Morion Magician POC: reuse warrior's loadouts (Phase A)
+  morion_magician: WARRIOR_LOADOUT,
+  // PT Atlanteon Assassin POC: reuse warrior's loadouts (Phase A)
+  atlanteon_assassin: WARRIOR_LOADOUT,
+  // PT Atlanteon Martial Artist POC: reuse warrior's loadouts (Phase A)
+  atlanteon_martial_artist: WARRIOR_LOADOUT,
+  // PT Atlanteon Shaman POC: reuse warrior's loadouts (Phase A)
+  atlanteon_shaman: WARRIOR_LOADOUT,
 });
 
 export interface ParseBisLoadoutEntry {

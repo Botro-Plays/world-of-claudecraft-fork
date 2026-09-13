@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PT Character Review - All Animations</title>
+<style>
+  body { margin: 0; background: #1a1a2e; color: #eee; font-family: sans-serif; overflow: hidden; }
+  #panel {
+    position: fixed; top: 10px; left: 10px; z-index: 10;
+    background: rgba(0,0,0,0.8); padding: 12px; border-radius: 8px;
+    max-width: 320px; max-height: 90vh; overflow-y: auto;
+  }
+  #panel h2 { margin: 0 0 5px 0; font-size: 16px; }
+  #panel p { margin: 2px 0; font-size: 12px; color: #aaa; }
+  #char-row { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  #char-row button {
+    background: #333; color: #eee; border: 1px solid #555;
+    padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;
+  }
+  #char-row button.sel { background: #48a; border-color: #6ac; }
+  #hair-row { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  #hair-row button {
+    background: #333; color: #eee; border: 1px solid #555;
+    padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;
+  }
+  #hair-row button.sel { background: #4a6; border-color: #6c8; }
+  #anim-list { margin-top: 10px; }
+  #anim-list h3 { margin: 8px 0 4px 0; font-size: 13px; color: #8ab; }
+  .anim-btn {
+    display: block; width: 100%; text-align: left;
+    background: #2a2a3e; color: #ccc; border: 1px solid #444;
+    padding: 5px 8px; margin: 2px 0; border-radius: 4px;
+    cursor: pointer; font-size: 12px; font-family: monospace;
+  }
+  .anim-btn:hover { background: #3a3a5e; border-color: #666; }
+  .anim-btn.sel { background: #4a6; border-color: #6c8; color: #fff; }
+  .anim-btn .dur { float: right; color: #888; }
+  #status { margin-top: 8px; font-size: 12px; color: #8ab; }
+  #desc { margin-top: 6px; font-size: 11px; color: #fa8; font-style: italic; }
+  #notes { margin-top: 8px; }
+  #notes textarea {
+    width: 100%; height: 60px; background: #222; color: #eee;
+    border: 1px solid #444; border-radius: 4px; padding: 4px;
+    font-size: 11px; font-family: monospace;
+  }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<div id="panel">
+  <h2>PT Character Animation Review</h2>
+  <div id="char-row">
+    <button data-char="fighter" class="sel">Tempskron Fighter</button>
+    <button data-char="mechanician">Tempskron Mechanician</button>
+    <button data-char="pikeman">Tempskron Pikeman</button>
+    <button data-char="archer">Tempskron Archer</button>
+    <button data-char="knight">Morion Knight</button>
+    <button data-char="atalanta">Morion Atalanta</button>
+  </div>
+  <p id="char-desc">Fighter body: tmbB01.smd | All clips from GLB</p>
+  <div id="hair-row">
+    <button data-hair="0" class="sel">Hair 1</button>
+    <button data-hair="1">Hair 2</button>
+    <button data-hair="2">Hair 3</button>
+  </div>
+  <div id="anim-list">
+    <h3>Animations (click to play)</h3>
+    <div id="anim-buttons">Loading...</div>
+  </div>
+  <div id="status">Status: Loading...</div>
+  <div id="desc"></div>
+  <div id="notes">
+    <h3>Notes (type what you see)</h3>
+    <textarea id="notes-area" placeholder="e.g. STAND = walking in place, WALK = combat stance..."></textarea>
+  </div>
+</div>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const CHARACTERS = {
+  fighter: {
+    label: 'Tempskron Fighter',
+    bodyDesc: 'Fighter body: tmbB01.smd | Head: tmh-B01.smd | All clips from GLB',
+    hairFiles: [
+      'models/creatures/pt_fighter.glb',
+      'models/creatures/pt_fighter_hair2.glb',
+      'models/creatures/pt_fighter_hair3.glb',
+    ],
+  },
+  mechanician: {
+    label: 'Tempskron Mechanician',
+    bodyDesc: 'Mechanician body: tmbA01.smd | Head: tmh-A01.smd | All clips from GLB',
+    hairFiles: [
+      'models/creatures/pt_mechanician.glb',
+      'models/creatures/pt_mechanician_hair2.glb',
+      'models/creatures/pt_mechanician_hair3.glb',
+    ],
+  },
+  pikeman: {
+    label: 'Tempskron Pikeman',
+    bodyDesc: 'Pikeman body: tmbC01.smd (C01 tier only, C03 filtered) | Head: tmh-C01.smd | Motion: m4.smb / M4Bip.inx (102 motions, Pikeman-specific)',
+    hairFiles: [
+      'models/creatures/pt_pikeman.glb',
+      'models/creatures/pt_pikeman_hair2.glb',
+      'models/creatures/pt_pikeman_hair3.glb',
+    ],
+  },
+  archer: {
+    label: 'Tempskron Archer',
+    bodyDesc: 'Archer body: tfbD01.smd (female, 3 objects only, no filter needed) | Head: Tfh-D01.smd | Motion: m2.smb / M2Bip.inx (108 motions, Archer-specific, 67 bones)',
+    hairFiles: [
+      'models/creatures/pt_archer.glb',
+      'models/creatures/pt_archer_hair2.glb',
+      'models/creatures/pt_archer_hair3.glb',
+    ],
+  },
+  knight: {
+    label: 'Morion Knight',
+    bodyDesc: 'Knight body: MmbA01.smd (Morion male, 15 objects, mesh filter drops A02 tier) | Head: MmhA01.smd | Motion: m1.smb / M1Bip.inx (shared with Fighter, 66 bones)',
+    hairFiles: [
+      'models/creatures/pt_knight.glb',
+      'models/creatures/pt_knight_hair2.glb',
+      'models/creatures/pt_knight_hair3.glb',
+    ],
+  },
+  atalanta: {
+    label: 'Morion Atalanta',
+    bodyDesc: 'Atalanta body: MfbB01.smd (Morion female, 3 objects, no mesh filter needed) | Head: MfhB01.smd | Motion: m2.smb / M2Bip.inx (shared with Archer, 67 bones)',
+    hairFiles: [
+      'models/creatures/pt_atalanta.glb',
+      'models/creatures/pt_atalanta_hair2.glb',
+      'models/creatures/pt_atalanta_hair3.glb',
+    ],
+  },
+};
+
+let currentChar = 'fighter';
+let HAIR_FILES = CHARACTERS[currentChar].hairFiles;
+
+// Known PT state descriptions (from INX analysis) for reference
+const PT_STATE_INFO = {
+  STAND:        'INX state 0x40 (village) - supposed to be standing idle',
+  STAND_COMBAT: 'INX state 0x40 (field, mapPos=2) - braced combat stance',
+  WALK:         'INX state 0x50 - supposed to be walking',
+  RUN:          'INX state 0x60 - supposed to be running',
+  ATTACK:       'INX state 0x80 - attack swing',
+  DEAD:         'INX state 0x30 - death',
+  DAMAGE:       'INX state 0x20 - hit/damage reaction',
+  FALLDOWN:     'INX state 0x31 - falling down',
+  FALLSTAND:    'INX state 0x32 - getting up from fall',
+  FALLDAMAGE:   'INX state 0x33 - fall with damage',
+  RESTART:      'INX state 0x34 - restart/get up',
+};
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x2a2a4e);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 1000);
+camera.position.set(0, 1.5, 4);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 1.3, 0);
+controls.update();
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+dirLight.position.set(2, 4, 3);
+scene.add(dirLight);
+const fillLight = new THREE.DirectionalLight(0x8888ff, 0.3);
+fillLight.position.set(-2, 2, -3);
+scene.add(fillLight);
+
+const grid = new THREE.GridHelper(10, 10, 0x444466, 0x333355);
+scene.add(grid);
+
+const loader = new GLTFLoader();
+let currentModel = null;
+let currentMixer = null;
+let currentAction = null;
+let currentHair = 0;
+let currentAnims = [];
+let currentAnimName = null;
+const clock = new THREE.Clock();
+
+function buildAnimButtons() {
+  const container = document.getElementById('anim-buttons');
+  container.innerHTML = '';
+  currentAnims.forEach((anim) => {
+    const btn = document.createElement('button');
+    btn.className = 'anim-btn';
+    btn.dataset.name = anim.name;
+    const dur = document.createElement('span');
+    dur.className = 'dur';
+    dur.textContent = anim.duration.toFixed(2) + 's';
+    btn.textContent = anim.name + ' ';
+    btn.appendChild(dur);
+    btn.addEventListener('click', () => playAnim(anim.name));
+    container.appendChild(btn);
+  });
+}
+
+function playAnim(name) {
+  if (!currentMixer || !currentAnims.length) return;
+  const clip = currentAnims.find(a => a.name === name);
+  if (!clip) return;
+
+  if (currentAction) {
+    currentAction.stop();
+    currentAction = null;
+  }
+
+  currentAction = currentMixer.clipAction(clip);
+  currentAction.reset();
+  currentAction.setLoop(THREE.LoopRepeat, Infinity);
+  currentAction.clampWhenFinished = false;
+  currentAction.time = 0;
+  currentAction.play();
+  currentAnimName = name;
+
+  // Update button selection
+  document.querySelectorAll('.anim-btn').forEach((b) => {
+    b.classList.toggle('sel', b.dataset.name === name);
+  });
+
+  // Update status and description
+  document.getElementById('status').textContent =
+    'Playing: ' + name + ' (' + clip.duration.toFixed(2) + 's, ' +
+    clip.tracks.length + ' tracks)';
+  const info = PT_STATE_INFO[name];
+  document.getElementById('desc').textContent = info || '(no INX info available)';
+}
+
+function loadHair(idx) {
+  currentHair = idx;
+  document.querySelectorAll('#hair-row button').forEach((b, i) => {
+    b.classList.toggle('sel', i === idx);
+  });
+  document.getElementById('status').textContent = 'Status: Loading ' + HAIR_FILES[idx] + '...';
+  if (currentModel) { scene.remove(currentModel); currentModel = null; }
+  if (currentMixer) { currentMixer = null; }
+  currentAction = null;
+
+  loader.load(HAIR_FILES[idx], (gltf) => {
+    const model = gltf.scene;
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    const scale = 2.6 / size.y;
+    model.scale.setScalar(scale);
+    model.position.x = -center.x * scale;
+    model.position.y = -box.min.y * scale;
+    model.position.z = -center.z * scale;
+    scene.add(model);
+    currentModel = model;
+
+    currentMixer = new THREE.AnimationMixer(model);
+    currentAnims = gltf.animations.slice().sort((a, b) => a.name.localeCompare(b.name));
+
+    // Log all animation names and details to console for debugging
+    console.log('=== All Animations in', HAIR_FILES[idx], '===');
+    currentAnims.forEach((a) => {
+      console.log(a.name, '| duration:', a.duration.toFixed(3), 's | tracks:', a.tracks.length);
+    });
+
+    buildAnimButtons();
+
+    // Auto-play the first animation (alphabetically)
+    if (currentAnims.length > 0) {
+      playAnim(currentAnims[0].name);
+    } else {
+      document.getElementById('status').textContent = 'Status: No animations found';
+    }
+  }, undefined, (err) => {
+    document.getElementById('status').textContent = 'Status: Error: ' + err.message;
+    console.error('GLB load error:', err);
+  });
+}
+
+document.querySelectorAll('#char-row button').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const char = btn.dataset.char;
+    if (char === currentChar) return;
+    currentChar = char;
+    HAIR_FILES = CHARACTERS[char].hairFiles;
+    document.querySelectorAll('#char-row button').forEach((b) => {
+      b.classList.toggle('sel', b.dataset.char === char);
+    });
+    document.getElementById('char-desc').textContent = CHARACTERS[char].bodyDesc;
+    // Reset hair selection to 0 on character switch
+    loadHair(0);
+  });
+});
+
+document.querySelectorAll('#hair-row button').forEach((btn) => {
+  btn.addEventListener('click', () => loadHair(Number(btn.dataset.hair)));
+});
+
+// Keyboard shortcuts: 1-9 to play first 9 animations, Space to pause/resume
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (currentAction) {
+      if (currentAction.paused) {
+        currentAction.paused = false;
+        document.getElementById('status').textContent = 'Resumed: ' + currentAnimName;
+      } else {
+        currentAction.paused = true;
+        document.getElementById('status').textContent = 'Paused: ' + currentAnimName;
+      }
+    }
+    return;
+  }
+  const num = parseInt(e.key, 10);
+  if (num >= 1 && num <= 9 && currentAnims[num - 1]) {
+    playAnim(currentAnims[num - 1].name);
+  }
+});
+
+loadHair(0);
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (currentMixer) currentMixer.update(clock.getDelta());
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>

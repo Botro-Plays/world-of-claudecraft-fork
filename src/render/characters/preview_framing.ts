@@ -20,6 +20,11 @@ export const PREVIEW_FRAMING = {
   sheet: { y: 1.45, z: 5.1, lookY: 1.3 },
   // Inspect another player: pulled back / raised so tall silhouettes stay framed.
   inspect: { y: 1.5, z: 6.6, lookY: 1.3 },
+  // Character-select stage: pulled back further so the full tribe formation
+  // (4 characters across a wider X spread) fits in frame without the
+  // selected character at center being too large. The eye is raised slightly
+  // so the back row stays visible above the front row.
+  stage: { y: 1.6, z: 7.8, lookY: 1.2 },
 } as const satisfies Record<string, PreviewFraming>;
 
 export type PreviewFramingName = keyof typeof PREVIEW_FRAMING;

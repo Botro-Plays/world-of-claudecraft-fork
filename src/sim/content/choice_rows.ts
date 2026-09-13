@@ -46,6 +46,28 @@ export const CHOICE_ROWS: Record<PlayerClass, ClassChoiceRows> & Record<string, 
   mage: MAGE_CHOICE_ROWS,
   warlock: WARLOCK_CHOICE_ROWS,
   druid: DRUID_CHOICE_ROWS,
+  // PT Tempskron Fighter POC: reuse warrior's choice rows
+  tempskron_fighter: { rows: WARRIOR_ROWS },
+  // PT Tempskron Mechanician POC: reuse warrior's choice rows
+  tempskron_mechanician: { rows: WARRIOR_ROWS },
+  // PT Tempskron Pikeman POC: reuse warrior's choice rows
+  tempskron_pikeman: { rows: WARRIOR_ROWS },
+  // PT Tempskron Archer POC: reuse warrior's choice rows
+  tempskron_archer: { rows: WARRIOR_ROWS },
+  // PT Morion Knight POC: reuse warrior's choice rows
+  morion_knight: { rows: WARRIOR_ROWS },
+  // PT Morion Atalanta POC: reuse warrior's choice rows
+  morion_atalanta: { rows: WARRIOR_ROWS },
+  // PT Morion Priestess POC: reuse warrior's choice rows (Phase A)
+  morion_priestess: { rows: WARRIOR_ROWS },
+  // PT Morion Magician POC: reuse warrior's choice rows (Phase A)
+  morion_magician: { rows: WARRIOR_ROWS },
+  // PT Atlanteon Assassin POC: reuse warrior's choice rows (Phase A)
+  atlanteon_assassin: { rows: WARRIOR_ROWS },
+  // PT Atlanteon Martial Artist POC: reuse warrior's choice rows
+  atlanteon_martial_artist: { rows: WARRIOR_ROWS },
+  // PT Atlanteon Shaman POC: reuse warrior's choice rows (Phase A)
+  atlanteon_shaman: { rows: WARRIOR_ROWS },
 };
 
 const CHOICE_ROW_LEVEL_SET = new Set<number>(CHOICE_ROW_LEVELS);

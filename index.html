@@ -343,6 +343,7 @@
         <span id="minimap-zoom-label" aria-live="polite">1×</span>
         <button type="button" class="minimap-zoom-btn" id="minimap-zoom-in" data-i18n-title="hud.core.zoomIn" data-i18n-aria="hud.core.zoomIn" title="Zoom in" aria-label="Zoom in minimap">+</button>
       </div>
+      <button type="button" id="run-walk-toggle" class="run-walk-toggle" data-i18n-title="hudChrome.keybinds.toggleRunWalk" data-i18n-aria="hudChrome.keybinds.toggleRunWalk" title="Toggle Run/Walk (R)" aria-label="Toggle Run/Walk" aria-pressed="false"><span class="rw-label">Run</span></button>
     </div>
 
     <nav id="community-hud" data-i18n-aria="hud.core.communityLinks" aria-label="Community links">
@@ -1282,16 +1283,35 @@
                   <div id="charselect-error" class="auth-error" aria-live="polite"></div>
                 </div>
                 <div class="cs-section-header" data-i18n="auth.class">Class</div>
-                <div class="mini-class-row">
-                  <button type="button" class="mini-class" data-class="warrior" data-i18n-aria="classes.warriorAria" data-i18n="classes.warrior" aria-label="Warrior class" aria-pressed="false">Warrior</button>
-                  <button type="button" class="mini-class" data-class="paladin" data-i18n-aria="classes.paladinAria" data-i18n="classes.paladin" aria-label="Paladin class" aria-pressed="false">Paladin</button>
-                  <button type="button" class="mini-class" data-class="hunter" data-i18n-aria="classes.hunterAria" data-i18n="classes.hunter" aria-label="Hunter class" aria-pressed="false">Hunter</button>
-                  <button type="button" class="mini-class" data-class="rogue" data-i18n-aria="classes.rogueAria" data-i18n="classes.rogue" aria-label="Rogue class" aria-pressed="false">Rogue</button>
-                  <button type="button" class="mini-class" data-class="priest" data-i18n-aria="classes.priestAria" data-i18n="classes.priest" aria-label="Priest class" aria-pressed="false">Priest</button>
-                  <button type="button" class="mini-class" data-class="shaman" data-i18n-aria="classes.shamanAria" data-i18n="classes.shaman" aria-label="Shaman class" aria-pressed="false">Shaman</button>
-                  <button type="button" class="mini-class" data-class="mage" data-i18n-aria="classes.mageAria" data-i18n="classes.mage" aria-label="Mage class" aria-pressed="false">Mage</button>
-                  <button type="button" class="mini-class" data-class="warlock" data-i18n-aria="classes.warlockAria" data-i18n="classes.warlock" aria-label="Warlock class" aria-pressed="false">Warlock</button>
-                  <button type="button" class="mini-class" data-class="druid" data-i18n-aria="classes.druidAria" data-i18n="classes.druid" aria-label="Druid class" aria-pressed="false">Druid</button>
+                <!-- Priston Tale tribe-first roster. The tribe is selected first
+                     on #pt-tribe-select; this panel shows only the chosen tribe's
+                     section. WoC class systems remain intact for gameplay. -->
+                <div class="pt-tribe-section" data-tribe="tempskron">
+                  <div class="pt-tribe-label">TEMPSKRON</div>
+                  <div class="mini-class-row">
+                    <button type="button" class="mini-class pt-class" data-class="tempskron_fighter" aria-label="Tempskron Fighter class" aria-pressed="false">Fighter</button>
+                    <button type="button" class="mini-class pt-class" data-class="tempskron_mechanician" aria-label="Tempskron Mechanician class" aria-pressed="false">Mechanician</button>
+                    <button type="button" class="mini-class pt-class" data-class="tempskron_pikeman" aria-label="Tempskron Pikeman class" aria-pressed="false">Pikeman</button>
+                    <button type="button" class="mini-class pt-class" data-class="tempskron_archer" aria-label="Tempskron Archer class" aria-pressed="false">Archer</button>
+                  </div>
+                </div>
+                <div class="pt-tribe-section" data-tribe="morion">
+                  <div class="pt-tribe-label">MORION</div>
+                  <div class="mini-class-row">
+                    <button type="button" class="mini-class pt-class" data-class="morion_knight" aria-label="Morion Knight class" aria-pressed="false">Knight</button>
+                    <button type="button" class="mini-class pt-class" data-class="morion_atalanta" aria-label="Morion Atalanta class" aria-pressed="false">Atalanta</button>
+                    <button type="button" class="mini-class pt-class" data-class="morion_magician" aria-label="Morion Magician class" aria-pressed="false">Magician</button>
+                    <button type="button" class="mini-class pt-class" data-class="morion_priestess" aria-label="Morion Priestess class" aria-pressed="false">Priestess</button>
+                  </div>
+                </div>
+                <!-- Atlanteon: 3 classes, none implemented yet. -->
+                <div class="pt-tribe-section" data-tribe="atlanteon">
+                  <div class="pt-tribe-label">ATLANTEON</div>
+                  <div class="mini-class-row">
+                    <button type="button" class="mini-class pt-class" data-class="atlanteon_assassin" aria-label="Atlanteon Assassin class" aria-pressed="false">Assassin</button>
+                    <button type="button" class="mini-class pt-class" data-class="atlanteon_shaman" aria-label="Atlanteon Shaman class" aria-pressed="false">Shaman</button>
+                    <button type="button" class="mini-class pt-class" data-class="atlanteon_martial_artist" aria-label="Atlanteon Martial Artist class" aria-pressed="false">Martial Artist</button>
+                  </div>
                 </div>
                 <div class="skin-picker">
                   <div class="skin-picker-header" data-i18n="auth.appearance">Appearance</div>
@@ -1311,29 +1331,76 @@
           </div>
         </div>
 
+        <!-- Tribe-first Character Selection panel.
+             Shown first when the player chooses Offline mode. Each tribe card
+             navigates to #offline-select filtered to that tribe only.
+             For Atlanteon: the logo temporarily reuses the Tempskron SVG until
+             a real Atlanteon emblem is available. Update the src and the
+             logoPath entry in src/sim/content/pt_tribes.ts at the same time. -->
+        <div id="pt-tribe-select" class="panel auth-panel auth-panel-premium cs-wow" hidden>
+          <h2 class="auth-title pt-tribe-select-title">PRISTON TALE</h2>
+          <p class="pt-tribe-select-subtitle">SELECT YOUR TRIBE</p>
+          <div class="pt-tribe-cards-row">
+            <button type="button" class="pt-tribe-card" data-tribe="tempskron" aria-label="Select Tempskron tribe">
+              <img src="/ui/tribes/tempskron.svg" alt="Tempskron emblem" class="pt-tribe-card-logo" width="80" height="80">
+              <div class="pt-tribe-card-name">TEMPSKRON</div>
+              <div class="pt-tribe-card-classes">Fighter &middot; Mechanician &middot; Pikeman &middot; Archer</div>
+            </button>
+            <button type="button" class="pt-tribe-card" data-tribe="morion" aria-label="Select Morion tribe">
+              <img src="/ui/tribes/morion.svg" alt="Morion emblem" class="pt-tribe-card-logo" width="80" height="80">
+              <div class="pt-tribe-card-name">MORION</div>
+              <div class="pt-tribe-card-classes">Knight &middot; Atalanta &middot; Magician &middot; Priestess</div>
+            </button>
+            <!-- Atlanteon logo placeholder: reuses Tempskron SVG until a real
+                 Atlanteon emblem exists. data-placeholder-for marks it for easy
+                 find/replace when the asset is ready. -->
+            <button type="button" class="pt-tribe-card" data-tribe="atlanteon" aria-label="Select Atlanteon tribe">
+              <img src="/ui/tribes/tempskron.svg" alt="Atlanteon emblem" class="pt-tribe-card-logo pt-tribe-logo-placeholder" width="80" height="80" data-placeholder-for="atlanteon">
+              <div class="pt-tribe-card-name">ATLANTEON</div>
+              <div class="pt-tribe-card-classes">Assassin &middot; Shaman &middot; Martial Artist</div>
+            </button>
+          </div>
+          <div class="auth-actions">
+            <button type="button" class="btn btn-secondary" id="btn-tribe-select-back" data-i18n="auth.back">Back</button>
+          </div>
+        </div>
+
         <div id="offline-select" class="panel auth-panel auth-panel-premium cs-wow" hidden>
-          <h2 class="auth-title" data-i18n="auth.offlineCharacter">Offline Character</h2>
           <div class="charselect-layout">
             <!-- Left Column: Character Name & Class Chips & Actions -->
             <div class="charselect-col-left">
               <div class="char-create">
-                <label for="char-name" class="auth-label" data-i18n="auth.characterName">Character Name</label>
+                <!-- Tribe name header: shown after tribe selection, hidden by
+                     default. Updated by filterOfflineSelectForTribe() in
+                     src/ui/pt_tribe_select.ts. The tribe is already established
+                     by the tribe-first screen, so no duplicate title here. -->
+                <div id="offline-tribe-header" class="pt-tribe-select-header" hidden></div>
                 <div class="char-input-group">
                   <input id="char-name" maxlength="16" data-i18n-placeholder="auth.characterNamePlaceholder" placeholder="Character name" value="" aria-describedby="offline-error" autocomplete="off" />
                   <div id="offline-error" class="auth-error" aria-live="polite"></div>
                 </div>
-                <div class="mini-class-row">
-                  <button type="button" class="mini-class" data-class="warrior" data-i18n-aria="classes.warriorAria" data-i18n="classes.warrior" aria-label="Warrior class" aria-pressed="false">Warrior</button>
-                  <button type="button" class="mini-class" data-class="paladin" data-i18n-aria="classes.paladinAria" data-i18n="classes.paladin" aria-label="Paladin class" aria-pressed="false">Paladin</button>
-                  <button type="button" class="mini-class" data-class="hunter" data-i18n-aria="classes.hunterAria" data-i18n="classes.hunter" aria-label="Hunter class" aria-pressed="false">Hunter</button>
-                  <button type="button" class="mini-class" data-class="rogue" data-i18n-aria="classes.rogueAria" data-i18n="classes.rogue" aria-label="Rogue class" aria-pressed="false">Rogue</button>
-                  <button type="button" class="mini-class" data-class="priest" data-i18n-aria="classes.priestAria" data-i18n="classes.priest" aria-label="Priest class" aria-pressed="false">Priest</button>
-                  <button type="button" class="mini-class" data-class="shaman" data-i18n-aria="classes.shamanAria" data-i18n="classes.shaman" aria-label="Shaman class" aria-pressed="false">Shaman</button>
-                  <button type="button" class="mini-class" data-class="mage" data-i18n-aria="classes.mageAria" data-i18n="classes.mage" aria-label="Mage class" aria-pressed="false">Mage</button>
-                  <button type="button" class="mini-class" data-class="warlock" data-i18n-aria="classes.warlockAria" data-i18n="classes.warlock" aria-label="Warlock class" aria-pressed="false">Warlock</button>
-                  <button type="button" class="mini-class" data-class="druid" data-i18n-aria="classes.druidAria" data-i18n="classes.druid" aria-label="Druid class" aria-pressed="false">Druid</button>
-                </div>
+                <!-- PT tribe sections: hidden data containers only. The 3D
+                     characters in the stage ARE the class selectors now; these
+                     sections exist solely so filterOfflineSelectForTribe can
+                     show/hide tribe context. No clickable mini-class cards. -->
+                <div class="pt-tribe-section" data-tribe="tempskron" hidden></div>
+                <div class="pt-tribe-section" data-tribe="morion" hidden></div>
+                <div class="pt-tribe-section" data-tribe="atlanteon" hidden></div>
                 <div id="offline-skin-row" class="skin-row"></div>
+                <div id="offline-pt-hair-row" class="skin-row pt-hair-row" hidden>
+                  <div class="pt-hair-label">Hairstyle</div>
+                  <div class="pt-hair-choices">
+                    <button type="button" class="pt-hair-card sel" data-hair="0" aria-pressed="true">
+                      <span class="pt-hair-card-label">Hair 1</span>
+                    </button>
+                    <button type="button" class="pt-hair-card" data-hair="1" aria-pressed="false">
+                      <span class="pt-hair-card-label">Hair 2</span>
+                    </button>
+                    <button type="button" class="pt-hair-card" data-hair="2" aria-pressed="false">
+                      <span class="pt-hair-card-label">Hair 3</span>
+                    </button>
+                  </div>
+                </div>
                 <div id="offline-appearance"></div>
                 <div class="auth-actions">
                   <button type="button" class="btn btn-primary" id="btn-start-offline" data-i18n="auth.enterWorld">Enter World</button>

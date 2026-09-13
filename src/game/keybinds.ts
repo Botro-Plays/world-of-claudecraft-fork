@@ -148,8 +148,22 @@ export const BIND_ACTIONS: BindAction[] = [
     defaults: ['ControlLeft'],
   },
   {
+    // Autorun moved to Shift+KeyR so the bare KeyR is free for the
+    // run/walk gait toggle (see toggleRunWalk below).
     id: 'autorun',
     label: 'Toggle Autorun',
+    category: 'Movement',
+    kind: 'edge',
+    defaults: ['Shift+KeyR'],
+  },
+  {
+    // Run/walk gait toggle: switches the player's default locomotion
+    // gait between running and walking. Press KeyR or click the HUD
+    // indicator to flip. The locomotion gait hysteresis (locomotion.ts)
+    // still applies while running is active; when toggled to walk the
+    // player always walks regardless of speed.
+    id: 'toggleRunWalk',
+    label: 'Toggle Run/Walk',
     category: 'Movement',
     kind: 'edge',
     defaults: ['KeyR'],
@@ -464,6 +478,11 @@ const SLOTS_PER_ACTION = 2; // primary + secondary
 // means deciding (and documenting here) whether existing marked profiles need to
 // see it too, e.g. by moving this to a version number bumped for that signature.
 const REPAIR_MARKER = '__repaired';
+// Marks a stored profile as already migrated for the autorun KeyR -> Shift+KeyR
+// move (which freed KeyR for the new toggleRunWalk action). Separate from
+// REPAIR_MARKER so the migration runs for profiles that already had REPAIR_MARKER
+// set by an earlier repair.
+const AUTORUN_R_MIGRATED = '__autorun_r_migrated';
 
 export function actionKind(id: string): BindKind | null {
   return ACTION_BY_ID.get(id)?.kind ?? null;
@@ -702,6 +721,22 @@ export class Keybinds {
     // would keep getting reverted on every load.
     if (obj[REPAIR_MARKER] !== true) {
       repairStoredBindings(obj);
+    }
+    // One-time migration: autorun moved from KeyR to Shift+KeyR so KeyR is free
+    // for the new toggleRunWalk action. A profile saved before this change has
+    // autorun: ['KeyR', null] (the old default); without migration the stored
+    // value wins over the new Shift+KeyR default AND claims KeyR before
+    // toggleRunWalk (which is absent from the old blob and would keep its
+    // KeyR default), leaving toggleRunWalk evicted to unbound. Deleting the
+    // stale stored autorun re-seeds it to Shift+KeyR and frees KeyR for
+    // toggleRunWalk. Gated on AUTORUN_R_MIGRATED so a deliberate post-migration
+    // remap of autorun back to KeyR is preserved.
+    if (obj[AUTORUN_R_MIGRATED] !== true) {
+      const ar = obj.autorun;
+      if (Array.isArray(ar) && ar[0] === 'KeyR' && !('toggleRunWalk' in obj)) {
+        delete obj.autorun;
+      }
+      obj[AUTORUN_R_MIGRATED] = true;
     }
     this.applyBlob(obj);
   }

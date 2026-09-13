@@ -16,6 +16,28 @@ const LOOT_ARCHETYPE: Record<PlayerClass, 'WAR' | 'ROG' | 'MAG'> = {
   priest: 'MAG',
   warlock: 'MAG',
   druid: 'MAG',
+  // PT Tempskron Fighter POC: reuse warrior's archetype
+  tempskron_fighter: 'WAR',
+  // PT Tempskron Mechanician POC: reuse warrior's archetype
+  tempskron_mechanician: 'WAR',
+  // PT Tempskron Pikeman POC: reuse warrior's archetype
+  tempskron_pikeman: 'WAR',
+  // PT Tempskron Archer POC: reuse warrior's archetype
+  tempskron_archer: 'WAR',
+  // PT Morion Knight POC: reuse warrior's archetype
+  morion_knight: 'WAR',
+  // PT Morion Atalanta POC: reuse warrior's archetype
+  morion_atalanta: 'WAR',
+  // PT Morion Priestess POC: reuse priest's archetype
+  morion_priestess: 'MAG',
+  // PT Morion Magician POC: reuse mage's archetype
+  morion_magician: 'MAG',
+  // PT Atlanteon Assassin POC: reuse rogue's archetype
+  atlanteon_assassin: 'ROG',
+  // PT Atlanteon Martial Artist POC: reuse warrior's archetype
+  atlanteon_martial_artist: 'WAR',
+  // PT Atlanteon Shaman POC: reuse shaman's archetype
+  atlanteon_shaman: 'MAG',
 };
 
 // Per-archetype item pools. Indexed so draws are arch-stable (same draw count

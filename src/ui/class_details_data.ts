@@ -75,6 +75,83 @@ export const CLASS_DETAILS: Record<PlayerClass, ClassDetails> = {
     armorKey: 'classDetails.armor.leatherCloth',
     weaponsKey: 'classDetails.weapons.staves',
   },
+  // PT Tempskron Fighter POC: reuse warrior's class details
+  tempskron_fighter: {
+    roleKey: 'classDetails.roles.warrior',
+    roleType: 'hybrid',
+    armorKey: 'classDetails.armor.chainLeatherCloth',
+    weaponsKey: 'classDetails.weapons.swordsMacesAxes',
+  },
+  // PT Tempskron Mechanician POC: reuse warrior's class details
+  tempskron_mechanician: {
+    roleKey: 'classDetails.roles.warrior',
+    roleType: 'hybrid',
+    armorKey: 'classDetails.armor.chainLeatherCloth',
+    weaponsKey: 'classDetails.weapons.swordsMacesAxes',
+  },
+  // PT Tempskron Pikeman POC: reuse warrior's class details
+  tempskron_pikeman: {
+    roleKey: 'classDetails.roles.warrior',
+    roleType: 'hybrid',
+    armorKey: 'classDetails.armor.chainLeatherCloth',
+    weaponsKey: 'classDetails.weapons.swordsMacesAxes',
+  },
+  // PT Tempskron Archer POC: reuse warrior's class details
+  tempskron_archer: {
+    roleKey: 'classDetails.roles.warrior',
+    roleType: 'hybrid',
+    armorKey: 'classDetails.armor.chainLeatherCloth',
+    weaponsKey: 'classDetails.weapons.swordsMacesAxes',
+  },
+  // PT Morion Knight POC: reuse warrior's class details
+  morion_knight: {
+    roleKey: 'classDetails.roles.warrior',
+    roleType: 'hybrid',
+    armorKey: 'classDetails.armor.chainLeatherCloth',
+    weaponsKey: 'classDetails.weapons.swordsMacesAxes',
+  },
+  // PT Morion Atalanta POC: reuse warrior's class details
+  morion_atalanta: {
+    roleKey: 'classDetails.roles.warrior',
+    roleType: 'hybrid',
+    armorKey: 'classDetails.armor.chainLeatherCloth',
+    weaponsKey: 'classDetails.weapons.swordsMacesAxes',
+  },
+  // PT Morion Priestess POC: reuse priest's class details
+  morion_priestess: {
+    roleKey: 'classDetails.roles.priest',
+    roleType: 'healer',
+    armorKey: 'classDetails.armor.cloth',
+    weaponsKey: 'classDetails.weapons.staves',
+  },
+  // PT Morion Magician POC: reuse mage's class details
+  morion_magician: {
+    roleKey: 'classDetails.roles.mage',
+    roleType: 'ranged',
+    armorKey: 'classDetails.armor.cloth',
+    weaponsKey: 'classDetails.weapons.staves',
+  },
+  // PT Atlanteon Assassin POC: reuse rogue's class details
+  atlanteon_assassin: {
+    roleKey: 'classDetails.roles.rogue',
+    roleType: 'dps',
+    armorKey: 'classDetails.armor.leatherCloth',
+    weaponsKey: 'classDetails.weapons.daggersSwords',
+  },
+  // PT Atlanteon Martial Artist POC: reuse warrior's class details
+  atlanteon_martial_artist: {
+    roleKey: 'classDetails.roles.warrior',
+    roleType: 'hybrid',
+    armorKey: 'classDetails.armor.chainLeatherCloth',
+    weaponsKey: 'classDetails.weapons.swordsMacesAxes',
+  },
+  // PT Atlanteon Shaman POC: reuse shaman's class details
+  atlanteon_shaman: {
+    roleKey: 'classDetails.roles.shaman',
+    roleType: 'hybrid',
+    armorKey: 'classDetails.armor.chainLeatherCloth',
+    weaponsKey: 'classDetails.weapons.macesAxes',
+  },
 };
 
 // Three curated "signature" abilities per class, shown on the select screen.
@@ -90,6 +167,28 @@ export const SIGNATURE_ABILITIES: Record<PlayerClass, string[]> = {
   mage: ['fireball', 'frostbolt', 'polymorph'],
   warlock: ['shadow_bolt', 'corruption', 'life_tap'],
   druid: ['wrath', 'bear_form', 'rejuvenation'],
+  // PT Tempskron Fighter POC: reuse warrior's signature abilities
+  tempskron_fighter: ['charge', 'heroic_strike', 'execute'],
+  // PT Tempskron Mechanician POC: reuse warrior's signature abilities
+  tempskron_mechanician: ['charge', 'heroic_strike', 'execute'],
+  // PT Tempskron Pikeman POC: reuse warrior's signature abilities
+  tempskron_pikeman: ['charge', 'heroic_strike', 'execute'],
+  // PT Tempskron Archer POC: reuse warrior's signature abilities
+  tempskron_archer: ['charge', 'heroic_strike', 'execute'],
+  // PT Morion Knight POC: reuse warrior's signature abilities
+  morion_knight: ['charge', 'heroic_strike', 'execute'],
+  // PT Morion Atalanta POC: reuse warrior's signature abilities
+  morion_atalanta: ['charge', 'heroic_strike', 'execute'],
+  // PT Morion Priestess POC: reuse warrior's signature abilities (Phase A)
+  morion_priestess: ['charge', 'heroic_strike', 'execute'],
+  // PT Morion Magician POC: reuse warrior's signature abilities (Phase A)
+  morion_magician: ['charge', 'heroic_strike', 'execute'],
+  // PT Atlanteon Assassin POC: reuse warrior's signature abilities (Phase A)
+  atlanteon_assassin: ['charge', 'heroic_strike', 'execute'],
+  // PT Atlanteon Martial Artist POC: reuse warrior's signature abilities (Phase A)
+  atlanteon_martial_artist: ['charge', 'heroic_strike', 'execute'],
+  // PT Atlanteon Shaman POC: reuse warrior's signature abilities (Phase A)
+  atlanteon_shaman: ['charge', 'heroic_strike', 'execute'],
 };
 
 // Spec-card presentation for the Specialization screen. Keyed by class, then spec id:
@@ -260,6 +359,204 @@ export const SPEC_CARD_INFO: Record<PlayerClass, Record<string, SpecCardInfo>> =
       primaryStat: 'int',
       complexity: 'medium',
       examples: ['swiftmend', 'rejuvenation', 'regrowth', 'healing_touch'],
+    },
+  },
+  // PT Tempskron Fighter POC: reuse warrior's spec card info
+  tempskron_fighter: {
+    arms: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['mortal_strike', 'overpower', 'sweeping_strikes', 'execute'],
+    },
+    fury: {
+      primaryStat: 'str',
+      complexity: 'high',
+      examples: ['bloodthirst', 'raging_gale', 'red_harvest', 'whirlwind'],
+    },
+    prot: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['shield_slam', 'revenge', 'thunder_clap', 'sunder_armor'],
+    },
+  },
+  // PT Tempskron Mechanician POC: reuse warrior's spec card info
+  tempskron_mechanician: {
+    arms: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['mortal_strike', 'overpower', 'sweeping_strikes', 'execute'],
+    },
+    fury: {
+      primaryStat: 'str',
+      complexity: 'high',
+      examples: ['bloodthirst', 'raging_gale', 'red_harvest', 'whirlwind'],
+    },
+    prot: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['shield_slam', 'revenge', 'thunder_clap', 'sunder_armor'],
+    },
+  },
+  // PT Tempskron Pikeman POC: reuse warrior's spec card info
+  tempskron_pikeman: {
+    arms: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['mortal_strike', 'overpower', 'sweeping_strikes', 'execute'],
+    },
+    fury: {
+      primaryStat: 'str',
+      complexity: 'high',
+      examples: ['bloodthirst', 'raging_gale', 'red_harvest', 'whirlwind'],
+    },
+    prot: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['shield_slam', 'revenge', 'thunder_clap', 'sunder_armor'],
+    },
+  },
+  // PT Tempskron Archer POC: reuse warrior's spec card info
+  tempskron_archer: {
+    arms: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['mortal_strike', 'overpower', 'sweeping_strikes', 'execute'],
+    },
+    fury: {
+      primaryStat: 'str',
+      complexity: 'high',
+      examples: ['bloodthirst', 'raging_gale', 'red_harvest', 'whirlwind'],
+    },
+    prot: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['shield_slam', 'revenge', 'thunder_clap', 'sunder_armor'],
+    },
+  },
+  // PT Morion Knight POC: reuse warrior's spec card info
+  morion_knight: {
+    arms: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['mortal_strike', 'overpower', 'sweeping_strikes', 'execute'],
+    },
+    fury: {
+      primaryStat: 'str',
+      complexity: 'high',
+      examples: ['bloodthirst', 'raging_gale', 'red_harvest', 'whirlwind'],
+    },
+    prot: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['shield_slam', 'revenge', 'thunder_clap', 'sunder_armor'],
+    },
+  },
+  // PT Morion Atalanta POC: reuse warrior's spec card info
+  morion_atalanta: {
+    arms: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['mortal_strike', 'overpower', 'sweeping_strikes', 'execute'],
+    },
+    fury: {
+      primaryStat: 'str',
+      complexity: 'high',
+      examples: ['bloodthirst', 'raging_gale', 'red_harvest', 'whirlwind'],
+    },
+    prot: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['shield_slam', 'revenge', 'thunder_clap', 'sunder_armor'],
+    },
+  },
+  // PT Morion Priestess POC: reuse warrior's spec card info (Phase A)
+  morion_priestess: {
+    arms: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['mortal_strike', 'overpower', 'sweeping_strikes', 'execute'],
+    },
+    fury: {
+      primaryStat: 'str',
+      complexity: 'high',
+      examples: ['bloodthirst', 'raging_gale', 'red_harvest', 'whirlwind'],
+    },
+    prot: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['shield_slam', 'revenge', 'thunder_clap', 'sunder_armor'],
+    },
+  },
+  // PT Morion Magician POC: reuse warrior's spec card info (Phase A)
+  morion_magician: {
+    arms: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['mortal_strike', 'overpower', 'sweeping_strikes', 'execute'],
+    },
+    fury: {
+      primaryStat: 'str',
+      complexity: 'high',
+      examples: ['bloodthirst', 'raging_gale', 'red_harvest', 'whirlwind'],
+    },
+    prot: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['shield_slam', 'revenge', 'thunder_clap', 'sunder_armor'],
+    },
+  },
+  // PT Atlanteon Assassin POC: reuse warrior's spec card info (Phase A)
+  atlanteon_assassin: {
+    arms: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['mortal_strike', 'overpower', 'sweeping_strikes', 'execute'],
+    },
+    fury: {
+      primaryStat: 'str',
+      complexity: 'high',
+      examples: ['bloodthirst', 'raging_gale', 'red_harvest', 'whirlwind'],
+    },
+    prot: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['shield_slam', 'revenge', 'thunder_clap', 'sunder_armor'],
+    },
+  },
+  // PT Atlanteon Martial Artist POC: reuse warrior's spec card info
+  atlanteon_martial_artist: {
+    arms: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['mortal_strike', 'overpower', 'sweeping_strikes', 'execute'],
+    },
+    fury: {
+      primaryStat: 'str',
+      complexity: 'high',
+      examples: ['bloodthirst', 'raging_gale', 'red_harvest', 'whirlwind'],
+    },
+    prot: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['shield_slam', 'revenge', 'thunder_clap', 'sunder_armor'],
+    },
+  },
+  // PT Atlanteon Shaman POC: reuse warrior's spec card info (Phase A)
+  atlanteon_shaman: {
+    arms: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['mortal_strike', 'overpower', 'sweeping_strikes', 'execute'],
+    },
+    fury: {
+      primaryStat: 'str',
+      complexity: 'high',
+      examples: ['bloodthirst', 'raging_gale', 'red_harvest', 'whirlwind'],
+    },
+    prot: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['shield_slam', 'revenge', 'thunder_clap', 'sunder_armor'],
     },
   },
 };
