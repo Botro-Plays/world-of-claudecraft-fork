@@ -42,6 +42,7 @@ const FONE = 256; // PT fixed-point unit
 
 const SMD_HEADER_V062 = 'SMD Model data Ver 0.62';
 const SMD_HEADER_V064 = 'SMD Model data Ver 0.64';
+const SMD_HEADER_V066 = 'SMD Model data Ver 0.66';
 const LOCAL_HEADER: number[] = [
   0xa5, 0x82, 0xac, 0x58, 0x15, 0x98, 0x29, 0x8c,
   0x85, 0x9f, 0x12, 0xc8, 0x84, 0x1f, 0x74, 0x8c,
@@ -155,7 +156,7 @@ export interface PTObject {
 
 export interface PTSmdModel {
   header: string;
-  version: '0.62' | '0.64' | 'local';
+  version: '0.62' | '0.64' | '0.66' | 'local';
   objCount: number;
   matCount: number;
   materials: PTMaterial[];
@@ -219,6 +220,11 @@ class BinaryReader {
     return v;
   }
 
+  peekUInt16(offset: number): number {
+    if (offset < 0 || offset + 2 > this.buf.length) return 0xFFFF;
+    return this.buf.readUInt16LE(offset);
+  }
+
   readByte(): number {
     const v = this.buf.readUInt8(this.pos);
     this.pos += 1;
@@ -263,10 +269,11 @@ class BinaryReader {
 // Parser
 // ---------------------------------------------------------------------------
 
-function detectVersion(headerBytes: Buffer): '0.62' | '0.64' | 'local' {
+function detectVersion(headerBytes: Buffer): '0.62' | '0.64' | '0.66' | 'local' {
   const headerStr = headerBytes.toString('ascii', 0, 24).replace(/\0+$/, '');
   if (headerStr === SMD_HEADER_V062) return '0.62';
   if (headerStr === SMD_HEADER_V064) return '0.64';
+  if (headerStr === SMD_HEADER_V066) return '0.66';
   // Check local encrypted header
   for (let i = 0; i < 24; i++) {
     if (headerBytes[i] !== LOCAL_HEADER[i]) break;
@@ -345,15 +352,36 @@ function parseMaterialGroup(reader: BinaryReader): PTMaterial[] {
   return materials;
 }
 
-function parseObject(reader: BinaryReader, version: '0.62' | '0.64' | 'local'): PTObject {
+function parseObject(reader: BinaryReader, version: '0.62' | '0.64' | '0.66' | 'local', hasV066Prefix = false): PTObject {
   const objStart = reader.pos;
+
+  // Ver 0.66 inline SMD objects (mesh files with materials) have a 40-byte
+  // prefix: 32-byte NodeName + 8 bytes extra fields, then the standard
+  // smOBJ3D struct (2236 bytes). SMB skeleton files (matCount=0) use the
+  // standard 0.62 struct layout without the prefix.
+  let nodeNameV066 = '';
+  if (hasV066Prefix) {
+    nodeNameV066 = reader.readFixedString(32);
+    reader.skip(8); // extra fields (total data size + unknown)
+  }
 
   // Read smOBJ3D class dump (2236 bytes)
   // We only extract the fields we need; skip the rest.
   reader.skip(16); // Head + Vertex/Face/TexLink pointers
   const physiquePtr = reader.readUInt32(); // Physique pointer
   reader.skip(24); // ZeroVertex (smVERTEX)
-  reader.skip(24); // maxZ,minZ,maxY,minY,maxX,minX
+  // Bounding box: maxZ,minZ,maxY,minY,maxX,minX (int32 fixed-point)
+  const bboxMaxZ = reader.readInt32();
+  const bboxMinZ = reader.readInt32();
+  const bboxMaxY = reader.readInt32();
+  const bboxMinY = reader.readInt32();
+  const bboxMaxX = reader.readInt32();
+  const bboxMinX = reader.readInt32();
+  const bbox = {
+    minX: bboxMinX, maxX: bboxMaxX,
+    minY: bboxMinY, maxY: bboxMaxY,
+    minZ: bboxMinZ, maxZ: bboxMaxZ,
+  };
   reader.skip(4);  // dBound
   reader.skip(4);  // Bound
   reader.skip(4);  // MaxVertex
@@ -367,7 +395,10 @@ function parseObject(reader: BinaryReader, version: '0.62' | '0.64' | 'local'): 
   reader.skip(12); // CameraPosi
   reader.skip(12); // Angle
   reader.skip(32); // Trig[8]
-  const nodeName = reader.readFixedString(32);
+  // For Ver 0.66 inline objects, NodeName was read from the prefix;
+  // skip the struct's NodeName field (may contain garbage).
+  const nodeName = hasV066Prefix ? nodeNameV066 : reader.readFixedString(32);
+  if (hasV066Prefix) reader.skip(32); // skip struct's NodeName field
   const nodeParent = reader.readFixedString(32);
   reader.skip(4);                       // pParent pointer
   const tm = reader.readMatrix();       // Tm (bind-pose)
@@ -384,7 +415,10 @@ function parseObject(reader: BinaryReader, version: '0.62' | '0.64' | 'local'): 
   const tmRotCnt = reader.readInt32();
   const tmPosCnt = reader.readInt32();
   const tmScaleCnt = reader.readInt32();
-  reader.skip(SIZE_OBJ3D - (reader.pos - objStart)); // skip to end of header
+  // Ver 0.66 inline objects have a 40-byte prefix before the smOBJ3D struct,
+  // so the total header size is SIZE_OBJ3D + 40. Otherwise it's SIZE_OBJ3D.
+  const headerSize = hasV066Prefix ? SIZE_OBJ3D + 40 : SIZE_OBJ3D;
+  reader.skip(headerSize - (reader.pos - objStart)); // skip to end of header
 
   // Read arrays — order depends on version
   // Ver 0.62 (bNew=FALSE): Vertex, Face, TexLink, TmRot, TmPos, TmScale, TmPrevRot
@@ -400,8 +434,25 @@ function parseObject(reader: BinaryReader, version: '0.62' | '0.64' | 'local'): 
   let physiqueBones: string[] = [];
 
   const isNew = version === '0.64';
+  const isV066Inline = hasV066Prefix;
+  // Ver 0.66 SMB skeleton files use the bNew animation order (TmPos, TmRot,
+  // TmPrevRot, TmScale) even though their geometry uses the legacy V->F order.
+  const useNewAnimOrder = isNew || (version === '0.66' && !isV066Inline);
 
-  if (isNew) {
+  if (isV066Inline) {
+    // Ver 0.66 inline layout: TexLinks → Faces → Vertices → Physique.
+    // This is a DIFFERENT order from Ver 0.62 (V→F→T) and Ver 0.64 (F→V→T).
+    // TexLinks are standard 32-byte float UV records.
+    // Faces are standard 36-byte records (v[3], material, padding, texLinkPtr).
+    //   Face UV fields (24 bytes) are zero; actual UVs live in the texlinks.
+    // Vertices are standard 24-byte int32 fixed-point (position + normal).
+    // Physique is nVertex * 36 bytes (skipped for now).
+    for (let i = 0; i < nTexLink; i++) texLinks.push(readTexLink(reader));
+    for (let i = 0; i < nFace; i++) faces.push(readFace(reader));
+    for (let i = 0; i < nVertex; i++) vertices.push(readVertex(reader));
+    // Skip physique (nVertex * 36 bytes)
+    reader.skip(nVertex * 36);
+  } else if (isNew) {
     // Face first
     for (let i = 0; i < nFace; i++) faces.push(readFace(reader));
     // Vertex (with coordinate swap)
@@ -418,24 +469,33 @@ function parseObject(reader: BinaryReader, version: '0.62' | '0.64' | 'local'): 
   }
 
   // TexLink
-  for (let i = 0; i < nTexLink; i++) texLinks.push(readTexLink(reader));
+  if (!isV066Inline) {
+    for (let i = 0; i < nTexLink; i++) texLinks.push(readTexLink(reader));
+  }
 
-  if (isNew) {
-    // TmPos, TmRot, TmPrevRot, TmScale
+  if (isV066Inline) {
+    // Ver 0.66: animation data layout is not yet reverse-engineered.
+    // The struct's animation count fields are at different offsets than
+    // Ver 0.62/0.64, so tmRotCnt/tmPosCnt/tmScaleCnt are unreliable.
+    // Skip any remaining data; animation will be addressed in a follow-up.
+  } else if (useNewAnimOrder) {
+    // TmPos, TmRot, TmPrevRot, TmScale (bNew order: Ver 0.64 and Ver 0.66 SMB)
     for (let i = 0; i < tmPosCnt; i++) tmPos.push(readTmPos(reader));
     for (let i = 0; i < tmRotCnt; i++) tmRot.push(readTmRot(reader));
     for (let i = 0; i < tmRotCnt; i++) tmPrevRot.push(reader.readFMatrix());
     for (let i = 0; i < tmScaleCnt; i++) tmScale.push(readTmScale(reader));
   } else {
-    // TmRot, TmPos, TmScale, TmPrevRot
+    // TmRot, TmPos, TmScale, TmPrevRot (legacy order: Ver 0.62)
     for (let i = 0; i < tmRotCnt; i++) tmRot.push(readTmRot(reader));
     for (let i = 0; i < tmPosCnt; i++) tmPos.push(readTmPos(reader));
     for (let i = 0; i < tmScaleCnt; i++) tmScale.push(readTmScale(reader));
     for (let i = 0; i < tmRotCnt; i++) tmPrevRot.push(reader.readFMatrix());
   }
 
-  // Physique bone names (if Physique pointer was non-null in saved data)
-  if (physiquePtr !== 0) {
+  // Physique bone names (if Physique pointer was non-null in saved data).
+  // Ver 0.66 inline objects store bone data in the 60-byte vertex format,
+  // so we skip the separate physique bone name block.
+  if (physiquePtr !== 0 && !isV066Inline) {
     for (let i = 0; i < nVertex; i++) {
       physiqueBones.push(reader.readFixedString(32));
     }
@@ -469,6 +529,36 @@ function readVertex(reader: BinaryReader): PTVertex {
   return { x, y, z, nx, ny, nz };
 }
 
+// Ver 0.66 inline vertex: 60 bytes.
+// First 3 floats = position (normalized [0,1] relative to struct bbox),
+// next 3 floats = normal, remaining 36 bytes contain bone/UV data.
+// The struct bounding box (maxZ,minZ,maxY,minY,maxX,minX) gives the
+// fixed-point int32 range. To recover fixed-point positions, scale each
+// normalized float by (bboxMax - bboxMin) and add bboxMin.
+function readVertex066(reader: BinaryReader, bbox: { minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number }): PTVertex {
+  const fx = reader.readFloat32();
+  const fy = reader.readFloat32();
+  const fz = reader.readFloat32();
+  const fnx = reader.readFloat32();
+  const fny = reader.readFloat32();
+  const fnz = reader.readFloat32();
+  reader.skip(36);
+  // Scale normalized [0,1] floats to fixed-point int32 using bbox range.
+  // Clamp out-of-range values (some files have corrupt entries).
+  const rangeX = bbox.maxX - bbox.minX;
+  const rangeY = bbox.maxY - bbox.minY;
+  const rangeZ = bbox.maxZ - bbox.minZ;
+  const clampN = (v: number) => (v >= 0 && v <= 1 ? v : v < 0 ? 0 : 1);
+  return {
+    x: Math.round(clampN(fx) * rangeX + bbox.minX),
+    y: Math.round(clampN(fy) * rangeY + bbox.minY),
+    z: Math.round(clampN(fz) * rangeZ + bbox.minZ),
+    nx: Math.round(fnx * 256),
+    ny: Math.round(fny * 256),
+    nz: Math.round(fnz * 256),
+  };
+}
+
 function readFace(reader: BinaryReader): PTFace {
   const a = reader.readUInt16();
   const b = reader.readUInt16();
@@ -487,6 +577,27 @@ function readFace(reader: BinaryReader): PTFace {
   };
 }
 
+// Ver 0.66 inline face: 36 bytes.
+// Layout: [headerSize bytes header] + WORD v[3] + WORD material + [padding].
+// headerSize is auto-detected (8 or 12 bytes): zero(s) + texlink pointer.
+// UVs are NOT in the face (they would be in texlink or vertex data).
+function readFace066(reader: BinaryReader, headerSize = 8): PTFace {
+  reader.skip(headerSize);
+  const a = reader.readUInt16();
+  const b = reader.readUInt16();
+  const c = reader.readUInt16();
+  const materialIndex = reader.readUInt16();
+  // Skip remaining padding (36 - headerSize - 8 = 28 - headerSize bytes for v+mat, then padding)
+  const remaining = 36 - headerSize - 8;
+  if (remaining > 0) reader.skip(remaining);
+  return {
+    v: [a, b, c],
+    materialIndex,
+    uvs: [[0, 0], [0, 0], [0, 0]], // UVs not available in 0.66 face
+    texLinkIndex: 0,
+  };
+}
+
 function readTexLink(reader: BinaryReader): PTTexLink {
   const u: [number, number, number] = [
     reader.readFloat32(), reader.readFloat32(), reader.readFloat32(),
@@ -495,6 +606,23 @@ function readTexLink(reader: BinaryReader): PTTexLink {
     reader.readFloat32(), reader.readFloat32(), reader.readFloat32(),
   ];
   reader.skip(8); // hTexture + NextTex pointers
+  return { u, v };
+}
+
+// Ver 0.66 texlink: 32 bytes, 8 int32 values.
+// The exact UV encoding is not yet fully reverse-engineered.
+// We read the raw int32 values and convert to float by dividing by 4096
+// (12.4 fixed-point) as a best-effort approximation.
+function readTexLink066(reader: BinaryReader): PTTexLink {
+  const raw: number[] = [];
+  for (let i = 0; i < 8; i++) raw.push(reader.readInt32());
+  // First 6 values are u[3], v[3] in fixed-point; last 2 are pointers.
+  const u: [number, number, number] = [
+    raw[0] / 4096, raw[1] / 4096, raw[2] / 4096,
+  ];
+  const v: [number, number, number] = [
+    raw[3] / 4096, raw[4] / 4096, raw[5] / 4096,
+  ];
   return { u, v };
 }
 
@@ -550,34 +678,59 @@ export function parseSmd(buffer: Buffer): PTSmdModel {
     });
   }
 
-  // 2. Read object info table
+  // 2. Read object info table.
+  // Ver 0.66 with materials (matCount > 0): no objInfo table, materials and
+  //   objects are inline (materials at 0x22C, objects follow).
+  // Ver 0.66 without materials (matCount = 0, e.g. SMB skeleton files):
+  //   objInfo table is at 0x22C as usual, objects at specified offsets.
   interface ObjInfo {
     nodeName: string;
     length: number;
     objFilePoint: number;
   }
   const objInfos: ObjInfo[] = [];
-  for (let i = 0; i < objCount; i++) {
-    const nodeName = reader.readFixedString(32);
-    const length = reader.readInt32();
-    const objFilePoint = reader.readInt32();
-    objInfos.push({ nodeName, length, objFilePoint });
+  const isInline = version === '0.66' && firstObjInfoPoint === 0 && matCount > 0;
+  if (!isInline) {
+    for (let i = 0; i < objCount; i++) {
+      const nodeName = reader.readFixedString(32);
+      const length = reader.readInt32();
+      const objFilePoint = reader.readInt32();
+      objInfos.push({ nodeName, length, objFilePoint });
+    }
   }
 
-  // 3. Parse materials (at MatFilePoint)
+  // 3. Parse materials (at MatFilePoint, or right after header for 0.66 inline)
   const materials: PTMaterial[] = [];
   if (matCount > 0) {
-    reader.seek(matFilePoint);
+    const matSeek = isInline ? SIZE_DFILE_HEADER : matFilePoint;
+    reader.seek(matSeek);
     const parsedMats = parseMaterialGroup(reader);
     materials.push(...parsedMats);
   }
 
   // 4. Parse objects
   const objects: PTObject[] = [];
-  for (let i = 0; i < objCount; i++) {
-    reader.seek(objInfos[i].objFilePoint);
-    const obj = parseObject(reader, version);
-    objects.push(obj);
+  if (isInline) {
+    // Ver 0.66 with materials: objects follow materials sequentially,
+    // each with a 40-byte prefix (32-byte NodeName + 8 extra bytes).
+    for (let i = 0; i < objCount; i++) {
+      const obj = parseObject(reader, version, true);
+      objects.push(obj);
+    }
+  } else {
+    for (let i = 0; i < objCount; i++) {
+      reader.seek(objInfos[i].objFilePoint);
+      const obj = parseObject(reader, version, false);
+      // Override node name from the objInfo table. In Ver 0.66 SMB files,
+      // the struct's NodeName and NodeParent fields contain garbage; the
+      // canonical name lives in the objInfo table, and parent hierarchy
+      // is implicit (bones are listed parent-first).
+      if (version === '0.66' && objInfos[i].nodeName) {
+        obj.nodeName = objInfos[i].nodeName;
+        obj.nodeParent = '';
+      }
+      objects.push(obj);
+    }
   }
 
   return {

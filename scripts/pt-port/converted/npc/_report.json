@@ -1,0 +1,537 @@
+{
+  "total": 88,
+  "ok": 88,
+  "fail": 0,
+  "skip": 0,
+  "elapsedSec": 36.1,
+  "results": [
+    {
+      "name": "Ahin",
+      "status": "ok",
+      "glbSize": 786208,
+      "durationMs": 475
+    },
+    {
+      "name": "Arkanda",
+      "status": "ok",
+      "glbSize": 786560,
+      "durationMs": 426
+    },
+    {
+      "name": "Ascam",
+      "status": "ok",
+      "glbSize": 471584,
+      "durationMs": 384
+    },
+    {
+      "name": "Barba",
+      "status": "ok",
+      "glbSize": 312812,
+      "durationMs": 550
+    },
+    {
+      "name": "Baurin",
+      "status": "ok",
+      "glbSize": 835728,
+      "durationMs": 448
+    },
+    {
+      "name": "Bcn01",
+      "status": "ok",
+      "glbSize": 769728,
+      "durationMs": 380
+    },
+    {
+      "name": "Bcn02",
+      "status": "ok",
+      "glbSize": 625996,
+      "durationMs": 366
+    },
+    {
+      "name": "Bcn03",
+      "status": "ok",
+      "glbSize": 770096,
+      "durationMs": 374
+    },
+    {
+      "name": "Bcn04",
+      "status": "ok",
+      "glbSize": 766820,
+      "durationMs": 414
+    },
+    {
+      "name": "Bcn05",
+      "status": "ok",
+      "glbSize": 478072,
+      "durationMs": 365
+    },
+    {
+      "name": "Bcn06",
+      "status": "ok",
+      "glbSize": 656976,
+      "durationMs": 438
+    },
+    {
+      "name": "Derik",
+      "status": "ok",
+      "glbSize": 793748,
+      "durationMs": 372
+    },
+    {
+      "name": "Enzo",
+      "status": "ok",
+      "glbSize": 639212,
+      "durationMs": 414
+    },
+    {
+      "name": "FishingRod",
+      "status": "ok",
+      "glbSize": 131848,
+      "durationMs": 322
+    },
+    {
+      "name": "Hermit",
+      "status": "ok",
+      "glbSize": 691768,
+      "durationMs": 364
+    },
+    {
+      "name": "Hosean",
+      "status": "ok",
+      "glbSize": 1829844,
+      "durationMs": 452
+    },
+    {
+      "name": "Hunter",
+      "status": "ok",
+      "glbSize": 983784,
+      "durationMs": 460
+    },
+    {
+      "name": "IceN-01",
+      "status": "ok",
+      "glbSize": 657760,
+      "durationMs": 397
+    },
+    {
+      "name": "IceN-02",
+      "status": "ok",
+      "glbSize": 1044256,
+      "durationMs": 430
+    },
+    {
+      "name": "IceN-03",
+      "status": "ok",
+      "glbSize": 992800,
+      "durationMs": 411
+    },
+    {
+      "name": "Jin",
+      "status": "ok",
+      "glbSize": 945052,
+      "durationMs": 381
+    },
+    {
+      "name": "MN-001",
+      "status": "ok",
+      "glbSize": 871172,
+      "durationMs": 371
+    },
+    {
+      "name": "MN-002",
+      "status": "ok",
+      "glbSize": 995460,
+      "durationMs": 417
+    },
+    {
+      "name": "MN-003",
+      "status": "ok",
+      "glbSize": 986168,
+      "durationMs": 385
+    },
+    {
+      "name": "MN-004",
+      "status": "ok",
+      "glbSize": 668412,
+      "durationMs": 366
+    },
+    {
+      "name": "MN-005",
+      "status": "ok",
+      "glbSize": 723228,
+      "durationMs": 389
+    },
+    {
+      "name": "MN-006",
+      "status": "ok",
+      "glbSize": 548680,
+      "durationMs": 353
+    },
+    {
+      "name": "MN-007",
+      "status": "ok",
+      "glbSize": 656456,
+      "durationMs": 406
+    },
+    {
+      "name": "MN-008",
+      "status": "ok",
+      "glbSize": 841384,
+      "durationMs": 416
+    },
+    {
+      "name": "MN-009",
+      "status": "ok",
+      "glbSize": 834888,
+      "durationMs": 444
+    },
+    {
+      "name": "MN-010",
+      "status": "ok",
+      "glbSize": 678088,
+      "durationMs": 433
+    },
+    {
+      "name": "MN-011",
+      "status": "ok",
+      "glbSize": 1308272,
+      "durationMs": 657
+    },
+    {
+      "name": "MN-012",
+      "status": "ok",
+      "glbSize": 1100540,
+      "durationMs": 442
+    },
+    {
+      "name": "MN-013",
+      "status": "ok",
+      "glbSize": 697428,
+      "durationMs": 357
+    },
+    {
+      "name": "M_Messenger",
+      "status": "ok",
+      "glbSize": 821324,
+      "durationMs": 444
+    },
+    {
+      "name": "Mage",
+      "status": "ok",
+      "glbSize": 817772,
+      "durationMs": 388
+    },
+    {
+      "name": "Marina",
+      "status": "ok",
+      "glbSize": 983228,
+      "durationMs": 384
+    },
+    {
+      "name": "NineFox",
+      "status": "ok",
+      "glbSize": 826192,
+      "durationMs": 389
+    },
+    {
+      "name": "PCmanager",
+      "status": "ok",
+      "glbSize": 841108,
+      "durationMs": 366
+    },
+    {
+      "name": "Packjjangpy",
+      "status": "ok",
+      "glbSize": 1242672,
+      "durationMs": 443
+    },
+    {
+      "name": "Quest_ray",
+      "status": "ok",
+      "glbSize": 637200,
+      "durationMs": 340
+    },
+    {
+      "name": "Rudolf",
+      "status": "ok",
+      "glbSize": 1289348,
+      "durationMs": 470
+    },
+    {
+      "name": "SHunter",
+      "status": "ok",
+      "glbSize": 1055000,
+      "durationMs": 386
+    },
+    {
+      "name": "SN-001",
+      "status": "ok",
+      "glbSize": 697252,
+      "durationMs": 423
+    },
+    {
+      "name": "SN-002",
+      "status": "ok",
+      "glbSize": 1056012,
+      "durationMs": 450
+    },
+    {
+      "name": "SN-003",
+      "status": "ok",
+      "glbSize": 1057700,
+      "durationMs": 376
+    },
+    {
+      "name": "SN-004",
+      "status": "ok",
+      "glbSize": 1110924,
+      "durationMs": 431
+    },
+    {
+      "name": "SN-005",
+      "status": "ok",
+      "glbSize": 970588,
+      "durationMs": 402
+    },
+    {
+      "name": "Sakura",
+      "status": "ok",
+      "glbSize": 402980,
+      "durationMs": 374
+    },
+    {
+      "name": "Sambagirl",
+      "status": "ok",
+      "glbSize": 1314096,
+      "durationMs": 431
+    },
+    {
+      "name": "Skadi",
+      "status": "ok",
+      "glbSize": 945356,
+      "durationMs": 407
+    },
+    {
+      "name": "SkillMaster",
+      "status": "ok",
+      "glbSize": 1427784,
+      "durationMs": 472
+    },
+    {
+      "name": "TN-001",
+      "status": "ok",
+      "glbSize": 645492,
+      "durationMs": 386
+    },
+    {
+      "name": "TN-002",
+      "status": "ok",
+      "glbSize": 818372,
+      "durationMs": 428
+    },
+    {
+      "name": "TN-003",
+      "status": "ok",
+      "glbSize": 602160,
+      "durationMs": 403
+    },
+    {
+      "name": "TN-004",
+      "status": "ok",
+      "glbSize": 602608,
+      "durationMs": 363
+    },
+    {
+      "name": "TN-005",
+      "status": "ok",
+      "glbSize": 742048,
+      "durationMs": 394
+    },
+    {
+      "name": "TN-006",
+      "status": "ok",
+      "glbSize": 616928,
+      "durationMs": 397
+    },
+    {
+      "name": "TN-007",
+      "status": "ok",
+      "glbSize": 1023344,
+      "durationMs": 455
+    },
+    {
+      "name": "TN-008",
+      "status": "ok",
+      "glbSize": 904616,
+      "durationMs": 471
+    },
+    {
+      "name": "TN-009",
+      "status": "ok",
+      "glbSize": 685500,
+      "durationMs": 393
+    },
+    {
+      "name": "TN-010",
+      "status": "ok",
+      "glbSize": 700816,
+      "durationMs": 383
+    },
+    {
+      "name": "TN-011",
+      "status": "ok",
+      "glbSize": 295820,
+      "durationMs": 352
+    },
+    {
+      "name": "TN-012",
+      "status": "ok",
+      "glbSize": 933664,
+      "durationMs": 452
+    },
+    {
+      "name": "TN-014",
+      "status": "ok",
+      "glbSize": 469264,
+      "durationMs": 364
+    },
+    {
+      "name": "TN-015",
+      "status": "ok",
+      "glbSize": 510420,
+      "durationMs": 352
+    },
+    {
+      "name": "TN-016",
+      "status": "ok",
+      "glbSize": 846476,
+      "durationMs": 435
+    },
+    {
+      "name": "TN-017",
+      "status": "ok",
+      "glbSize": 1093180,
+      "durationMs": 429
+    },
+    {
+      "name": "T_Messenger",
+      "status": "ok",
+      "glbSize": 768292,
+      "durationMs": 371
+    },
+    {
+      "name": "Teacher",
+      "status": "ok",
+      "glbSize": 2081244,
+      "durationMs": 482
+    },
+    {
+      "name": "Zarad",
+      "status": "ok",
+      "glbSize": 959432,
+      "durationMs": 386
+    },
+    {
+      "name": "arad",
+      "status": "ok",
+      "glbSize": 1136548,
+      "durationMs": 473
+    },
+    {
+      "name": "bt03",
+      "status": "ok",
+      "glbSize": 618152,
+      "durationMs": 353
+    },
+    {
+      "name": "cashshop",
+      "status": "ok",
+      "glbSize": 610240,
+      "durationMs": 364
+    },
+    {
+      "name": "dailyquest",
+      "status": "ok",
+      "glbSize": 684740,
+      "durationMs": 359
+    },
+    {
+      "name": "evenmorif",
+      "status": "ok",
+      "glbSize": 743208,
+      "durationMs": 459
+    },
+    {
+      "name": "eventmolly",
+      "status": "ok",
+      "glbSize": 1145152,
+      "durationMs": 463
+    },
+    {
+      "name": "hobsanta",
+      "status": "ok",
+      "glbSize": 298324,
+      "durationMs": 414
+    },
+    {
+      "name": "ji_woo",
+      "status": "ok",
+      "glbSize": 546724,
+      "durationMs": 358
+    },
+    {
+      "name": "maskedman",
+      "status": "ok",
+      "glbSize": 988444,
+      "durationMs": 392
+    },
+    {
+      "name": "maskedwoman",
+      "status": "ok",
+      "glbSize": 984980,
+      "durationMs": 377
+    },
+    {
+      "name": "milter",
+      "status": "ok",
+      "glbSize": 562152,
+      "durationMs": 389
+    },
+    {
+      "name": "nadia",
+      "status": "ok",
+      "glbSize": 878020,
+      "durationMs": 357
+    },
+    {
+      "name": "phl",
+      "status": "ok",
+      "glbSize": 1411196,
+      "durationMs": 443
+    },
+    {
+      "name": "reddevil",
+      "status": "ok",
+      "glbSize": 789996,
+      "durationMs": 428
+    },
+    {
+      "name": "reddevil-01",
+      "status": "ok",
+      "glbSize": 1061776,
+      "durationMs": 493
+    },
+    {
+      "name": "salon",
+      "status": "ok",
+      "glbSize": 974380,
+      "durationMs": 377
+    },
+    {
+      "name": "stella",
+      "status": "ok",
+      "glbSize": 1635596,
+      "durationMs": 448
+    }
+  ]
+}

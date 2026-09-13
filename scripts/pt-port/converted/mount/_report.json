@@ -1,0 +1,131 @@
+{
+  "total": 17,
+  "ok": 3,
+  "fail": 0,
+  "skip": 14,
+  "elapsedSec": 0.1,
+  "results": [
+    {
+      "name": "Raptor",
+      "status": "ok",
+      "glbSize": 226348,
+      "durationMs": 44,
+      "smdFile": "Raptor.smd",
+      "smbFile": "Raptor.smb"
+    },
+    {
+      "name": "Unicorn",
+      "status": "ok",
+      "glbSize": 931352,
+      "durationMs": 47,
+      "smdFile": "Unicorn.smd",
+      "smbFile": "Unicorn.smb"
+    },
+    {
+      "name": "chicken",
+      "status": "skip",
+      "glbSize": 472772,
+      "smdFile": "chicken.smd",
+      "smbFile": "chicken.smb"
+    },
+    {
+      "name": "festivalmonster",
+      "status": "skip",
+      "glbSize": 808464,
+      "smdFile": "festivalmonster.smd",
+      "smbFile": "festivalmonster.smb"
+    },
+    {
+      "name": "hopy",
+      "status": "skip",
+      "glbSize": 103860,
+      "smdFile": "hopy.smd",
+      "smbFile": "hopy.smb"
+    },
+    {
+      "name": "horse",
+      "status": "skip",
+      "glbSize": 593320,
+      "smdFile": "horse.smd",
+      "smbFile": "horse.smb"
+    },
+    {
+      "name": "icemonster",
+      "status": "skip",
+      "glbSize": 1019816,
+      "smdFile": "icemonster.smd",
+      "smbFile": "icemonster.smb"
+    },
+    {
+      "name": "icetiger",
+      "status": "skip",
+      "glbSize": 770096,
+      "smdFile": "icetiger.smd",
+      "smbFile": "icetiger.smb"
+    },
+    {
+      "name": "lanlong",
+      "status": "skip",
+      "glbSize": 1962868,
+      "smdFile": "lanlong.smd",
+      "smbFile": "lanlong.smb"
+    },
+    {
+      "name": "mtt",
+      "status": "skip",
+      "glbSize": 189260,
+      "smdFile": "mtt.smd",
+      "smbFile": "mtt.smb"
+    },
+    {
+      "name": "piggy",
+      "status": "skip",
+      "glbSize": 675472,
+      "smdFile": "piggy.smd",
+      "smbFile": "piggy.smb"
+    },
+    {
+      "name": "rabbie",
+      "status": "skip",
+      "glbSize": 756920,
+      "smdFile": "rabbie.smd",
+      "smbFile": "rabbie.smb"
+    },
+    {
+      "name": "snowdeer",
+      "status": "skip",
+      "glbSize": 474340,
+      "smdFile": "snowdeer.smd",
+      "smbFile": "snowdeer.smb"
+    },
+    {
+      "name": "steam",
+      "status": "skip",
+      "glbSize": 426784,
+      "smdFile": "aircraft.smd",
+      "smbFile": "aircraft.smb"
+    },
+    {
+      "name": "turtle",
+      "status": "skip",
+      "glbSize": 634656,
+      "smdFile": "turtle.smd",
+      "smbFile": "turtle.smb"
+    },
+    {
+      "name": "wolf",
+      "status": "skip",
+      "glbSize": 738996,
+      "smdFile": "ll_blackwolf.smd",
+      "smbFile": "ll_blackwolf.smb"
+    },
+    {
+      "name": "xunlu",
+      "status": "ok",
+      "glbSize": 322204,
+      "durationMs": 28,
+      "smdFile": "xunlu.smd",
+      "smbFile": "xunlu.smb"
+    }
+  ]
+}

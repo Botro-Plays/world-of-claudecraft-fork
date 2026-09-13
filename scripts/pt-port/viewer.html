@@ -37,7 +37,11 @@ scene.add(new THREE.AmbientLight(0x404040));
 
 const loader = new GLTFLoader();
 const params = new URLSearchParams(window.location.search);
-let currentModel = params.get('model') || 'hopy.glb';
+let currentModel = params.get('model') || 'monster/hopy.glb';
+// Auto-prefix old-style model names (e.g. "hopy.glb") with "monster/"
+if (currentModel && !currentModel.includes('/') && !currentModel.startsWith('converted/')) {
+  currentModel = 'monster/' + currentModel;
+}
 let currentMixer = null;
 let currentActions = {};
 let currentModelRoot = null;
@@ -45,43 +49,123 @@ let skeletonHelper = null;
 
 // --- Model dropdown (top-right) ---
 const dropdownPanel = document.createElement('div');
-dropdownPanel.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.7);padding:10px;border-radius:5px;color:white;font-family:monospace;z-index:100';
+dropdownPanel.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.7);padding:10px;border-radius:5px;color:white;font-family:monospace;z-index:100;max-height:90vh;overflow-y:auto';
 dropdownPanel.innerHTML = '<b>Model:</b><br>';
+
+// Category dropdown
+const catLabel = document.createElement('label');
+catLabel.textContent = 'Category:';
+catLabel.style.cssText = 'display:block;margin-top:4px;font-size:11px;color:#aaa';
+dropdownPanel.appendChild(catLabel);
+const categorySelect = document.createElement('select');
+categorySelect.style.cssText = 'display:block;margin:2px 0 6px;padding:4px;width:220px;background:#222;color:white;border:1px solid #555;border-radius:3px';
+dropdownPanel.appendChild(categorySelect);
+
+const search = document.createElement('input');
+search.type = 'text';
+search.placeholder = 'Search...';
+search.style.cssText = 'display:block;margin:4px 0;padding:4px 8px;width:200px;background:#222;color:white;border:1px solid #555;border-radius:3px';
+dropdownPanel.appendChild(search);
 const select = document.createElement('select');
-select.style.cssText = 'display:block;margin:4px 0;padding:4px 8px;width:180px;background:#222;color:white;border:1px solid #555;border-radius:3px';
+select.size = 15;
+select.style.cssText = 'display:block;margin:4px 0;padding:4px;width:220px;background:#222;color:white;border:1px solid #555;border-radius:3px';
 dropdownPanel.appendChild(select);
 document.body.appendChild(dropdownPanel);
 
+let allGlbs = [];
+let currentCategory = 'all';
+
+// Category display names
+const CATEGORY_LABELS = {
+  'all': 'All',
+  'monster': 'Monster',
+  'npc': 'NPC',
+  'item': 'Item',
+  'mount': 'Mount',
+};
+
+// Extract category (first path segment) from a model path
+function categoryOf(path) {
+  const seg = path.split('/')[0];
+  return CATEGORY_LABELS[seg] ? seg : 'other';
+}
+
+// Get sorted list of categories that have models
+function availableCategories() {
+  const cats = new Set(allGlbs.map(categoryOf));
+  return ['all', ...Array.from(cats).sort()];
+}
+
 async function loadModelList() {
-  const fallback = ['hopy.glb', 'bargon.glb', 'bargon-die.glb'];
+  const fallback = ['monster/hopy.glb', 'monster/bargon.glb', 'monster/bargon-die.glb'];
   try {
     const resp = await fetch('http://localhost:3001/list-glbs');
     const data = await resp.json();
-    const glbs = (data.glbs && data.glbs.length > 0) ? data.glbs : fallback;
-    glbs.forEach(name => {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name;
-      select.appendChild(opt);
-    });
+    allGlbs = (data.glbs && data.glbs.length > 0) ? data.glbs : fallback;
   } catch {
-    fallback.forEach(name => {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name;
-      select.appendChild(opt);
-    });
+    allGlbs = fallback;
   }
+  // Populate category dropdown
+  const cats = availableCategories();
+  categorySelect.innerHTML = '';
+  cats.forEach(cat => {
+    const opt = document.createElement('option');
+    opt.value = cat;
+    opt.textContent = CATEGORY_LABELS[cat] || cat;
+    categorySelect.appendChild(opt);
+  });
+  // Set initial category from current model
+  currentCategory = categoryOf(currentModel);
+  categorySelect.value = currentCategory;
+  populateSelect();
   select.value = currentModel;
 }
+
+function populateSelect() {
+  const q = search.value.toLowerCase();
+  let filtered = allGlbs;
+  if (currentCategory !== 'all') {
+    filtered = filtered.filter(n => categoryOf(n) === currentCategory);
+  }
+  if (q) {
+    filtered = filtered.filter(n => n.toLowerCase().includes(q));
+  }
+  select.innerHTML = '';
+  filtered.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    // Show a shorter label: strip the category prefix for readability
+    const label = name.includes('/') ? name.substring(name.indexOf('/') + 1) : name;
+    opt.textContent = label;
+    select.appendChild(opt);
+  });
+}
+
 loadModelList();
+
+categorySelect.onchange = () => {
+  currentCategory = categorySelect.value;
+  populateSelect();
+};
+
+search.oninput = () => {
+  populateSelect();
+};
 
 select.onchange = () => {
   currentModel = select.value;
   params.set('model', currentModel);
   window.history.replaceState({}, '', '?' + params.toString());
-  loadModel('./' + currentModel);
+  loadModel(modelUrl(currentModel));
 };
+
+// Resolve a model name from the API to a loadable URL.
+// Organized files (e.g. "monster/hopy.glb") load from converted/.
+// Legacy flat files (e.g. "hopy.glb") load from the pt-port root.
+function modelUrl(name) {
+  if (name.includes('/')) return 'converted/' + name;
+  return './' + name;
+}
 
 // --- Model loading ---
 function loadModel(glbUrl) {
@@ -196,7 +280,7 @@ function loadModel(glbUrl) {
 }
 
 // Initial load
-loadModel('./' + currentModel);
+loadModel(modelUrl(currentModel));
 
 // --- Render loop ---
 const clock = new THREE.Clock();
