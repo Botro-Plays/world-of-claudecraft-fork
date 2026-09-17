@@ -5,8 +5,8 @@
 //
 // - Three tribes: Tempskron, Morion, Atlanteon
 // - Tempskron: 4 classes (all implemented)
-// - Morion: 4 classes (2 implemented)
-// - Atlanteon: 3 classes (none implemented yet)
+// - Morion: 3 classes (all implemented)
+// - Atlanteon: 4 classes (all implemented)
 // - Tribe filtering (filterOfflineSelectForTribe, resetOfflineSelectTribeFilter)
 // - Tribe card wiring (wirePtTribeSelect callbacks)
 // - Display name coverage
@@ -51,14 +51,14 @@ describe('PT tribe configuration', () => {
       expect(tribe.classIds).toContain('tempskron_fighter');
       expect(tribe.classIds).toContain('tempskron_mechanician');
       expect(tribe.classIds).toContain('tempskron_pikeman');
-      expect(tribe.classIds).toContain('tempskron_archer');
+      expect(tribe.classIds).toContain('morion_knight');
     });
 
     it('all four Tempskron classes are implemented', () => {
       expect(tribe.implementedClassIds).toContain('tempskron_fighter');
       expect(tribe.implementedClassIds).toContain('tempskron_mechanician');
       expect(tribe.implementedClassIds).toContain('tempskron_pikeman');
-      expect(tribe.implementedClassIds).toContain('tempskron_archer');
+      expect(tribe.implementedClassIds).toContain('morion_knight');
     });
 
     it('first implemented class is tempskron_fighter', () => {
@@ -79,25 +79,23 @@ describe('PT tribe configuration', () => {
 
     it('exists', () => expect(tribe).toBeDefined());
     it('name is Morion', () => expect(tribe.name).toBe('Morion'));
-    it('has 4 classes', () => expect(tribe.classIds).toHaveLength(4));
-    it('has 4 implemented classes', () => expect(tribe.implementedClassIds).toHaveLength(4));
+    it('has 3 classes', () => expect(tribe.classIds).toHaveLength(3));
+    it('has 3 implemented classes', () => expect(tribe.implementedClassIds).toHaveLength(3));
 
-    it('classIds contains the four Morion classes', () => {
-      expect(tribe.classIds).toContain('morion_knight');
-      expect(tribe.classIds).toContain('morion_atalanta');
+    it('classIds contains the three Morion classes', () => {
       expect(tribe.classIds).toContain('morion_magician');
+      expect(tribe.classIds).toContain('atlanteon_shaman');
       expect(tribe.classIds).toContain('morion_priestess');
     });
 
-    it('all four Morion classes are implemented', () => {
-      expect(tribe.implementedClassIds).toContain('morion_knight');
-      expect(tribe.implementedClassIds).toContain('morion_atalanta');
+    it('all three Morion classes are implemented', () => {
       expect(tribe.implementedClassIds).toContain('morion_magician');
+      expect(tribe.implementedClassIds).toContain('atlanteon_shaman');
       expect(tribe.implementedClassIds).toContain('morion_priestess');
     });
 
-    it('first implemented class is morion_knight', () => {
-      expect(tribe.implementedClassIds[0]).toBe('morion_knight');
+    it('first implemented class is morion_magician', () => {
+      expect(tribe.implementedClassIds[0]).toBe('morion_magician');
     });
 
     it('has a logo path', () => {
@@ -115,24 +113,26 @@ describe('PT tribe configuration', () => {
     it('exists', () => expect(tribe).toBeDefined());
     it('name is Atlanteon', () => expect(tribe.name).toBe('Atlanteon'));
 
-    it('has exactly 3 classes (no fourth placeholder)', () => {
-      expect(tribe.classIds).toHaveLength(3);
+    it('has exactly 4 classes', () => {
+      expect(tribe.classIds).toHaveLength(4);
     });
 
-    it('classIds contains the three Atlanteon classes', () => {
-      expect(tribe.classIds).toContain('atlanteon_assassin');
-      expect(tribe.classIds).toContain('atlanteon_shaman');
+    it('classIds contains the four Atlanteon classes', () => {
       expect(tribe.classIds).toContain('atlanteon_martial_artist');
+      expect(tribe.classIds).toContain('morion_atalanta');
+      expect(tribe.classIds).toContain('tempskron_archer');
+      expect(tribe.classIds).toContain('atlanteon_assassin');
     });
 
-    it('has 3 implemented classes', () => {
-      expect(tribe.implementedClassIds).toHaveLength(3);
+    it('has 4 implemented classes', () => {
+      expect(tribe.implementedClassIds).toHaveLength(4);
     });
 
-    it('all three Atlanteon classes are implemented', () => {
-      expect(tribe.implementedClassIds).toContain('atlanteon_assassin');
-      expect(tribe.implementedClassIds).toContain('atlanteon_shaman');
+    it('all four Atlanteon classes are implemented', () => {
       expect(tribe.implementedClassIds).toContain('atlanteon_martial_artist');
+      expect(tribe.implementedClassIds).toContain('morion_atalanta');
+      expect(tribe.implementedClassIds).toContain('tempskron_archer');
+      expect(tribe.implementedClassIds).toContain('atlanteon_assassin');
     });
 
     it('has a logo path', () => {
@@ -383,7 +383,7 @@ describe('wirePtTribeSelect', () => {
     morionCard.trigger('click');
     const [tribeId, firstClass] = onTribeSelected.mock.calls[0]!;
     expect(tribeId).toBe('morion');
-    expect(firstClass).toBe('morion_knight');
+    expect(firstClass).toBe('morion_magician');
   });
 
   it('passes the first implemented class for Atlanteon', () => {
@@ -393,7 +393,7 @@ describe('wirePtTribeSelect', () => {
     atlanteonCard.trigger('click');
     const [tribeId, firstClass] = onTribeSelected.mock.calls[0]!;
     expect(tribeId).toBe('atlanteon');
-    expect(firstClass).toBe('atlanteon_assassin');
+    expect(firstClass).toBe('atlanteon_martial_artist');
   });
 
   it('calls onBack when the Back button is clicked', () => {

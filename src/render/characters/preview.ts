@@ -729,11 +729,11 @@ export class CharacterPreview {
   }
 
   /**
-   * Atlanteon 3-character rotation: swap the HOME positions of the clicked
-   * member and the currently selected member, then select the clicked
-   * member. The old center walks to the clicked's former home (LEFT or
-   * RIGHT); the clicked walks to the presentation center; the third member
-   * stays at its home. Reuses the existing walk animation — no teleport.
+   * Stage rotation: swap the HOME positions of the clicked member and the
+   * currently selected member, then select the clicked member. The old
+   * center walks to the clicked's former home; the clicked walks to the
+   * presentation center; the other members stay at their homes. Reuses the
+   * existing walk animation — no teleport. Works for any stage size.
    *
    * If no member is selected yet, this is equivalent to selectStageMember
    * (first selection). If the clicked member is already selected (center

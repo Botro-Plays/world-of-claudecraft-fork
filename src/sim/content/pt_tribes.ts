@@ -7,7 +7,14 @@
  * a separate `implementedClassIds` list to drive the selectable / locked
  * distinction without touching the PlayerClass union.
  *
- * Atlanteon intentionally has 3 classes. No fourth class or placeholder.
+ * Class IDs carry a historical tribe prefix from the original POC grouping
+ * (e.g. Knight is `morion_knight` but now belongs to Tempskron). The ID
+ * prefix is a stable identifier, NOT a membership marker — visual keys,
+ * save data, i18n keys, and the whole PT pipeline depend on it. Tribe
+ * membership is defined ONLY by the rosters below.
+ *
+ * Morion currently has 3 classes; a fourth (Monk) is planned but NOT
+ * implemented yet — do not add placeholder data.
  */
 
 export type PtTribeId = 'tempskron' | 'morion' | 'atlanteon';
@@ -56,13 +63,13 @@ export const PT_TRIBES: readonly PtTribeDef[] = [
       'tempskron_fighter',
       'tempskron_mechanician',
       'tempskron_pikeman',
-      'tempskron_archer',
+      'morion_knight',
     ],
     implementedClassIds: [
       'tempskron_fighter',
       'tempskron_mechanician',
       'tempskron_pikeman',
-      'tempskron_archer',
+      'morion_knight',
     ],
     logoPath: '/ui/tribes/Tempskron.png',
     placeholderLogoFromTribe: null,
@@ -71,25 +78,29 @@ export const PT_TRIBES: readonly PtTribeDef[] = [
     id: 'morion',
     name: 'Morion',
     classIds: [
-      'morion_knight',
-      'morion_atalanta',
       'morion_magician',
+      'atlanteon_shaman',
       'morion_priestess',
     ],
-    implementedClassIds: ['morion_knight', 'morion_atalanta', 'morion_priestess', 'morion_magician'],
+    implementedClassIds: ['morion_magician', 'atlanteon_shaman', 'morion_priestess'],
     logoPath: '/ui/tribes/Morion.png',
     placeholderLogoFromTribe: null,
   },
   {
     id: 'atlanteon',
     name: 'Atlanteon',
-    // Atlanteon intentionally has 3 classes. No fourth class or placeholder.
     classIds: [
-      'atlanteon_assassin',
-      'atlanteon_shaman',
       'atlanteon_martial_artist',
+      'morion_atalanta',
+      'tempskron_archer',
+      'atlanteon_assassin',
     ],
-    implementedClassIds: ['atlanteon_assassin', 'atlanteon_shaman', 'atlanteon_martial_artist'],
+    implementedClassIds: [
+      'atlanteon_martial_artist',
+      'morion_atalanta',
+      'tempskron_archer',
+      'atlanteon_assassin',
+    ],
     logoPath: '/ui/tribes/Atlanteon.png',
     placeholderLogoFromTribe: null,
   },

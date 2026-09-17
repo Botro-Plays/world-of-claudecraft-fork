@@ -5777,9 +5777,9 @@ function showTribeFormation(tribeId: PtTribeId): void {
  * own HOME to the presentation center. Updates the details panel, hair
  * controls, and skin controls. Does NOT rebuild the formation.
  *
- * For Atlanteon (3 characters), uses rotateStageMember so the clicked
- * side character swaps homes with the current center and all three
- * characters remain visible in a LEFT/CENTER/RIGHT rotation layout.
+ * For Atlanteon, uses rotateStageMember so the clicked side character
+ * swaps homes with the current center and all characters remain visible
+ * in a rotation layout.
  */
 function selectStageClass(cls: PlayerClass): void {
   if (!characterPreview) return;
@@ -5812,9 +5812,9 @@ function showOnlineTribeFormation(tribeId: PtTribeId): void {
  * selectStageClass but updates the online details panel and online skin
  * picker instead of the offline ones.
  *
- * For Atlanteon (3 characters), uses rotateStageMember so the clicked
- * side character swaps homes with the current center and all three
- * characters remain visible in a LEFT/CENTER/RIGHT rotation layout.
+ * For Atlanteon, uses rotateStageMember so the clicked side character
+ * swaps homes with the current center and all characters remain visible
+ * in a rotation layout.
  */
 function selectOnlineStageClass(cls: PlayerClass): void {
   if (!characterPreview) return;

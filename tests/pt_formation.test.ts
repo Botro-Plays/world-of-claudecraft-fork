@@ -47,7 +47,7 @@ describe('formationSlots', () => {
     expect(formationSlots(4)).toHaveLength(4);
   });
 
-  it('returns 3 slots for Atlanteon (3 classes)', () => {
+  it('returns 3 slots for Morion (3 classes)', () => {
     expect(formationSlots(3)).toHaveLength(3);
   });
 
@@ -98,7 +98,7 @@ describe('stageRowSlots', () => {
     expect(stageRowSlots(4)).toHaveLength(4);
   });
 
-  it('returns 3 slots for Atlanteon (3 classes)', () => {
+  it('returns 3 slots for Morion (3 classes)', () => {
     expect(stageRowSlots(3)).toHaveLength(3);
   });
 
@@ -161,14 +161,14 @@ describe('tribeFormationEntries', () => {
     expect(entries).toHaveLength(3);
   });
 
-  it('Morion formation has 3 entries (4 classes minus selected)', () => {
-    const entries = tribeFormationEntries('morion', 'morion_knight');
-    expect(entries).toHaveLength(3);
+  it('Morion formation has 2 entries (3 classes minus selected)', () => {
+    const entries = tribeFormationEntries('morion', 'morion_magician');
+    expect(entries).toHaveLength(2);
   });
 
-  it('Atlanteon formation has 2 entries (3 classes minus selected)', () => {
+  it('Atlanteon formation has 3 entries (4 classes minus selected)', () => {
     const entries = tribeFormationEntries('atlanteon', 'atlanteon_assassin');
-    expect(entries).toHaveLength(2);
+    expect(entries).toHaveLength(3);
   });
 
   it('excludes the selected class from the formation', () => {
@@ -177,7 +177,7 @@ describe('tribeFormationEntries', () => {
   });
 
   it('each entry has a valid visual key (player_<class>)', () => {
-    const entries = tribeFormationEntries('morion', 'morion_knight');
+    const entries = tribeFormationEntries('morion', 'morion_magician');
     for (const e of entries) {
       expect(e.visualKey).toMatch(/^player_/);
     }
@@ -213,7 +213,7 @@ describe('selectedFormationSlot', () => {
       'tempskron_fighter',
       'tempskron_mechanician',
       'tempskron_pikeman',
-      'tempskron_archer',
+      'morion_knight',
     ]) {
       const slot = selectedFormationSlot('tempskron', cls as never);
       expect(slot).toBeDefined();
@@ -223,9 +223,10 @@ describe('selectedFormationSlot', () => {
 
   it('returns a slot for each Atlanteon class', () => {
     for (const cls of [
-      'atlanteon_assassin',
-      'atlanteon_shaman',
       'atlanteon_martial_artist',
+      'morion_atalanta',
+      'tempskron_archer',
+      'atlanteon_assassin',
     ]) {
       const slot = selectedFormationSlot('atlanteon', cls as never);
       expect(slot).toBeDefined();
@@ -347,19 +348,19 @@ describe('PT_STARTING_STATS', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Switching sequence: Fighter -> Mechanician -> Pikeman -> Archer -> Fighter
+// Switching sequence: Fighter -> Mechanician -> Pikeman -> Knight -> Fighter
 // Verifies that every newly selected character begins at its own formation
 // slot, and the previously selected character returns to its formation slot
 // (it reappears in the rebuilt formation background).
 // ---------------------------------------------------------------------------
 
-describe('switching sequence (Fighter -> Mechanician -> Pikeman -> Archer -> Fighter)', () => {
+describe('switching sequence (Fighter -> Mechanician -> Pikeman -> Knight -> Fighter)', () => {
   const tribe = 'tempskron';
   const sequence: PlayerClass[] = [
     'tempskron_fighter',
     'tempskron_mechanician',
     'tempskron_pikeman',
-    'tempskron_archer',
+    'morion_knight',
     'tempskron_fighter',
   ];
 
@@ -374,7 +375,7 @@ describe('switching sequence (Fighter -> Mechanician -> Pikeman -> Archer -> Fig
 
   it('each selected class has a distinct formation slot from the others', () => {
     const slots = sequence.map((cls) => selectedFormationSlot(tribe, cls));
-    // All four unique classes (Fighter, Mech, Pike, Archer) must have
+    // All four unique classes (Fighter, Mech, Pike, Knight) must have
     // distinct slots. The sequence visits Fighter twice; dedupe by class.
     const uniqueClasses = Array.from(new Set(sequence));
     const uniqueSlots = uniqueClasses.map((cls) => selectedFormationSlot(tribe, cls));
@@ -414,7 +415,7 @@ describe('switching sequence (Fighter -> Mechanician -> Pikeman -> Archer -> Fig
     }
   });
 
-  it('the full Fighter -> Mech -> Pike -> Archer -> Fighter cycle is deterministic', () => {
+  it('the full Fighter -> Mech -> Pike -> Knight -> Fighter cycle is deterministic', () => {
     // Run the cycle twice; the slots and formation entries must be identical
     // each time (no state leakage between switches).
     const run1 = sequence.map((cls) => ({
@@ -429,13 +430,13 @@ describe('switching sequence (Fighter -> Mechanician -> Pikeman -> Archer -> Fig
   });
 
   it('Fighter returns to formation after the full cycle back to Fighter', () => {
-    // After Fighter -> Mech -> Pike -> Archer -> Fighter, the Fighter that
+    // After Fighter -> Mech -> Pike -> Knight -> Fighter, the Fighter that
     // was originally at center has been displaced to the formation when
-    // Mech was selected. By the time we select Fighter again, Archer (the
+    // Mech was selected. By the time we select Fighter again, Knight (the
     // previous selection) must be in the formation.
     const entries = tribeFormationEntries(tribe, 'tempskron_fighter');
-    const archerInFormation = entries.some((e) => e.cls === 'tempskron_archer');
-    expect(archerInFormation, 'Archer must be in formation after re-selecting Fighter').toBe(true);
+    const knightInFormation = entries.some((e) => e.cls === 'morion_knight');
+    expect(knightInFormation, 'Knight must be in formation after re-selecting Fighter').toBe(true);
   });
 });
 
@@ -449,14 +450,14 @@ describe('tribeStageEntries', () => {
     expect(entries).toHaveLength(4);
   });
 
-  it('Morion stage has 4 entries (all classes, none excluded)', () => {
+  it('Morion stage has 3 entries (all classes, none excluded)', () => {
     const entries = tribeStageEntries('morion');
-    expect(entries).toHaveLength(4);
+    expect(entries).toHaveLength(3);
   });
 
-  it('Atlanteon stage has 3 entries (all classes, none excluded)', () => {
+  it('Atlanteon stage has 4 entries (all classes, none excluded)', () => {
     const entries = tribeStageEntries('atlanteon');
-    expect(entries).toHaveLength(3);
+    expect(entries).toHaveLength(4);
   });
 
   it('every entry has a valid visual key (player_<class>)', () => {
@@ -482,35 +483,35 @@ describe('tribeStageEntries', () => {
     }
   });
 
-  it('four Tempskron characters map correctly (Fighter, Mech, Pike, Archer)', () => {
+  it('four Tempskron characters map correctly (Fighter, Mech, Pike, Knight)', () => {
     const entries = tribeStageEntries('tempskron');
     const classes = entries.map((e) => e.cls);
     expect(classes).toEqual([
       'tempskron_fighter',
       'tempskron_mechanician',
       'tempskron_pikeman',
-      'tempskron_archer',
+      'morion_knight',
     ]);
   });
 
-  it('four Morion characters map correctly (Knight, Atalanta, Priestess, Magician)', () => {
+  it('three Morion characters map correctly (Magician, Shaman, Priestess)', () => {
     const entries = tribeStageEntries('morion');
     const classes = entries.map((e) => e.cls);
     expect(classes).toEqual([
-      'morion_knight',
-      'morion_atalanta',
-      'morion_priestess',
       'morion_magician',
+      'atlanteon_shaman',
+      'morion_priestess',
     ]);
   });
 
-  it('three Atlanteon characters map correctly (Assassin, Shaman, Martial Artist)', () => {
+  it('four Atlanteon characters map correctly (Martial Artist, Atalanta, Archer, Assassin)', () => {
     const entries = tribeStageEntries('atlanteon');
     const classes = entries.map((e) => e.cls);
     expect(classes).toEqual([
-      'atlanteon_assassin',
-      'atlanteon_shaman',
       'atlanteon_martial_artist',
+      'morion_atalanta',
+      'tempskron_archer',
+      'atlanteon_assassin',
     ]);
   });
 
@@ -548,7 +549,7 @@ describe('classHomeSlot', () => {
       'tempskron_fighter',
       'tempskron_mechanician',
       'tempskron_pikeman',
-      'tempskron_archer',
+      'morion_knight',
     ]) {
       const slot = classHomeSlot('tempskron', cls as PlayerClass);
       expect(slot.z, `${cls} HOME Z must be negative`).toBeLessThan(0);
@@ -557,9 +558,8 @@ describe('classHomeSlot', () => {
 
   it('returns a slot with negative Z for every Morion class', () => {
     for (const cls of [
-      'morion_knight',
-      'morion_atalanta',
       'morion_magician',
+      'atlanteon_shaman',
       'morion_priestess',
     ]) {
       const slot = classHomeSlot('morion', cls as PlayerClass);
@@ -569,9 +569,10 @@ describe('classHomeSlot', () => {
 
   it('returns a slot with negative Z for every Atlanteon class', () => {
     for (const cls of [
-      'atlanteon_assassin',
-      'atlanteon_shaman',
       'atlanteon_martial_artist',
+      'morion_atalanta',
+      'tempskron_archer',
+      'atlanteon_assassin',
     ]) {
       const slot = classHomeSlot('atlanteon', cls as PlayerClass);
       expect(slot.z, `${cls} HOME Z must be negative`).toBeLessThan(0);
@@ -721,7 +722,7 @@ describe('stage selection state (home <-> center with diagonal walking)', () => 
   it('all other characters remain at home when one is selected', () => {
     const stage = makeStage('tempskron');
     stage.select('tempskron_fighter');
-    for (const cls of ['tempskron_mechanician', 'tempskron_pikeman', 'tempskron_archer']) {
+    for (const cls of ['tempskron_mechanician', 'tempskron_pikeman', 'morion_knight']) {
       expect(stage.isAtHome(cls), `${cls} must be at home`).toBe(true);
       expect(stage.scale(cls)).toBe(BACKGROUND_SCALE);
     }
@@ -756,20 +757,20 @@ describe('stage selection state (home <-> center with diagonal walking)', () => 
     expect(stage.isAtCenter('tempskron_mechanician')).toBe(true);
   });
 
-  it('repeated switching: Fighter -> Mech -> Pike -> Archer -> Fighter', () => {
+  it('repeated switching: Fighter -> Mech -> Pike -> Knight -> Fighter', () => {
     const stage = makeStage('tempskron');
     const sequence: string[] = [
       'tempskron_fighter',
       'tempskron_mechanician',
       'tempskron_pikeman',
-      'tempskron_archer',
+      'morion_knight',
       'tempskron_fighter',
     ];
     for (const cls of sequence) stage.select(cls);
     // After the full cycle, every character must be at its own home except
     // the final selection (Fighter), which is at center.
     expect(stage.isAtCenter('tempskron_fighter')).toBe(true);
-    for (const cls of ['tempskron_mechanician', 'tempskron_pikeman', 'tempskron_archer']) {
+    for (const cls of ['tempskron_mechanician', 'tempskron_pikeman', 'morion_knight']) {
       expect(stage.isAtHome(cls), `${cls} must be at home after cycle`).toBe(true);
     }
   });
@@ -780,7 +781,7 @@ describe('stage selection state (home <-> center with diagonal walking)', () => 
       'tempskron_fighter',
       'tempskron_mechanician',
       'tempskron_pikeman',
-      'tempskron_archer',
+      'morion_knight',
       'tempskron_fighter',
     ];
     let prev: string | null = null;
@@ -856,30 +857,30 @@ describe('stage selection state (home <-> center with diagonal walking)', () => 
     const homesBefore = new Map(stage.homes);
     stage.select('tempskron_fighter');
     stage.select('tempskron_pikeman');
-    stage.select('tempskron_archer');
+    stage.select('morion_knight');
     stage.select('tempskron_fighter');
     expect(stage.homes).toEqual(homesBefore);
   });
 
-  it('three-character formation (Atlanteon) works', () => {
-    const stage = makeStage('atlanteon');
-    stage.select('atlanteon_assassin');
-    expect(stage.isAtCenter('atlanteon_assassin')).toBe(true);
+  it('three-character formation (Morion) works', () => {
+    const stage = makeStage('morion');
+    stage.select('morion_magician');
+    expect(stage.isAtCenter('morion_magician')).toBe(true);
     stage.select('atlanteon_shaman');
-    expect(stage.isAtHome('atlanteon_assassin')).toBe(true);
+    expect(stage.isAtHome('morion_magician')).toBe(true);
     expect(stage.isAtCenter('atlanteon_shaman')).toBe(true);
-    stage.select('atlanteon_martial_artist');
+    stage.select('morion_priestess');
     expect(stage.isAtHome('atlanteon_shaman')).toBe(true);
-    expect(stage.isAtCenter('atlanteon_martial_artist')).toBe(true);
+    expect(stage.isAtCenter('morion_priestess')).toBe(true);
   });
 
-  it('Morion four-character formation works', () => {
-    const stage = makeStage('morion');
-    stage.select('morion_knight');
-    expect(stage.isAtCenter('morion_knight')).toBe(true);
-    stage.select('morion_priestess');
-    expect(stage.isAtHome('morion_knight')).toBe(true);
-    expect(stage.isAtCenter('morion_priestess')).toBe(true);
+  it('Atlanteon four-character formation works', () => {
+    const stage = makeStage('atlanteon');
+    stage.select('atlanteon_martial_artist');
+    expect(stage.isAtCenter('atlanteon_martial_artist')).toBe(true);
+    stage.select('morion_atalanta');
+    expect(stage.isAtHome('atlanteon_martial_artist')).toBe(true);
+    expect(stage.isAtCenter('morion_atalanta')).toBe(true);
   });
 
   it('no character starts at center during initial tribe setup', () => {
@@ -934,8 +935,8 @@ describe('stage presentation target (formation-aware depth)', () => {
   });
 });
 
-describe('3-character formation (Atlanteon) presentation overlap fix', () => {
-  // Atlanteon has 3 characters. The middle character's home X is 0 (same as
+describe('3-character formation (Morion) presentation overlap fix', () => {
+  // Morion has 3 characters. The middle character's home X is 0 (same as
   // the presentation X). The presentation Z must be sufficiently forward that
   // the selected character does not overlap the middle character from the
   // camera's view.
@@ -943,8 +944,8 @@ describe('3-character formation (Atlanteon) presentation overlap fix', () => {
   const FOCUS_SCALE = 1.08;
   const BACKGROUND_SCALE = 0.92;
 
-  function makeAtlanteonStage() {
-    const entries = tribeStageEntries('atlanteon');
+  function makeMorionStage() {
+    const entries = tribeStageEntries('morion');
     const homes = new Map<string, { x: number; z: number }>();
     const targetX = new Map<string, number>();
     const targetZ = new Map<string, number>();
@@ -1003,7 +1004,7 @@ describe('3-character formation (Atlanteon) presentation overlap fix', () => {
   }
 
   it('3-member formation creates three unique home positions', () => {
-    const entries = tribeStageEntries('atlanteon');
+    const entries = tribeStageEntries('morion');
     expect(entries).toHaveLength(3);
     const positions = entries.map((e) => `${e.x},${e.z}`);
     const unique = new Set(positions);
@@ -1011,35 +1012,35 @@ describe('3-character formation (Atlanteon) presentation overlap fix', () => {
   });
 
   it('3-member formation middle character home X is 0 (centered)', () => {
-    const entries = tribeStageEntries('atlanteon');
+    const entries = tribeStageEntries('morion');
     // The middle entry (index 1) should have X = 0.
     expect(entries[1]!.x, 'middle character must be at X=0').toBe(0);
   });
 
-  it('selected left Atlanteon target is centered but does not equal middle home', () => {
-    const stage = makeAtlanteonStage();
+  it('selected left Morion target is centered but does not equal middle home', () => {
+    const stage = makeMorionStage();
     const middleHome = stage.homes.get('atlanteon_shaman')!;
-    stage.select('atlanteon_assassin');
+    stage.select('morion_magician');
     // Target X is centered (0), same as middle home X.
-    expect(stage.targetX.get('atlanteon_assassin')).toBe(stage.presX);
+    expect(stage.targetX.get('morion_magician')).toBe(stage.presX);
     // But target Z is in front of the formation, not at middle home Z.
-    expect(stage.targetZ.get('atlanteon_assassin')).toBe(stage.presZ);
+    expect(stage.targetZ.get('morion_magician')).toBe(stage.presZ);
     expect(stage.presZ, 'presentation Z must differ from middle home Z').not.toBe(middleHome.z);
     expect(stage.presZ, 'presentation Z must be in front of middle home').toBeGreaterThan(middleHome.z);
   });
 
-  it('selected right Atlanteon target is centered but does not equal middle home', () => {
-    const stage = makeAtlanteonStage();
+  it('selected right Morion target is centered but does not equal middle home', () => {
+    const stage = makeMorionStage();
     const middleHome = stage.homes.get('atlanteon_shaman')!;
-    stage.select('atlanteon_martial_artist');
-    expect(stage.targetX.get('atlanteon_martial_artist')).toBe(stage.presX);
-    expect(stage.targetZ.get('atlanteon_martial_artist')).toBe(stage.presZ);
+    stage.select('morion_priestess');
+    expect(stage.targetX.get('morion_priestess')).toBe(stage.presX);
+    expect(stage.targetZ.get('morion_priestess')).toBe(stage.presZ);
     expect(stage.presZ).not.toBe(middleHome.z);
     expect(stage.presZ).toBeGreaterThan(middleHome.z);
   });
 
-  it('selected middle Atlanteon also walks to the presentation position', () => {
-    const stage = makeAtlanteonStage();
+  it('selected middle Morion also walks to the presentation position', () => {
+    const stage = makeMorionStage();
     stage.select('atlanteon_shaman');
     // The middle character walks forward to the presentation Z (not staying
     // at its home Z).
@@ -1051,15 +1052,15 @@ describe('3-character formation (Atlanteon) presentation overlap fix', () => {
   });
 
   it('presentation target is in front of the formation (Z > row Z)', () => {
-    const stage = makeAtlanteonStage();
+    const stage = makeMorionStage();
     const rowZ = stage.homes.get('atlanteon_shaman')!.z;
     expect(stage.presZ, 'presentation Z must be in front of the row').toBeGreaterThan(rowZ);
   });
 
   it('selected character can reach presentation target without overlapping middle home', () => {
-    const stage = makeAtlanteonStage();
+    const stage = makeMorionStage();
     const middleHome = stage.homes.get('atlanteon_shaman')!;
-    stage.select('atlanteon_assassin');
+    stage.select('morion_magician');
     // The presentation position (presX, presZ) must not equal the middle
     // character's home position. Since presX == 0 == middleHome.x, the Z
     // must differ to avoid overlap.
@@ -1068,12 +1069,12 @@ describe('3-character formation (Atlanteon) presentation overlap fix', () => {
   });
 
   it('returning character always returns to its exact original homeX/homeZ', () => {
-    const stage = makeAtlanteonStage();
-    const assassinHome = { ...stage.homes.get('atlanteon_assassin')! };
-    stage.select('atlanteon_assassin');
+    const stage = makeMorionStage();
+    const magicianHome = { ...stage.homes.get('morion_magician')! };
+    stage.select('morion_magician');
     stage.select('atlanteon_shaman');
-    expect(stage.targetX.get('atlanteon_assassin')).toBe(assassinHome.x);
-    expect(stage.targetZ.get('atlanteon_assassin')).toBe(assassinHome.z);
+    expect(stage.targetX.get('morion_magician')).toBe(magicianHome.x);
+    expect(stage.targetZ.get('morion_magician')).toBe(magicianHome.z);
   });
 
   it('4-member formation (Tempskron) continues to work with presentation target', () => {
@@ -1089,49 +1090,49 @@ describe('3-character formation (Atlanteon) presentation overlap fix', () => {
     }
   });
 
-  it('simultaneous switching continues to work (Atlanteon)', () => {
-    const stage = makeAtlanteonStage();
-    stage.select('atlanteon_assassin');
-    stage.select('atlanteon_martial_artist');
-    // Assassin walks back while Martial Artist walks forward.
-    expect(stage.walkDir.get('atlanteon_assassin')).toBe('back');
-    expect(stage.walkDir.get('atlanteon_martial_artist')).toBe('forward');
-    expect(stage.isAtPresentation('atlanteon_martial_artist')).toBe(true);
-    expect(stage.isAtHome('atlanteon_assassin')).toBe(true);
+  it('simultaneous switching continues to work (Morion)', () => {
+    const stage = makeMorionStage();
+    stage.select('morion_magician');
+    stage.select('morion_priestess');
+    // Magician walks back while Priestess walks forward.
+    expect(stage.walkDir.get('morion_magician')).toBe('back');
+    expect(stage.walkDir.get('morion_priestess')).toBe('forward');
+    expect(stage.isAtPresentation('morion_priestess')).toBe(true);
+    expect(stage.isAtHome('morion_magician')).toBe(true);
   });
 
-  it('only one character is selected at a time (Atlanteon)', () => {
-    const stage = makeAtlanteonStage();
-    stage.select('atlanteon_assassin');
-    expect(stage.selectedClass()).toBe('atlanteon_assassin');
+  it('only one character is selected at a time (Morion)', () => {
+    const stage = makeMorionStage();
+    stage.select('morion_magician');
+    expect(stage.selectedClass()).toBe('morion_magician');
     stage.select('atlanteon_shaman');
     expect(stage.selectedClass()).toBe('atlanteon_shaman');
-    stage.select('atlanteon_martial_artist');
-    expect(stage.selectedClass()).toBe('atlanteon_martial_artist');
+    stage.select('morion_priestess');
+    expect(stage.selectedClass()).toBe('morion_priestess');
   });
 
-  it('clicking the already-selected character does nothing (Atlanteon)', () => {
-    const stage = makeAtlanteonStage();
-    stage.select('atlanteon_assassin');
-    const targetBefore = stage.targetX.get('atlanteon_assassin');
-    stage.select('atlanteon_assassin'); // no-op
-    expect(stage.targetX.get('atlanteon_assassin')).toBe(targetBefore);
+  it('clicking the already-selected character does nothing (Morion)', () => {
+    const stage = makeMorionStage();
+    stage.select('morion_magician');
+    const targetBefore = stage.targetX.get('morion_magician');
+    stage.select('morion_magician'); // no-op
+    expect(stage.targetX.get('morion_magician')).toBe(targetBefore);
   });
 
-  it('formation positions of unselected characters remain unchanged (Atlanteon)', () => {
-    const stage = makeAtlanteonStage();
+  it('formation positions of unselected characters remain unchanged (Morion)', () => {
+    const stage = makeMorionStage();
     const homesBefore = new Map(stage.homes);
-    stage.select('atlanteon_assassin');
+    stage.select('morion_magician');
     stage.select('atlanteon_shaman');
-    stage.select('atlanteon_martial_artist');
+    stage.select('morion_priestess');
     expect(stage.homes).toEqual(homesBefore);
   });
 
-  it('Morion (4-character) presentation target does not overlap any home', () => {
-    const entries = tribeStageEntries('morion');
+  it('Atlanteon (4-character) presentation target does not overlap any home', () => {
+    const entries = tribeStageEntries('atlanteon');
     const pres = stagePresentationTarget(entries.length);
     for (const e of entries) {
-      // No Morion home is at X=0, so no X overlap. But verify the Z is
+      // No Atlanteon home is at X=0, so no X overlap. But verify the Z is
       // still in front.
       expect(pres.z, `presentation Z must be in front of ${e.cls} home`).toBeGreaterThan(e.z);
     }
