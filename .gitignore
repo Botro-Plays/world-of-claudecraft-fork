@@ -181,3 +181,9 @@ diagnostics/
 ip-refactor/
 .spawn/
 third_party/
+
+# Local UX reference boards (not for commit)
+_ui-refs/
+
+# Local vendor dumps: never commit
+source files/
