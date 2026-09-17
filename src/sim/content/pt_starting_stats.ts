@@ -7,8 +7,8 @@
  *
  *   JobCode, Strength, Spirit, Talent, Defence, Health
  *
- * The code field that receives column 4 is `sinChar->Dexterity`; the
- * character-select panel displays that stat as "Agility".
+ * The code field that receives column 4 is `sinChar->Dexterity`, so the
+ * stat is displayed as "Dexterity" (DEX) in the character-select panel.
  *
  * These values are the raw PT stats, NOT the WoC-mapped attributes (str/agi/
  * sta/int/spi/armor). They exist so the character-select information panel
@@ -25,7 +25,7 @@ export interface PtStartingStats {
   readonly spi: number;
   /** Talent — technique / move speed. */
   readonly tal: number;
-  /** Agility — dodge / defence (PT source column header: "Defence"; stored as `dex`). */
+  /** Dexterity — dodge / defence (PT source column header: "Defence"). */
   readonly dex: number;
   /** Health — HP pool. */
   readonly hp: number;

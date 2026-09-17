@@ -11,7 +11,6 @@
 export const pending: Record<string, readonly string[]> = {
   "es": [
     "auth.selectTribe",
-    "classDetails.ariaPt",
     "classDetails.lore.atlanteon_assassin",
     "classDetails.lore.atlanteon_martial_artist",
     "classDetails.lore.atlanteon_shaman",
@@ -49,7 +48,6 @@ export const pending: Record<string, readonly string[]> = {
   ],
   "es_ES": [
     "auth.selectTribe",
-    "classDetails.ariaPt",
     "classDetails.lore.atlanteon_assassin",
     "classDetails.lore.atlanteon_martial_artist",
     "classDetails.lore.atlanteon_shaman",
@@ -87,7 +85,6 @@ export const pending: Record<string, readonly string[]> = {
   ],
   "fr_FR": [
     "auth.selectTribe",
-    "classDetails.ariaPt",
     "classDetails.lore.atlanteon_assassin",
     "classDetails.lore.atlanteon_martial_artist",
     "classDetails.lore.atlanteon_shaman",
@@ -125,7 +122,6 @@ export const pending: Record<string, readonly string[]> = {
   ],
   "fr_CA": [
     "auth.selectTribe",
-    "classDetails.ariaPt",
     "classDetails.lore.atlanteon_assassin",
     "classDetails.lore.atlanteon_martial_artist",
     "classDetails.lore.atlanteon_shaman",
@@ -164,7 +160,6 @@ export const pending: Record<string, readonly string[]> = {
   "en_CA": [],
   "it_IT": [
     "auth.selectTribe",
-    "classDetails.ariaPt",
     "classDetails.lore.atlanteon_assassin",
     "classDetails.lore.atlanteon_martial_artist",
     "classDetails.lore.atlanteon_shaman",
@@ -202,7 +197,6 @@ export const pending: Record<string, readonly string[]> = {
   ],
   "de_DE": [
     "auth.selectTribe",
-    "classDetails.ariaPt",
     "classDetails.lore.atlanteon_assassin",
     "classDetails.lore.atlanteon_martial_artist",
     "classDetails.lore.atlanteon_shaman",
@@ -240,7 +234,6 @@ export const pending: Record<string, readonly string[]> = {
   ],
   "zh_CN": [
     "auth.selectTribe",
-    "classDetails.ariaPt",
     "classDetails.lore.atlanteon_assassin",
     "classDetails.lore.atlanteon_martial_artist",
     "classDetails.lore.atlanteon_shaman",
@@ -278,7 +271,6 @@ export const pending: Record<string, readonly string[]> = {
   ],
   "zh_TW": [
     "auth.selectTribe",
-    "classDetails.ariaPt",
     "classDetails.lore.atlanteon_assassin",
     "classDetails.lore.atlanteon_martial_artist",
     "classDetails.lore.atlanteon_shaman",
@@ -316,7 +308,6 @@ export const pending: Record<string, readonly string[]> = {
   ],
   "ko_KR": [
     "auth.selectTribe",
-    "classDetails.ariaPt",
     "classDetails.lore.atlanteon_assassin",
     "classDetails.lore.atlanteon_martial_artist",
     "classDetails.lore.atlanteon_shaman",
@@ -354,7 +345,6 @@ export const pending: Record<string, readonly string[]> = {
   ],
   "ja_JP": [
     "auth.selectTribe",
-    "classDetails.ariaPt",
     "classDetails.lore.atlanteon_assassin",
     "classDetails.lore.atlanteon_martial_artist",
     "classDetails.lore.atlanteon_shaman",
@@ -392,7 +382,6 @@ export const pending: Record<string, readonly string[]> = {
   ],
   "pt_BR": [
     "auth.selectTribe",
-    "classDetails.ariaPt",
     "classDetails.lore.atlanteon_assassin",
     "classDetails.lore.atlanteon_martial_artist",
     "classDetails.lore.atlanteon_shaman",
@@ -430,7 +419,6 @@ export const pending: Record<string, readonly string[]> = {
   ],
   "ru_RU": [
     "auth.selectTribe",
-    "classDetails.ariaPt",
     "classDetails.lore.atlanteon_assassin",
     "classDetails.lore.atlanteon_martial_artist",
     "classDetails.lore.atlanteon_shaman",
@@ -468,7 +456,6 @@ export const pending: Record<string, readonly string[]> = {
   ],
   "cs_CZ": [
     "auth.selectTribe",
-    "classDetails.ariaPt",
     "classDetails.lore.atlanteon_assassin",
     "classDetails.lore.atlanteon_martial_artist",
     "classDetails.lore.atlanteon_shaman",
@@ -506,7 +493,6 @@ export const pending: Record<string, readonly string[]> = {
   ],
   "nl_NL": [
     "auth.selectTribe",
-    "classDetails.ariaPt",
     "classDetails.lore.atlanteon_assassin",
     "classDetails.lore.atlanteon_martial_artist",
     "classDetails.lore.atlanteon_shaman",
@@ -544,7 +530,6 @@ export const pending: Record<string, readonly string[]> = {
   ],
   "pl_PL": [
     "auth.selectTribe",
-    "classDetails.ariaPt",
     "classDetails.lore.atlanteon_assassin",
     "classDetails.lore.atlanteon_martial_artist",
     "classDetails.lore.atlanteon_shaman",
@@ -582,7 +567,6 @@ export const pending: Record<string, readonly string[]> = {
   ],
   "id_ID": [
     "auth.selectTribe",
-    "classDetails.ariaPt",
     "classDetails.lore.atlanteon_assassin",
     "classDetails.lore.atlanteon_martial_artist",
     "classDetails.lore.atlanteon_shaman",
@@ -620,7 +604,6 @@ export const pending: Record<string, readonly string[]> = {
   ],
   "tr_TR": [
     "auth.selectTribe",
-    "classDetails.ariaPt",
     "classDetails.lore.atlanteon_assassin",
     "classDetails.lore.atlanteon_martial_artist",
     "classDetails.lore.atlanteon_shaman",
@@ -658,7 +641,6 @@ export const pending: Record<string, readonly string[]> = {
   ],
   "sv_SE": [
     "auth.selectTribe",
-    "classDetails.ariaPt",
     "classDetails.lore.atlanteon_assassin",
     "classDetails.lore.atlanteon_martial_artist",
     "classDetails.lore.atlanteon_shaman",
@@ -696,7 +678,6 @@ export const pending: Record<string, readonly string[]> = {
   ],
   "vi_VN": [
     "auth.selectTribe",
-    "classDetails.ariaPt",
     "classDetails.lore.atlanteon_assassin",
     "classDetails.lore.atlanteon_martial_artist",
     "classDetails.lore.atlanteon_shaman",
@@ -734,7 +715,6 @@ export const pending: Record<string, readonly string[]> = {
   ],
   "da_DK": [
     "auth.selectTribe",
-    "classDetails.ariaPt",
     "classDetails.lore.atlanteon_assassin",
     "classDetails.lore.atlanteon_martial_artist",
     "classDetails.lore.atlanteon_shaman",

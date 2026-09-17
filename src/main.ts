@@ -494,7 +494,7 @@ import {
   tribeStageEntries,
   tribeStageUsesRotation,
 } from './ui/pt_formation';
-import { PT_CLASS_DISPLAY_NAMES, PT_TRIBES } from './sim/content/pt_tribes';
+import { PT_TRIBES } from './sim/content/pt_tribes';
 import { ptStartingStatsFor } from './sim/content/pt_starting_stats';
 import {
   ensureLocaleLoaded,
@@ -7542,17 +7542,13 @@ function renderClassDetails(
   const existingContent = panel.querySelector('.class-details-content');
   const existingName = panel.querySelector('.class-details-name')?.textContent;
   const classLabel = classDisplayName(className);
-  // PT classes show the plain class name (PT_CLASS_DISPLAY_NAMES) because the
-  // tribe is rendered as its own badge; the catalog classes.* names are
-  // tribe-prefixed and would read redundantly in the header.
-  const headerLabel = PT_CLASS_DISPLAY_NAMES[className] ?? classLabel;
   const roleLabel = t(details.roleKey);
   const armorLabel = t(details.armorKey);
   const weaponsLabel = t(details.weaponsKey);
   const resourceKey = RESOURCE_KEYS[classDef.resourceType] ?? 'classDetails.resources.mana';
   const resourceLabel = t(resourceKey);
 
-  if (existingContent && existingName === headerLabel) {
+  if (existingContent && existingName === classLabel) {
     if (
       activeClassDetailsTimeouts[panelId] !== undefined &&
       activeClassDetailsTimeouts[panelId] !== null
@@ -7727,7 +7723,7 @@ function renderClassDetails(
             <div class="pt-stat-row"><span class="pt-stat-label">Strength</span><span class="pt-stat-val">${ptStats!.str}</span></div>
             <div class="pt-stat-row"><span class="pt-stat-label">Spirit</span><span class="pt-stat-val">${ptStats!.spi}</span></div>
             <div class="pt-stat-row"><span class="pt-stat-label">Talent</span><span class="pt-stat-val">${ptStats!.tal}</span></div>
-            <div class="pt-stat-row"><span class="pt-stat-label">Agility</span><span class="pt-stat-val">${ptStats!.dex}</span></div>
+            <div class="pt-stat-row"><span class="pt-stat-label">Dexterity</span><span class="pt-stat-val">${ptStats!.dex}</span></div>
             <div class="pt-stat-row"><span class="pt-stat-label">Health</span><span class="pt-stat-val">${ptStats!.hp}</span></div>
           </div>
         </div>`;
@@ -7735,7 +7731,7 @@ function renderClassDetails(
         <div class="class-details-content fade-out">
           <div class="class-details-header">
             <div class="class-details-header-text">
-              <h3 class="class-details-name">${esc(headerLabel)}</h3>
+              <h3 class="class-details-name">${esc(classLabel)}</h3>
               ${ptTribeName ? `<span class="class-details-tribe">${esc(ptTribeName.toUpperCase())}</span>` : ''}
             </div>
           </div>
@@ -7745,17 +7741,7 @@ function renderClassDetails(
       `;
       panel.setAttribute(
         'aria-label',
-        ptTribeName
-          ? t('classDetails.ariaPt', {
-              className: headerLabel,
-              tribe: ptTribeName,
-              str: ptStats!.str,
-              spi: ptStats!.spi,
-              tal: ptStats!.tal,
-              dex: ptStats!.dex,
-              hp: ptStats!.hp,
-            })
-          : headerLabel,
+        `${classLabel}${ptTribeName ? ', ' + ptTribeName : ''}`,
       );
       const contentWrapper = panel.querySelector('.class-details-content') as HTMLElement | null;
       if (contentWrapper) {

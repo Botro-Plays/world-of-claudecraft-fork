@@ -344,52 +344,41 @@ export const shellStrings = {
           'Warlocks summon demons, apply curses and damage-over-time magic, and leech life from enemies to endure.',
         druid:
           'Druids channel nature, healing wounds, entangling foes, and shifting into animal forms for defense or damage.',
-        // PT class lore transcribed from the MagicPT-Chinese character-creation
-        // description images (client/StartImage/login/CharSelect/T_chr-*.tga),
-        // with obvious source typos cleaned and obsolete tribe references removed
-        // to match the current Botro tribe assignment.
+        // PT Tempskron Fighter POC: reuse warrior's lore
         tempskron_fighter:
-          'Fighters are excellent in proximity battles and use weapons designed for short-range battle.',
-        // T_chr-meca.tga
+          'Warriors are battle-hardened melee fighters who build Rage as they deal or take damage. They absorb heavy hits or crush foes with powerful weapons.',
+        // PT Tempskron Mechanician POC: reuse warrior's lore
         tempskron_mechanician:
-          'Mechanicians have the ability to handle various machines and are the only characters who can deal with offensive machinery.',
-        // T_chr-pkm.tga (source reads "Scalemale", a typo for scale mail)
+          'Warriors are battle-hardened melee fighters who build Rage as they deal or take damage. They absorb heavy hits or crush foes with powerful weapons.',
+        // PT Tempskron Pikeman POC: reuse warrior's lore
         tempskron_pikeman:
-          'Pikemen are good at handling spears which cause fatal injury to enemies. They have wide vision and can be equipped with durable scale mail.',
-        // T_chr-ac.tga (source omits "and" between the two combat phrases)
+          'Warriors are battle-hardened melee fighters who build Rage as they deal or take damage. They absorb heavy hits or crush foes with powerful weapons.',
+        // PT Tempskron Archer POC: reuse warrior's lore
         tempskron_archer:
-          'Archers excel in long-range and anti-air combat. Their main weapons are bows and crossbows.',
-        // T_chr-knt.tga (source says "warriors of Morion"; tribe wording removed
-        // because Knight is Tempskron in the Botro roster)
+          'Warriors are battle-hardened melee fighters who build Rage as they deal or take damage. They absorb heavy hits or crush foes with powerful weapons.',
+        // PT Morion Knight POC: reuse warrior's lore
         morion_knight:
-          'Knights are noble warriors with stout bodies and disciplined minds. Their attacking power comes from their religious devotion, representing great power.',
-        // T_chr-atlt.tga
+          'Warriors are battle-hardened melee fighters who build Rage as they deal or take damage. They absorb heavy hits or crush foes with powerful weapons.',
+        // PT Morion Atalanta POC: brief lore for the Atalanta (Morion female spear/javelin warrior)
         morion_atalanta:
-          "Atalantas can attack enemies by using their magical power with spears or javelins. Their power is truly seen when attacking with javelin throws in long-range battle. Their unique javelin attack is the source of Atalantas' power.",
-        // T_chr-prts.tga
+          'Atalantas are agile Morion spear-warriors who hurl javelins and strike with polearms, blending martial discipline with ranged reach on the battlefield.',
+        // PT Morion Priestess POC: reuse priest's lore (holy caster/healer)
         morion_priestess:
-          'Priestesses are ministers who use religious magic. Through their enduring training, they have the power to heal others and attack with magical moves. They seem spiritually strong but physically weak.',
-        // T_chr-mgc.tga
+          'Priestesses channel holy light to heal allies, shield them from harm, and smite the undead with radiant power.',
+        // PT Morion Magician POC: reuse mage's lore (elemental caster)
         morion_magician:
-          'Magicians manipulate their magical power to harm their enemies. They have an excellent understanding of every element and study how to turn magical power into a fatal attack. Magicians who advance to a certain class can even move the earth and stars as they wish.',
-        // T_chr-assa.tga (source says "Thamskron race"; tribe wording removed
-        // because Assassin is Atlanteon in the Botro roster)
+          'Magicians bend Fire, Frost, and arcane force to destroy enemies, summon water, and freeze threats in place.',
+        // PT Atlanteon Assassin POC: reuse rogue's lore (dual-wield melee DPS)
         atlanteon_assassin:
-          'Assassins are skilled dual-sword fighters who specialize in techniques such as hiding and poisoning.',
-        // T_chr-ma.tga (the source client only ships a Korean description;
-        // this is a translation, not original English text)
+          'Assassins strike from the shadows with poisoned blades, building combo points to unleash deadly finishing moves.',
+        // PT Atlanteon Martial Artist POC: brief lore (unarmed melee brawler)
         atlanteon_martial_artist:
-          'Martial Artists use their fists and feet as weapons. They are powerful close-combat fighters whose primary weapon is the vambrace.',
-        // T_chr-sha.tga
+          'Martial Artists are disciplined unarmed brawlers who combine raw strength with kicking and striking techniques to overwhelm foes.',
+        // PT Atlanteon Shaman POC: reuse shaman's lore (spiritual caster)
         atlanteon_shaman:
-          'Shamans have strong abilities in dark magic, drawing on the power of darkness. Their weapon is not a magic wand but the phantom on their back.',
+          'Shamans command the elements, imbuing weapons with power, shocking enemies with lightning, and restoring allies.',
       },
       aria: 'Class details for {className}: role {role}. Starting stats: Strength {str}, Agility {agi}, Stamina {sta}, Intellect {int}, Spirit {spi}.',
-      // PT classes show tribe (not role) and the five PT stats
-      // (Strength/Spirit/Talent/Agility/Health), matching the labels in the
-      // PT branch of renderClassDetails.
-      ariaPt:
-        'Class details for {className}: tribe {tribe}. Starting stats: Strength {str}, Spirit {spi}, Talent {tal}, Agility {dex}, Health {hp}.',
       statBarAria: '{stat}: {value} out of 25',
     },
     mobilePreflight: {
