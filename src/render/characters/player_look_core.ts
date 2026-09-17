@@ -28,6 +28,29 @@ import {
   slotCovered,
 } from './modular';
 
+/** The PT classes use fixed GLBs with their own Bip01 skeleton, not the
+ *  KayKit modular body. They have no `player_${cls}_modular` entry in VISUALS
+ *  (the modular-visual loop in manifest.ts skips them), so a composed look
+ *  must not be requested for them. Mirrors the same guard in
+ *  `modularLookForClass` (src/main.ts) and the loop skip (manifest.ts). */
+const PT_CLASSES: ReadonlySet<string> = new Set([
+  'tempskron_fighter',
+  'tempskron_mechanician',
+  'tempskron_pikeman',
+  'tempskron_archer',
+  'morion_knight',
+  'morion_atalanta',
+  'morion_priestess',
+  'morion_magician',
+  'atlanteon_assassin',
+  'atlanteon_martial_artist',
+  'atlanteon_shaman',
+]);
+
+export function isPtClass(cls: string): boolean {
+  return PT_CLASSES.has(cls);
+}
+
 /** The roster-row fields a look is composed from. Structural on purpose: the
  *  char-select `CharacterSummary` satisfies it without this render module
  *  importing the net layer. */
@@ -106,13 +129,22 @@ export function armorSetSourceFor(
 
 /**
  * A roster character's composed pieces, or null when the row renders a fixed
- * rig: no authored look (a pre-creator character), or the Combat Mech
- * replacement body, which is never composed over. The worn kit mirrors the
- * in-world rule, with the class's own set (a roster row is not the local
- * player's dev override).
+ * rig: no authored look (a pre-creator character), the Combat Mech
+ * replacement body, which is never composed over, or a PT class, which uses a
+ * fixed GLB with its own Bip01 skeleton rather than the KayKit modular body.
+ * The worn kit mirrors the in-world rule, with the class's own set (a roster
+ * row is not the local player's dev override).
  */
 export function charselectLook(c: RosterLookRow): ModularLook | null {
   if (c.skinCatalog === 'mech') return null;
+  // PT classes use fixed GLBs with their own Bip01 skeleton, not composed
+  // KayKit modular bodies. A modular def for a PT class does not exist in
+  // VISUALS (player_${cls}_modular), so composing over it would throw inside
+  // prepareVisual and leave the preview blank. Fall back to the class rig
+  // (player_${cls}) via the setAppearance path, exactly like a pre-creator
+  // character. Mirrors the same guard in modularLookForClass (src/main.ts)
+  // and the modular-visual loop skip (manifest.ts).
+  if (isPtClass(c.class)) return null;
   return composedLook(c.appearance, classArmorSet(c.class), c.helmHidden === true);
 }
 

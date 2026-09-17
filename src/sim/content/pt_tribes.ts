@@ -64,7 +64,7 @@ export const PT_TRIBES: readonly PtTribeDef[] = [
       'tempskron_pikeman',
       'tempskron_archer',
     ],
-    logoPath: '/ui/tribes/tempskron.svg',
+    logoPath: '/ui/tribes/Tempskron.png',
     placeholderLogoFromTribe: null,
   },
   {
@@ -77,7 +77,7 @@ export const PT_TRIBES: readonly PtTribeDef[] = [
       'morion_priestess',
     ],
     implementedClassIds: ['morion_knight', 'morion_atalanta', 'morion_priestess', 'morion_magician'],
-    logoPath: '/ui/tribes/morion.svg',
+    logoPath: '/ui/tribes/Morion.png',
     placeholderLogoFromTribe: null,
   },
   {
@@ -90,8 +90,7 @@ export const PT_TRIBES: readonly PtTribeDef[] = [
       'atlanteon_martial_artist',
     ],
     implementedClassIds: ['atlanteon_assassin', 'atlanteon_shaman', 'atlanteon_martial_artist'],
-    // TODO: Replace logoPath with the real Atlanteon logo when available.
-    logoPath: null,
-    placeholderLogoFromTribe: 'tempskron',
+    logoPath: '/ui/tribes/Atlanteon.png',
+    placeholderLogoFromTribe: null,
   },
 ] as const;

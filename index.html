@@ -1316,6 +1316,20 @@
                 <div class="skin-picker">
                   <div class="skin-picker-header" data-i18n="auth.appearance">Appearance</div>
                   <div id="online-skin-row" class="skin-row"></div>
+                  <div id="online-pt-hair-row" class="skin-row pt-hair-row" hidden>
+                    <div class="pt-hair-label">Hairstyle</div>
+                    <div class="pt-hair-choices">
+                      <button type="button" class="pt-hair-card sel" data-hair="0" aria-pressed="true">
+                        <span class="pt-hair-card-label">Hair 1</span>
+                      </button>
+                      <button type="button" class="pt-hair-card" data-hair="1" aria-pressed="false">
+                        <span class="pt-hair-card-label">Hair 2</span>
+                      </button>
+                      <button type="button" class="pt-hair-card" data-hair="2" aria-pressed="false">
+                        <span class="pt-hair-card-label">Hair 3</span>
+                      </button>
+                    </div>
+                  </div>
                   <div id="charcreate-appearance"></div>
                 </div>
                 <div class="auth-actions cs-form-actions">
@@ -1342,12 +1356,12 @@
           <p class="pt-tribe-select-subtitle" data-i18n="auth.selectTribe">SELECT YOUR TRIBE</p>
           <div class="pt-tribe-cards-row">
             <button type="button" class="pt-tribe-card" data-tribe="tempskron" aria-label="Select Tempskron tribe">
-              <img src="/ui/tribes/tempskron.svg" alt="Tempskron emblem" class="pt-tribe-card-logo" width="80" height="80">
+              <img src="/ui/tribes/Tempskron.png" alt="Tempskron emblem" class="pt-tribe-card-logo" width="80" height="80">
               <div class="pt-tribe-card-name">TEMPSKRON</div>
               <div class="pt-tribe-card-classes">Fighter &middot; Mechanician &middot; Pikeman &middot; Archer</div>
             </button>
             <button type="button" class="pt-tribe-card" data-tribe="morion" aria-label="Select Morion tribe">
-              <img src="/ui/tribes/morion.svg" alt="Morion emblem" class="pt-tribe-card-logo" width="80" height="80">
+              <img src="/ui/tribes/Morion.png" alt="Morion emblem" class="pt-tribe-card-logo" width="80" height="80">
               <div class="pt-tribe-card-name">MORION</div>
               <div class="pt-tribe-card-classes">Knight &middot; Atalanta &middot; Magician &middot; Priestess</div>
             </button>
@@ -1355,7 +1369,7 @@
                  Atlanteon emblem exists. data-placeholder-for marks it for easy
                  find/replace when the asset is ready. -->
             <button type="button" class="pt-tribe-card" data-tribe="atlanteon" aria-label="Select Atlanteon tribe">
-              <img src="/ui/tribes/tempskron.svg" alt="Atlanteon emblem" class="pt-tribe-card-logo pt-tribe-logo-placeholder" width="80" height="80" data-placeholder-for="atlanteon">
+              <img src="/ui/tribes/Atlanteon.png" alt="Atlanteon emblem" class="pt-tribe-card-logo" width="80" height="80">
               <div class="pt-tribe-card-name">ATLANTEON</div>
               <div class="pt-tribe-card-classes">Assassin &middot; Shaman &middot; Martial Artist</div>
             </button>

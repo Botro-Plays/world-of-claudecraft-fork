@@ -135,16 +135,12 @@ describe('PT tribe configuration', () => {
       expect(tribe.implementedClassIds).toContain('atlanteon_martial_artist');
     });
 
-    it('no own logo yet (uses placeholder)', () => {
-      expect(tribe.logoPath).toBeNull();
+    it('has a logo path', () => {
+      expect(tribe.logoPath).toBeTruthy();
     });
 
-    it('placeholder logo points to an existing tribe with a real logo', () => {
-      expect(tribe.placeholderLogoFromTribe).not.toBeNull();
-      const placeholderId = tribe.placeholderLogoFromTribe as PtTribeId;
-      const placeholderTribe = PT_TRIBES.find((t) => t.id === placeholderId);
-      expect(placeholderTribe).toBeDefined();
-      expect(placeholderTribe!.logoPath).toBeTruthy();
+    it('does not use a placeholder logo', () => {
+      expect(tribe.placeholderLogoFromTribe).toBeNull();
     });
   });
 

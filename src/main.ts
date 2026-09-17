@@ -342,6 +342,7 @@ import {
   armorSetSourceFor,
   charselectLook,
   inWorldLookFor,
+  isPtClass,
 } from './render/characters/player_look_core';
 import {
   onPortraitUpdate,
@@ -5387,6 +5388,14 @@ let offlinePtHair = 0; // chosen PT hair style (0-2) for the offline quick-start
 // Currently selected tribe for the offline character-select formation.
 // Null when no tribe has been selected yet (e.g. on the tribe-select screen).
 let offlineSelectedTribe: PtTribeId | null = null;
+let onlinePtHair = 0; // chosen PT hair style (0-2) for new online characters
+// Currently selected tribe for the ONLINE character creation formation.
+// Null when no tribe has been selected yet (e.g. on the tribe-select screen).
+let onlineSelectedTribe: PtTribeId | null = null;
+// True while the online tribe-first character creation flow is active.
+// Distinguishes online creation from the offline tribe-select flow that
+// shares the #pt-tribe-select panel.
+let onlineCreationActive = false;
 
 // PT hair style -> visual key. Each PT class has 3 hair GLB variants.
 // The base GLB uses the default hair; the two variants swap the head mesh.
@@ -5767,14 +5776,55 @@ function showTribeFormation(tribeId: PtTribeId): void {
  * back to its HOME position; the newly selected character walks from its
  * own HOME to the presentation center. Updates the details panel, hair
  * controls, and skin controls. Does NOT rebuild the formation.
+ *
+ * For Atlanteon (3 characters), uses rotateStageMember so the clicked
+ * side character swaps homes with the current center and all three
+ * characters remain visible in a LEFT/CENTER/RIGHT rotation layout.
  */
 function selectStageClass(cls: PlayerClass): void {
   if (!characterPreview) return;
-  characterPreview.selectStageMember(cls);
+  if (offlineSelectedTribe === 'atlanteon') {
+    characterPreview.rotateStageMember(cls);
+  } else {
+    characterPreview.selectStageMember(cls);
+  }
   renderClassDetails('offline-class-details', cls);
   const startBtn = $('#btn-start-offline') as HTMLButtonElement | null;
   startBtn?.removeAttribute('disabled');
   refreshOfflineSkins(cls);
+}
+
+/**
+ * Show the tribe formation as a persistent clickable 3D stage for ONLINE
+ * character creation. Mirrors showTribeFormation but tracks the online
+ * selected tribe so the two flows (online/offline) do not clobber each
+ * other's state.
+ */
+function showOnlineTribeFormation(tribeId: PtTribeId): void {
+  if (!characterPreview) return;
+  onlineSelectedTribe = tribeId;
+  const entries = tribeStageEntries(tribeId);
+  characterPreview.setStageFormation(entries);
+}
+
+/**
+ * Select a class on the stage for ONLINE character creation. Mirrors
+ * selectStageClass but updates the online details panel and online skin
+ * picker instead of the offline ones.
+ *
+ * For Atlanteon (3 characters), uses rotateStageMember so the clicked
+ * side character swaps homes with the current center and all three
+ * characters remain visible in a LEFT/CENTER/RIGHT rotation layout.
+ */
+function selectOnlineStageClass(cls: PlayerClass): void {
+  if (!characterPreview) return;
+  if (onlineSelectedTribe === 'atlanteon') {
+    characterPreview.rotateStageMember(cls);
+  } else {
+    characterPreview.selectStageMember(cls);
+  }
+  renderClassDetails('charcreate-class-details', cls);
+  refreshOnlineSkins(cls);
 }
 
 /** The class each panel's customizer is currently editing. The customizer
@@ -5903,7 +5953,21 @@ function refreshOfflineSkins(cls: PlayerClass): void {
 /** Reset to the default skin and (re)render the online creation picker for a class. */
 function refreshOnlineSkins(cls: PlayerClass): void {
   onlineSkin = 0;
+  onlinePtHair = 0;
   characterPreview?.setSkin(0);
+  // Show the 3-choice hair selector for PT classes.
+  const hairRow = document.getElementById('online-pt-hair-row');
+  if (hairRow) {
+    const isPtClass = cls === 'tempskron_fighter' || cls === 'tempskron_mechanician' || cls === 'tempskron_pikeman' || cls === 'tempskron_archer' || cls === 'morion_knight' || cls === 'morion_atalanta' || cls === 'morion_priestess' || cls === 'morion_magician' || cls === 'atlanteon_assassin' || cls === 'atlanteon_martial_artist' || cls === 'atlanteon_shaman';
+    hairRow.hidden = !isPtClass;
+    if (isPtClass) {
+      hairRow.querySelectorAll('.pt-hair-card').forEach((b, i) => {
+        const sel = i === 0;
+        b.classList.toggle('sel', sel);
+        b.setAttribute('aria-pressed', sel ? 'true' : 'false');
+      });
+    }
+  }
   if (!CREATION_SKIN_PRESETS) {
     hideSkinPicker('#online-skin-row');
     return;
@@ -5930,10 +5994,14 @@ function updatePreviewContainer(panelId: string): void {
   if (!container) return;
   characterPreview.setContainer(container);
 
-  // The offline-select uses the wider stage framing so the full tribe
-  // formation (up to 4 characters) fits in frame. Other panels keep the
-  // close-up sheet framing.
-  characterPreview.setFraming(panelId === '#offline-select' ? 'stage' : 'sheet');
+  // The offline-select and the online charcreate (tribe-first creation) use
+  // the wider stage framing so the full tribe formation (up to 4 characters)
+  // fits in frame. Other panels keep the close-up sheet framing.
+  characterPreview.setFraming(
+    panelId === '#offline-select' || (panelId === '#charcreate-panel' && onlineCreationActive)
+      ? 'stage'
+      : 'sheet',
+  );
 
   if (panelId === '#charselect-panel') {
     // The selected roster row drives the showcase: its full real appearance
@@ -5958,6 +6026,13 @@ function updatePreviewContainer(panelId: string): void {
     // class lives on the stage, not in a .mini-class.sel card. If a stage
     // is already active (re-mount), keep it; otherwise the tribe-select
     // flow will build it. The stage framing is applied above.
+    return;
+  }
+
+  if (panelId === '#charcreate-panel' && onlineCreationActive) {
+    // Online creation uses the persistent 3D stage; the stage is built
+    // when a tribe is selected. If a stage is already active (re-mount),
+    // keep it; otherwise the tribe-select flow will build it.
     return;
   }
 
@@ -6134,6 +6209,7 @@ function show(el: string): void {
     '#charselect-panel',
     '#charcreate-panel',
     '#offline-select',
+    '#pt-tribe-select',
   ];
   document.body.dataset.startPanel = el.slice(1);
 
@@ -6966,9 +7042,12 @@ async function refreshCharacters(): Promise<void> {
       clearPlayMarker();
     }
     if (chars.length === 0) {
-      // No characters on this realm, drop straight into the create screen.
+      // Tribe-first flow: an empty roster goes to tribe selection, not
+      // directly to the create panel. The tribe callback builds the filtered
+      // 3D stage and transitions into #charcreate-panel.
       listEl.innerHTML = `<li class="char-list-message">${esc(t('character.noneYet'))}</li>`;
-      show('#charcreate-panel');
+      onlineCreationActive = true;
+      show('#pt-tribe-select');
       return;
     }
     for (const c of chars) {
@@ -6989,7 +7068,10 @@ async function refreshCharacters(): Promise<void> {
         : '';
       // One-shot redesign token (server-decided: pre-creator character, token
       // unspent). Rendered on every action arm; gone for good once spent.
-      const rerollBtn = c.appearanceRerollAvailable
+      // PT classes use fixed GLBs, not the WoC modular body the redesign
+      // editor composes over, so the button is hidden for them regardless of
+      // the token state.
+      const rerollBtn = c.appearanceRerollAvailable && !isPtClass(c.class)
         ? `<button type="button" class="btn reroll-char-btn" title="${esc(t('character.redesignHint'))}" aria-label="${esc(t('character.redesignTitle', { name: c.name }))}">${esc(t('character.redesign'))}</button>`
         : '';
       // The chip draws the character's REAL body: their authored modular look
@@ -7909,10 +7991,22 @@ function refreshLocalizedDynamicShell(): void {
     return;
   }
   if (activePanel === 'charcreate-panel') {
-    const sel = document.querySelector('#charcreate-panel .mini-class.sel') as HTMLElement | null;
-    if (sel) {
-      currentlyRenderedClass['charcreate-class-details'] = null;
-      renderClassDetails('charcreate-class-details', sel.dataset.class as PlayerClass);
+    if (onlineCreationActive) {
+      // Online creation uses the 3D stage; read the selected class from stage state.
+      const stageCls = characterPreview?.getStageSelectedClass() as
+        | PlayerClass
+        | null
+        | undefined;
+      if (stageCls) {
+        currentlyRenderedClass['charcreate-class-details'] = null;
+        renderClassDetails('charcreate-class-details', stageCls);
+      }
+    } else {
+      const sel = document.querySelector('#charcreate-panel .mini-class.sel') as HTMLElement | null;
+      if (sel) {
+        currentlyRenderedClass['charcreate-class-details'] = null;
+        renderClassDetails('charcreate-class-details', sel.dataset.class as PlayerClass);
+      }
     }
     return;
   }
@@ -10140,6 +10234,34 @@ function wireStartScreens(): void {
     );
   });
 
+  // Online PT hair style selector: 3 choices swap the GLB visual key.
+  // Mirrors the offline hair selector but updates the online hair state
+  // so the two flows do not clobber each other.
+  document.querySelectorAll('#online-pt-hair-row .pt-hair-card').forEach((btn) => {
+    const handleOnlineHairSelect = () => {
+      const hair = Number((btn as HTMLElement).dataset.hair ?? '0');
+      onlinePtHair = hair;
+      document.querySelectorAll('#online-pt-hair-row .pt-hair-card').forEach((b) => {
+        const sel = b === btn;
+        b.classList.toggle('sel', sel);
+        b.setAttribute('aria-pressed', sel ? 'true' : 'false');
+      });
+      // Rebuild the selected stage member's visual with the new hair.
+      const selCls = characterPreview?.getStageSelectedClass() as
+        | PlayerClass
+        | null
+        | undefined;
+      if (selCls && characterPreview) {
+        const vk = ptVisualKey(selCls, hair);
+        if (vk) characterPreview.rebuildSelectedStageVisual(vk);
+      }
+    };
+    btn.addEventListener('click', handleOnlineHairSelect);
+    btn.addEventListener('keydown', (e) =>
+      handleKeyboardActivation(e as KeyboardEvent, handleOnlineHairSelect),
+    );
+  });
+
   const offlineBackBtn = $('#btn-offline-back');
   const handleOfflineBack = () => {
     // Back from the class roster returns to tribe selection (tribe-first flow).
@@ -10157,29 +10279,56 @@ function wireStartScreens(): void {
   };
   if (offlineBackBtn) offlineBackBtn.addEventListener('click', handleOfflineBack);
 
-  // Wire the tribe selection panel: tribe cards navigate into #offline-select
-  // filtered to that tribe; Back on the tribe screen returns to #mode-select.
+  // Wire the tribe selection panel. The #pt-tribe-select panel is shared
+  // between the offline flow (mode-select -> tribe -> #offline-select) and
+  // the online creation flow (empty roster / New Character -> tribe ->
+  // #charcreate-panel). The onlineCreationActive flag routes the callback
+  // to the correct downstream panel and stage builder.
   wirePtTribeSelect($('#pt-tribe-select') as HTMLElement | null, {
     onTribeSelected(tribeId, first) {
-      filterOfflineSelectForTribe($('#offline-select') as HTMLElement | null, tribeId);
-      show('#offline-select');
-      if (first) {
-        renderClassDetails('offline-class-details', first as PlayerClass);
-        btnStartOffline.removeAttribute('disabled');
-        refreshOfflineSkins(first as PlayerClass);
-        // Build the persistent 3D stage: all implemented classes stand at
-        // their HOME positions. No character is automatically selected —
-        // the player must click a 3D character to start walking forward.
-        // The info panel above shows the first class as a default preview,
-        // but that is separate from the 3D stage selection state.
-        showTribeFormation(tribeId);
+      if (onlineCreationActive) {
+        // Online creation: hide the mini-class chips (the 3D stage is the
+        // authoritative class selector) and build the filtered stage.
+        const charcreatePanel = $('#charcreate-panel') as HTMLElement | null;
+        if (charcreatePanel) {
+          charcreatePanel.querySelectorAll<HTMLElement>('.pt-tribe-section').forEach((sec) => {
+            sec.setAttribute('hidden', '');
+          });
+        }
+        show('#charcreate-panel');
+        if (first) {
+          renderClassDetails('charcreate-class-details', first as PlayerClass);
+          refreshOnlineSkins(first as PlayerClass);
+          showOnlineTribeFormation(tribeId);
+        }
       } else {
-        // No implemented classes for this tribe yet.
-        btnStartOffline.setAttribute('disabled', '');
+        filterOfflineSelectForTribe($('#offline-select') as HTMLElement | null, tribeId);
+        show('#offline-select');
+        if (first) {
+          renderClassDetails('offline-class-details', first as PlayerClass);
+          btnStartOffline.removeAttribute('disabled');
+          refreshOfflineSkins(first as PlayerClass);
+          // Build the persistent 3D stage: all implemented classes stand at
+          // their HOME positions. No character is automatically selected —
+          // the player must click a 3D character to start walking forward.
+          // The info panel above shows the first class as a default preview,
+          // but that is separate from the 3D stage selection state.
+          showTribeFormation(tribeId);
+        } else {
+          // No implemented classes for this tribe yet.
+          btnStartOffline.setAttribute('disabled', '');
+        }
       }
     },
     onBack() {
-      show('#mode-select');
+      if (onlineCreationActive) {
+        onlineCreationActive = false;
+        onlineSelectedTribe = null;
+        characterPreview?.clearStage();
+        show('#charselect-panel');
+      } else {
+        show('#mode-select');
+      }
     },
   });
 
@@ -10491,8 +10640,27 @@ function wireStartScreens(): void {
     else void enterWorld(c, btn);
   });
   // New Character opens the dedicated create screen; create's Back returns here.
-  $('#btn-new-character').addEventListener('click', () => show('#charcreate-panel'));
-  $('#btn-charcreate-back').addEventListener('click', () => show('#charselect-panel'));
+  $('#btn-new-character').addEventListener('click', () => {
+    // Tribe-first flow: New Character goes to tribe selection, not directly
+    // to the create panel. The tribe callback builds the filtered 3D stage.
+    onlineCreationActive = true;
+    show('#pt-tribe-select');
+  });
+  $('#btn-charcreate-back').addEventListener('click', () => {
+    // Back from online creation returns to tribe selection (tribe-first flow).
+    // Reset the stage and tribe state for a clean re-entry.
+    show('#pt-tribe-select');
+    characterPreview?.clearStage();
+    onlineSelectedTribe = null;
+    const nameInput = $('#new-char-name') as HTMLInputElement | null;
+    const errEl = $('#charselect-error');
+    if (nameInput) {
+      nameInput.value = '';
+      nameInput.classList.remove('user-invalid-fallback');
+      nameInput.removeAttribute('aria-invalid');
+    }
+    if (errEl) errEl.textContent = '';
+  });
   // One-shot appearance redesign: Save spends the token (server-authoritative),
   // Cancel discards the draft and restores the selected character's stage.
   document
@@ -10686,7 +10854,12 @@ function wireStartScreens(): void {
 
   $('#btn-create-char').addEventListener('click', async () => {
     const name = newCharNameInput.value.trim();
-    const clsEl = document.querySelector('#charcreate-panel .mini-class.sel') as HTMLElement | null;
+    // The selected class now lives on the persistent 3D stage, not in a
+    // .mini-class.sel card. Read it from the preview's stage state.
+    const stageCls = characterPreview?.getStageSelectedClass() as
+      | PlayerClass
+      | null
+      | undefined;
     loginError('');
     charselectError.textContent = '';
 
@@ -10704,7 +10877,7 @@ function wireStartScreens(): void {
       newCharNameInput.focus();
       return;
     }
-    if (!clsEl) {
+    if (!stageCls) {
       charselectError.textContent = t('errors.pickClass');
       return;
     }
@@ -10715,7 +10888,7 @@ function wireStartScreens(): void {
     try {
       await api.createCharacter(
         name,
-        clsEl.dataset.class as PlayerClass,
+        stageCls,
         selectedSkin('#online-skin-row', onlineSkin),
         // The look designed on this panel becomes THIS character's stored
         // appearance (its own DB column). The localStorage draft stays what
@@ -10729,6 +10902,10 @@ function wireStartScreens(): void {
       );
       newCharNameInput.value = '';
       charselectError.textContent = '';
+      // Reset online creation state and clear the stage.
+      onlineCreationActive = false;
+      onlineSelectedTribe = null;
+      characterPreview?.clearStage();
       // Return to the roster and show the freshly-created character.
       show('#charselect-panel');
       await refreshCharacters();
@@ -11492,14 +11669,16 @@ function wireStartScreens(): void {
   charactersReady()
     .then(() => {
       // Resolve each panel defensively: play.html (online-only) has no #offline-select.
-      const activePanelId = ['#charselect-panel', '#offline-select'].find((id) => {
+      const activePanelId = ['#charselect-panel', '#charcreate-panel', '#offline-select'].find((id) => {
         const panel = $(id) as HTMLElement | null;
         return panel !== null && !panel.hasAttribute('hidden');
       });
       const containerId =
         activePanelId === '#offline-select'
           ? '#offline-preview-container'
-          : '#online-preview-container';
+          : activePanelId === '#charcreate-panel'
+            ? '#charcreate-preview-container'
+            : '#online-preview-container';
       const container = $(containerId);
       const canvas = $('#char-preview-canvas') as HTMLCanvasElement | null;
       if (container && canvas) {
@@ -11516,7 +11695,11 @@ function wireStartScreens(): void {
         // raycasting; routed through the same selection path the old
         // .mini-class cards used.
         characterPreview.setStageClickCallback((classId) => {
-          selectStageClass(classId as PlayerClass);
+          if (onlineCreationActive) {
+            selectOnlineStageClass(classId as PlayerClass);
+          } else {
+            selectStageClass(classId as PlayerClass);
+          }
         });
         // If a token auto-login already rendered the roster and selected a
         // character before assets finished, show its real appearance; otherwise
@@ -11529,6 +11712,10 @@ function wireStartScreens(): void {
           // The offline-select uses the persistent 3D stage; the stage is
           // built when a tribe is selected. Until then, show the default
           // fighter body so the canvas isn't blank.
+          previewClassBody('tempskron_fighter');
+        } else if (activePanelId === '#charcreate-panel' && onlineCreationActive) {
+          // Online creation uses the 3D stage; the stage is built when a
+          // tribe is selected. Until then, show the default fighter body.
           previewClassBody('tempskron_fighter');
         } else {
           const selEl = document.querySelector(

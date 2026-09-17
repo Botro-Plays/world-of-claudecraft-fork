@@ -119,6 +119,32 @@ describe('charselectLook', () => {
     ).toBeNull();
   });
 
+  it('returns null for a PT class even with a stored look, so the fixed GLB renders', () => {
+    // PT classes use fixed GLBs with their own Bip01 skeleton, not the
+    // KayKit modular body. A stored appearance (saved at creation) cannot
+    // be composed over a modular def that does not exist for PT classes;
+    // falling back to the class rig (player_${cls}) via setAppearance is
+    // the working path, exactly like a pre-creator character.
+    expect(
+      charselectLook({ class: 'tempskron_fighter', appearance: { gender: 'male' } }),
+    ).toBeNull();
+    expect(
+      charselectLook({ class: 'tempskron_archer', appearance: { gender: 'male' } }),
+    ).toBeNull();
+    expect(
+      charselectLook({ class: 'morion_knight', appearance: { gender: 'male' } }),
+    ).toBeNull();
+    expect(
+      charselectLook({ class: 'atlanteon_assassin', appearance: { gender: 'male' } }),
+    ).toBeNull();
+    expect(
+      charselectLook({ class: 'atlanteon_martial_artist', appearance: { gender: 'male' } }),
+    ).toBeNull();
+    expect(
+      charselectLook({ class: 'atlanteon_shaman', appearance: { gender: 'male' } }),
+    ).toBeNull();
+  });
+
   it('follows the row saved helm preference', () => {
     const app = { gender: 'male' };
     expect(charselectLook({ class: 'rogue', appearance: app, helmHidden: true })?.worn.head).toBe(

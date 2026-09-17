@@ -626,6 +626,20 @@ export class CharacterPreview {
     this.stageSelectedClass = null;
     this.stagePresentationX = 0;
     this.stagePresentationZ = 0;
+    // The stage shares `currentVisual` with the single-character path
+    // (setVisualKey/setAppearance/setModular). When the stage was built
+    // while a characterGroup visual was already mounted, that visual was
+    // orphaned here (currentVisual=null without removal), so a later
+    // setVisualKey — seeing currentVisual=null — skipped the dispose step
+    // and added a NEW visual alongside the orphan, stacking them. If the
+    // current visual lives in characterGroup (a non-stage character from a
+    // previous setAppearance/setModular), dispose it now so setVisualKey
+    // starts from a clean group. A stage member's root lives in stageGroup
+    // and was already disposed above, so this check skips it.
+    if (this.currentVisual && this.currentVisual.root.parent === this.characterGroup) {
+      this.characterGroup.remove(this.currentVisual.root);
+      this.currentVisual.dispose();
+    }
     this.currentVisual = null;
     this.currentVisualSig = null;
     if (this.stageSpotlight) this.stageSpotlight.visible = false;
@@ -712,6 +726,44 @@ export class CharacterPreview {
       this.stageSpotlight.visible = true;
       this.stageSpotlight.intensity = 1.5;
     }
+  }
+
+  /**
+   * Atlanteon 3-character rotation: swap the HOME positions of the clicked
+   * member and the currently selected member, then select the clicked
+   * member. The old center walks to the clicked's former home (LEFT or
+   * RIGHT); the clicked walks to the presentation center; the third member
+   * stays at its home. Reuses the existing walk animation — no teleport.
+   *
+   * If no member is selected yet, this is equivalent to selectStageMember
+   * (first selection). If the clicked member is already selected (center
+   * click), this is a no-op.
+   */
+  rotateStageMember(classId: string): void {
+    if (this.destroyed) return;
+    const clicked = this.stageMembers.find((m) => m.classId === classId);
+    if (!clicked) return;
+    if (this.stageSelectedClass === classId) return; // center click = no-op
+    if (!this.stageSelectedClass) {
+      // First selection: same as selectStageMember.
+      this.selectStageMember(classId);
+      return;
+    }
+    // Swap home positions of the clicked and currently selected members.
+    // After the swap, selectStageMember walks the clicked to the presentation
+    // center and the old center back to its NEW home (the clicked's old slot).
+    const current = this.stageMembers.find(
+      (m) => m.classId === this.stageSelectedClass,
+    );
+    if (current) {
+      const tmpX = clicked.homeX;
+      const tmpZ = clicked.homeZ;
+      clicked.homeX = current.homeX;
+      clicked.homeZ = current.homeZ;
+      current.homeX = tmpX;
+      current.homeZ = tmpZ;
+    }
+    this.selectStageMember(classId);
   }
 
   /**
