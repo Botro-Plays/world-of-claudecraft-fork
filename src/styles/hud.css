@@ -4194,7 +4194,9 @@
     padding: 5px;
   }
   /* PT bottom-shell material on the action rows (same bronze language as
-     #player-frame / #xpbar). Slot shape stays rectangular until slice 2. */
+     #player-frame / #xpbar). Slice 2: chamfered octagon slots like classic
+     PC skill wells (pt-desktop/13-town.jpg). Desktop bars only; mobile uses
+     the paged action ring. */
   #actionbar.panel,
   #actionbar2.panel,
   #actionbar3.panel {
@@ -4205,18 +4207,58 @@
       inset 0 1px 0 rgba(255, 220, 160, 0.14),
       inset 0 -1px 0 rgba(0, 0, 0, 0.45);
   }
+  #actionbar,
+  #actionbar2,
+  #actionbar3 {
+    --pt-slot-clip: polygon(18% 0%, 82% 0%, 100% 18%, 100% 82%, 82% 100%, 18% 100%, 0% 82%, 0% 18%);
+  }
   #actionbar .action-btn,
   #actionbar2 .action-btn,
   #actionbar3 .action-btn {
-    border-color: #7a6238;
-    border-radius: 4px;
-    background: radial-gradient(circle at 35% 30%, #3a3428, #15110c);
+    border: 1px solid #9a7a40;
+    border-radius: 0;
+    background:
+      linear-gradient(145deg, rgba(255, 230, 180, 0.14), transparent 42%),
+      radial-gradient(circle at 35% 30%, #3a3428, #15110c);
+    clip-path: var(--pt-slot-clip);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 230, 180, 0.22),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.55),
+      0 2px 4px #0009;
+  }
+  #actionbar .action-btn .icon-label,
+  #actionbar2 .action-btn .icon-label,
+  #actionbar3 .action-btn .icon-label {
+    inset: 2px;
+    border-radius: 0;
+    clip-path: var(--pt-slot-clip);
+  }
+  #actionbar .action-btn .cd-overlay,
+  #actionbar2 .action-btn .cd-overlay,
+  #actionbar3 .action-btn .cd-overlay,
+  #actionbar .action-btn .recharge-overlay,
+  #actionbar2 .action-btn .recharge-overlay,
+  #actionbar3 .action-btn .recharge-overlay {
+    clip-path: var(--pt-slot-clip);
+  }
+  #actionbar .action-btn:focus-visible,
+  #actionbar2 .action-btn:focus-visible,
+  #actionbar3 .action-btn:focus-visible {
+    outline: none;
+    filter: drop-shadow(0 0 0 2px var(--color-border-focus, #ffd100));
   }
   #actionbar .action-btn.empty,
   #actionbar2 .action-btn.empty,
   #actionbar3 .action-btn.empty {
-    background: #0e0c0a;
-    box-shadow: inset 0 0 10px #000;
+    background: linear-gradient(145deg, rgba(255, 220, 160, 0.06), transparent 40%), #0e0c0a;
+    box-shadow: inset 0 0 12px #000;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #actionbar .action-btn:active,
+    #actionbar2 .action-btn:active,
+    #actionbar3 .action-btn:active {
+      transform: none;
+    }
   }
   /* The optional rows stack above the primary action bar. Tighter bottom padding
      keeps the group compact. Both are off by default; Interface options add
