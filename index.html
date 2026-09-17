@@ -1348,28 +1348,25 @@
         <!-- Tribe-first Character Selection panel.
              Shown first when the player chooses Offline mode. Each tribe card
              navigates to #offline-select filtered to that tribe only.
-             For Atlanteon: the logo temporarily reuses the Tempskron SVG until
-             a real Atlanteon emblem is available. Update the src and the
-             logoPath entry in src/sim/content/pt_tribes.ts at the same time. -->
+             Crests: public/ui/tribes/*.png (wired in pt_tribes.ts logoPath).
+             Classic PC refs: _ui-refs/pt-desktop/03-tribe-select.jpg and
+             StartImage/login TempscronMark / MoryonMark (local only). -->
         <div id="pt-tribe-select" class="panel auth-panel auth-panel-premium cs-wow" hidden>
           <h2 class="auth-title pt-tribe-select-title">PRISTON TALE</h2>
           <p class="pt-tribe-select-subtitle" data-i18n="auth.selectTribe">SELECT YOUR TRIBE</p>
           <div class="pt-tribe-cards-row">
             <button type="button" class="pt-tribe-card" data-tribe="tempskron" aria-label="Select Tempskron tribe">
-              <img src="/ui/tribes/Tempskron.png" alt="Tempskron emblem" class="pt-tribe-card-logo" width="80" height="80">
+              <img src="/ui/tribes/Tempskron.png" alt="Tempskron emblem" class="pt-tribe-card-logo" width="160" height="160">
               <div class="pt-tribe-card-name">TEMPSKRON</div>
               <div class="pt-tribe-card-classes">Fighter &middot; Mechanician &middot; Pikeman &middot; Archer</div>
             </button>
             <button type="button" class="pt-tribe-card" data-tribe="morion" aria-label="Select Morion tribe">
-              <img src="/ui/tribes/Morion.png" alt="Morion emblem" class="pt-tribe-card-logo" width="80" height="80">
+              <img src="/ui/tribes/Morion.png" alt="Morion emblem" class="pt-tribe-card-logo" width="160" height="160">
               <div class="pt-tribe-card-name">MORION</div>
               <div class="pt-tribe-card-classes">Knight &middot; Atalanta &middot; Magician &middot; Priestess</div>
             </button>
-            <!-- Atlanteon logo placeholder: reuses Tempskron SVG until a real
-                 Atlanteon emblem exists. data-placeholder-for marks it for easy
-                 find/replace when the asset is ready. -->
             <button type="button" class="pt-tribe-card" data-tribe="atlanteon" aria-label="Select Atlanteon tribe">
-              <img src="/ui/tribes/Atlanteon.png" alt="Atlanteon emblem" class="pt-tribe-card-logo" width="80" height="80">
+              <img src="/ui/tribes/Atlanteon.png" alt="Atlanteon emblem" class="pt-tribe-card-logo" width="120" height="120">
               <div class="pt-tribe-card-name">ATLANTEON</div>
               <div class="pt-tribe-card-classes">Assassin &middot; Shaman &middot; Martial Artist</div>
             </button>

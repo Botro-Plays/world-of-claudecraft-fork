@@ -2827,7 +2827,10 @@
     margin-top: 4px;
   }
 
-  /* #pt-tribe-select full-screen tribe card layout. */
+  /* #pt-tribe-select full-screen tribe card layout.
+     Tuned toward classic PC tribe pick (pt-desktop/03-tribe-select.jpg):
+     large crest over a parchment name plate, Tempskron/Morion as the primary
+     pair, class lists quiet (classic shows names only on this step). */
   .pt-tribe-select-title {
     font-family: var(--font-heading);
     font-size: clamp(1.4rem, 4vw, 2.2rem);
@@ -2849,8 +2852,8 @@
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
-    align-items: stretch;
-    gap: clamp(12px, 3vw, 28px);
+    align-items: flex-end;
+    gap: clamp(20px, 4vw, 48px);
     padding: 0 clamp(12px, 4vw, 40px);
     width: 100%;
   }
@@ -2858,61 +2861,103 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-    min-width: 150px;
-    max-width: 220px;
-    flex: 1 1 150px;
-    padding: clamp(16px, 3vw, 28px) clamp(12px, 2vw, 20px);
-    border: 2px solid var(--color-border-default);
-    border-radius: 8px;
-    background: #0c0c18cc;
+    gap: 14px;
+    min-width: 180px;
+    max-width: 280px;
+    flex: 1 1 200px;
+    padding: clamp(12px, 2vw, 20px) clamp(10px, 2vw, 16px) clamp(18px, 3vw, 28px);
+    border: 1px solid rgba(196, 160, 90, 0.45);
+    border-radius: 4px;
+    background: transparent;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.55),
+      inset 0 1px 0 rgba(255, 236, 190, 0.08);
     cursor: var(--cursor-point);
     transition:
       border-color var(--transition-speed),
-      box-shadow var(--transition-speed),
-      transform 0.15s ease;
+      box-shadow var(--transition-speed);
     text-align: center;
   }
   .pt-tribe-card:hover,
   .pt-tribe-card:focus-visible {
     border-color: var(--color-primary);
-    box-shadow: 0 0 20px var(--color-primary-glow);
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.55),
+      0 0 18px var(--color-primary-glow),
+      inset 0 1px 0 rgba(255, 236, 190, 0.14);
     outline: none;
-    transform: translateY(-4px);
   }
   .pt-tribe-card:active {
-    transform: translateY(-1px);
+    border-color: var(--color-primary);
   }
   .pt-tribe-card-logo {
-    width: clamp(56px, 8vw, 96px);
-    height: clamp(56px, 8vw, 96px);
+    width: clamp(128px, 16vw, 200px);
+    height: clamp(128px, 16vw, 200px);
     object-fit: contain;
-    opacity: 0.88;
+    opacity: 0.95;
     transition: opacity var(--transition-speed);
+    filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55));
   }
   .pt-tribe-card:hover .pt-tribe-card-logo,
   .pt-tribe-card:focus-visible .pt-tribe-card-logo {
     opacity: 1;
   }
-  /* Temporary logo reused for Atlanteon until its own emblem exists.
-     A distinct hue-rotate makes it visually differ from Tempskron while
-     staying clearly related (a sibling emblem family). */
+  /* Kept for any leftover placeholder markup; live Atlanteon uses its own PNG. */
   .pt-tribe-logo-placeholder {
     filter: hue-rotate(160deg) saturate(0.7);
     opacity: 0.75;
   }
+  /* Parchment name plate under the crest (classic PC tribe buttons). */
   .pt-tribe-card-name {
     font-family: var(--font-heading);
-    font-size: clamp(0.95rem, 2.5vw, 1.25rem);
-    letter-spacing: 0.2em;
+    font-size: clamp(1rem, 2.4vw, 1.35rem);
+    letter-spacing: 0.14em;
     color: var(--color-primary);
-    line-height: 1.1;
+    line-height: 1.2;
+    width: 100%;
+    max-width: 14em;
+    padding: 0.45em 0.9em 0.5em;
+    border: 1px solid rgba(90, 70, 40, 0.85);
+    border-radius: 2px;
+    background: linear-gradient(180deg, rgba(58, 42, 24, 0.92) 0%, rgba(28, 20, 12, 0.94) 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 220, 160, 0.18),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.35),
+      0 2px 6px rgba(0, 0, 0, 0.35);
   }
+  .pt-tribe-card[data-tribe="tempskron"] .pt-tribe-card-name {
+    color: #6fe05a;
+  }
+  .pt-tribe-card[data-tribe="morion"] .pt-tribe-card-name {
+    color: #5ad6e8;
+  }
+  .pt-tribe-card[data-tribe="atlanteon"] .pt-tribe-card-name {
+    color: #d4c48a;
+  }
+  /* Classic tribe step shows crest + name; keep class hints secondary. */
   .pt-tribe-card-classes {
-    font-size: clamp(0.68rem, 1.5vw, 0.8rem);
+    font-size: clamp(0.65rem, 1.4vw, 0.76rem);
     color: var(--color-text-muted);
     letter-spacing: 0.04em;
-    line-height: 1.55;
+    line-height: 1.45;
+    max-width: 16em;
+    opacity: 0.72;
+  }
+  /* Atlanteon is third-tribe / secondary on classic PC (two primary marks). */
+  .pt-tribe-card[data-tribe="atlanteon"] {
+    min-width: 140px;
+    max-width: 200px;
+    flex: 0 1 160px;
+  }
+  .pt-tribe-card[data-tribe="atlanteon"] .pt-tribe-card-logo {
+    width: clamp(88px, 11vw, 140px);
+    height: clamp(88px, 11vw, 140px);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pt-tribe-card,
+    .pt-tribe-card-logo {
+      transition: none;
+    }
   }
 
   /* WoW-style full-screen character screens (the offline panel plus the two
@@ -3192,13 +3237,15 @@
     body:not(.mobile-touch) #charcreate-panel.cs-wow .mini-class.sel .mini-class-label {
       color: #ffd100;
       font-weight: 700;
-      text-shadow: 0 1px 3px #000, 0 0 8px rgba(255, 209, 0, 0.4);
+      text-shadow:
+        0 1px 3px #000,
+        0 0 8px rgba(255, 209, 0, 0.4);
     }
     /* Selected class indicator dot: a small gold dot under the selected
        class label, making the selection state unmistakable. */
     #offline-select.cs-wow .mini-class.sel::after,
     body:not(.mobile-touch) #charcreate-panel.cs-wow .mini-class.sel::after {
-      content: '';
+      content: "";
       display: block;
       width: 6px;
       height: 6px;
@@ -3308,11 +3355,8 @@
         .homepage-footer,
         .official-site-copy
       ),
-    body[data-start-panel="pt-tribe-select"] :is(
-        .homepage-header,
-        .homepage-footer,
-        .official-site-copy
-      ),
+    body[data-start-panel="pt-tribe-select"]
+      :is(.homepage-header, .homepage-footer, .official-site-copy),
     body:not(.mobile-touch)[data-start-panel="charselect-panel"]
       :is(.homepage-footer, .official-site-copy),
     body:not(.mobile-touch)[data-start-panel="charcreate-panel"]
@@ -4982,7 +5026,11 @@
     border-radius: var(--radius-sm);
     color: #d8c898;
     cursor: pointer;
-    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.1s;
+    transition:
+      border-color 0.15s,
+      background 0.15s,
+      box-shadow 0.15s,
+      transform 0.1s;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -4995,7 +5043,9 @@
   .pt-hair-card.sel {
     border-color: rgba(240, 210, 130, 0.9);
     background: linear-gradient(160deg, rgba(80, 68, 40, 0.85), rgba(40, 34, 20, 0.95));
-    box-shadow: 0 0 12px rgba(240, 210, 130, 0.45), inset 0 0 8px rgba(240, 210, 130, 0.15);
+    box-shadow:
+      0 0 12px rgba(240, 210, 130, 0.45),
+      inset 0 0 8px rgba(240, 210, 130, 0.15);
   }
   .pt-hair-card:active {
     transform: scale(0.97);
