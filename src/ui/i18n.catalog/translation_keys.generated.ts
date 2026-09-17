@@ -541,6 +541,7 @@ export type TranslationKeyFlat =
   | 'character.takeOverConfirm'
   | 'character.viewProfile'
   | 'classDetails.aria'
+  | 'classDetails.ariaPt'
   | 'classDetails.armor.chainLeatherCloth'
   | 'classDetails.armor.cloth'
   | 'classDetails.armor.leatherCloth'
