@@ -3873,21 +3873,51 @@
     bottom: 6px;
     text-align: center;
   }
+
+  /* PT in-game HUD slice 1 (Quay): bronze/stone chrome on the bottom cluster.
+     Refs: _ui-refs/pt-desktop/12-combat-hud.jpg, 13-town.jpg. Layout ids and
+     bar logic stay; only edge/fill materiality moves toward classic PC. */
+  #player-frame .uf-bars {
+    border-color: #8a6e3a;
+    background: linear-gradient(180deg, #2a2418f2 0%, #15110cf5 55%, #0c0a08f5 100%);
+    box-shadow:
+      0 2px 10px #000a,
+      inset 0 1px 0 rgba(255, 220, 160, 0.16),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+  }
+  #player-frame .portrait {
+    border-color: #9a7a40;
+    background: radial-gradient(circle at 35% 30%, #3a3428, #14110c);
+    box-shadow:
+      0 2px 8px #000c,
+      inset 0 1px 0 rgba(255, 230, 180, 0.22),
+      inset 0 0 12px #0009;
+  }
+  #player-frame .bar {
+    background: #120e0a;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+  #player-frame .bar-fill {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  }
+
   #xpbar {
     width: 612px;
     height: 10px;
-    background: #14101e;
+    background: linear-gradient(180deg, #1a1610, #0e0c0a);
     border: 1px solid #000;
-    outline: 1px solid #3a3148;
+    outline: 1px solid #7a6238;
     margin: 4px auto 0;
     position: relative;
     border-radius: 2px;
     overflow: hidden;
+    box-shadow: inset 0 1px 0 rgba(255, 220, 160, 0.1);
   }
   #xpbar .fill {
     height: 100%;
     width: 0%;
-    background: linear-gradient(#b85eff, #6a1bb0);
+    /* Classic PT EXP is a thin cyan strip on the bottom shell. */
+    background: linear-gradient(#6ad4f0, #2a8ab8);
     transition: background 0.3s;
   }
   /* Rested XP overlay (classic inn-rested bonus): a blue segment ahead of the fill. */
@@ -4160,8 +4190,33 @@
   #actionbar2,
   #actionbar3 {
     display: flex;
-    gap: 4px;
-    padding: 6px;
+    gap: 3px;
+    padding: 5px;
+  }
+  /* PT bottom-shell material on the action rows (same bronze language as
+     #player-frame / #xpbar). Slot shape stays rectangular until slice 2. */
+  #actionbar.panel,
+  #actionbar2.panel,
+  #actionbar3.panel {
+    border-color: #8a6e3a;
+    background: linear-gradient(180deg, #2a2418ee 0%, #12100cf5 100%);
+    box-shadow:
+      0 2px 12px #000a,
+      inset 0 1px 0 rgba(255, 220, 160, 0.14),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.45);
+  }
+  #actionbar .action-btn,
+  #actionbar2 .action-btn,
+  #actionbar3 .action-btn {
+    border-color: #7a6238;
+    border-radius: 4px;
+    background: radial-gradient(circle at 35% 30%, #3a3428, #15110c);
+  }
+  #actionbar .action-btn.empty,
+  #actionbar2 .action-btn.empty,
+  #actionbar3 .action-btn.empty {
+    background: #0e0c0a;
+    box-shadow: inset 0 0 10px #000;
   }
   /* The optional rows stack above the primary action bar. Tighter bottom padding
      keeps the group compact. Both are off by default; Interface options add
@@ -6893,7 +6948,7 @@
     color: #fff;
     background: #ffffff1a;
   }
-  .run-walk-toggle[aria-pressed='true'] {
+  .run-walk-toggle[aria-pressed="true"] {
     border-color: #6b5a2d;
     color: #c7b46a;
   }
