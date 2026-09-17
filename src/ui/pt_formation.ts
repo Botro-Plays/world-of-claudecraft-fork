@@ -57,6 +57,19 @@ export function tribeStageEntries(tribeId: PtTribeId): FormationEntry[] {
 }
 
 /**
+ * Whether a tribe's stage uses the side-swap rotation presentation. A stage
+ * with exactly three implemented classes keeps every member visible via a
+ * LEFT/CENTER/RIGHT home swap when a side member is clicked; stages with
+ * more members use the normal select-and-walk presentation. Derived from
+ * the roster so the behavior follows the member count, not a tribe name.
+ */
+export function tribeStageUsesRotation(tribeId: PtTribeId | null): boolean {
+  return (
+    PT_TRIBES.find((t) => t.id === tribeId)?.implementedClassIds.length === 3
+  );
+}
+
+/**
  * Get the rest position (stage row slot) for a specific class in a tribe.
  * This is the authoritative position the character always returns to when
  * not selected. It never changes during a character-select session.

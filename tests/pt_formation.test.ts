@@ -19,6 +19,7 @@ import {
   tribeFormationEntries,
   selectedFormationSlot,
   tribeStageEntries,
+  tribeStageUsesRotation,
   classHomeSlot,
 } from '../src/ui/pt_formation';
 import {
@@ -994,6 +995,21 @@ describe('3-character formation (Morion) presentation overlap fix', () => {
         }
         selected = cls;
       },
+      /** Mirrors preview.ts rotateStageMember: center click is a no-op,
+       *  first selection is a plain select, otherwise the clicked member
+       *  and the current center swap HOME positions before selecting. */
+      rotate(cls: string) {
+        if (selected === cls) return;
+        if (selected === null) {
+          this.select(cls);
+          return;
+        }
+        const clickedHome = homes.get(cls)!;
+        const centerHome = homes.get(selected)!;
+        homes.set(cls, centerHome);
+        homes.set(selected, clickedHome);
+        this.select(cls);
+      },
       isAtHome(cls: string) {
         return targetX.get(cls) === homes.get(cls)!.x && targetZ.get(cls) === homes.get(cls)!.z;
       },
@@ -1002,6 +1018,52 @@ describe('3-character formation (Morion) presentation overlap fix', () => {
       },
     };
   }
+
+  it('Morion (3 members) uses the side-swap rotation; Tempskron and Atlanteon (4 members) use normal selection', () => {
+    expect(tribeStageUsesRotation('morion')).toBe(true);
+    expect(tribeStageUsesRotation('tempskron')).toBe(false);
+    expect(tribeStageUsesRotation('atlanteon')).toBe(false);
+    expect(tribeStageUsesRotation(null)).toBe(false);
+  });
+
+  it('clicking a side Morion member rotates it to center and the old center takes its home', () => {
+    const stage = makeMorionStage();
+    const magicianHome = { ...stage.homes.get('morion_magician')! };
+    const shamanHome = { ...stage.homes.get('atlanteon_shaman')! };
+    stage.select('atlanteon_shaman');
+    stage.rotate('morion_magician');
+    // Clicked member walks to the presentation point.
+    expect(stage.isAtPresentation('morion_magician')).toBe(true);
+    // Old center walks to the clicked member's former home.
+    expect(stage.targetX.get('atlanteon_shaman')).toBe(magicianHome.x);
+    expect(stage.targetZ.get('atlanteon_shaman')).toBe(magicianHome.z);
+    expect(stage.walkDir.get('atlanteon_shaman')).toBe('back');
+    // The clicked member now owns the old center's home slot.
+    expect(stage.homes.get('morion_magician')).toEqual(shamanHome);
+    // The third member never moves.
+    expect(stage.isAtHome('morion_priestess')).toBe(true);
+  });
+
+  it('clicking the center Morion member does not rotate', () => {
+    const stage = makeMorionStage();
+    stage.select('atlanteon_shaman');
+    const homesBefore = new Map(stage.homes);
+    stage.rotate('atlanteon_shaman');
+    expect(stage.selectedClass()).toBe('atlanteon_shaman');
+    expect(stage.homes).toEqual(homesBefore);
+    expect(stage.isAtPresentation('atlanteon_shaman')).toBe(true);
+  });
+
+  it('rotating right then left keeps all three Morion members visible at unique homes', () => {
+    const stage = makeMorionStage();
+    stage.rotate('atlanteon_shaman');
+    stage.rotate('morion_priestess');
+    stage.rotate('morion_magician');
+    const positions = [...stage.homes.values()].map((h) => `${h.x},${h.z}`);
+    expect(new Set(positions).size).toBe(3);
+    expect(stage.selectedClass()).toBe('morion_magician');
+    expect(stage.isAtPresentation('morion_magician')).toBe(true);
+  });
 
   it('3-member formation creates three unique home positions', () => {
     const entries = tribeStageEntries('morion');
