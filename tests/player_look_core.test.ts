@@ -23,6 +23,7 @@ import {
   inWorldLookFor,
   modularLookChanged,
 } from '../src/render/characters/player_look_core';
+import { PT_TRIBES } from '../src/sim/content/pt_tribes';
 import { createPlayer } from '../src/sim/entity';
 import type { Entity, PlayerClass } from '../src/sim/types';
 import * as appearanceModule from '../src/world_api/appearance';
@@ -96,6 +97,32 @@ describe('inWorldLookFor', () => {
     const overridden = inWorldLookFor(e, () => 'barbarian');
     expect(peer?.worn.chest).toBe('mage');
     expect(overridden?.worn.chest).toBe('barbarian');
+  });
+
+  it('returns null for every PT class even with a stored look, so the fixed GLB renders', () => {
+    // The online create flow stores the creator draft on EVERY character,
+    // including PT ones, so a PT entity CAN arrive with modularAppearance
+    // set. Without this guard the composed key player_${cls}_modular misses
+    // VISUALS and modularKeyFor silently falls back to MODULAR_WARRIOR_KEY —
+    // the "old WoC character" the player meets in-world instead of their
+    // authentic PT rig. Same guard charselectLook carries; mirrors the
+    // manifest modular-loop skip and modularLookForClass. Driven by the
+    // authoritative rosters so a class added to a tribe (the planned Morion
+    // Monk) is covered automatically.
+    for (const tribe of PT_TRIBES) {
+      for (const cls of tribe.implementedClassIds) {
+        const e = playerEntity({
+          templateId: cls as PlayerClass,
+          modularAppearance: { gender: 'female' },
+        });
+        expect(inWorldLookFor(e, CLASS_KIT), cls).toBeNull();
+      }
+    }
+  });
+
+  it('returns null for a PT entity with no authored look too (fixed rig either way)', () => {
+    const e = playerEntity({ templateId: 'morion_priestess', modularAppearance: null });
+    expect(inWorldLookFor(e, CLASS_KIT)).toBeNull();
   });
 });
 

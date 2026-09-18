@@ -17,6 +17,7 @@ import {
   portraitsReady,
   visualPortraitDataUrl,
 } from '../render/characters/portrait';
+import { ptTribeForClass } from '../sim/content/pt_tribes';
 import type { PlayerClass, SkinCatalog } from '../sim/types';
 import {
   clearCrestImageFallback,
@@ -130,12 +131,18 @@ export function portraitChipHtml(opts: PortraitChipOpts): string {
   // builder re-renders such chips itself via onPortraitsReady.
   const composed = !mech && look && !portrait ? ' data-portrait-composed="1"' : '';
   const overrideAttr = visualKeyOverride ? ` data-visual-key="${esc(visualKeyOverride)}"` : '';
+  // PT classes expose their tribe so the ring (and every other tribe-aware
+  // surface) resolves the shared --pt-tribe-* token through the
+  // .portrait-chip[data-pt-tribe] rules, not a per-class color. WoC classes
+  // get no attribute and keep the [data-class] --class-color behavior.
+  const ptTribe = ptTribeForClass(cls);
+  const ptTribeAttr = ptTribe ? ` data-pt-tribe="${ptTribe.id}"` : '';
   const alt = esc(t('character.portraitAlt', { name }));
   const badgeHtml = badge
     ? `<img class="portrait-badge" src="${crestUrl(cls)}" ${fallbackAttrs} alt="" aria-hidden="true" draggable="false">`
     : '';
   return (
-    `<span class="portrait-chip portrait-${variant}${fallbackCls}" data-class="${cls}" data-cls="${cls}" data-skin="${skin}" data-catalog="${catalog}" data-framing="${framing}"${overrideAttr}${pending}${composed}>` +
+    `<span class="portrait-chip portrait-${variant}${fallbackCls}" data-class="${cls}" data-cls="${cls}" data-skin="${skin}" data-catalog="${catalog}" data-framing="${framing}"${overrideAttr}${pending}${composed}${ptTribeAttr}>` +
     `<span class="portrait-ring"><img class="portrait-img"${source}${portraitFallbackAttrs} alt="${alt}" loading="lazy" decoding="async" draggable="false"></span>` +
     badgeHtml +
     `</span>`

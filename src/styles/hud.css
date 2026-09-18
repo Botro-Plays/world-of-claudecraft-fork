@@ -2342,6 +2342,21 @@
     display: block;
     border-radius: 50%;
   }
+  /* PT tribe identity on the player unit-frame ring: the wrap carries
+     data-pt-tribe (stamped once by the HUD from ptTribeForClass), so the
+     portrait border takes the shared --pt-tribe-* token, the same palette
+     the Character Details name and the select-screen chip ring speak. The
+     deed-heraldry ring below still layers over it when earned; WoC players
+     carry no attribute and keep --border. */
+  #player-frame .portrait-wrap[data-pt-tribe='tempskron'] .portrait {
+    border-color: var(--pt-tribe-tempskron);
+  }
+  #player-frame .portrait-wrap[data-pt-tribe='morion'] .portrait {
+    border-color: var(--pt-tribe-morion);
+  }
+  #player-frame .portrait-wrap[data-pt-tribe='atlanteon'] .portrait {
+    border-color: var(--pt-tribe-atlanteon);
+  }
   /* Deed Heraldry keeps the portrait circular and adds only a fine family edge.
      The unit-frame painter writes the slug and shared palette tokens. Identity
      lines render at every tier; only the decorative outer bloom scales.

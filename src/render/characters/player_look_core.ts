@@ -98,12 +98,20 @@ export function composedLook(
  * Null for a non-player or a player with no authored look: they keep the fixed
  * class rig. `armorSetFor` is how the caller expresses the local-player-only
  * armour-set override without this core reading a store.
+ *
+ * Null for a PT class too, the same guard charselectLook carries: PT classes
+ * use fixed GLBs with their own Bip01 skeleton and have no
+ * `player_${cls}_modular` def, so composing here would silently fall back to
+ * the warrior modular body (MODULAR_WARRIOR_KEY) instead of the PT rig. A PT
+ * entity CAN carry a stored appearance — the online create flow posts the
+ * creator draft for every class — so the guard must live here, not in the
+ * data. Fixed-rig resolution continues through visualKeyFor (player_${cls}).
  */
 export function inWorldLookFor(
   e: Entity,
   armorSetFor: (cls: PlayerClass) => ArmorSetId,
 ): ModularLook | null {
-  if (e.kind !== 'player' || !e.modularAppearance) return null;
+  if (e.kind !== 'player' || !e.modularAppearance || isPtClass(e.templateId)) return null;
   return composedLook(e.modularAppearance, armorSetFor(e.templateId as PlayerClass), e.helmHidden);
 }
 

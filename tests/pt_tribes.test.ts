@@ -14,10 +14,12 @@
 // No browser/DOM globals are needed for the data-layer tests; the wiring
 // tests use a minimal fake DOM built from plain objects.
 
+import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import {
   PT_CLASS_DISPLAY_NAMES,
   PT_TRIBES,
+  ptTribeForClass,
   type PtTribeId,
 } from '../src/sim/content/pt_tribes';
 import {
@@ -408,5 +410,162 @@ describe('wirePtTribeSelect', () => {
     expect(() =>
       wirePtTribeSelect(null, { onTribeSelected: vi.fn(), onBack: vi.fn() }),
     ).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Character-name tribe color wiring
+//
+// The Character Details header emits data-pt-tribe="<id>" on the
+// .class-details-name element (resolved from PT_TRIBES, not a per-class
+// table), and shell.css maps each tribe id to its name color. Any class
+// added to a tribe's implementedClassIds — including the future Morion
+// Monk — automatically inherits that tribe's name color.
+// ---------------------------------------------------------------------------
+
+describe('PT class-name tribe color wiring', () => {
+  const shellCss = readFileSync(
+    new URL('../src/styles/shell.css', import.meta.url),
+    'utf8',
+  ).replace(/\r\n/g, '\n');
+
+  it('every implemented PT class resolves to exactly one tribe id', () => {
+    for (const tribe of PT_TRIBES) {
+      for (const cls of tribe.implementedClassIds) {
+        const owners = PT_TRIBES.filter((t) =>
+          (t.implementedClassIds as readonly string[]).includes(cls),
+        );
+        expect(owners, `${cls} must belong to exactly one tribe`).toHaveLength(1);
+        expect(owners[0]!.id).toBe(tribe.id);
+      }
+    }
+  });
+
+  it('every tribe id has a class-details-name color rule in shell.css', () => {
+    for (const tribe of PT_TRIBES) {
+      expect(
+        shellCss,
+        `missing .class-details-name[data-pt-tribe='${tribe.id}'] rule`,
+      ).toContain(`.class-details-name[data-pt-tribe='${tribe.id}']`);
+    }
+  });
+
+  it('current classes map to the expected tribe (name color follows)', () => {
+    const expected: Record<string, PtTribeId> = {
+      tempskron_fighter: 'tempskron',
+      tempskron_mechanician: 'tempskron',
+      tempskron_pikeman: 'tempskron',
+      morion_knight: 'tempskron',
+      morion_magician: 'morion',
+      atlanteon_shaman: 'morion',
+      morion_priestess: 'morion',
+      atlanteon_martial_artist: 'atlanteon',
+      morion_atalanta: 'atlanteon',
+      tempskron_archer: 'atlanteon',
+      atlanteon_assassin: 'atlanteon',
+    };
+    for (const [cls, tribeId] of Object.entries(expected)) {
+      const owner = PT_TRIBES.find((t) =>
+        (t.implementedClassIds as readonly string[]).includes(cls),
+      );
+      expect(owner?.id, cls).toBe(tribeId);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Unified tribe-color wiring
+//
+// One palette (--pt-tribe-* in tokens.css) and one resolver
+// (ptTribeForClass in pt_tribes.ts) feed every tribe-tinted surface:
+// the Character Details name, the portrait-chip ring (character select and
+// every in-game chip), and the player unit-frame portrait ring. WoC classes
+// get no data-pt-tribe attribute and keep their class-color/--border look.
+// A class added to a tribe's implementedClassIds — including the future
+// Morion Monk — resolves on every surface with no per-class color table.
+// ---------------------------------------------------------------------------
+
+describe('unified PT tribe color', () => {
+  const tokensCss = readFileSync(
+    new URL('../src/styles/tokens.css', import.meta.url),
+    'utf8',
+  ).replace(/\r\n/g, '\n');
+  const shellCss = readFileSync(
+    new URL('../src/styles/shell.css', import.meta.url),
+    'utf8',
+  ).replace(/\r\n/g, '\n');
+  const hudCss = readFileSync(
+    new URL('../src/styles/hud.css', import.meta.url),
+    'utf8',
+  ).replace(/\r\n/g, '\n');
+  const portraitChipTs = readFileSync(
+    new URL('../src/ui/portrait_chip.ts', import.meta.url),
+    'utf8',
+  ).replace(/\r\n/g, '\n');
+  const hudTs = readFileSync(
+    new URL('../src/ui/hud.ts', import.meta.url),
+    'utf8',
+  ).replace(/\r\n/g, '\n');
+  const mainTs = readFileSync(
+    new URL('../src/main.ts', import.meta.url),
+    'utf8',
+  ).replace(/\r\n/g, '\n');
+
+  const TRIBE_HEX: Record<PtTribeId, string> = {
+    tempskron: '#d86a6a',
+    morion: '#6fa8d8',
+    atlanteon: '#70b58a',
+  };
+
+  it('the shared resolver maps every implemented class to its tribe', () => {
+    for (const tribe of PT_TRIBES) {
+      for (const cls of tribe.implementedClassIds) {
+        expect(ptTribeForClass(cls)?.id, cls).toBe(tribe.id);
+      }
+    }
+  });
+
+  it('the shared resolver returns null for WoC classes', () => {
+    for (const cls of ['warrior', 'paladin', 'mage', 'priest', 'rogue']) {
+      expect(ptTribeForClass(cls), cls).toBeNull();
+    }
+  });
+
+  it('tokens.css holds the one authoritative tribe palette', () => {
+    for (const tribe of PT_TRIBES) {
+      expect(tokensCss, `--pt-tribe-${tribe.id}`).toContain(
+        `--pt-tribe-${tribe.id}: ${TRIBE_HEX[tribe.id]};`,
+      );
+    }
+  });
+
+  it('every tribe-tinted surface reads the shared token, not a raw hex', () => {
+    for (const tribe of PT_TRIBES) {
+      // Character Details name (shell.css)
+      expect(shellCss).toContain(`.class-details-name[data-pt-tribe='${tribe.id}']`);
+      // Portrait-chip ring feeds the token through the --class-color seam
+      expect(shellCss).toContain(`.portrait-chip[data-pt-tribe='${tribe.id}']`);
+      expect(shellCss).toContain(`--class-color: var(--pt-tribe-${tribe.id});`);
+      // Player unit-frame portrait ring (hud.css)
+      expect(hudCss).toContain(
+        `#player-frame .portrait-wrap[data-pt-tribe='${tribe.id}'] .portrait`,
+      );
+      expect(hudCss).toContain(`border-color: var(--pt-tribe-${tribe.id});`);
+    }
+  });
+
+  it('portrait chips emit data-pt-tribe from the shared resolver', () => {
+    expect(portraitChipTs).toContain('ptTribeForClass(cls)');
+    expect(portraitChipTs).toContain('data-pt-tribe');
+  });
+
+  it('the player unit frame stamps data-pt-tribe from the shared resolver', () => {
+    expect(hudTs).toContain('ptTribeForClass(this.sim.cfg.playerClass)');
+    expect(hudTs).toContain("'data-pt-tribe'");
+  });
+
+  it('the Character Details name still emits data-pt-tribe', () => {
+    expect(mainTs).toContain('class-details-name');
+    expect(mainTs).toContain('data-pt-tribe');
   });
 });

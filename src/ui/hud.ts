@@ -64,6 +64,7 @@ import { HEROIC_MARK_ITEM_ID } from '../sim/content/dungeon_difficulty';
 import { HEROIC_VENDOR_STOCK } from '../sim/content/heroic_vendor';
 import { CRUCIBLE_VENDOR_STOCK } from '../sim/content/ignivar_loot';
 import { isOnMountRaceStartPlatform, MOUNTS } from '../sim/content/mounts';
+import { ptTribeForClass } from '../sim/content/pt_tribes';
 import { recipeById } from '../sim/content/recipes';
 import { RELIQUARY_PAGES, RELIQUARY_PAGES_BY_ID } from '../sim/content/reliquary';
 import { FIRST_TALENT_LEVEL, type TalentAllocation, talentsFor } from '../sim/content/talents';
@@ -2141,6 +2142,13 @@ export class Hud {
     private readonly features: HudFeatures = { dailyRewardsEnabled: true },
   ) {
     hydrateCrestImageFallbacks(document);
+    // PT tribe identity on the player unit-frame ring: stamped once from the
+    // authoritative roster (the local class is fixed for the session) on the
+    // same .portrait-wrap element that hosts the deed-heraldry data-border,
+    // so hud.css rings the portrait in the shared --pt-tribe-* token. WoC
+    // classes carry no attribute and keep the plain --border ring.
+    const ptTribe = ptTribeForClass(this.sim.cfg.playerClass);
+    if (ptTribe) this.pfPortraitWrapEl.setAttribute('data-pt-tribe', ptTribe.id);
     this.mapMarkerTooltipContent = new MapMarkerTooltipContent(this.sim);
     this.mapMarkerInteraction = new MapMarkerInteractionController({
       names: {

@@ -3059,6 +3059,15 @@
       border-radius: 0;
       z-index: 1;
     }
+    /* The charcreate stage is constrained on the right so the 3D character
+       and formation are never hidden behind the class-details panel
+       (right: 26px + width: 320px + breathing gap). Same treatment as the
+       offline-select stage above. */
+    body:not(.mobile-touch)
+      #charcreate-panel.cs-wow
+      #charcreate-preview-container {
+      right: 360px;
+    }
     /* The selected character's name, centred over the top of the 3D stage so it
        is unmistakable which character you are about to play. Truncates rather
        than wrapping; non-interactive so it never blocks the turntable. */
@@ -3250,7 +3259,10 @@
       right: 26px;
       top: 110px;
       bottom: 140px;
-      width: 360px;
+      /* Sized to match the constrained 3D canvas (right: 360px on
+         #charcreate-preview-container) so the two never overlap, the same
+         treatment #offline-select uses for its stage + details panel. */
+      width: 320px;
       overflow-y: auto;
       /* Semi-transparent so the blue blurred/glowing #start-screen-backdrop
          shows through, matching the tribe-select screen. backdrop-filter
@@ -4958,6 +4970,25 @@
     text-shadow: 0 1px 3px #000;
   }
 
+  /* The PT class name takes its tribe's color so the header identifies the
+     tribe at a glance; every other details element keeps the gold theme.
+     A faint warm-amber glow keeps the colored name inside the gold UI
+     family instead of reading as a foreign accent. */
+  .class-details-name[data-pt-tribe] {
+    text-shadow:
+      1px 1px 2px #000,
+      0 0 12px rgba(212, 175, 55, 0.28);
+  }
+  .class-details-name[data-pt-tribe='tempskron'] {
+    color: var(--pt-tribe-tempskron);
+  }
+  .class-details-name[data-pt-tribe='morion'] {
+    color: var(--pt-tribe-morion);
+  }
+  .class-details-name[data-pt-tribe='atlanteon'] {
+    color: var(--pt-tribe-atlanteon);
+  }
+
   /* Hairstyle selector cards: visual hair-variant picker for PT classes. */
   .pt-hair-row {
     margin-top: var(--spacing-sm);
@@ -6334,6 +6365,22 @@
   }
   [data-class="atlanteon_shaman"] {
     --class-color: #3d6b5c;
+  }
+
+  /* PT tribe ring: a chip carrying data-pt-tribe (emitted by
+     portraitChipHtml via ptTribeForClass) feeds the tribe token through the
+     same --class-color seam the [data-class] rules use, so the ring border
+     and inset glow take the tribe color with no second ring system. The
+     class + attribute selector outranks the bare [data-class] tokens, and
+     WoC chips carry no attribute so their class colors are untouched. */
+  .portrait-chip[data-pt-tribe='tempskron'] {
+    --class-color: var(--pt-tribe-tempskron);
+  }
+  .portrait-chip[data-pt-tribe='morion'] {
+    --class-color: var(--pt-tribe-morion);
+  }
+  .portrait-chip[data-pt-tribe='atlanteon'] {
+    --class-color: var(--pt-tribe-atlanteon);
   }
 
   /* Portrait chip, a class-ringed headshot rendered from the 3D model.

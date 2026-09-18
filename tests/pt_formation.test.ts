@@ -987,27 +987,40 @@ describe('3-character formation (Morion) presentation overlap fix', () => {
         for (const [c] of targetX) {
           if (c !== cls) {
             const h = homes.get(c)!;
+            // Mirrors preview.ts: a background member whose position differs
+            // from its (possibly newly swapped) home walks to it.
+            if (walkDir.get(c) === null) {
+              const atHome =
+                targetX.get(c) === h.x && targetZ.get(c) === h.z;
+              if (!atHome) walkDir.set(c, 'back');
+            }
             targetX.set(c, h.x);
             targetZ.set(c, h.z);
             targetScale.set(c, BACKGROUND_SCALE);
-            if (walkDir.get(c) !== 'back') walkDir.set(c, null);
           }
         }
         selected = cls;
       },
-      /** Mirrors preview.ts rotateStageMember: center click is a no-op,
-       *  first selection is a plain select, otherwise the clicked member
-       *  and the current center swap HOME positions before selecting. */
+      /** Mirrors preview.ts rotateStageMember: clicking the already
+       *  selected member is a no-op; otherwise the clicked member swaps
+       *  HOME positions with whoever owns the center slot (the home
+       *  closest to the presentation X), then is selected. */
       rotate(cls: string) {
         if (selected === cls) return;
-        if (selected === null) {
-          this.select(cls);
-          return;
+        let center: string | null = null;
+        let best = Infinity;
+        for (const [c, h] of homes) {
+          const d = Math.abs(h.x - PRES_X);
+          if (d < best) {
+            best = d;
+            center = c;
+          }
         }
-        const clickedHome = homes.get(cls)!;
-        const centerHome = homes.get(selected)!;
-        homes.set(cls, centerHome);
-        homes.set(selected, clickedHome);
+        if (cls !== center) {
+          const clickedHome = homes.get(cls)!;
+          homes.set(cls, homes.get(center!)!);
+          homes.set(center!, clickedHome);
+        }
         this.select(cls);
       },
       isAtHome(cls: string) {
@@ -1063,6 +1076,74 @@ describe('3-character formation (Morion) presentation overlap fix', () => {
     expect(new Set(positions).size).toBe(3);
     expect(stage.selectedClass()).toBe('morion_magician');
     expect(stage.isAtPresentation('morion_magician')).toBe(true);
+  });
+
+  it('first click on the LEFT Morion member swaps it with the center position', () => {
+    const stage = makeMorionStage();
+    const magHome = { ...stage.homes.get('morion_magician')! };
+    const shamanHome = { ...stage.homes.get('atlanteon_shaman')! };
+    stage.rotate('morion_magician'); // very first selection, on a side member
+    // Clicked side member takes the center slot and presents.
+    expect(stage.selectedClass()).toBe('morion_magician');
+    expect(stage.isAtPresentation('morion_magician')).toBe(true);
+    expect(stage.homes.get('morion_magician')).toEqual(shamanHome);
+    // The displaced center member walks into the vacated LEFT slot.
+    expect(stage.homes.get('atlanteon_shaman')).toEqual(magHome);
+    expect(stage.targetX.get('atlanteon_shaman')).toBe(magHome.x);
+    expect(stage.targetZ.get('atlanteon_shaman')).toBe(magHome.z);
+    expect(stage.walkDir.get('atlanteon_shaman')).toBe('back');
+    // The opposite side is untouched.
+    expect(stage.isAtHome('morion_priestess')).toBe(true);
+  });
+
+  it('first click on the RIGHT Morion member swaps it with the center position', () => {
+    const stage = makeMorionStage();
+    const priestessHome = { ...stage.homes.get('morion_priestess')! };
+    const shamanHome = { ...stage.homes.get('atlanteon_shaman')! };
+    const magHome = { ...stage.homes.get('morion_magician')! };
+    stage.rotate('morion_priestess');
+    expect(stage.selectedClass()).toBe('morion_priestess');
+    expect(stage.isAtPresentation('morion_priestess')).toBe(true);
+    expect(stage.homes.get('morion_priestess')).toEqual(shamanHome);
+    // The displaced center member walks into the vacated RIGHT slot.
+    expect(stage.homes.get('atlanteon_shaman')).toEqual(priestessHome);
+    expect(stage.targetX.get('atlanteon_shaman')).toBe(priestessHome.x);
+    expect(stage.targetZ.get('atlanteon_shaman')).toBe(priestessHome.z);
+    expect(stage.walkDir.get('atlanteon_shaman')).toBe('back');
+    // The opposite side is untouched.
+    expect(stage.homes.get('morion_magician')).toEqual(magHome);
+    expect(stage.isAtHome('morion_magician')).toBe(true);
+  });
+
+  it('first click on the CENTER Morion member keeps every home in place', () => {
+    const stage = makeMorionStage();
+    const homesBefore = new Map(stage.homes);
+    stage.rotate('atlanteon_shaman');
+    expect(stage.homes).toEqual(homesBefore);
+    expect(stage.selectedClass()).toBe('atlanteon_shaman');
+    expect(stage.isAtPresentation('atlanteon_shaman')).toBe(true);
+  });
+
+  it('the selected Morion member always owns the center home slot after any rotation', () => {
+    const stage = makeMorionStage();
+    for (const cls of [
+      'morion_magician',
+      'morion_priestess',
+      'atlanteon_shaman',
+      'morion_magician',
+    ]) {
+      stage.rotate(cls);
+      const home = stage.homes.get(cls)!;
+      expect(
+        Math.abs(home.x - stage.presX),
+        `${cls} must own the center slot`,
+      ).toBeLessThan(0.001);
+      expect(stage.selectedClass()).toBe(cls);
+      expect(stage.isAtPresentation(cls)).toBe(true);
+      // Exactly three unique positions stay occupied throughout.
+      const positions = [...stage.homes.values()].map((h) => `${h.x},${h.z}`);
+      expect(new Set(positions).size).toBe(3);
+    }
   });
 
   it('3-member formation creates three unique home positions', () => {

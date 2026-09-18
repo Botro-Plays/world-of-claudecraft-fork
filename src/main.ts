@@ -494,7 +494,7 @@ import {
   tribeStageEntries,
   tribeStageUsesRotation,
 } from './ui/pt_formation';
-import { PT_CLASS_DISPLAY_NAMES, PT_TRIBES } from './sim/content/pt_tribes';
+import { PT_CLASS_DISPLAY_NAMES, PT_TRIBES, ptTribeForClass } from './sim/content/pt_tribes';
 import { ptStartingStatsFor } from './sim/content/pt_starting_stats';
 import {
   ensureLocaleLoaded,
@@ -688,8 +688,7 @@ function classDisplayDescription(className: PlayerClass): string {
 
 /** Returns the PT tribe display name for a PT class, or null for WoC classes. */
 function ptTribeNameForClass(className: PlayerClass): string | null {
-  const tribe = PT_TRIBES.find((t) => t.implementedClassIds.includes(className));
-  return tribe ? tribe.name : null;
+  return ptTribeForClass(className)?.name ?? null;
 }
 
 function formatClassDetailNumber(value: number): string {
@@ -7715,7 +7714,8 @@ function renderClassDetails(
     // weapons/resource/signature-ability data — that data is from the WoC
     // Warrior/Mage/Priest/etc. and is not authentic to the PT class.
     const ptStats = ptStartingStatsFor(className);
-    const ptTribeName = ptTribeNameForClass(className);
+    const ptTribe = ptTribeForClass(className);
+    const ptTribeName = ptTribe?.name ?? null;
     const isPtClass = ptStats !== null;
 
     if (isPtClass) {
@@ -7735,7 +7735,7 @@ function renderClassDetails(
         <div class="class-details-content fade-out">
           <div class="class-details-header">
             <div class="class-details-header-text">
-              <h3 class="class-details-name">${esc(headerLabel)}</h3>
+              <h3 class="class-details-name"${ptTribe ? ` data-pt-tribe="${ptTribe.id}"` : ''}>${esc(headerLabel)}</h3>
               ${ptTribeName ? `<span class="class-details-tribe">${esc(ptTribeName.toUpperCase())}</span>` : ''}
             </div>
           </div>

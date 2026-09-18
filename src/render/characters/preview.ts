@@ -706,12 +706,21 @@ export class CharacterPreview {
       newMember.walkDir = null;
     }
 
-    // Set all other background members to background scale, stay at home.
+    // Set all other background members to background scale, at their homes.
+    // A member whose home just changed (a rotation displaced it) walks to
+    // the new slot; a member already at home stays idle.
     for (const m of this.stageMembers) {
       if (m !== newMember) {
         m.targetScale = STAGE_BACKGROUND_SCALE;
         m.targetX = m.homeX;
         m.targetZ = m.homeZ;
+        if (m.walkDir === null) {
+          const dx = Math.abs(m.visual.root.position.x - m.homeX);
+          const dz = Math.abs(m.visual.root.position.z - m.homeZ);
+          if (dx > STAGE_ARRIVAL_THRESHOLD || dz > STAGE_ARRIVAL_THRESHOLD) {
+            m.walkDir = 'back';
+          }
+        }
       }
     }
 
@@ -729,39 +738,42 @@ export class CharacterPreview {
   }
 
   /**
-   * Stage rotation: swap the HOME positions of the clicked member and the
-   * currently selected member, then select the clicked member. The old
-   * center walks to the clicked's former home; the clicked walks to the
-   * presentation center; the other members stay at their homes. Reuses the
-   * existing walk animation — no teleport. Works for any stage size.
+   * Stage rotation: swap the HOME position of the clicked member with the
+   * member occupying the CENTER slot (the middle home position of the
+   * three-member row), then select the clicked member. The clicked member
+   * walks to the presentation point; the displaced center member walks
+   * into the clicked member's old side slot; the opposite side is
+   * untouched. Reuses the existing walk animation — no teleport.
    *
-   * If no member is selected yet, this is equivalent to selectStageMember
-   * (first selection). If the clicked member is already selected (center
-   * click), this is a no-op.
+   * The center-slot owner is the selected member whenever a selection
+   * exists, so repeated side clicks rotate side ↔ center. On the very
+   * first selection, clicking a side member displaces the middle-slot
+   * member into the vacated side slot so all three positions stay
+   * occupied. If the clicked member already owns the center slot (a
+   * center click), no homes move.
    */
   rotateStageMember(classId: string): void {
     if (this.destroyed) return;
     const clicked = this.stageMembers.find((m) => m.classId === classId);
     if (!clicked) return;
     if (this.stageSelectedClass === classId) return; // center click = no-op
-    if (!this.stageSelectedClass) {
-      // First selection: same as selectStageMember.
-      this.selectStageMember(classId);
-      return;
-    }
-    // Swap home positions of the clicked and currently selected members.
-    // After the swap, selectStageMember walks the clicked to the presentation
-    // center and the old center back to its NEW home (the clicked's old slot).
-    const current = this.stageMembers.find(
-      (m) => m.classId === this.stageSelectedClass,
+    // The CENTER position is the home slot closest to the presentation X
+    // (the middle of the row). Its owner is the member the click
+    // displaces: the selected member once one exists, or the middle
+    // character on the first selection.
+    const center = this.stageMembers.reduce((best, m) =>
+      Math.abs(m.homeX - this.stagePresentationX) <
+      Math.abs(best.homeX - this.stagePresentationX)
+        ? m
+        : best,
     );
-    if (current) {
+    if (clicked !== center) {
       const tmpX = clicked.homeX;
       const tmpZ = clicked.homeZ;
-      clicked.homeX = current.homeX;
-      clicked.homeZ = current.homeZ;
-      current.homeX = tmpX;
-      current.homeZ = tmpZ;
+      clicked.homeX = center.homeX;
+      clicked.homeZ = center.homeZ;
+      center.homeX = tmpX;
+      center.homeZ = tmpZ;
     }
     this.selectStageMember(classId);
   }

@@ -105,3 +105,13 @@ export const PT_TRIBES: readonly PtTribeDef[] = [
     placeholderLogoFromTribe: null,
   },
 ] as const;
+
+/**
+ * The PT tribe a class belongs to, resolved from the rosters above, or null
+ * for WoC classes and PT classes not yet implemented. This is the single
+ * authoritative class-to-tribe lookup: any class added to a tribe's
+ * implementedClassIds (e.g. the planned Morion Monk) resolves automatically.
+ */
+export function ptTribeForClass(classId: string): PtTribeDef | null {
+  return PT_TRIBES.find((t) => t.implementedClassIds.includes(classId)) ?? null;
+}

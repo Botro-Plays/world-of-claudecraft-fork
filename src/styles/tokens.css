@@ -102,6 +102,17 @@
        yumi match HUD + arena window; never hardcoded in painter TS. */
     --color-team-blue: #2f6fe0;
     --color-team-red: #d8342c;
+    /* PT tribe identity colors: the one palette for every tribe-tinted
+       surface (Character Details name, select-screen portrait ring, in-game
+       unit-frame portrait ring). Elements resolve their tribe via the
+       data-pt-tribe attribute emitted from PT_TRIBES[].implementedClassIds
+       (ptTribeForClass in src/sim/content/pt_tribes.ts), so a class added
+       to a roster inherits its tribe color on every surface with no
+       per-class color table. Muted tones; --gold stays the primary accent. */
+    --pt-tribe-tempskron: #d86a6a;
+    --pt-tribe-morion: #6fa8d8;
+    --pt-tribe-atlanteon: #70b58a;
+
     /* Per-school debuff border tints (WoW-style poison/magic/curse reads); physical
        keeps the base --color-debuff red. Driven by the aura node's data-school. */
     --color-debuff-fire: #e8722a;
