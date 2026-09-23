@@ -1499,6 +1499,9 @@ export const nl_NL: EnTranslations = {
       "bracket1v1": "1v1",
       "bracket2v2": "2v2"
     },
+    "pt": {
+      "title": "Ricarten"
+    },
     "bg": {
       "title": "Doornholte-Velden",
       "blurb": "Twee vervallen burchten staan tegenover elkaar in een ommuurde holte in de schaduw van Doorntop: Karmozijn in het zuiden, Azuur in het noorden, en daartussen het oudere Ruïnehof dat geen van beide ooit heeft gehouden. Vijf tegen vijf, elk een eigen vaandel, en wie als eerste drie van de hunne naar huis draagt, wint het veld.",

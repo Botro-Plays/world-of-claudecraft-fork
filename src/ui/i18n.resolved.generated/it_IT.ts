@@ -1499,6 +1499,9 @@ export const it_IT: EnTranslations = {
       "bracket1v1": "1c1",
       "bracket2v2": "2c2"
     },
+    "pt": {
+      "title": "Ricarten"
+    },
     "bg": {
       "title": "Campi di Thornhollow",
       "blurb": "Due rocche in rovina si fronteggiano in una valletta murata all'ombra di Thornpeak: i Cremisi a sud, gli Azzurri a nord, e tra loro il più antico Cortile in Rovina che nessuno dei due ha mai conquistato. Cinque contro cinque, una bandiera a testa, e la prima squadra che ne riporta a casa tre si aggiudica il campo.",

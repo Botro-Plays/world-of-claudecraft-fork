@@ -43,6 +43,8 @@ import {
 import { GALE_DECK_FREEBOARD, galeDeckSurface } from './gale_harbor';
 import { KEEP_SITE, keepSitePadWeight } from './keep_site';
 import { reachDeckClear, reachDeckSurface } from './reach_decks';
+import { isPtPos } from './pt_band';
+import { ptRicartenGroundHeight, ptRicartenWaterLevel } from './pt_ricarten_field';
 import { fbm2, hash2, noise2 } from './rng';
 import {
   CALM_SKIRT_MAX_WIDTH,
@@ -160,6 +162,10 @@ const seaCellCache = new Map<number, boolean>();
 // layer). Callers that need "is there water here at all" should prefer this
 // over a flat global constant.
 export function waterLevelAt(x: number, z: number, seed: number): number {
+  // PT Ricarten band: the harbor/canal water faces carry a real surface
+  // height (smStage3d.cpp water-material faces at ~102 PT units), so a body
+  // there swims instead of falling into a floorless void.
+  if (isPtPos(x)) return ptRicartenWaterLevel(x, z);
   if (isInWaterBody(x, z)) return waterLevel();
   return isOpenSeaAt(x, z, seed) ? waterLevel() : -Infinity;
 }
@@ -3856,6 +3862,12 @@ export function groundHeight(x: number, z: number, seed: number): number {
     const o = bgOriginAt(z);
     return bgFieldHeightLocal(x - o.x, z - o.z);
   }
+  // PT Ricarten band: real PT terrain, isolated from all WoC bands.
+  // Routed before the dungeon threshold so the PT band (far east) is not
+  // misclassified as a flat dungeon floor.
+  if (isPtPos(x)) {
+    return ptRicartenGroundHeight(x, z);
+  }
   if (x > DUNGEON_X_THRESHOLD) {
     const dungeon = dungeonAt(x);
     if (dungeon?.interior === 'wildheart') {
@@ -4671,7 +4683,11 @@ export function terrainDownhill(
   const hx = (groundHeight(x + e, z, seed) - groundHeight(x - e, z, seed)) / (2 * e);
   const hz = (groundHeight(x, z + e, seed) - groundHeight(x, z - e, seed)) / (2 * e);
   const mag = Math.hypot(hx, hz);
-  if (mag < 1e-6) return null;
+  // Non-finite guard: a spot whose ground samples are all -Infinity (no
+  // surface at all, e.g. floorless water) produces NaN differences, and
+  // NaN < 1e-6 is false — without the finite check the "direction" below
+  // is a NaN vector that poisons the mover's position.
+  if (!Number.isFinite(mag) || mag < 1e-6) return null;
   return { x: -hx / mag, z: -hz / mag };
 }
 

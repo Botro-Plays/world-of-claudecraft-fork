@@ -1499,6 +1499,9 @@ export const pt_BR: EnTranslations = {
       "bracket1v1": "1v1",
       "bracket2v2": "2v2"
     },
+    "pt": {
+      "title": "Ricarten"
+    },
     "bg": {
       "title": "Campos de Thornhollow",
       "blurb": "Dois redutos em ruínas se encaram através de um vale cercado por muralhas à sombra de Thornpeak: os Carmesim ao sul, os Azul ao norte, e o mais antigo Pátio das Ruínas entre eles, que nenhum dos dois jamais conquistou. Cinco de cada lado, uma bandeira cada, e a primeira equipe a levar três das deles para casa domina o campo.",

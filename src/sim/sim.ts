@@ -227,6 +227,8 @@ import {
   SPIRIT_HEALER_NPC_ID,
   zoneAt,
 } from './data';
+import { isPtPos } from './pt_band';
+import { ptStartPosForClass } from './pt_start';
 import { refusedWhileDead } from './dead_gate';
 import { deckFloorHeight } from './deck_floor';
 import * as deedsMod from './deeds';
@@ -2621,13 +2623,22 @@ export class Sim {
       // worlds to show one. The greeting sweep's already-ashore arm then just
       // plays Odo's welcome. Online is unaffected: the server rolls the
       // newborn row at the same arrival (server/main.ts initialCharacterState).
-      const ownPlayer = this.cfg.compulsoryTutorial
-        ? this.entities.get(this.ownPlayerPid)
-        : undefined;
-      if (ownPlayer) {
-        ownPlayer.pos = this.groundPos(PROVING_SHORE_ARRIVAL.x, PROVING_SHORE_ARRIVAL.z);
+      //
+      // PT characters bypass the Proving Shore tutorial entirely: each tribe
+      // lands in its own starting town instead (Tempskron -> Ricarten; the
+      // other tribes' towns are not implemented yet and fall back to the
+      // shore). Gated on the same compulsoryTutorial flag, which doubles as
+      // the "default world, fresh character" signal - editor play-test maps
+      // (cfg.world set) never redirect to a PT town.
+      const ptStart = this.cfg.compulsoryTutorial
+        ? ptStartPosForClass(this.cfg.playerClass)
+        : null;
+      const freshArrival = ptStart ?? (this.cfg.compulsoryTutorial ? PROVING_SHORE_ARRIVAL : null);
+      const ownPlayer = freshArrival ? this.entities.get(this.ownPlayerPid) : undefined;
+      if (ownPlayer && freshArrival) {
+        ownPlayer.pos = this.groundPos(freshArrival.x, freshArrival.z);
         ownPlayer.prevPos = { ...ownPlayer.pos };
-        ownPlayer.facing = PROVING_SHORE_ARRIVAL.facing;
+        ownPlayer.facing = freshArrival.facing;
         ownPlayer.prevFacing = ownPlayer.facing;
         this.rebucket(ownPlayer);
       }
@@ -2836,7 +2847,15 @@ export class Sim {
         legacyInstanceExit = true;
       }
     }
-    if (savedPos && isBgPos(savedPos.x)) {
+    // The PT band sits past DUNGEON_X_THRESHOLD but is a persistent town, not
+    // an instance: a character saved inside Ricarten keeps the position
+    // verbatim (the groundPos below re-resolves Y through
+    // ptRicartenGroundHeight). Checked FIRST so the dungeon-door fallback
+    // (`dungeonAt() ?? DUNGEON_LIST[0]`) can never eject a PT save to a WoC
+    // dungeon entrance.
+    if (savedPos && isPtPos(savedPos.x)) {
+      // keep savedPos as-is
+    } else if (savedPos && isBgPos(savedPos.x)) {
       // A save inside the Thornhollow Fields band (a crash mid-match) has no match to
       // rejoin: resume at the world start (dungeonAt() knows nothing about
       // this band, so the dungeon-door fallback below must never see it).

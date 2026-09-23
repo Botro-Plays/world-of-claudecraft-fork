@@ -11441,6 +11441,7 @@ export type TranslationKeyFlat =
   | 'hudChrome.professions.toolEffectTooltip.openProfessions'
   | 'hudChrome.professions.tutorialLine'
   | 'hudChrome.professions.unattunedIdentity'
+  | 'hudChrome.pt.title'
   | 'hudChrome.pvp.bracket1v1'
   | 'hudChrome.pvp.bracket2v2'
   | 'hudChrome.pvp.launcherTitle'

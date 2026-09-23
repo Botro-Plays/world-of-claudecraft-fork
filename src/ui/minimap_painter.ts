@@ -55,6 +55,8 @@ import {
   type MinimapObjectSemantic,
 } from './minimap_markers';
 import type { PainterHostWriters } from './painter_host';
+import { isPtPos } from '../sim/pt_band';
+import { PT_MINIMAP_TEXTURE_URL, ptRicartenMapDestRect } from './pt_minimap_core';
 
 // The fixed circular minimap surface (the #minimap canvas is 162x162). Exported so Hud
 // uses one source of truth for both the overworld paint and the delve delegation.
@@ -1014,6 +1016,7 @@ export const MINIMAP_COLOR_TOKENS = {
   gatherCooldown: '--color-minimap-gather-cooldown',
   gatherLocked: '--color-minimap-node-locked',
   station: '--color-minimap-station',
+  ptVoid: '--color-minimap-void',
 } as const;
 
 /** The resolved minimap marker colors for one redraw. */
@@ -1051,6 +1054,10 @@ export class MinimapPainter {
   // The Thornhollow Fields cache, relief plus wall plan (same lifecycle as mazeBg:
   // the authored field never changes, so one raster serves the session).
   private battlegroundBg: HTMLCanvasElement | null = null;
+  // The authentic PT Ricarten minimap texture (field/map/village-2.tga as PNG).
+  // 'loading' / 'missing' latch the async state so the ~10Hz redraw never
+  // re-kicks the fetch; the map simply waits a frame or two on first entry.
+  private ricartenBg: HTMLImageElement | 'loading' | 'missing' | null = null;
   constructor(
     private readonly writers: PainterHostWriters,
     private readonly classColor: (cls: string) => string,
@@ -1060,6 +1067,9 @@ export class MinimapPainter {
      *  so localizeZone would resolve it to whatever zone its coordinates happen
      *  to land nearest, which reads as the last town the player stood in. */
     private readonly battlegroundName: () => string,
+    /** The PT Ricarten field name for '#zone-label' while the player is in the
+     *  PT band (zoneAt would misreport the band's far-off coordinates). */
+    private readonly ricartenName: () => string,
     private readonly markerArt: MapMarkerArt = EMPTY_MAP_MARKER_ART,
     private readonly markerProfile: () => MapMarkerProfile = STANDARD_MARKER_PROFILE,
   ) {}
@@ -1103,6 +1113,12 @@ export class MinimapPainter {
     // far-off overworld terrain cache the band sits outside of.
     if (isBgPos(world.player.pos.x)) {
       this.paintBattleground(ctx, world, zoneLabelEl, zoom, colors);
+      return;
+    }
+    // PT Ricarten band: the authentic village-2 field map under the standard
+    // marker union, projected through the PT band rect (pt_minimap_core.ts).
+    if (isPtPos(world.player.pos.x)) {
+      this.paintRicarten(ctx, world, zoneLabelEl, zoom, colors);
       return;
     }
     const S = MINIMAP_SIZE;
@@ -1330,6 +1346,71 @@ export class MinimapPainter {
     }
     this.battlegroundBg = canvas;
     return canvas;
+  }
+
+  /**
+   * Ricarten (PT) minimap render: the authentic field/map/village-2 texture as
+   * a player-centered window, same contract as paintBattleground - the standard
+   * marker union (the centred facing arrow plus whatever entities share the
+   * band) over the raster, '#zone-label' set to the field name. The image may
+   * still be in flight on the first redraw after teleporting in; until it
+   * lands the panel shows the dark fill the clip circle leaves behind, exactly
+   * like a not-yet-decoded zone background.
+   */
+  paintRicarten(
+    ctx: CanvasRenderingContext2D,
+    world: IWorld,
+    zoneLabelEl: HTMLElement,
+    zoom: number,
+    colors: MinimapColors,
+  ): void {
+    const S = MINIMAP_SIZE;
+    const pxPerYard = MINIMAP_BASE_SCALE * zoom;
+    const profile = this.markerProfile();
+    const model = this.markers.build(world, S, pxPerYard, profile);
+    this.writers.setText(zoneLabelEl, this.ricartenName());
+    const p = world.player;
+    const img = this.ensureRicartenBg();
+
+    ctx.clearRect(0, 0, S, S);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(S / 2, S / 2, S / 2 - MINIMAP_CLIP_INSET, 0, FULL_CIRCLE);
+    ctx.clip();
+    ctx.imageSmoothingEnabled = true;
+    // The authentic texture's unmapped area is alpha-0 (the source TGA carries
+    // ~black RGB there); fill the clip with the PT void color first so the
+    // HUD frame never shows through where PT rendered black.
+    ctx.fillStyle = colors.ptVoid;
+    ctx.fillRect(0, 0, S, S);
+    if (img) {
+      const r = ptRicartenMapDestRect(p.pos.x, p.pos.z, S, pxPerYard);
+      ctx.drawImage(img, r.x, r.y, r.w, r.h);
+    }
+    this.drawMarkers(ctx, model.markers, colors, profile);
+    ctx.restore();
+  }
+
+  // Kick (or join) the one-time texture load. Returns the image only once the
+  // browser has decoded it; the redraw cadence retries naturally.
+  private ensureRicartenBg(): HTMLImageElement | null {
+    if (this.ricartenBg && this.ricartenBg !== 'loading' && this.ricartenBg !== 'missing')
+      return this.ricartenBg;
+    if (this.ricartenBg !== null) return null;
+    if (typeof Image === 'undefined') {
+      this.ricartenBg = 'missing';
+      return null;
+    }
+    this.ricartenBg = 'loading';
+    const img = new Image();
+    img.onload = () => {
+      this.ricartenBg = img;
+    };
+    img.onerror = () => {
+      this.ricartenBg = 'missing';
+    };
+    img.src = PT_MINIMAP_TEXTURE_URL;
+    return null;
   }
 
   private drawMarkers(

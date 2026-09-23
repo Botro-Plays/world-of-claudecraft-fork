@@ -1499,6 +1499,9 @@ export const pl_PL: EnTranslations = {
       "bracket1v1": "1v1",
       "bracket2v2": "2v2"
     },
+    "pt": {
+      "title": "Ricarten"
+    },
     "bg": {
       "title": "Pola Ciernistej Kotliny",
       "blurb": "Dwie zrujnowane twierdze stają naprzeciw siebie za otoczoną murem kotliną w cieniu Ciernistego Szczytu: Karmazyn na południu, Lazur na północy, a między nimi starszy Zrujnowany Dziedziniec, którego żadna z nich nigdy nie zdobyła. Po pięciu graczy z każdej strony, po jednym sztandarze, a pierwsza drużyna, która zaniesie do domu trzy z nich, zdobywa pole.",

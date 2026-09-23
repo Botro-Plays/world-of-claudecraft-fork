@@ -498,6 +498,10 @@ export class CharacterVisual {
     if (this.disposed || !this.look || !this.model.userData.deferredDecals) return false;
     const decals = attachDeferredFaceDecals(this.model, this.look);
     for (const decal of decals) {
+      // Decals bind to the head's skeleton past the SkeletonUpdateCache's
+      // constructor sweep; register them so its localized-palette bookkeeping
+      // (bindMatrixInverse refresh + CPU skinning twin) covers them too.
+      this.skeletonUpdates.registerMesh(decal);
       applyMaterials(
         decal,
         this.def,

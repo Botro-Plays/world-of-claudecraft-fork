@@ -563,6 +563,9 @@ const UI_PURE_CORES = [
   'src/ui/auras_view.ts',
   'src/ui/target_auras_view.ts',
   'src/ui/minimap_markers.ts',
+  // The PT Ricarten minimap projection: pure PT-unit -> canvas math over the
+  // authored StageMapRect (no host), consumed by minimap_painter.
+  'src/ui/pt_minimap_core.ts',
   'src/ui/hud/professions/gathering_view.ts',
   'src/ui/hud/professions/gathering_goal_view.ts',
   'src/ui/hud/professions/gathering_source_view.ts',

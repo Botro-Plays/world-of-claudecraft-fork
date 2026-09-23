@@ -1499,6 +1499,9 @@ export const zh_CN: EnTranslations = {
       "bracket1v1": "1v1",
       "bracket2v2": "2v2"
     },
+    "pt": {
+      "title": "Ricarten"
+    },
     "bg": {
       "title": "荆谷原野",
       "blurb": "两座废弃的要塞隔着棘峰阴影下的围墙山谷遥遥相望：绯红在南，蔚蓝在北，而两者之间的古老废墟庭院，谁都不曾真正占据。每方五人，各持一面战旗，先将对方战旗夺回本方三次者赢得战场。",

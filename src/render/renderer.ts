@@ -31,6 +31,7 @@ import {
   ZONES,
   zoneAt,
 } from '../sim/data';
+import { isPtPos } from '../sim/pt_band';
 import type { DelveModuleId } from '../sim/delve_layout';
 import { generateRiftFloor, riftLiftAt } from '../sim/rift/rift_gen';
 import type { BiomeId, ZoneDef } from '../sim/types';
@@ -69,6 +70,8 @@ import type { BattlegroundView } from './battleground';
 import { BattlegroundFx } from './battleground_fx';
 import { updateBattlegroundOccluderFades } from './battleground_placements';
 import { buildBattlegroundObject } from './battleground_props';
+import { buildPtTerrainView } from './pt_terrain';
+import { PtTerrainGate } from './pt_terrain_gate';
 import {
   type BattlegroundViewHost,
   createBattlegroundViewState,
@@ -8755,6 +8758,13 @@ export class Renderer {
   // yumi maze copies; the geometry is static, and the only per-frame work is the
   // occluder fade the placements own (battleground_placements.ts).
   private bgViews = new Map<number, BattlegroundView>();
+  // PT Ricarten terrain, built lazily when the player enters the PT band.
+  // The build awaits ~276 textures, so the gate suppresses a per-frame rebuild
+  // storm while the first build is still in flight (see pt_terrain_gate.ts).
+  private readonly ptTerrainGate = new PtTerrainGate(
+    () => buildPtTerrainView(),
+    (view) => this.scene.add(view.group),
+  );
   // The bookkeeping those copies need beside them (battleground_views.ts): the
   // reused ward-state carrier, and whether the prebuild's offer was ever seen.
   private bgViewState = createBattlegroundViewState();
@@ -9191,6 +9201,14 @@ export class Renderer {
       }
     } else if (inside && isBgPos(px)) {
       ensureBattlegroundViewNear(this.bgViews, px, pz, this.battlegroundViewHost());
+    } else if (inside && isPtPos(px)) {
+      // PT Ricarten terrain: build once when the player enters the band. The
+      // gate keeps the multi-second texture build from being restarted by
+      // every sync() frame that runs before it resolves.
+      void this.ptTerrainGate.ensure();
+      // Advance the v-ani stage objects (windmill blades etc.) to the shared
+      // clock; no-op until the terrain view resolves.
+      this.ptTerrainGate.current?.update();
     } else if (inside && isArenaPos(px)) {
       void ensureDungeonAssets().catch(() => undefined);
       // build the Ashen Coliseum copy the player was matched into

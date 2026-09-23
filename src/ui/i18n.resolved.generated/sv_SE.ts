@@ -1499,6 +1499,9 @@ export const sv_SE: EnTranslations = {
       "bracket1v1": "1v1",
       "bracket2v2": "2v2"
     },
+    "pt": {
+      "title": "Ricarten"
+    },
     "bg": {
       "title": "Törnhålefälten",
       "blurb": "Två förfallna fästningar möter varandra över en murad sänka i skuggan av Törntoppen: Karmosinröd i söder, Azurblå i norr, och den äldre Ruingården mitt emellan som ingen av dem någonsin har hållit. Fem mot fem, ett banér var, och den som först för hem tre av deras vinner slaget.",

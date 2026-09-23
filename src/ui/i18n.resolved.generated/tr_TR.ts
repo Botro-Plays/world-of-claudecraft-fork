@@ -1499,6 +1499,9 @@ export const tr_TR: EnTranslations = {
       "bracket1v1": "1v1",
       "bracket2v2": "2v2"
     },
+    "pt": {
+      "title": "Ricarten"
+    },
     "bg": {
       "title": "Dikenvadi Ovası",
       "blurb": "İki yıkık kale, Dikenzirve'nin gölgesindeki surlu bir vadide karşı karşıyadır: güneyde Kızıl, kuzeyde Gök Mavisi, ikisinin arasında ise hiçbirinin hiç ele geçiremediği daha eski Yıkık Avlu bulunur. Her tarafta beş kişi, birer sancak; kendi sancaklarından üçünü eve ilk taşıyan sahayı kazanır.",

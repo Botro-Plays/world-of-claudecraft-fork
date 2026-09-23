@@ -10,6 +10,7 @@
 // outdoor residency clamp that grades fog.far per frame once 'outdoor' has
 // settled); this module owns the resolution and the settled preset values.
 import { dungeonAt, isArenaPos, isBgPos, isDelvePos, isYumiMazePos } from '../sim/data';
+import { isPtPos } from '../sim/pt_band';
 import { waterLevelAt } from '../sim/world';
 import { applyIgnivarRaidFog, ignivarRaidFogStateForInterior } from './ignivar_raid_environment';
 import type { FogSceneState } from './interior_light_rig';
@@ -69,11 +70,16 @@ export function resolveFogScene(
                   ? 'lastkeep'
                   : inDawnhold
                     ? 'dawnhold'
-                    : inside
-                      ? 'dungeon'
-                      : camY < waterLevelAt(cam.x, cam.z, seed) - 0.05
-                        ? 'underwater'
-                        : 'outdoor';
+                    // The PT field band lives past DUNGEON_X_THRESHOLD, so it
+                    // always reads `inside`; it is open-air terrain, not an
+                    // instance, and takes the outdoor rig like the overworld.
+                    : isPtPos(px)
+                      ? 'outdoor'
+                      : inside
+                        ? 'dungeon'
+                        : camY < waterLevelAt(cam.x, cam.z, seed) - 0.05
+                          ? 'underwater'
+                          : 'outdoor';
   return { interior, desired };
 }
 

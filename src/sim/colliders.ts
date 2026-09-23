@@ -121,6 +121,8 @@ import { STREETLAMP_COLLIDER_RADIUS, STREETLAMP_FIXTURE_HEIGHT } from './streetl
 import { townPropPlacements } from './town_props';
 import type { WorldContent } from './types';
 import { WILDHEART_COLLIDERS } from './wildheart_field';
+import { isPtPos } from './pt_band';
+import { ptRicartenSupportHeight } from './pt_ricarten_field';
 import {
   crossesSealedBorder,
   type Decoration,
@@ -1948,6 +1950,10 @@ export function resolvePosition(
     const local = resolveAgainst(list, lx, lz, r, ignoreFences);
     return { x: local.x + region.ox, z: local.z + region.oz };
   }
+  // PT Ricarten band: collision is height-based only (no wall colliders
+  // in P1). The movement kernel stays on the surface via groundHeight
+  // and supportHeightAt; horizontal resolution is a pass-through.
+  if (isPtPos(x)) return { x, z };
   if (x > DUNGEON_X_THRESHOLD && !isBgPos(x)) {
     const { ox, oz, interior, dungeonId } = instanceLocal(x, z);
     const colliders = interiorCollidersFor(dungeonId, interior);
@@ -2061,6 +2067,12 @@ export function supportHeightAt(
   // threshold, so the specific bands must be ruled out FIRST (the same
   // routing resolvePosition uses).
   if (isYumiMazePos(x) || isDelvePos(x) || isArenaPos(x)) return -Infinity;
+  // PT Ricarten band: upper-level walkable surfaces (multi-level collision).
+  // Routed before the dungeon threshold so the PT band is not misclassified
+  // as a dungeon interior.
+  if (isPtPos(x)) {
+    return ptRicartenSupportHeight(x, z, r, maxY);
+  }
   if (x > DUNGEON_X_THRESHOLD && !isBgPos(x)) {
     // Dungeon interiors: the furniture tops (coffin lids, cargo stacks) are
     // standable surfaces exactly like the open world's crates and canopies.
@@ -2126,6 +2138,9 @@ export function slopeGlueHeight(
   let ox = 0;
   let oz = 0;
   if (isYumiMazePos(x) || isDelvePos(x) || isArenaPos(x)) return -Infinity;
+  // The PT Ricarten band is terrain-faced, not collider-based: nothing here
+  // is a standable top, so the glue query has no surface to follow.
+  if (isPtPos(x)) return -Infinity;
   if (x > DUNGEON_X_THRESHOLD && !isBgPos(x)) {
     const inst = instanceLocal(x, z);
     list = interiorCollidersFor(inst.dungeonId, inst.interior);

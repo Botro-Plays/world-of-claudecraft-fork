@@ -1499,6 +1499,9 @@ export const id_ID: EnTranslations = {
       "bracket1v1": "1v1",
       "bracket2v2": "2v2"
     },
+    "pt": {
+      "title": "Ricarten"
+    },
     "bg": {
       "title": "Medan Thornhollow",
       "blurb": "Dua benteng reruntuhan saling berhadapan di seberang ceruk berdinding dalam bayangan Thornpeak: Merah di selatan, Biru di utara, dan Halaman Reruntuhan yang lebih tua terletak di antara keduanya, yang tak pernah dikuasai salah satu pun. Lima lawan lima, satu bendera untuk tiap tim, dan tim pertama yang membawa pulang tiga bendera musuh menguasai medan.",

@@ -471,6 +471,10 @@
     --color-minimap-gather-ready: #3ef07a;
     --color-minimap-gather-cooldown: #90989a;
     --color-minimap-station: #d98e4a;
+    /* PT Ricarten field map: the unmapped area inside the authentic texture's
+       alpha is drawn over this fill, matching the near-black the source TGA
+       carries in its RGB channels. */
+    --color-minimap-void: #040404;
     /* Tool-tier locked gather node (Professions 2.0): a dark rust
        clearly apart from the ready green, neutral cooldown gray, and the
        bright mob red, so the lock reads at minimap marker size. */

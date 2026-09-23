@@ -674,6 +674,7 @@ function newPainter(
     (zoneId: string) => zoneId,
     (name: string, rank: string | null) => (rank ? `${name} ${rank}` : name),
     () => 'Thornhollow Fields',
+    () => 'Ricarten',
     markerArt,
     markerProfile,
   );

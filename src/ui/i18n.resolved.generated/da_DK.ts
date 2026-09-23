@@ -1499,6 +1499,9 @@ export const da_DK: EnTranslations = {
       "bracket1v1": "1v1",
       "bracket2v2": "2v2"
     },
+    "pt": {
+      "title": "Ricarten"
+    },
     "bg": {
       "title": "Tornehulemarkerne",
       "blurb": "To ruinerede borge står over for hinanden på tværs af en ommuret hulning i skyggen af Tornetop: Karmoisin mod syd, Azurblå mod nord, og den ældre Ruingård imellem dem, som ingen af dem nogensinde har holdt. Fem på hver side, ét banner hver, og den første til at bringe tre af deres egne hjem tager marken.",

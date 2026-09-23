@@ -1789,6 +1789,11 @@ export const hudChromeStrings = {
     bracket1v1: '1v1',
     bracket2v2: '2v2',
   },
+  pt: {
+    // Minimap zone label while the player stands in the PT Ricarten field
+    // (the far-east band has no ZoneDef, so zoneAt cannot name it).
+    title: 'Ricarten',
+  },
   bg: {
     title: 'Thornhollow Fields',
     // The one-paragraph pitch above the queue button: what the place is, then

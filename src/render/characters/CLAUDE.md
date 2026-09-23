@@ -148,7 +148,11 @@ Sibling families (one line each; extraction targets, never re-grow `visual.ts`):
   `tests/authored_surfaces.test.ts` scans the shipped GLBs and fails any
   authored atlas that is neither flagged nor on its explicit legacy list.
 - Perf cores: `skeleton_update_cache.ts`/`skeleton_update_core.ts` (skeleton
-  palette update elision), `skin_gpu_layout.ts` (bone-texture compaction
+  palette update elision; also emits palettes in the armature's parent frame
+  instead of world space — float32 quantization at instance-band |x| ~1.4e5
+  otherwise snaps skinned vertices a whole ulp per frame; per-mesh
+  bindMatrixInverse compensation and an applyBoneTransform twin keep shader
+  and CPU skinning identical), `skin_gpu_layout.ts` (bone-texture compaction
   without changing weights, matrices, draws, or shader math),
   `skinned_sort_spheres.ts` (static sort spheres so three never brute-forces
   a missing SkinnedMesh bounding sphere), `tinted_material_cache_core.ts`,

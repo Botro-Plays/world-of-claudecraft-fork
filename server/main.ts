@@ -9,6 +9,7 @@ import { WebSocketServer } from 'ws';
 import { bankGrantStorageSlots } from '../src/sim/bank';
 import { DEEDS } from '../src/sim/content/deeds';
 import { PROVING_SHORE_ARRIVAL } from '../src/sim/content/proving_shore';
+import { ptStartPosForClass } from '../src/sim/pt_start';
 import {
   LEADERBOARD_MAX,
   LEADERBOARD_PAGE_SIZE,
@@ -638,8 +639,14 @@ function initialCharacterState(
   // keeps the offline default spawn untouched, and leaves every parity
   // golden byte-identical. The greeting sweep sees the fresh character
   // already ashore and plays Odo's arrival instead of Bryn's ferry offer.
-  character.pos = { x: PROVING_SHORE_ARRIVAL.x, z: PROVING_SHORE_ARRIVAL.z };
-  character.facing = PROVING_SHORE_ARRIVAL.facing;
+  //
+  // PT tribe characters start in their own town instead: Tempskron lands in
+  // Ricarten (the PT band, pt_start.ts). Y is not stamped here - addPlayer
+  // re-resolves it through groundPos on join, which routes the PT band to
+  // ptRicartenGroundHeight.
+  const arrival = ptStartPosForClass(cls) ?? PROVING_SHORE_ARRIVAL;
+  character.pos = { x: arrival.x, z: arrival.z };
+  character.facing = arrival.facing;
   return character;
 }
 

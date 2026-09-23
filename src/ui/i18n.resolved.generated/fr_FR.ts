@@ -1499,6 +1499,9 @@ export const fr_FR: EnTranslations = {
       "bracket1v1": "1v1",
       "bracket2v2": "2v2"
     },
+    "pt": {
+      "title": "Ricarten"
+    },
     "bg": {
       "title": "Champs de Thornhollow",
       "blurb": "Deux donjons en ruine se font face de part et d'autre d'un creux fortifié à l'ombre de Thornpeak : Carmin au sud, Azur au nord, et entre eux, la plus ancienne Cour en ruine, qu'aucun des deux camps n'a jamais tenue. Cinq contre cinq, une bannière chacun, et le premier à en ramener trois chez lui remporte le combat.",

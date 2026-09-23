@@ -1499,6 +1499,9 @@ export const de_DE: EnTranslations = {
       "bracket1v1": "1v1",
       "bracket2v2": "2v2"
     },
+    "pt": {
+      "title": "Ricarten"
+    },
     "bg": {
       "title": "Thornhollow-Felder",
       "blurb": "Zwei zerstörte Festungen stehen sich in einer ummauerten Senke im Schatten des Thornpeak gegenüber: Karmesin im Süden, Azur im Norden, und der ältere Ruinenhof dazwischen, den keine von beiden je gehalten hat. Fünf gegen fünf, je ein Banner, und wer zuerst drei der gegnerischen heimbringt, gewinnt das Feld.",

@@ -45,7 +45,8 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_mechanicianAria",
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
-    "hudChrome.keybinds.toggleRunWalk"
+    "hudChrome.keybinds.toggleRunWalk",
+    "hudChrome.pt.title"
   ],
   "es_ES": [
     "auth.selectTribe",
@@ -83,7 +84,8 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_mechanicianAria",
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
-    "hudChrome.keybinds.toggleRunWalk"
+    "hudChrome.keybinds.toggleRunWalk",
+    "hudChrome.pt.title"
   ],
   "fr_FR": [
     "auth.selectTribe",
@@ -121,7 +123,8 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_mechanicianAria",
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
-    "hudChrome.keybinds.toggleRunWalk"
+    "hudChrome.keybinds.toggleRunWalk",
+    "hudChrome.pt.title"
   ],
   "fr_CA": [
     "auth.selectTribe",
@@ -159,7 +162,8 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_mechanicianAria",
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
-    "hudChrome.keybinds.toggleRunWalk"
+    "hudChrome.keybinds.toggleRunWalk",
+    "hudChrome.pt.title"
   ],
   "en_CA": [],
   "it_IT": [
@@ -198,7 +202,8 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_mechanicianAria",
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
-    "hudChrome.keybinds.toggleRunWalk"
+    "hudChrome.keybinds.toggleRunWalk",
+    "hudChrome.pt.title"
   ],
   "de_DE": [
     "auth.selectTribe",
@@ -236,7 +241,8 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_mechanicianAria",
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
-    "hudChrome.keybinds.toggleRunWalk"
+    "hudChrome.keybinds.toggleRunWalk",
+    "hudChrome.pt.title"
   ],
   "zh_CN": [
     "auth.selectTribe",
@@ -274,7 +280,8 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_mechanicianAria",
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
-    "hudChrome.keybinds.toggleRunWalk"
+    "hudChrome.keybinds.toggleRunWalk",
+    "hudChrome.pt.title"
   ],
   "zh_TW": [
     "auth.selectTribe",
@@ -312,7 +319,8 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_mechanicianAria",
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
-    "hudChrome.keybinds.toggleRunWalk"
+    "hudChrome.keybinds.toggleRunWalk",
+    "hudChrome.pt.title"
   ],
   "ko_KR": [
     "auth.selectTribe",
@@ -350,7 +358,8 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_mechanicianAria",
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
-    "hudChrome.keybinds.toggleRunWalk"
+    "hudChrome.keybinds.toggleRunWalk",
+    "hudChrome.pt.title"
   ],
   "ja_JP": [
     "auth.selectTribe",
@@ -388,7 +397,8 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_mechanicianAria",
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
-    "hudChrome.keybinds.toggleRunWalk"
+    "hudChrome.keybinds.toggleRunWalk",
+    "hudChrome.pt.title"
   ],
   "pt_BR": [
     "auth.selectTribe",
@@ -426,7 +436,8 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_mechanicianAria",
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
-    "hudChrome.keybinds.toggleRunWalk"
+    "hudChrome.keybinds.toggleRunWalk",
+    "hudChrome.pt.title"
   ],
   "ru_RU": [
     "auth.selectTribe",
@@ -464,7 +475,8 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_mechanicianAria",
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
-    "hudChrome.keybinds.toggleRunWalk"
+    "hudChrome.keybinds.toggleRunWalk",
+    "hudChrome.pt.title"
   ],
   "cs_CZ": [
     "auth.selectTribe",
@@ -502,7 +514,8 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_mechanicianAria",
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
-    "hudChrome.keybinds.toggleRunWalk"
+    "hudChrome.keybinds.toggleRunWalk",
+    "hudChrome.pt.title"
   ],
   "nl_NL": [
     "auth.selectTribe",
@@ -540,7 +553,8 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_mechanicianAria",
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
-    "hudChrome.keybinds.toggleRunWalk"
+    "hudChrome.keybinds.toggleRunWalk",
+    "hudChrome.pt.title"
   ],
   "pl_PL": [
     "auth.selectTribe",
@@ -578,7 +592,8 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_mechanicianAria",
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
-    "hudChrome.keybinds.toggleRunWalk"
+    "hudChrome.keybinds.toggleRunWalk",
+    "hudChrome.pt.title"
   ],
   "id_ID": [
     "auth.selectTribe",
@@ -616,7 +631,8 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_mechanicianAria",
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
-    "hudChrome.keybinds.toggleRunWalk"
+    "hudChrome.keybinds.toggleRunWalk",
+    "hudChrome.pt.title"
   ],
   "tr_TR": [
     "auth.selectTribe",
@@ -654,7 +670,8 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_mechanicianAria",
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
-    "hudChrome.keybinds.toggleRunWalk"
+    "hudChrome.keybinds.toggleRunWalk",
+    "hudChrome.pt.title"
   ],
   "sv_SE": [
     "auth.selectTribe",
@@ -692,7 +709,8 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_mechanicianAria",
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
-    "hudChrome.keybinds.toggleRunWalk"
+    "hudChrome.keybinds.toggleRunWalk",
+    "hudChrome.pt.title"
   ],
   "vi_VN": [
     "auth.selectTribe",
@@ -730,7 +748,8 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_mechanicianAria",
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
-    "hudChrome.keybinds.toggleRunWalk"
+    "hudChrome.keybinds.toggleRunWalk",
+    "hudChrome.pt.title"
   ],
   "da_DK": [
     "auth.selectTribe",
@@ -768,6 +787,7 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_mechanicianAria",
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
-    "hudChrome.keybinds.toggleRunWalk"
+    "hudChrome.keybinds.toggleRunWalk",
+    "hudChrome.pt.title"
   ]
 };

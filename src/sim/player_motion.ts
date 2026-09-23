@@ -39,6 +39,11 @@ import {
   shoreStepOut,
   stepWaterLevel,
 } from './ride_height';
+import { isPtPos, woCToPtY } from './pt_band';
+import {
+  ptRicartenFloorHeight,
+  ptRicartenWallHit,
+} from './pt_ricarten_field';
 import { GHOST_RUN_MULT } from './spirit';
 import {
   DT,
@@ -367,6 +372,13 @@ export function stepPlayerMotion(deps: PlayerMotionDeps, p: Entity, inp: MoveInp
   const steepFlagged =
     p.onGround &&
     !swimming &&
+    // The PT band is exempt: its movement is gated by CheckNextMove's
+    // CHECK_FACE rule alone (the authored faces decide walkability, not a
+    // measured slope), and the generic generator terrain this gate reads —
+    // terrainHeight/rideSteepnessAt — does not describe the PT surface at
+    // all. On floorless PT water it also sampled an all-(-Infinity)
+    // downhill gradient, which came out NaN and poisoned the position.
+    !isPtPos(p.pos.x) &&
     rideSteepnessAt(p.pos.x, p.pos.z, deps.seed) > MAX_CLIMB_SLOPE &&
     p.pos.y <=
       rideHeight(p.pos.x, p.pos.z, terrainHeight(p.pos.x, p.pos.z, deps.seed), deps.seed) +
@@ -548,7 +560,14 @@ function stepInstancedRegion(
     // step allowance cannot ladder the way a per-tick allowance on continuous
     // terrain would (the open-world kerb rule, applied to the one kerb
     // interiors have).
-    if (p.onGround && !swimming) {
+    // The PT band skips both generic wall checks: its movement acceptance is
+    // CheckNextMove's rule below (the only gate the original engine applies),
+    // and these checks read groundHeight — the LOWEST stacked surface — so a
+    // walker legitimately on an upper level (the canal bridge deck, stacked
+    // quays) would be walled off by height discontinuities in layers beneath
+    // its feet, and a CHECK_FACE ramp steeper than MAX_CLIMB_SLOPE would be
+    // refused though PT walks it.
+    if (p.onGround && !swimming && !isPtPos(p.pos.x)) {
       // ride heights clamp to the STEP's waterline (the higher of both ends'),
       // so stepping back into a water body from the submerged bed just outside
       // its footprint is never a wall (real water can continue past a
@@ -569,7 +588,7 @@ function stepInstancedRegion(
         nx = p.pos.x;
         nz = p.pos.z;
       }
-    } else if (!p.onGround) {
+    } else if (!p.onGround && !isPtPos(p.pos.x)) {
       // Airborne, the same wall rule applies: terrain rising above the body
       // that could not be walked up cannot be jumped into either. The player
       // drops at the base of the face instead of beaching partway up it. The
@@ -613,6 +632,85 @@ function stepInstancedRegion(
         p.vz = 0;
       }
     }
+    // The PT band carries no colliders for resolveMove to act on, so PT's
+    // own acceptance rule is applied here instead. CheckNextMove
+    // (smStage3d.cpp) accepts a move only when BOTH halves pass:
+    //  - floor: a CHECK_FACE surface within Stage_StepHeight (10 PT units)
+    //    of the feet exists at the destination — off the map edge, onto a
+    //    step riser too tall to stride, or onto open water with no walkable
+    //    bed under it all fail. A swimmer is measured from the water
+    //    surface (the body bobs 0.75 yd under it) and may keep moving only
+    //    into DEEP water: a floorless cell whose bed/bank sits at or above
+    //    swim depth (a steep quay wall rising through the surface) is land
+    //    the body cannot reach, so it is held off like any other step face.
+    //  - walls: the swept capsule's four line segments (smMakeTLine:
+    //    feet+12u and feet+3/4-height, forward to dest+12u plus a lateral
+    //    +-width/4 goalpost at the lookahead point) must not intersect any
+    //    CHECK_FACE triangle — that is what stops the ship hull, tree
+    //    trunks, fences and building walls, all authored as CHECK_FACE.
+    // On rejection PT retries the move rotated +-768/4096 of a turn
+    // (+-67.5 degrees) at half distance — that retry pair is what produces
+    // wall sliding — and gives up only when all three fail.
+    // The gate keys on the player's CURRENT position, not the destination:
+    // the band edge coincides with the field edge, so a step whose
+    // destination lands out-of-band would otherwise fall through to the
+    // generic path and walk onto the void floor — in PT, CheckNextMove
+    // finds no face list there and refuses.
+    if (isPtPos(p.pos.x)) {
+      const refY = swimming
+        ? Math.max(p.pos.y, waterLevelAt(p.pos.x, p.pos.z, deps.seed))
+        : p.pos.y;
+      const accepts = (tx: number, tz: number): boolean => {
+        const floor = ptRicartenFloorHeight(tx, tz, refY);
+        if (floor === -Infinity) {
+          const wlT = waterLevelAt(tx, tz, deps.seed);
+          const deepTarget =
+            wlT !== -Infinity &&
+            groundHeight(tx, tz, deps.seed) < wlT - SWIM_DEPTH;
+          if (!swimming || !deepTarget) return false;
+          return !ptRicartenWallHit(p.pos.x, p.pos.y, p.pos.z, tx, tz);
+        }
+        // CheckNextMove water exemption: when the destination floor is real
+        // but the water surface sits ObjHeight/2+10..+15 above it (wading
+        // out over a submerged shelf), the wall test is skipped so a shore
+        // lip or dock skirt cannot block the step into deep water.
+        const wl = waterLevelAt(tx, tz, deps.seed);
+        if (wl !== -Infinity) {
+          const whe = woCToPtY(floor) + (51.1 >> 1) + 10;
+          if (woCToPtY(wl) > whe && woCToPtY(wl) < whe + 5) return true;
+        }
+        return !ptRicartenWallHit(p.pos.x, p.pos.y, p.pos.z, tx, tz);
+      };
+      if (!accepts(nx, nz)) {
+        const dx = nx - p.pos.x;
+        const dz = nz - p.pos.z;
+        // PT's zAngle retries: +/-768 of a 4096-unit circle, at dist>>=1.
+        const slide = (Math.PI * 2 * 768) / 4096;
+        let slid = false;
+        if (Math.hypot(dx, dz) > 1e-9) {
+          for (const rot of [slide, -slide]) {
+            const c = Math.cos(rot);
+            const s = Math.sin(rot);
+            const tx = p.pos.x + (dx * c - dz * s) * 0.5;
+            const tz = p.pos.z + (dx * s + dz * c) * 0.5;
+            if (accepts(tx, tz)) {
+              nx = tx;
+              nz = tz;
+              slid = true;
+              break;
+            }
+          }
+        }
+        if (!slid) {
+          nx = p.pos.x;
+          nz = p.pos.z;
+          if (!p.onGround) {
+            p.vx = 0;
+            p.vz = 0;
+          }
+        }
+      }
+    }
     const resolved = deps.resolveMove(p.pos.x, p.pos.z, nx, nz, BODY_RADIUS, p, clearFences);
     p.pos.x = resolved.x;
     p.pos.z = resolved.z;
@@ -651,7 +749,16 @@ function verticalPass(
     p.pos.x,
     p.pos.z,
     BODY_RADIUS,
-    p.pos.y + (p.onGround ? 0 : MANTLE_REACH),
+    isPtPos(p.pos.x)
+      ? // PT's floor rule measures from the FEET reference and applies its
+        // own Stage_StepHeight (10 PT units) window — there is no mantle
+        // reach in CheckNextMove, so adding WoC's MANTLE_REACH (~25 PT
+        // units) here admitted stacked surfaces ~35 units up that PT
+        // rejects, ping-ponging the body between the canal bridge's arch
+        // layers. A swimmer's reference is the water surface it bobs
+        // 0.75 yd under, which is what makes a low bank a legal swim exit.
+        p.pos.y + (swimming ? 0.75 : 0)
+      : p.pos.y + (p.onGround ? 0 : MANTLE_REACH),
   );
   // `ground` is already sampled above: reuse it rather than paying for the
   // terrain again on every vertical step.
@@ -896,7 +1003,15 @@ function standoffPass(
   movingOnGround: boolean,
 ): void {
   const ground = groundHeight(p.pos.x, p.pos.z, deps.seed);
-  if (p.onGround && p.pos.y <= ground + 1e-3 && !isSubmergedAt(p.pos.x, p.pos.z, deps.seed)) {
+  // The PT band is exempt: CheckNextMove is its whole movement model — a
+  // body may stand flush against an authored riser, and this generic
+  // terrain-wall nudge would push it off authored geometry.
+  if (
+    p.onGround &&
+    p.pos.y <= ground + 1e-3 &&
+    !isSubmergedAt(p.pos.x, p.pos.z, deps.seed) &&
+    !isPtPos(p.pos.x)
+  ) {
     const s = terrainWallStandoff(p.pos.x, p.pos.z, deps.seed, BODY_RADIUS, MAX_CLIMB_SLOPE);
     if (s.x !== p.pos.x || s.z !== p.pos.z) {
       const resolved = deps.resolveMove(p.pos.x, p.pos.z, s.x, s.z, BODY_RADIUS, p, false);

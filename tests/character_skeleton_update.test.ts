@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { SkeletonUpdateCache } from '../src/render/characters/skeleton_update_cache';
 import { skeletonPaletteNeedsUpdate } from '../src/render/characters/skeleton_update_core';
 import { applySkinnedCullBounds } from '../src/render/characters/skinned_cull_bounds';
@@ -53,14 +53,12 @@ describe('skeleton palette update decision', () => {
 describe('SkeletonUpdateCache', () => {
   it('elides duplicate updates but refreshes pose and ancestor-transform changes', () => {
     const { model, childBone, skeleton } = rig();
-    const originalUpdate = vi.fn(skeleton.update.bind(skeleton));
-    skeleton.update = originalUpdate;
+    const originalUpdate = skeleton.update;
     const cache = new SkeletonUpdateCache(model);
 
     skeleton.update();
     const initialPalette = palette(skeleton);
     skeleton.update();
-    expect(originalUpdate).toHaveBeenCalledTimes(1);
     expect(palette(skeleton)).toEqual(initialPalette);
     expect(cache.stats()).toEqual({
       requests: 2,
@@ -73,16 +71,18 @@ describe('SkeletonUpdateCache', () => {
     model.updateMatrixWorld(true);
     cache.markPoseChanged();
     skeleton.update();
-    expect(originalUpdate).toHaveBeenCalledTimes(2);
     expect(cache.stats().updates).toBe(2);
     const posedPalette = palette(skeleton);
     expect(posedPalette).not.toEqual(initialPalette);
 
+    // The palette is emitted in the armature's parent frame, so translating
+    // the model cancels out: the update still fires (bones[0].matrixWorld
+    // changed) but the ref-space values are motion-invariant — that invariance
+    // is exactly what keeps far-band palettes from re-quantizing per frame.
     model.position.z = 3;
     model.updateMatrixWorld(true);
     skeleton.update();
-    expect(originalUpdate).toHaveBeenCalledTimes(3);
-    expect(palette(skeleton)).not.toEqual(posedPalette);
+    expect(palette(skeleton)).toEqual(posedPalette);
     expect(cache.stats()).toEqual({
       requests: 4,
       updates: 3,
@@ -92,6 +92,139 @@ describe('SkeletonUpdateCache', () => {
 
     cache.dispose();
     expect(skeleton.update).toBe(originalUpdate);
+  });
+});
+
+describe('far-band palette localization', () => {
+  // The instance bands sit at |x| ~1.4e5 where float32 quantum is ~0.016 yd:
+  // a world-space palette re-rounds every element per frame and skinned
+  // vertices snap a whole ulp (the idle tremble). The cache must emit the
+  // palette relative to the armature's parent frame instead.
+  const FAR_X = 139_507;
+
+  function farRig() {
+    const model = new THREE.Group();
+    const rootBone = new THREE.Bone();
+    const childBone = new THREE.Bone();
+    childBone.position.set(0, 0.5, 0);
+    rootBone.add(childBone);
+    const skeleton = new THREE.Skeleton([rootBone, childBone]);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0.25, 0], 3));
+    geometry.setAttribute('skinIndex', new THREE.Uint16BufferAttribute([1, 0, 0, 0], 4));
+    geometry.setAttribute('skinWeight', new THREE.Float32BufferAttribute([1, 0, 0, 0], 4));
+    const mesh = new THREE.SkinnedMesh(geometry, new THREE.MeshBasicMaterial());
+    mesh.add(rootBone);
+    mesh.bind(skeleton);
+    model.add(mesh);
+    model.position.x = FAR_X;
+    model.updateMatrixWorld(true);
+    return { model, rootBone, childBone, skeleton, mesh };
+  }
+
+  /** The world-space vertex the shader must produce, computed stock-style. */
+  function stockWorldVertex(mesh: THREE.SkinnedMesh, index: number): THREE.Vector3 {
+    const pos = mesh.geometry.getAttribute('position') as THREE.BufferAttribute;
+    const skinIndex = mesh.geometry.getAttribute('skinIndex') as THREE.BufferAttribute;
+    const v = new THREE.Vector3().fromBufferAttribute(pos, index).applyMatrix4(mesh.bindMatrix);
+    const m = new THREE.Matrix4().multiplyMatrices(
+      mesh.skeleton.bones[skinIndex.getX(index)].matrixWorld,
+      mesh.skeleton.boneInverses[skinIndex.getX(index)],
+    );
+    return v.applyMatrix4(m);
+  }
+
+  it('keeps palette matrices small at band coordinates', () => {
+    const { model, skeleton } = farRig();
+    const cache = new SkeletonUpdateCache(model);
+    skeleton.update();
+    const entries = palette(skeleton);
+    // Root bone sits at the armature frame: its palette row is ~identity.
+    // No element may carry the band's ~1.4e5 coordinate.
+    for (const value of entries) expect(Math.abs(value)).toBeLessThan(100);
+    cache.dispose();
+  });
+
+  it('produces the identical world vertex through the shader path', () => {
+    const { model, skeleton, mesh } = farRig();
+    const cache = new SkeletonUpdateCache(model);
+    skeleton.update();
+    // Shader chain: meshWorld * bindMatrixInverse * boneMatrix * bindMatrix * pos
+    // must equal the stock boneWorld * boneInverse * bindMatrix * pos.
+    const paletteMatrix = new THREE.Matrix4().fromArray(skeleton.boneMatrices ?? [], 16);
+    const gpuChain = new THREE.Matrix4()
+      .copy(mesh.matrixWorld)
+      .multiply(mesh.bindMatrixInverse)
+      .multiply(paletteMatrix)
+      .multiply(mesh.bindMatrix);
+    const pos = new THREE.Vector3(0, 0.25, 0).applyMatrix4(gpuChain);
+    const expected = stockWorldVertex(mesh, 0);
+    expect(pos.x).toBeCloseTo(expected.x, 4);
+    expect(pos.y).toBeCloseTo(expected.y, 4);
+    expect(pos.z).toBeCloseTo(expected.z, 4);
+    cache.dispose();
+  });
+
+  it('keeps CPU skinning (applyBoneTransform) mesh-local and stock-equal', () => {
+    const { model, skeleton, mesh } = farRig();
+    const cache = new SkeletonUpdateCache(model);
+    skeleton.update();
+    // applyBoneTransform reads the vertex position from `target`, matching
+    // the stock callers (assets.ts posed-bounds pass).
+    const v = new THREE.Vector3().fromBufferAttribute(
+      mesh.geometry.getAttribute('position') as THREE.BufferAttribute,
+      0,
+    );
+    mesh.applyBoneTransform(0, v);
+    // Mesh-local result: meshWorld^-1 * worldVertex.
+    const expected = stockWorldVertex(mesh, 0).applyMatrix4(
+      new THREE.Matrix4().copy(mesh.matrixWorld).invert(),
+    );
+    expect(v.x).toBeCloseTo(expected.x, 5);
+    expect(v.y).toBeCloseTo(expected.y, 5);
+    expect(v.z).toBeCloseTo(expected.z, 5);
+    cache.dispose();
+  });
+
+  it('refreshes bindMatrixInverse even when the palette update is skipped', () => {
+    const { model, skeleton, mesh } = farRig();
+    const cache = new SkeletonUpdateCache(model);
+    skeleton.update();
+    // A second call with an unchanged pose skips the palette rewrite, but
+    // updateMatrixWorld (attached mode) rewrites bindMatrixInverse each frame;
+    // the refresh must still land the compensated value.
+    mesh.bindMatrixInverse.copy(mesh.matrixWorld).invert();
+    skeleton.update();
+    const expected = new THREE.Matrix4()
+      .copy(mesh.matrixWorld)
+      .invert()
+      .multiply(skeleton.bones[0].parent!.matrixWorld);
+    expect(mesh.bindMatrixInverse.elements).toEqual(
+      expected.elements.map((e) => expect.closeTo(e, 6)),
+    );
+    cache.dispose();
+  });
+
+  it('registerMesh covers a late-bound mesh', () => {
+    const { model, skeleton, rootBone } = farRig();
+    const cache = new SkeletonUpdateCache(model);
+    const late = new THREE.SkinnedMesh(
+      new THREE.BufferGeometry(),
+      new THREE.MeshBasicMaterial(),
+    );
+    late.bind(skeleton);
+    model.add(late);
+    model.updateMatrixWorld(true);
+    cache.registerMesh(late);
+    skeleton.update();
+    const expected = new THREE.Matrix4()
+      .copy(late.matrixWorld)
+      .invert()
+      .multiply(rootBone.parent!.matrixWorld);
+    for (let i = 0; i < 16; i++) {
+      expect(late.bindMatrixInverse.elements[i]).toBeCloseTo(expected.elements[i], 6);
+    }
+    cache.dispose();
   });
 });
 

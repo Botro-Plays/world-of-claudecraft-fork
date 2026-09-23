@@ -1499,6 +1499,9 @@ export const cs_CZ: EnTranslations = {
       "bracket1v1": "1v1",
       "bracket2v2": "2v2"
     },
+    "pt": {
+      "title": "Ricarten"
+    },
     "bg": {
       "title": "Thornhollowská pole",
       "blurb": "Dvě zbořené tvrze si hledí přes ohrazenou kotlinu ve stínu Thornpeaku: Karmínová na jihu, Blankytná na severu, a mezi nimi starší Zpustlé nádvoří, které nikdy žádná z nich neovládla. Pět na každé straně, jedna vlajka na tým, a kdo první donese domů tři z těch svých, ovládne bojiště.",

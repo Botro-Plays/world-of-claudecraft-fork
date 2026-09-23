@@ -7,12 +7,15 @@ import {
 import { IGNIVAR_RAID_ENVIRONMENT } from '../src/render/ignivar_raid_environment';
 import type { FogSceneState } from '../src/render/interior_light_rig';
 import {
+  arenaOrigin,
   battlegroundOrigin,
   DUNGEON_LIST,
+  DUNGEON_X_THRESHOLD,
   delveOrigin,
   instanceOrigin,
   yumiMazeOrigin,
 } from '../src/sim/data';
+import { isPtPos, PT_RICARTEN_START_X, ptXToWoC } from '../src/sim/pt_band';
 
 const SEED = 1;
 
@@ -83,6 +86,27 @@ describe('resolveFogScene (the renderer fog resolution, moved verbatim)', () => 
     const crypt = resolveFogScene(true, interiorPx('crypt'), 5, cam, SEED);
     expect(crypt.desired).toBe('dungeon');
     expect(crypt.interior).toBe('crypt');
+  });
+
+  it('resolves the PT Ricarten band to open air ahead of the dungeon fallback', () => {
+    // Ricarten sits past DUNGEON_X_THRESHOLD, so every PT position also reads
+    // `inside` to the caller: a real precedence assertion, not a free pass.
+    const spawnX = ptXToWoC(PT_RICARTEN_START_X);
+    expect(spawnX).toBeGreaterThan(DUNGEON_X_THRESHOLD);
+    expect(isPtPos(spawnX)).toBe(true);
+    const res = resolveFogScene(true, spawnX, 5, cam, SEED);
+    expect(res.desired).toBe('outdoor');
+    expect(res.interior).toBeFalsy();
+  });
+
+  it('keeps the generic dungeon fallback for non-PT positions past the threshold', () => {
+    // A bare beyond-threshold x between the overflow dungeon band and the
+    // battleground band is not a PT position and must stay 'dungeon'.
+    const px = DUNGEON_X_THRESHOLD + 28_000;
+    expect(isPtPos(px)).toBe(false);
+    expect(resolveFogScene(true, px, 5, cam, SEED).desired).toBe('dungeon');
+    // The arena band resolves through the same fallback (unchanged).
+    expect(resolveFogScene(true, arenaOrigin(0).x, 5, cam, SEED).desired).toBe('dungeon');
   });
 });
 

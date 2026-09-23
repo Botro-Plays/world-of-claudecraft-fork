@@ -1499,6 +1499,9 @@ export const es: EnTranslations = {
       "bracket1v1": "1c1",
       "bracket2v2": "2c2"
     },
+    "pt": {
+      "title": "Ricarten"
+    },
     "bg": {
       "title": "Campos Espinosos",
       "blurb": "Dos fortalezas en ruinas se enfrentan a través de una hondonada amurallada a la sombra de Thornpeak: los Carmesí al sur, los Azur al norte, y entre ellos el antiguo Patio en Ruinas que ninguno ha controlado jamás. Cinco por bando, una bandera cada uno, y el primero en llevar tres de las suyas a casa se queda con el campo.",

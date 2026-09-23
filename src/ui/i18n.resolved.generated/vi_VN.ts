@@ -1499,6 +1499,9 @@ export const vi_VN: EnTranslations = {
       "bracket1v1": "1v1",
       "bracket2v2": "2v2"
     },
+    "pt": {
+      "title": "Ricarten"
+    },
     "bg": {
       "title": "Cánh Đồng Trũng Gai",
       "blurb": "Hai pháo đài đổ nát đối mặt nhau qua một thung lũng có tường bao dưới bóng Đỉnh Gai: Đỏ Thẫm ở phía nam, Xanh Lam ở phía bắc, và Sân Phế Tích cổ xưa hơn nằm giữa chúng mà chưa bên nào từng chiếm được. Năm người mỗi bên, mỗi bên một lá cờ, và bên đầu tiên mang được ba lá cờ của đối phương về nhà sẽ giành lấy chiến trường.",
