@@ -28,6 +28,15 @@ export const STEP_SMOOTH_RATE = 26;
 export const STEP_SMOOTH_MAX_LAG = 0.95;
 /** Beyond this, the move is a teleport and the smoother re-seats (yards). */
 export const STEP_SMOOTH_SNAP = 2;
+/** Slower convergence inside the PT band only: Ricarten stairs are climbed by
+ *  a burst of CheckNextMove riser accepts, and at the base rate each ~10-unit
+ *  riser (0.36 yd) still finishes its ease well inside the gap to the next
+ *  one, so the drawn height keeps its step-step-step cadence. At this rate the
+ *  offset never fully drains between risers, which reads as one continuous
+ *  climb; the leash is unchanged, so the feet never trail more than the same
+ *  bound. The sim position is untouched either way — this only stretches the
+ *  catch-up window. */
+export const PT_STEP_SMOOTH_RATE = 14;
 const MAX_STEP_DT = 0.1;
 
 export interface StepSmoothState {
@@ -63,6 +72,7 @@ export function stepSmoothHeight(
   y: number,
   grounded: boolean,
   dt: number,
+  rate = STEP_SMOOTH_RATE,
 ): number {
   if (!s.active) {
     s.active = true;
@@ -88,7 +98,7 @@ export function stepSmoothHeight(
     // Airborne, or a teleport: show the truth immediately. Drain fast rather
     // than jumping the offset to zero, so a body that steps up and then walks
     // straight off the ledge does not gain a second, upward pop.
-    s.offset *= Math.exp(-STEP_SMOOTH_RATE * 2 * step);
+    s.offset *= Math.exp(-rate * 2 * step);
     if (Math.abs(s.offset) < 1e-4) s.offset = 0;
     return y + s.offset;
   }
@@ -99,7 +109,7 @@ export function stepSmoothHeight(
   s.offset -= dy;
   if (s.offset > STEP_SMOOTH_MAX_LAG) s.offset = STEP_SMOOTH_MAX_LAG;
   else if (s.offset < -STEP_SMOOTH_MAX_LAG) s.offset = -STEP_SMOOTH_MAX_LAG;
-  s.offset *= Math.exp(-STEP_SMOOTH_RATE * step);
+  s.offset *= Math.exp(-rate * step);
   if (Math.abs(s.offset) < 1e-4) s.offset = 0;
   return y + s.offset;
 }

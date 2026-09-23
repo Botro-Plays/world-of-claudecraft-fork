@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   createStepSmooth,
+  PT_STEP_SMOOTH_RATE,
   resetStepSmooth,
   STEP_SMOOTH_MAX_LAG,
   STEP_SMOOTH_SNAP,
+  STEP_SMOOTH_RATE,
   stepSmoothHeight,
 } from '../src/render/step_smooth_core';
 import { MAX_STEP_HEIGHT } from '../src/sim/physics';
@@ -125,5 +127,106 @@ describe('step smoothing', () => {
     stepSmoothHeight(s, 0.9, true, DT);
     resetStepSmooth(s);
     expect(stepSmoothHeight(s, 12, true, DT)).toBe(12);
+  });
+});
+
+// The PT band runs the same smoother at a slower convergence rate so Ricarten
+// stair risers (which arrive in bursts) read as one continuous climb instead of
+// a per-riser eased pop. Everything below pins that the slower rate changes
+// ONLY the catch-up window — the absorption, leash, exclusion, and snap rules
+// are identical, and the physical height input is never modified.
+describe('PT-band step smoothing (slower rate)', () => {
+  const PT_RISER = 10 * 0.036; // a full Stage_StepHeight riser, in yards
+
+  it('is softer than the base rate', () => {
+    expect(PT_STEP_SMOOTH_RATE).toBeLessThan(STEP_SMOOTH_RATE);
+  });
+
+  it('eases a riser over a longer window but still lands exactly', () => {
+    const s = createStepSmooth();
+    stepSmoothHeight(s, 0, true, DT, PT_STEP_SMOOTH_RATE);
+    const first = stepSmoothHeight(s, PT_RISER, true, DT, PT_STEP_SMOOTH_RATE);
+    expect(first).toBeLessThan(PT_RISER); // absorbed, not popped
+    expect(first).toBeGreaterThan(0); // but still begins to rise
+    // Converges measurably slower than the base rate.
+    const base = createStepSmooth();
+    stepSmoothHeight(base, 0, true, DT);
+    const baseFirst = stepSmoothHeight(base, PT_RISER, true, DT);
+    expect(first).toBeLessThan(baseFirst);
+    let prev = first;
+    for (let i = 0; i < 120; i++) {
+      const y = stepSmoothHeight(s, PT_RISER, true, DT, PT_STEP_SMOOTH_RATE);
+      expect(y).toBeGreaterThanOrEqual(prev - 1e-9); // monotone, never dips
+      prev = y;
+    }
+    expect(prev).toBeCloseTo(PT_RISER, 5); // settles on the truth
+  });
+
+  it('keeps a continuous-climb profile across back-to-back risers', () => {
+    // Risers every 150 ms (a running stair cadence): at the base rate the
+    // offset drains nearly to zero between risers (the step-step-step look);
+    // at the PT rate the drawn height is still catching up when the next
+    // riser lands, so the motion reads continuous.
+    const pt = createStepSmooth();
+    const base = createStepSmooth();
+    let y = 0;
+    stepSmoothHeight(pt, y, true, DT, PT_STEP_SMOOTH_RATE);
+    stepSmoothHeight(base, y, true, DT);
+    let ptLag = 0;
+    let baseLag = 0;
+    for (let i = 0; i < 90; i++) {
+      if (i % 9 === 0 && i > 0) y += PT_RISER;
+      ptLag = y - stepSmoothHeight(pt, y, true, DT, PT_STEP_SMOOTH_RATE);
+      baseLag = y - stepSmoothHeight(base, y, true, DT);
+    }
+    // Mid-climb, the PT display trails further (smoother) ...
+    expect(ptLag).toBeGreaterThan(baseLag);
+    // ... but never further than the shared leash (feet stay on the tread).
+    expect(ptLag).toBeLessThanOrEqual(STEP_SMOOTH_MAX_LAG + 1e-9);
+  });
+
+  it('still draws a grounded step-DOWN by easing, never below-target overshoot', () => {
+    const s = createStepSmooth();
+    stepSmoothHeight(s, PT_RISER, true, DT, PT_STEP_SMOOTH_RATE);
+    const first = stepSmoothHeight(s, 0, true, DT, PT_STEP_SMOOTH_RATE);
+    expect(first).toBeGreaterThan(0); // eased down, not teleported
+    let prev = first;
+    for (let i = 0; i < 120; i++) {
+      const y = stepSmoothHeight(s, 0, true, DT, PT_STEP_SMOOTH_RATE);
+      expect(y).toBeLessThanOrEqual(prev + 1e-9); // monotone down
+      prev = y;
+    }
+    expect(prev).toBeCloseTo(0, 5);
+  });
+
+  it('leaves airborne motion, real landings, and teleports exact', () => {
+    const s = createStepSmooth();
+    stepSmoothHeight(s, 0, true, DT, PT_STEP_SMOOTH_RATE);
+    let y = 0;
+    for (let i = 0; i < 10; i++) {
+      y += 0.2;
+      expect(stepSmoothHeight(s, y, false, DT, PT_STEP_SMOOTH_RATE)).toBeCloseTo(y, 6);
+    }
+    for (let i = 0; i < 10; i++) {
+      y -= 0.2;
+      expect(stepSmoothHeight(s, y, false, DT, PT_STEP_SMOOTH_RATE)).toBeCloseTo(y, 6);
+    }
+    const floor = y - 0.2;
+    // Airborne -> grounded landing on a LOWER surface: exact.
+    expect(stepSmoothHeight(s, floor, true, DT, PT_STEP_SMOOTH_RATE)).toBeCloseTo(floor, 6);
+    // Teleport: snaps, no glide.
+    const t = floor + STEP_SMOOTH_SNAP + 50;
+    expect(stepSmoothHeight(s, t, true, DT, PT_STEP_SMOOTH_RATE)).toBeCloseTo(t, 4);
+  });
+
+  it('never modifies the physical height it is given (pure read)', () => {
+    const s = createStepSmooth();
+    stepSmoothHeight(s, 1, true, DT, PT_STEP_SMOOTH_RATE);
+    const physical = 1 + PT_RISER;
+    const drawn = stepSmoothHeight(s, physical, true, DT, PT_STEP_SMOOTH_RATE);
+    // Drawn lags, but the input value is only read — the caller's `y` is the
+    // authoritative display height and stays the collision/sim truth.
+    expect(drawn).toBeLessThan(physical);
+    expect(physical).toBeCloseTo(1 + PT_RISER, 9);
   });
 });

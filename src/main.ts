@@ -4460,6 +4460,16 @@ async function startGame(
           offlineSim.player.facing,
         );
         Object.assign(offlineSim.moveInput, mi);
+        // Local-player run intent for the renderer's PT-band gait latch
+        // (renderer.selfRunHeld): held move keys or click-move at run speed.
+        // Recomputed per tick so a tickless frame just keeps the last answer,
+        // which is correct — the held keys have not changed between ticks.
+        // Backpedal is deliberately not "run intent": a rig without a walkBack
+        // clip would otherwise play forward-run while stepping backward.
+        renderer.selfRunHeld =
+          !!(mi.forward || mi.strafeLeft || mi.strafeRight) &&
+          !mi.walkMode &&
+          !movementFrozen();
         const stepFacing = movementFacing ?? facing;
         // A stun locks facing (issue #2426): stepPlayerMotion already blocks
         // turnLeft/turnRight while stunned, but mouselook/controller facing is
@@ -4634,6 +4644,11 @@ async function startGame(
       (resolved.mi.turnLeft || resolved.mi.turnRight) &&
       !kbTurn.suppressTurnFlags;
     Object.assign(net.moveInput, resolved.mi);
+    // Same PT-band run-intent push as the offline path above.
+    renderer.selfRunHeld =
+      !!(resolved.mi.forward || resolved.mi.strafeLeft || resolved.mi.strafeRight) &&
+      !resolved.mi.walkMode &&
+      !movementFrozen();
     if (kbTurn.suppressTurnFlags) {
       net.moveInput.turnLeft = false;
       net.moveInput.turnRight = false;

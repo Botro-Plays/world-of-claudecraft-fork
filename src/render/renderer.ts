@@ -733,7 +733,13 @@ import {
 } from './static_matrix';
 import { buildStationProps } from './stations';
 import { shouldRenderStealthGhost } from './stealth';
-import { createStepSmooth, type StepSmoothState, stepSmoothHeight } from './step_smooth_core';
+import {
+  createStepSmooth,
+  PT_STEP_SMOOTH_RATE,
+  STEP_SMOOTH_RATE,
+  type StepSmoothState,
+  stepSmoothHeight,
+} from './step_smooth_core';
 import { buildStreetlamps, type StreetlampsView } from './streetlamps';
 import { strideHit } from './stride_audio_core';
 import { buildFlaredConeFan, buildRingXZ, drapeConeWorld } from './target_cone_debug';
@@ -1388,6 +1394,16 @@ export class Renderer {
   // forced to walk regardless of speed. Set from main.ts when the player
   // toggles run/walk (KeyR by default, see run_walk_toggle.ts).
   forceWalk = false;
+  // Whether the local player is holding run-intent this frame (forward,
+  // strafe, or click-move; walk mode off; not movement-frozen — backpedal is
+  // deliberately excluded so a rig without walkBack never plays forward-run
+  // while stepping backward). Pushed from main.ts alongside forceWalk. The PT band's stair climbing is bursty by design —
+  // CheckNextMove accept/reject plus half-distance slide retries make the
+  // honest measured speed oscillate through the gait hysteresis band, flapping
+  // the run/walk pick while a move key stays held. Original PT keys the gait
+  // off held input rather than measured velocity; this flag lets the renderer
+  // do the same for the local player inside the band only.
+  selfRunHeld = false;
   showNameplates = true;
   // settings-backed developer-badge display toggle (nameplate glyph + outline);
   // initialized from Settings and kept live by main.ts's applySetting dispatcher.
@@ -10870,7 +10886,20 @@ export class Renderer {
       v.prevRenderY = y;
       v.hasPrevY = true;
       if (airborne && dt > 1e-4) v.fallSpeed = Math.max(v.fallSpeed, -dyRaw / dt);
-      const smoothY = stepSmoothHeight(v.stepSmooth, y, settled, dt);
+      // Inside the PT band the same smoother runs at a slower convergence
+      // rate: Ricarten stair risers arrive in bursts closer together than the
+      // base rate's settle time, so the drawn height kept a step-step-step
+      // cadence. The slower rate bridges risers into one continuous climb.
+      // Purely presentational — `y` (the authoritative display height) is
+      // unchanged, and every exclusion (airborne, swim, teleport, landing)
+      // is identical.
+      const smoothY = stepSmoothHeight(
+        v.stepSmooth,
+        y,
+        settled,
+        dt,
+        isPtPos(ax) ? PT_STEP_SMOOTH_RATE : STEP_SMOOTH_RATE,
+      );
       if (smoothY !== y) {
         v.group.position.y = smoothY;
         if (isSelf) selfPos.y = smoothY;
@@ -10948,7 +10977,16 @@ export class Renderer {
       const st = this.animScratch;
       st.speed = loco.speed;
       st.moving = moving;
-      st.running = isSelf && this.forceWalk ? false : loco.running;
+      // PT-band run-intent latch (see selfRunHeld): CheckNextMove's
+      // accept/reject cadence on stairs makes the honest horizontal speed
+      // oscillate through the gait hysteresis band, flapping run<->walk while
+      // a move key stays held. While the local player holds run intent inside
+      // the band the gait stays run — matching PT's input-driven animation —
+      // while `moving` stays honest so a body genuinely wedged still settles
+      // to idle, and airborne/swim/dead/cast/sit/walkBack all still outrank
+      // the gait downstream in desiredBaseState.
+      const ptRunHeld = isSelf && this.selfRunHeld && isPtPos(ax);
+      st.running = isSelf && this.forceWalk ? false : loco.running || ptRunHeld;
       // A mounted rider stays planted in the saddle: the MOUNT carries the
       // jump arc (its anim scratch below keeps the real airborne flag), while
       // the rider holds the seated pose instead of replaying the jump clip.
