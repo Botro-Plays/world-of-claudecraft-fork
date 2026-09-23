@@ -1,0 +1,124 @@
+{
+  "manifest": {
+    "id": "fo2",
+    "fieldIndex": 49,
+    "mapName": "fo2",
+    "state": "FIELD_STATE_FOREST",
+    "smdPath": "Field/Custom/fo2.smd",
+    "fieldOut": "generated/pt-maps/fo2/field.generated.ts",
+    "sourceLabel": "client/Field/Custom/fo2.smd",
+    "stageObjects": {
+      "dir": "Field/forest",
+      "files": [
+        "2ani-04.smd"
+      ],
+      "missing": [],
+      "out": "generated/pt-maps/fo2/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Custom",
+    "textureOutDir": "public/textures/pt-fo2",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/fo2.tga",
+    "centerPos": [
+      -46733,
+      -14391
+    ],
+    "startPoints": [
+      [
+        -46644,
+        -10485
+      ],
+      [
+        -41291,
+        -11138
+      ]
+    ],
+    "gates": [
+      {
+        "targetIndex": 50,
+        "x": -40333,
+        "z": -9515,
+        "y": 0
+      }
+    ],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "missing texture: field\\custom\\\\fb_1_01.bmp (materials 94)",
+    "missing texture: field\\custom\\\\fb_1_02.bmp (materials 95)",
+    "missing texture: field\\custom\\\\fb_1_03.bmp (materials 96)",
+    "missing texture: field\\custom\\\\fb_2_01.bmp (materials 97)",
+    "missing texture: field\\custom\\\\fb_2_02.bmp (materials 98)",
+    "missing texture: field\\custom\\\\fb_2_03.bmp (materials 99)",
+    "missing texture: field\\custom\\\\fb_3_01.bmp (materials 100)",
+    "missing texture: field\\custom\\\\fb_3_02.bmp (materials 101)",
+    "missing texture: field\\custom\\\\fb_3_03.bmp (materials 102)",
+    "missing texture: field\\custom\\\\fb_4_01.bmp (materials 103)",
+    "missing texture: field\\custom\\\\fb_4_02.bmp (materials 104)",
+    "missing texture: field\\custom\\\\fb_4_03.bmp (materials 105)",
+    "missing texture: field\\custom\\\\fi_4_05.bmp (materials 127)",
+    "missing texture: field\\custom\\\\fi_4_06.bmp (materials 128)",
+    "missing texture: field\\custom\\\\fi_4_07.bmp (materials 129)",
+    "missing texture: field\\custom\\\\fi_4_08.bmp (materials 130)",
+    "missing texture: field\\custom\\\\fg_1_06.bmp (materials 286)",
+    "missing texture: field\\custom\\\\fg_1_07.bmp (materials 287)",
+    "missing texture: field\\custom\\\\fg_1_08.bmp (materials 288)",
+    "missing texture: field\\custom\\\\_ (materials 332)",
+    "stage object 2ani-04.smd: texture 'apmoon.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'd(leaf).tga' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'd.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'daenamu.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'fb_1_01.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'fb_1_02.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'fb_1_03.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'fb_2_01.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'fb_2_02.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'fb_2_03.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'fb_3_01.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'fb_3_02.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'fb_3_03.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'fb_4_01.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'fb_4_02.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'fb_4_03.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'fg_1_06.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'fg_1_07.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'fg_1_08.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'fi_4_05.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'fi_4_06.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'fi_4_07.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'fi_4_08.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'front.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'gedan_are.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'gedan_we.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'maldook.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'na03_01.tga' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'na03_02.tga' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'plane.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'rope.tga' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'sprout.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'tong_moon.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'tong_roof_side.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'tong_top.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'wall.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'wf001.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'wf002.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'wf003.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'wf004.tga' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'wf005.tga' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'wf006.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'wf007.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'wf008.tga' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'wood_roof.bmp' not found in Field/Custom",
+    "stage object 2ani-04.smd: texture 'ww.bmp' not found in Field/Custom"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 26629,
+    "faces": 33219,
+    "bytes": 3056437
+  },
+  "stageObjects": 1
+}

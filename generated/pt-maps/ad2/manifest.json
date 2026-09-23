@@ -1,0 +1,42 @@
+{
+  "manifest": {
+    "id": "ad2",
+    "fieldIndex": 64,
+    "mapName": "ad2",
+    "state": "FIELD_STATE_DUNGEON",
+    "smdPath": "Field/Custom/ad2.smd",
+    "fieldOut": "generated/pt-maps/ad2/field.generated.ts",
+    "sourceLabel": "client/Field/Custom/ad2.smd",
+    "stageObjects": {
+      "dir": "Field/Custom",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/ad2/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Custom",
+    "textureOutDir": "public/textures/pt-ad2",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/ad2.tga",
+    "centerPos": [
+      73944,
+      -26874
+    ],
+    "startPoints": [],
+    "gates": [],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "missing texture: field\\dungeon\\L (materials 21)",
+    "missing texture: field\\dungeon\\arrow.tga (materials 60)"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 25500,
+    "faces": 39558,
+    "bytes": 3154162
+  },
+  "stageObjects": 0
+}

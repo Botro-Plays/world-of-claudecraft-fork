@@ -1,0 +1,55 @@
+{
+  "manifest": {
+    "id": "stemple",
+    "fieldIndex": 70,
+    "mapName": "Stemple",
+    "state": "FIELD_STATE_FOREST",
+    "smdPath": "Field/SeaA/Stemple.smd",
+    "fieldOut": "generated/pt-maps/stemple/field.generated.ts",
+    "sourceLabel": "client/Field/SeaA/Stemple.smd",
+    "stageObjects": {
+      "dir": "Field/SeaA",
+      "files": [
+        "sea_ani01.smd",
+        "sea_ani02.smd",
+        "sea_ani03.smd",
+        "sea_ani04.smd",
+        "sea_ani05.smd",
+        "sea_ani06.smd",
+        "sea_ani07.smd",
+        "sea_ani08.smd",
+        "sea_ani09.smd",
+        "sea_ani10.smd"
+      ],
+      "missing": [],
+      "out": "generated/pt-maps/stemple/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/SeaA",
+    "textureOutDir": "public/textures/pt-stemple",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/Stemple.tga",
+    "centerPos": [
+      -28284,
+      27144
+    ],
+    "startPoints": [
+      [
+        -28284,
+        27144
+      ]
+    ],
+    "gates": [],
+    "derived": true
+  },
+  "status": "PASS",
+  "warnings": [],
+  "errors": [],
+  "field": {
+    "vertices": 52915,
+    "faces": 81176,
+    "bytes": 6564823
+  },
+  "stageObjects": 10
+}

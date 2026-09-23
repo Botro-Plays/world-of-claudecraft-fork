@@ -1,0 +1,44 @@
+{
+  "manifest": {
+    "id": "dc1",
+    "fieldIndex": 57,
+    "mapName": "dc1",
+    "state": "FIELD_STATE_DUNGEON",
+    "smdPath": "Field/Boss/dark_boss.smd",
+    "fieldOut": "generated/pt-maps/dc1/field.generated.ts",
+    "sourceLabel": "client/Field/Boss/dark_boss.smd",
+    "stageObjects": {
+      "dir": "Field/Boss",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/dc1/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Boss",
+    "textureOutDir": "public/textures/pt-dc1",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/dc1.tga",
+    "centerPos": [
+      198279,
+      240452
+    ],
+    "startPoints": [
+      [
+        198279,
+        240452
+      ]
+    ],
+    "gates": [],
+    "derived": true
+  },
+  "status": "PASS",
+  "warnings": [],
+  "errors": [],
+  "field": {
+    "vertices": 10082,
+    "faces": 17056,
+    "bytes": 1691325
+  },
+  "stageObjects": 0
+}

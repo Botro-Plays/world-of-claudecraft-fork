@@ -1,0 +1,87 @@
+{
+  "manifest": {
+    "id": "iron-1",
+    "fieldIndex": 27,
+    "mapName": "iron-1",
+    "state": "FIELD_STATE_IRON",
+    "smdPath": "Field/Iron/iron-1.smd",
+    "fieldOut": "generated/pt-maps/iron-1/field.generated.ts",
+    "sourceLabel": "client/Field/Iron/iron-1.smd",
+    "stageObjects": {
+      "dir": "Field/Iron",
+      "files": [
+        "i1-ani01_Bip.smd",
+        "i1-ani02_Bip.smd",
+        "i1-ani03_Bip.smd",
+        "i1-ani04_Bip.smd",
+        "i1-ani05_Bip.smd",
+        "i1-ani06_Bip.smd",
+        "i1-ani07_Bip.smd",
+        "i1-ani08_Bip.smd",
+        "i1-ani09_Bip.smd",
+        "i1-ani10_Bip.smd",
+        "i1-ani11_Bip.smd",
+        "iron-ani01.smd",
+        "iron-ani02.smd",
+        "iron-ani03.smd"
+      ],
+      "missing": [],
+      "out": "generated/pt-maps/iron-1/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Iron",
+    "textureOutDir": "public/textures/pt-iron-1",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/iron-1.tga",
+    "centerPos": [
+      47617,
+      13626
+    ],
+    "startPoints": [
+      [
+        46905,
+        13478
+      ],
+      [
+        47357,
+        20845
+      ],
+      [
+        46741,
+        21349
+      ]
+    ],
+    "gates": [
+      {
+        "targetIndex": 28,
+        "x": 45316,
+        "z": 21407,
+        "y": 0
+      }
+    ],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "duplicate texture stem 'i02-19': i02-19.bmp vs i02-19.tga",
+    "stage object skipped: i1-ani01_Bip.smd: i1-ani01_Bip.smd/ssss: body size 12636 != expected 10812",
+    "stage object skipped: i1-ani02_Bip.smd: i1-ani02_Bip.smd/ani-10: body size 25532 != expected 20924",
+    "stage object skipped: i1-ani03_Bip.smd: i1-ani03_Bip.smd/ani-08: body size 12636 != expected 10812",
+    "stage object skipped: i1-ani04_Bip.smd: i1-ani04_Bip.smd/Object03: body size 25532 != expected 20924",
+    "stage object skipped: i1-ani05_Bip.smd: i1-ani05_Bip.smd/ani-5: body size 12636 != expected 10812",
+    "stage object skipped: i1-ani06_Bip.smd: i1-ani06_Bip.smd/ani-6: body size 25532 != expected 20924",
+    "stage object skipped: i1-ani07_Bip.smd: i1-ani07_Bip.smd/ani-7: body size 18864 != expected 15696",
+    "stage object skipped: i1-ani08_Bip.smd: i1-ani08_Bip.smd/ani-8: body size 18864 != expected 15696",
+    "stage object skipped: i1-ani09_Bip.smd: i1-ani09_Bip.smd/ani-9: body size 12636 != expected 10812",
+    "stage object skipped: i1-ani10_Bip.smd: i1-ani10_Bip.smd/ani-10: body size 25532 != expected 20924",
+    "stage object skipped: i1-ani11_Bip.smd: i1-ani11_Bip.smd/ani-13: body size 32180 != expected 27412"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 45193,
+    "faces": 64515,
+    "bytes": 4980838
+  },
+  "stageObjects": 3
+}

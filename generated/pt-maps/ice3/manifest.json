@@ -1,0 +1,86 @@
+{
+  "manifest": {
+    "id": "ice3",
+    "fieldIndex": 59,
+    "mapName": "ice3",
+    "state": "FIELD_STATE_ICE",
+    "smdPath": "Field/Ice/ice3.smd",
+    "fieldOut": "generated/pt-maps/ice3/field.generated.ts",
+    "sourceLabel": "client/Field/Ice/ice3.smd",
+    "stageObjects": {
+      "dir": "Field/Ice",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/ice3/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Ice",
+    "textureOutDir": "public/textures/pt-ice3",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/ice3.tga",
+    "centerPos": [
+      64303,
+      68806
+    ],
+    "startPoints": [
+      [
+        64303,
+        68806
+      ]
+    ],
+    "gates": [],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "missing texture: field\\Ice\\t_05_up.bmp (materials 175)",
+    "missing texture: field\\Ice\\leave.tga (materials 181,289)",
+    "missing texture: field\\Ice\\t_sm.tga (materials 182,290)",
+    "missing texture: field\\Ice\\t_cap.bmp (materials 183)",
+    "missing texture: field\\Ice\\t_05_below.BMP (materials 184)",
+    "missing texture: field\\Ice\\t_05_top.bmp (materials 185)",
+    "missing texture: field\\Ice\\imt_2_04.bmp (materials 215)",
+    "missing texture: field\\Ice\\Imt_3_02.bmp (materials 217)",
+    "missing texture: field\\Ice\\Icemt04.bmp (materials 219)",
+    "missing texture: field\\Ice\\Icemt05.bmp (materials 220)",
+    "missing texture: field\\Ice\\Icemt06.bmp (materials 221)",
+    "missing texture: field\\Ice\\Icemt07.bmp (materials 222)",
+    "missing texture: field\\Ice\\Icemt08.bmp (materials 223)",
+    "missing texture: field\\Ice\\Icemt09.bmp (materials 224)",
+    "missing texture: field\\Ice\\Icemt_3_01.bmp (materials 225)",
+    "missing texture: field\\Ice\\Icemt_3_02.bmp (materials 226)",
+    "missing texture: field\\Ice\\Icemt_3_03.bmp (materials 227)",
+    "missing texture: field\\Ice\\Icemt_2_01.bmp (materials 228)",
+    "missing texture: field\\Ice\\Icemt_2_02.bmp (materials 229)",
+    "missing texture: field\\Ice\\Icemt_2_03.bmp (materials 230)",
+    "missing texture: field\\Ice\\Icd_1_04.bmp (materials 242)",
+    "missing texture: field\\Ice\\Ice_1_05.bmp (materials 243)",
+    "missing texture: field\\Ice\\wf_lee01.BMP (materials 253)",
+    "missing texture: field\\Ice\\wf_lee02.BMP (materials 254)",
+    "missing texture: field\\Ice\\wf_lee03.BMP (materials 255)",
+    "missing texture: field\\Ice\\wf_lee04.BMP (materials 256)",
+    "missing texture: field\\Ice\\wf_lee05.TGA (materials 257)",
+    "missing texture: field\\Ice\\leewood13.BMP (materials 258)",
+    "missing texture: field\\Ice\\leewood01.TGA (materials 259)",
+    "missing texture: field\\Ice\\leewood02.TGA (materials 260)",
+    "missing texture: field\\Ice\\leewood03.TGA (materials 261)",
+    "missing texture: field\\Ice\\leewood04.TGA (materials 262)",
+    "missing texture: field\\Ice\\leewood05.BMP (materials 263)",
+    "missing texture: field\\Ice\\leewood06.TGA (materials 264)",
+    "missing texture: field\\Ice\\leewood07.TGA (materials 265)",
+    "missing texture: field\\Ice\\leewood08.TGA (materials 266)",
+    "missing texture: field\\Ice\\leewood09.BMP (materials 267)",
+    "missing texture: field\\Ice\\leewood11.bmp (materials 268)",
+    "missing texture: field\\Ice\\leewood12.bmp (materials 269)",
+    "missing texture: field\\Ice\\leewood14.BMP (materials 270)",
+    "missing texture: field\\Ice\\leewood14_n.BMP (materials 271)"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 37717,
+    "faces": 30905,
+    "bytes": 3258118
+  },
+  "stageObjects": 0
+}

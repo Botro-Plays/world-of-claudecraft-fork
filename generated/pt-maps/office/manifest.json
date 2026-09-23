@@ -1,0 +1,41 @@
+{
+  "manifest": {
+    "id": "office",
+    "fieldIndex": 16,
+    "mapName": null,
+    "state": "FIELD_STATE_ROOM",
+    "smdPath": "Field/Room/office.smd",
+    "fieldOut": "generated/pt-maps/office/field.generated.ts",
+    "sourceLabel": "client/Field/Room/office.smd",
+    "stageObjects": {
+      "dir": "Field/room",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/office/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Room",
+    "textureOutDir": "public/textures/pt-office",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": null,
+    "centerPos": [
+      -200000,
+      200000
+    ],
+    "startPoints": [],
+    "gates": [],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "no minimap declared"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 1190,
+    "faces": 2026,
+    "bytes": 675766
+  },
+  "stageObjects": 0
+}

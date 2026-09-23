@@ -1,0 +1,39 @@
+{
+  "manifest": {
+    "id": "landofnurwn",
+    "fieldIndex": 69,
+    "mapName": "LandofNurwn",
+    "state": "FIELD_STATE_DUNGEON",
+    "smdPath": "Field/LandofNurwn/LandofNurwn.smd",
+    "fieldOut": "generated/pt-maps/landofnurwn/field.generated.ts",
+    "sourceLabel": "client/Field/LandofNurwn/LandofNurwn.smd",
+    "stageObjects": {
+      "dir": "Field/LandofNurwn",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/landofnurwn/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/LandofNurwn",
+    "textureOutDir": "public/textures/pt-landofnurwn",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/LandofNurwn.tga",
+    "centerPos": [
+      -11702,
+      -87663
+    ],
+    "startPoints": [],
+    "gates": [],
+    "derived": true
+  },
+  "status": "PASS",
+  "warnings": [],
+  "errors": [],
+  "field": {
+    "vertices": 52522,
+    "faces": 85302,
+    "bytes": 6837142
+  },
+  "stageObjects": 0
+}

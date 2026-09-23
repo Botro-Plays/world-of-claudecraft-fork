@@ -1,0 +1,62 @@
+{
+  "manifest": {
+    "id": "ba1",
+    "fieldIndex": 52,
+    "mapName": "ba1",
+    "state": "FIELD_STATE_DESERT",
+    "smdPath": "Field/Custom/ba1.smd",
+    "fieldOut": "generated/pt-maps/ba1/field.generated.ts",
+    "sourceLabel": "client/Field/Custom/ba1.smd",
+    "stageObjects": {
+      "dir": "Field/Custom",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/ba1/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Custom",
+    "textureOutDir": "public/textures/pt-ba1",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/ba1.tga",
+    "centerPos": [
+      -23793,
+      19419
+    ],
+    "startPoints": [
+      [
+        -25680,
+        20862
+      ]
+    ],
+    "gates": [
+      {
+        "targetIndex": 53,
+        "x": -25122,
+        "z": 20938,
+        "y": 0
+      }
+    ],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "duplicate texture stem 'bunsu-2': bunsu-2.tga vs bunsu-2.bmp",
+    "duplicate texture stem 'ba': ba.tga vs ba.bmp",
+    "duplicate texture stem 'ruinmarket02': ruinmarket02.bmp vs ruinmarket02.tga",
+    "duplicate texture stem 'ruinmarket04': ruinmarket04.bmp vs ruinmarket04.tga",
+    "missing texture: field\\Custom\\wall.bmp (materials 169)",
+    "missing texture: field\\Custom\\jandi_02.bmp (materials 177)",
+    "missing texture: field\\Custom\\32000709 (materials 182)",
+    "duplicate texture stem 'wall': wall.bmp vs wall.tga",
+    "duplicate texture stem 'garo-1': garo-1.bmp vs garo-1.tga",
+    "missing texture: field\\Custom\\12-9.bmp (materials 311)"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 28826,
+    "faces": 41998,
+    "bytes": 3514899
+  },
+  "stageObjects": 0
+}

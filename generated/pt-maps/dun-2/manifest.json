@@ -1,0 +1,41 @@
+{
+  "manifest": {
+    "id": "dun-2",
+    "fieldIndex": 14,
+    "mapName": "dun-2",
+    "state": "FIELD_STATE_DUNGEON",
+    "smdPath": "Field/dungeon/dun-2.smd",
+    "fieldOut": "generated/pt-maps/dun-2/field.generated.ts",
+    "sourceLabel": "client/Field/dungeon/dun-2.smd",
+    "stageObjects": {
+      "dir": "Field/dungeon",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/dun-2/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/dungeon",
+    "textureOutDir": "public/textures/pt-dun-2",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/dun-2.tga",
+    "centerPos": [
+      -6108,
+      -26880
+    ],
+    "startPoints": [],
+    "gates": [],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "missing texture: field\\dungeon\\L (materials 2)"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 29915,
+    "faces": 39580,
+    "bytes": 3286478
+  },
+  "stageObjects": 0
+}

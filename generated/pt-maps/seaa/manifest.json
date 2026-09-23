@@ -1,0 +1,55 @@
+{
+  "manifest": {
+    "id": "seaa",
+    "fieldIndex": 61,
+    "mapName": "SeaA",
+    "state": "FIELD_STATE_FOREST",
+    "smdPath": "Field/SeaA/SeaA.smd",
+    "fieldOut": "generated/pt-maps/seaa/field.generated.ts",
+    "sourceLabel": "client/Field/SeaA/SeaA.smd",
+    "stageObjects": {
+      "dir": "Field/SeaA",
+      "files": [
+        "sea_ani01.smd",
+        "sea_ani02.smd",
+        "sea_ani03.smd",
+        "sea_ani04.smd",
+        "sea_ani05.smd",
+        "sea_ani06.smd",
+        "sea_ani07.smd",
+        "sea_ani08.smd",
+        "sea_ani09.smd",
+        "sea_ani10.smd"
+      ],
+      "missing": [],
+      "out": "generated/pt-maps/seaa/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/SeaA",
+    "textureOutDir": "public/textures/pt-seaa",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/SeaA.tga",
+    "centerPos": [
+      -19186,
+      -3858
+    ],
+    "startPoints": [
+      [
+        -19186,
+        -3858
+      ]
+    ],
+    "gates": [],
+    "derived": true
+  },
+  "status": "PASS",
+  "warnings": [],
+  "errors": [],
+  "field": {
+    "vertices": 55173,
+    "faces": 82063,
+    "bytes": 6495822
+  },
+  "stageObjects": 10
+}

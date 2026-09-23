@@ -1,0 +1,42 @@
+{
+  "manifest": {
+    "id": "dun-8",
+    "fieldIndex": 41,
+    "mapName": "dun-8",
+    "state": "FIELD_STATE_DUNGEON",
+    "smdPath": "Field/endless/dun-8.smd",
+    "fieldOut": "generated/pt-maps/dun-8/field.generated.ts",
+    "sourceLabel": "client/Field/endless/dun-8.smd",
+    "stageObjects": {
+      "dir": "Field/endless",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/dun-8/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/endless",
+    "textureOutDir": "public/textures/pt-dun-8",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/dun-8.tga",
+    "centerPos": [
+      5255,
+      -37897
+    ],
+    "startPoints": [],
+    "gates": [],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "missing texture: field\\endless\\MmbA01.bmp (materials 79)",
+    "missing texture: field\\endless\\MmhA02.bmp (materials 80)"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 37121,
+    "faces": 61091,
+    "bytes": 4722430
+  },
+  "stageObjects": 0
+}

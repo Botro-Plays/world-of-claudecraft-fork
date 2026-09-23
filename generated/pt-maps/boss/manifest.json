@@ -1,0 +1,39 @@
+{
+  "manifest": {
+    "id": "boss",
+    "fieldIndex": 36,
+    "mapName": "Boss",
+    "state": "FIELD_STATE_DUNGEON",
+    "smdPath": "Field/Boss/Boss.smd",
+    "fieldOut": "generated/pt-maps/boss/field.generated.ts",
+    "sourceLabel": "client/Field/Boss/Boss.smd",
+    "stageObjects": {
+      "dir": "Field/Boss",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/boss/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Boss",
+    "textureOutDir": "public/textures/pt-boss",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/boss.tga",
+    "centerPos": [
+      33000,
+      50036
+    ],
+    "startPoints": [],
+    "gates": [],
+    "derived": true
+  },
+  "status": "PASS",
+  "warnings": [],
+  "errors": [],
+  "field": {
+    "vertices": 5436,
+    "faces": 8367,
+    "bytes": 1085517
+  },
+  "stageObjects": 0
+}

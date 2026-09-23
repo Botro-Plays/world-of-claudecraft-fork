@@ -1,0 +1,39 @@
+{
+  "manifest": {
+    "id": "crystalnest",
+    "fieldIndex": 68,
+    "mapName": "CrystalNest",
+    "state": "FIELD_STATE_DUNGEON",
+    "smdPath": "Field/CrystalNest/CrystalNest.smd",
+    "fieldOut": "generated/pt-maps/crystalnest/field.generated.ts",
+    "sourceLabel": "client/Field/CrystalNest/CrystalNest.smd",
+    "stageObjects": {
+      "dir": "Field/CrystalNest",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/crystalnest/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/CrystalNest",
+    "textureOutDir": "public/textures/pt-crystalnest",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/CrystalNest.tga",
+    "centerPos": [
+      35235,
+      -93821
+    ],
+    "startPoints": [],
+    "gates": [],
+    "derived": true
+  },
+  "status": "PASS",
+  "warnings": [],
+  "errors": [],
+  "field": {
+    "vertices": 52680,
+    "faces": 76366,
+    "bytes": 6057825
+  },
+  "stageObjects": 0
+}

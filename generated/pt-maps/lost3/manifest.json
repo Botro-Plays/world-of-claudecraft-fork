@@ -1,0 +1,44 @@
+{
+  "manifest": {
+    "id": "lost3",
+    "fieldIndex": 47,
+    "mapName": "lost3",
+    "state": "FIELD_STATE_RUIN",
+    "smdPath": "Field/Lost/lost3.smd",
+    "fieldOut": "generated/pt-maps/lost3/field.generated.ts",
+    "sourceLabel": "client/Field/Lost/lost3.smd",
+    "stageObjects": {
+      "dir": "Field/lost",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/lost3/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Lost",
+    "textureOutDir": "public/textures/pt-lost3",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/lost3.tga",
+    "centerPos": [
+      116360,
+      92524
+    ],
+    "startPoints": [
+      [
+        116360,
+        92524
+      ]
+    ],
+    "gates": [],
+    "derived": true
+  },
+  "status": "PASS",
+  "warnings": [],
+  "errors": [],
+  "field": {
+    "vertices": 54822,
+    "faces": 66580,
+    "bytes": 5310593
+  },
+  "stageObjects": 0
+}

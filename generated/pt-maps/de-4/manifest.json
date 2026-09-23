@@ -1,0 +1,53 @@
+{
+  "manifest": {
+    "id": "de-4",
+    "fieldIndex": 12,
+    "mapName": "De-4",
+    "state": "FIELD_STATE_DESERT",
+    "smdPath": "Field/desert/De-4.smd",
+    "fieldOut": "generated/pt-maps/de-4/field.generated.ts",
+    "sourceLabel": "client/Field/desert/De-4.smd",
+    "stageObjects": {
+      "dir": "Field/desert",
+      "files": [
+        "d4-ani01.smd"
+      ],
+      "missing": [],
+      "out": "generated/pt-maps/de-4/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/desert",
+    "textureOutDir": "public/textures/pt-de-4",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/de-4.tga",
+    "centerPos": [
+      43988,
+      12053
+    ],
+    "startPoints": [
+      [
+        33740,
+        6491
+      ],
+      [
+        40691,
+        11056
+      ]
+    ],
+    "gates": [],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "missing texture: field\\desert\\fg_1_04.bmp (materials 77)",
+    "stage object d4-ani01.smd: texture 'fg_1_04.bmp' not found in Field/desert"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 51117,
+    "faces": 64807,
+    "bytes": 5269215
+  },
+  "stageObjects": 1
+}

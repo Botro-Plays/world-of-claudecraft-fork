@@ -1,0 +1,65 @@
+{
+  "manifest": {
+    "id": "ruin-4",
+    "fieldIndex": 4,
+    "mapName": "ruin-4",
+    "state": "FIELD_STATE_RUIN",
+    "smdPath": "Field/Ruin/ruin-4.smd",
+    "fieldOut": "generated/pt-maps/ruin-4/field.generated.ts",
+    "sourceLabel": "client/Field/Ruin/ruin-4.smd",
+    "stageObjects": {
+      "dir": "Field/Ruin",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/ruin-4/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Ruin",
+    "textureOutDir": "public/textures/pt-ruin-4",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/ruin-4.tga",
+    "centerPos": [
+      1384,
+      -918
+    ],
+    "startPoints": [
+      [
+        2578,
+        -5124
+      ],
+      [
+        1873,
+        3060
+      ]
+    ],
+    "gates": [
+      {
+        "targetIndex": 5,
+        "x": 410,
+        "z": 4902,
+        "y": 0
+      }
+    ],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "missing texture: field\\Ruin\\stone-35.bmp (materials 303)",
+    "missing texture: field\\Ruin\\stone-34.bmp (materials 304)",
+    "missing texture: field\\Ruin\\L (materials 373)",
+    "missing texture: field\\Ruin\\sam-03.bmp (materials 412)",
+    "missing texture: field\\Ruin\\flag-g.bmp (materials 415)",
+    "missing texture: field\\Ruin\\flag,n5.tga (materials 416)",
+    "missing texture: field\\Ruin\\flag,n.tga (materials 417)",
+    "missing texture: field\\Ruin\\bark-01.tga (materials 436)",
+    "duplicate texture stem 'wire-bridge-2-4': wire-bridge-2-4.bmp vs wire-bridge-2-4.tga"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 39854,
+    "faces": 55322,
+    "bytes": 4562453
+  },
+  "stageObjects": 0
+}

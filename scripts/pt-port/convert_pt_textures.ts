@@ -1,25 +1,31 @@
-// Convert PT textures referenced by village-2.smd to PNG.
+// Convert PT textures referenced by a generated field module to PNG.
 //
 // Reads the texture manifest from the generated module, finds each texture
-// file in the PT client directory, and converts it using the existing
+// file in the PT texture directory, and converts it using the existing
 // bmp_to_png / tga_to_png converters (which handle the PT header obfuscation).
 //
 // Usage:
-//   npx tsx scripts/pt-port/convert_pt_textures.ts
+//   npx tsx scripts/pt-port/convert_pt_textures.ts [generatedModule] [texDir] [outDir]
 //
-// Output: public/textures/pt-ricarten/<texture-name>.png
+// Defaults preserve the Ricarten invocation:
+//   src/sim/pt_ricarten_field.generated.ts
+//   $PT_CLIENT_DIR/Field/Ricarten
+//   public/textures/pt-ricarten
 
-import { readFileSync, existsSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs';
+import { readFileSync, mkdirSync, writeFileSync, readdirSync } from 'node:fs';
 import { join, basename, extname } from 'node:path';
 import { bmpToPng } from './bmp_to_png';
 import { tgaToPng } from './tga_to_png';
 
-const PT_CLIENT_DIR = 'E:/CascadeProjects/PT-Project/MagicPT-Chinese/client/Field/Ricarten';
-const OUT_DIR = 'public/textures/pt-ricarten';
+const GENERATED_MODULE = process.argv[2] || 'src/sim/pt_ricarten_field.generated.ts';
+const PT_CLIENT_DIR =
+  process.argv[3] ||
+  join(process.env.PT_CLIENT_DIR || 'E:/CascadeProjects/PT-Project/MagicPT-Chinese/client', 'Field/Ricarten');
+const OUT_DIR = process.argv[4] || 'public/textures/pt-ricarten';
 
 // Read the texture manifest from the generated module.
 // We parse it directly from the source to avoid importing the large module.
-const generatedSrc = readFileSync('src/sim/pt_ricarten_field.generated.ts', 'utf8');
+const generatedSrc = readFileSync(GENERATED_MODULE, 'utf8');
 const manifestMatch = generatedSrc.match(/export const PT_TEXTURE_MANIFEST = (\[.*?\]);/s);
 if (!manifestMatch) throw new Error('Could not find PT_TEXTURE_MANIFEST in generated module');
 const manifest = JSON.parse(manifestMatch[1]) as { name: string; format: string; materialIndices: number[] }[];
@@ -58,8 +64,13 @@ for (const tex of manifest) {
 
   try {
     const buf = readFileSync(inPath);
-    const isTga = lowerName.endsWith('.tga');
-    const png = isTga ? tgaToPng(buf) : bmpToPng(buf);
+    // PT materials can reference PNGs directly (e.g. Iron/axe.png) - pass
+    // them through; only BMP/TGA need decoding.
+    const png = lowerName.endsWith('.png')
+      ? buf
+      : lowerName.endsWith('.tga')
+        ? tgaToPng(buf)
+        : bmpToPng(buf);
     writeFileSync(outPath, png);
     converted++;
     totalSize += png.length;

@@ -1,0 +1,61 @@
+{
+  "manifest": {
+    "id": "ruin-1",
+    "fieldIndex": 7,
+    "mapName": "ruin-1",
+    "state": "FIELD_STATE_RUIN",
+    "smdPath": "Field/Ruin/ruin-1.smd",
+    "fieldOut": "generated/pt-maps/ruin-1/field.generated.ts",
+    "sourceLabel": "client/Field/Ruin/ruin-1.smd",
+    "stageObjects": {
+      "dir": "Field/Ruin",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/ruin-1/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Ruin",
+    "textureOutDir": "public/textures/pt-ruin-1",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/ruin-1.tga",
+    "centerPos": [
+      16362,
+      14959
+    ],
+    "startPoints": [
+      [
+        12242,
+        16034
+      ],
+      [
+        12194,
+        8969
+      ]
+    ],
+    "gates": [
+      {
+        "targetIndex": 8,
+        "x": 13319,
+        "z": 7102,
+        "y": 0
+      }
+    ],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "duplicate texture stem 'dun001': dun001.tga vs dun001.bmp",
+    "missing texture: field\\Ruin\\stone-b-03-01.bmp (materials 331)",
+    "missing texture: field\\Ruin\\stone-b-03-03.bmp (materials 332)",
+    "missing texture: field\\Ruin\\stone-b-03.bmp (materials 333)",
+    "duplicate texture stem 'wire-bridge-2-4': wire-bridge-2-4.bmp vs wire-bridge-2-4.tga"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 40655,
+    "faces": 62962,
+    "bytes": 5081043
+  },
+  "stageObjects": 0
+}

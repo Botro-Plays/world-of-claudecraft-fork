@@ -1,0 +1,115 @@
+{
+  "manifest": {
+    "id": "ruin-2",
+    "fieldIndex": 6,
+    "mapName": "ruin-2",
+    "state": "FIELD_STATE_RUIN",
+    "smdPath": "Field/Ruin/ruin-2.smd",
+    "fieldOut": "generated/pt-maps/ruin-2/field.generated.ts",
+    "sourceLabel": "client/Field/Ruin/ruin-2.smd",
+    "stageObjects": {
+      "dir": "Field/Ruin",
+      "files": [
+        "ruin_ani01.smd"
+      ],
+      "missing": [],
+      "out": "generated/pt-maps/ruin-2/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Ruin",
+    "textureOutDir": "public/textures/pt-ruin-2",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/ruin-2.tga",
+    "centerPos": [
+      7459,
+      23984
+    ],
+    "startPoints": [
+      [
+        3976,
+        19645
+      ],
+      [
+        5832,
+        23751
+      ],
+      [
+        5615,
+        25117
+      ]
+    ],
+    "gates": [
+      {
+        "targetIndex": 7,
+        "x": 10019,
+        "z": 18031,
+        "y": 0
+      },
+      {
+        "targetIndex": 17,
+        "x": 4470,
+        "z": 27774,
+        "y": 0
+      }
+    ],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "missing texture: field\\Ruin\\WA01.BMP (materials 292)",
+    "missing texture: field\\Ruin\\stone-35.bmp (materials 321)",
+    "missing texture: field\\Ruin\\stone-34.bmp (materials 322)",
+    "duplicate texture stem 'ruinmarket02': ruinmarket02.tga vs ruinmarket02.bmp",
+    "duplicate texture stem 'ruinmarket03': ruinmarket03.bmp vs ruinmarket03.tga",
+    "duplicate texture stem 'ruinmarket04': ruinmarket04.bmp vs ruinmarket04.tga",
+    "missing texture: field\\Ruin\\fg_1_04.bmp (materials 388)",
+    "missing texture: field\\Ruin\\riy-w005.bmp (materials 390)",
+    "missing texture: field\\Ruin\\baky3.bmp (materials 400)",
+    "missing texture: field\\Ruin\\column.bmp (materials 410)",
+    "missing texture: field\\Ruin\\fff.bmp (materials 417)",
+    "missing texture: field\\Ruin\\win_so_h_1_01.bmp (materials 418)",
+    "missing texture: field\\Ruin\\win_so_h_1_02.bmp (materials 419)",
+    "missing texture: field\\Ruin\\win_so_h_1_03.bmp (materials 420)",
+    "missing texture: field\\Ruin\\win_so_h_1_04.bmp (materials 421)",
+    "missing texture: field\\Ruin\\win_so_h_2_01.bmp (materials 422)",
+    "missing texture: field\\Ruin\\win_so_h_2_02.bmp (materials 423)",
+    "missing texture: field\\Ruin\\win_so_h_2_03.bmp (materials 424)",
+    "missing texture: field\\Ruin\\win_so_h_3_01.bmp (materials 425)",
+    "missing texture: field\\Ruin\\win_so_h_3_02.bmp (materials 426)",
+    "missing texture: field\\Ruin\\win_so_h_3_03.bmp (materials 427)",
+    "missing texture: field\\Ruin\\win_so_h_3_04.bmp (materials 428)",
+    "missing texture: field\\Ruin\\win_cl_h_001.bmp (materials 429)",
+    "missing texture: field\\Ruin\\win_cl_h_002.bmp (materials 430)",
+    "missing texture: field\\Ruin\\win_cl_h_003.bmp (materials 431)",
+    "missing texture: field\\Ruin\\win_cl_h_004.bmp (materials 432)",
+    "missing texture: field\\Ruin\\win_cl_h_005.bmp (materials 433)",
+    "missing texture: field\\Ruin\\win_cl_h_006.bmp (materials 434)",
+    "missing texture: field\\Ruin\\win_cl_h_007.bmp (materials 435)",
+    "missing texture: field\\Ruin\\win_cl_h_008.bmp (materials 436)",
+    "missing texture: field\\Ruin\\win_cl_h_009.bmp (materials 437)",
+    "missing texture: field\\Ruin\\win_cl_h_0010.bmp (materials 438)",
+    "missing texture: field\\Ruin\\win_bo_h_1_02.bmp (materials 439)",
+    "missing texture: field\\Ruin\\win_wo_h_002.tga (materials 440)",
+    "missing texture: field\\Ruin\\win_bo_h_1_01.bmp (materials 441)",
+    "missing texture: field\\Ruin\\win_wo_h_001.tga (materials 443)",
+    "missing texture: field\\Ruin\\win_bo_h_2_01.bmp (materials 444)",
+    "missing texture: field\\Ruin\\win_bo_h_2_02.bmp (materials 445)",
+    "missing texture: field\\Ruin\\win_bo_h_2_03.bmp (materials 446)",
+    "missing texture: field\\Ruin\\win_bo_h_3_01.bmp (materials 447)",
+    "missing texture: field\\Ruin\\win_bo_h_3_02.bmp (materials 448)",
+    "missing texture: field\\Ruin\\win_bo_h_3_03.bmp (materials 449)",
+    "missing texture: field\\Ruin\\win_bo_h_3_04.bmp (materials 450)",
+    "stage object ruin_ani01.smd: texture 'fg_1_04.bmp' not found in Field/Ruin",
+    "stage object ruin_ani01.smd: texture 'riy-w005.bmp' not found in Field/Ruin",
+    "stage object ruin_ani01.smd: texture 'stone-34.bmp' not found in Field/Ruin",
+    "stage object ruin_ani01.smd: texture 'stone-35.bmp' not found in Field/Ruin"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 39426,
+    "faces": 60443,
+    "bytes": 4856367
+  },
+  "stageObjects": 1
+}

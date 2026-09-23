@@ -1,0 +1,49 @@
+{
+  "manifest": {
+    "id": "sod-2",
+    "fieldIndex": 58,
+    "mapName": "sod-2",
+    "state": "FIELD_STATE_RUIN",
+    "smdPath": "Field/Sod/sod-2.smd",
+    "fieldOut": "generated/pt-maps/sod-2/field.generated.ts",
+    "sourceLabel": "client/Field/Sod/sod-2.smd",
+    "stageObjects": {
+      "dir": "Field/Sod",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/sod-2/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Sod",
+    "textureOutDir": "public/textures/pt-sod-2",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/sod-2.tga",
+    "centerPos": [
+      21143,
+      17473
+    ],
+    "startPoints": [
+      [
+        21143,
+        17473
+      ]
+    ],
+    "gates": [],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "duplicate texture stem 'f-ch10': f-ch10.bmp vs f-ch10.tga",
+    "missing texture: field\\Sod\\ (materials 174)",
+    "duplicate texture stem 'wa03': wa03.bmp vs wa03.tga",
+    "duplicate texture stem 'ch07': ch07.tga vs ch07.bmp"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 42535,
+    "faces": 48461,
+    "bytes": 4124561
+  },
+  "stageObjects": 0
+}

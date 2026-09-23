@@ -1,0 +1,120 @@
+{
+  "manifest": {
+    "id": "town1",
+    "fieldIndex": 51,
+    "mapName": "town1",
+    "state": "FIELD_STATE_VILLAGE",
+    "smdPath": "Field/Custom/town1.smd",
+    "fieldOut": "generated/pt-maps/town1/field.generated.ts",
+    "sourceLabel": "client/Field/Custom/town1.smd",
+    "stageObjects": {
+      "dir": "Field/Ricarten",
+      "files": [
+        "v-ani01.smd"
+      ],
+      "missing": [
+        "forest/v-ani01.ASE",
+        "forest/v-ani02.ASE",
+        "forest/v-ani03.ASE",
+        "forest/v-ani04.ASE"
+      ],
+      "out": "generated/pt-maps/town1/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Custom",
+    "textureOutDir": "public/textures/pt-town1",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/town1.tga",
+    "centerPos": [
+      -37888,
+      -17150
+    ],
+    "startPoints": [
+      [
+        -37725,
+        -17198
+      ],
+      [
+        -40254,
+        -17511
+      ]
+    ],
+    "gates": [],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "duplicate texture stem 'garo-1': garo-1.bmp vs garo-1.tga",
+    "missing texture: field\\custom\\\\12-9.bmp (materials 118)",
+    "stage object declared in field.cpp but no .smd found: forest/v-ani01.ASE",
+    "stage object declared in field.cpp but no .smd found: forest/v-ani02.ASE",
+    "stage object declared in field.cpp but no .smd found: forest/v-ani03.ASE",
+    "stage object declared in field.cpp but no .smd found: forest/v-ani04.ASE",
+    "stage object v-ani01.smd: texture 'eye-f007.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye-f008.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_cap02.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_dds.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_door01.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_eaves.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_fir02.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_fir03.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_flag.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_ground01.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_light01.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_light02.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_light03.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_light04.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_light05.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_mix.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_pp01.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_pp02.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_pp03.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_railing.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_railing02.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_railing03.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_roof01.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_roof03.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_sunpl.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_tent.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_ttt.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'eye_window01.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'fff.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'jdo-1.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'jdo.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'l-q.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'l-vv.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'monpc-it01.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'monpc-it02.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'monpc-it03.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'na03_01.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'npcmixture-balance.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'npcmixture-box.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'npcmixture-h.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'npcmixture-ob01.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'npcmixture.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'pl_02.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'pl_03.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'riy-f006.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'riy-f017.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'riy-w002.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'riy-w063.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'riy-w065.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'riy-w089.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'riy-w090.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'sm03a.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'tem_wall04.bmp' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'top_pillar.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'ttem.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'ttemo.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'wind_a.tga' not found in Field/Custom",
+    "stage object v-ani01.smd: texture 'wind_b.tga' not found in Field/Custom"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 22809,
+    "faces": 20888,
+    "bytes": 2148492
+  },
+  "stageObjects": 1
+}

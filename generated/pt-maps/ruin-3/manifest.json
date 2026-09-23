@@ -1,0 +1,61 @@
+{
+  "manifest": {
+    "id": "ruin-3",
+    "fieldIndex": 5,
+    "mapName": "ruin-3",
+    "state": "FIELD_STATE_RUIN",
+    "smdPath": "Field/Ruin/ruin-3.smd",
+    "fieldOut": "generated/pt-maps/ruin-3/field.generated.ts",
+    "sourceLabel": "client/Field/Ruin/ruin-3.smd",
+    "stageObjects": {
+      "dir": "Field/Ruin",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/ruin-3/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Ruin",
+    "textureOutDir": "public/textures/pt-ruin-3",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/ruin-3.tga",
+    "centerPos": [
+      4953,
+      10922
+    ],
+    "startPoints": [
+      [
+        875,
+        7910
+      ],
+      [
+        1576,
+        14307
+      ]
+    ],
+    "gates": [
+      {
+        "targetIndex": 6,
+        "x": 3051,
+        "z": 16124,
+        "y": 0
+      }
+    ],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "missing texture: field\\Ruin\\WA01.BMP (materials 308)",
+    "missing texture: field\\Ruin\\stone-b-03-03.bmp (materials 415)",
+    "missing texture: field\\Ruin\\stone-b-03-01.bmp (materials 416)",
+    "missing texture: field\\Ruin\\stone-b-03.bmp (materials 417)",
+    "duplicate texture stem 'oumruin08': oumruin08.tga vs oumruin08.bmp"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 41208,
+    "faces": 62174,
+    "bytes": 5005895
+  },
+  "stageObjects": 0
+}

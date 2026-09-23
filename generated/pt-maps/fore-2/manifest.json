@@ -1,0 +1,104 @@
+{
+  "manifest": {
+    "id": "fore-2",
+    "fieldIndex": 1,
+    "mapName": "fore-2",
+    "state": "FIELD_STATE_FOREST",
+    "smdPath": "Field/forest/fore-2.smd",
+    "fieldOut": "generated/pt-maps/fore-2/field.generated.ts",
+    "sourceLabel": "client/Field/forest/fore-2.smd",
+    "stageObjects": {
+      "dir": "Field/forest",
+      "files": [
+        "2ani-04.smd"
+      ],
+      "missing": [],
+      "out": "generated/pt-maps/fore-2/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/forest",
+    "textureOutDir": "public/textures/pt-fore-2",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/fore-2.tga",
+    "centerPos": [
+      -5427,
+      -9915
+    ],
+    "startPoints": [
+      [
+        -2272,
+        -10314
+      ],
+      [
+        -7192,
+        -11175
+      ]
+    ],
+    "gates": [
+      {
+        "targetIndex": 2,
+        "x": -292,
+        "z": -9548,
+        "y": 0
+      }
+    ],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "missing texture: field\\forest\\L (materials 78,503)",
+    "missing texture: field\\forest\\fg_1_06.bmp (materials 154)",
+    "missing texture: field\\forest\\fg_1_07.bmp (materials 155)",
+    "missing texture: field\\forest\\fg_1_08.bmp (materials 156)",
+    "missing texture: field\\forest\\youjuk-3.bmp (materials 173,174,175)",
+    "missing texture: field\\forest\\fb_1_01.bmp (materials 202)",
+    "missing texture: field\\forest\\fb_1_02.bmp (materials 203)",
+    "missing texture: field\\forest\\fb_1_03.bmp (materials 204)",
+    "missing texture: field\\forest\\fb_2_01.bmp (materials 205)",
+    "missing texture: field\\forest\\fb_2_02.bmp (materials 206)",
+    "missing texture: field\\forest\\fb_2_03.bmp (materials 207)",
+    "missing texture: field\\forest\\fb_3_01.bmp (materials 208)",
+    "missing texture: field\\forest\\fb_3_02.bmp (materials 209)",
+    "missing texture: field\\forest\\fb_3_03.bmp (materials 210)",
+    "missing texture: field\\forest\\fb_4_01.bmp (materials 211)",
+    "missing texture: field\\forest\\fb_4_02.bmp (materials 212)",
+    "missing texture: field\\forest\\fb_4_03.bmp (materials 213)",
+    "missing texture: field\\forest\\fi_4_05.bmp (materials 256)",
+    "missing texture: field\\forest\\fi_4_06.bmp (materials 257)",
+    "missing texture: field\\forest\\fi_4_07.bmp (materials 258)",
+    "missing texture: field\\forest\\fi_4_08.bmp (materials 259)",
+    "missing texture: field\\forest\\particle.bmp (materials 484,484)",
+    "missing texture: field\\forest\\gedan_are.bmp (materials 509)",
+    "missing texture: field\\forest\\tong_moon.bmp (materials 510)",
+    "stage object 2ani-04.smd: texture 'fb_1_01.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'fb_1_02.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'fb_1_03.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'fb_2_01.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'fb_2_02.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'fb_2_03.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'fb_3_01.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'fb_3_02.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'fb_3_03.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'fb_4_01.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'fb_4_02.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'fb_4_03.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'fg_1_06.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'fg_1_07.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'fg_1_08.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'fi_4_05.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'fi_4_06.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'fi_4_07.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'fi_4_08.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'gedan_are.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'tong_moon.bmp' not found in Field/forest",
+    "stage object 2ani-04.smd: texture 'youjuk-3.bmp' not found in Field/forest"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 35801,
+    "faces": 39635,
+    "bytes": 3451262
+  },
+  "stageObjects": 1
+}

@@ -1,0 +1,55 @@
+{
+  "manifest": {
+    "id": "ancientw",
+    "fieldIndex": 46,
+    "mapName": "AncientW",
+    "state": "FIELD_STATE_DUNGEON",
+    "smdPath": "Field/AncientW/ancientW.smd",
+    "fieldOut": "generated/pt-maps/ancientw/field.generated.ts",
+    "sourceLabel": "client/Field/AncientW/ancientW.smd",
+    "stageObjects": {
+      "dir": "Field/AncientW",
+      "files": [
+        "RotObj01.smd",
+        "RotObj02.smd",
+        "RotObj03.smd",
+        "RotObj04.smd",
+        "RotObj05.smd",
+        "RotObj06.smd",
+        "RotObj07.smd",
+        "RotObj08.smd",
+        "RotObj09.smd",
+        "RotObj10.smd"
+      ],
+      "missing": [],
+      "out": "generated/pt-maps/ancientw/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/AncientW",
+    "textureOutDir": "public/textures/pt-ancientw",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/AncientW.tga",
+    "centerPos": [
+      12788,
+      -73633
+    ],
+    "startPoints": [
+      [
+        12788,
+        -73633
+      ]
+    ],
+    "gates": [],
+    "derived": true
+  },
+  "status": "PASS",
+  "warnings": [],
+  "errors": [],
+  "field": {
+    "vertices": 65058,
+    "faces": 100661,
+    "bytes": 7657679
+  },
+  "stageObjects": 10
+}

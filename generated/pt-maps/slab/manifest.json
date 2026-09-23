@@ -1,0 +1,44 @@
+{
+  "manifest": {
+    "id": "slab",
+    "fieldIndex": 45,
+    "mapName": "Slab",
+    "state": "FIELD_STATE_DUNGEON",
+    "smdPath": "Field/Slab/Slab.smd",
+    "fieldOut": "generated/pt-maps/slab/field.generated.ts",
+    "sourceLabel": "client/Field/Slab/Slab.smd",
+    "stageObjects": {
+      "dir": "Field/Slab",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/slab/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Slab",
+    "textureOutDir": "public/textures/pt-slab",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/slab.tga",
+    "centerPos": [
+      -12024,
+      -62846
+    ],
+    "startPoints": [
+      [
+        -11976,
+        -62455
+      ]
+    ],
+    "gates": [],
+    "derived": true
+  },
+  "status": "PASS",
+  "warnings": [],
+  "errors": [],
+  "field": {
+    "vertices": 46681,
+    "faces": 69241,
+    "bytes": 5407483
+  },
+  "stageObjects": 0
+}

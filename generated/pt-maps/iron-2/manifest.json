@@ -1,0 +1,86 @@
+{
+  "manifest": {
+    "id": "iron-2",
+    "fieldIndex": 28,
+    "mapName": "iron-2",
+    "state": "FIELD_STATE_IRON",
+    "smdPath": "Field/Iron/iron-2.smd",
+    "fieldOut": "generated/pt-maps/iron-2/field.generated.ts",
+    "sourceLabel": "client/Field/Iron/iron-2.smd",
+    "stageObjects": {
+      "dir": "Field/Iron",
+      "files": [
+        "i2-bip01.smd",
+        "i2-bip02.smd",
+        "i2-bip03.smd",
+        "i2-bip04_ani.smd",
+        "i2-bip05_ani.smd",
+        "i2-bip06_ani.smd",
+        "i2-bip07_ani.smd",
+        "i2-bip08_ani.smd",
+        "i2-bip09.smd",
+        "i2-bip10.smd",
+        "i2-bip11_ani.smd",
+        "i2-bip12_ani.smd"
+      ],
+      "missing": [],
+      "out": "generated/pt-maps/iron-2/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Iron",
+    "textureOutDir": "public/textures/pt-iron-2",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/iron-2.tga",
+    "centerPos": [
+      33938,
+      24229
+    ],
+    "startPoints": [
+      [
+        35149,
+        24326
+      ],
+      [
+        44893,
+        21380
+      ]
+    ],
+    "gates": [
+      {
+        "targetIndex": 29,
+        "x": 33618,
+        "z": 24011,
+        "y": 0
+      }
+    ],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "duplicate texture stem 'i02-19': i02-19.bmp vs i02-19.tga",
+    "missing texture: field\\Iron\\irk010.bmp (materials 63)",
+    "missing texture: field\\Iron\\irk019.bmp (materials 92)",
+    "duplicate texture stem 'ir_arm': ir_arm.tga vs ir_arm.bmp",
+    "stage object i2-bip01.smd: texture 'irk010.bmp' not found in Field/Iron",
+    "stage object i2-bip01.smd: texture 'irk019.bmp' not found in Field/Iron",
+    "stage object i2-bip02.smd: texture 'irk010.bmp' not found in Field/Iron",
+    "stage object i2-bip02.smd: texture 'irk019.bmp' not found in Field/Iron",
+    "stage object i2-bip03.smd: texture 'irk010.bmp' not found in Field/Iron",
+    "stage object i2-bip03.smd: texture 'irk019.bmp' not found in Field/Iron",
+    "stage object skipped: i2-bip04_ani.smd: i2-bip04_ani.smd/ani-2: body size 32700 != expected 28092",
+    "stage object skipped: i2-bip05_ani.smd: i2-bip05_ani.smd/ani-04: body size 32700 != expected 28092",
+    "stage object skipped: i2-bip06_ani.smd: i2-bip06_ani.smd/ani-5: body size 16028 != expected 14204",
+    "stage object skipped: i2-bip07_ani.smd: i2-bip07_ani.smd/ani-14: body size 32180 != expected 27412",
+    "stage object skipped: i2-bip08_ani.smd: i2-bip08_ani.smd/ani-13: body size 32180 != expected 27412",
+    "stage object skipped: i2-bip11_ani.smd: i2-bip11_ani.smd/ani-7: body size 16028 != expected 14204",
+    "stage object skipped: i2-bip12_ani.smd: i2-bip12_ani.smd/ani-9: body size 16028 != expected 14204"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 49311,
+    "faces": 67574,
+    "bytes": 5519665
+  },
+  "stageObjects": 5
+}

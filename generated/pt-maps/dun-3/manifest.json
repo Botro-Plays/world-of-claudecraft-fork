@@ -1,0 +1,39 @@
+{
+  "manifest": {
+    "id": "dun-3",
+    "fieldIndex": 15,
+    "mapName": "dun-3",
+    "state": "FIELD_STATE_DUNGEON",
+    "smdPath": "Field/dungeon/dun-3.smd",
+    "fieldOut": "generated/pt-maps/dun-3/field.generated.ts",
+    "sourceLabel": "client/Field/dungeon/dun-3.smd",
+    "stageObjects": {
+      "dir": "Field/dungeon",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/dun-3/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/dungeon",
+    "textureOutDir": "public/textures/pt-dun-3",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/dun-3.tga",
+    "centerPos": [
+      1827,
+      -28586
+    ],
+    "startPoints": [],
+    "gates": [],
+    "derived": true
+  },
+  "status": "PASS",
+  "warnings": [],
+  "errors": [],
+  "field": {
+    "vertices": 28793,
+    "faces": 38350,
+    "bytes": 3231917
+  },
+  "stageObjects": 0
+}

@@ -1,0 +1,39 @@
+{
+  "manifest": {
+    "id": "mine-1",
+    "fieldIndex": 44,
+    "mapName": "mine-1",
+    "state": "FIELD_STATE_DUNGEON",
+    "smdPath": "Field/Mine/mine-1.smd",
+    "fieldOut": "generated/pt-maps/mine-1/field.generated.ts",
+    "sourceLabel": "client/Field/Mine/mine-1.smd",
+    "stageObjects": {
+      "dir": "Field/Mine",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/mine-1/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Mine",
+    "textureOutDir": "public/textures/pt-mine-1",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/mine-1.tga",
+    "centerPos": [
+      18006,
+      -34740
+    ],
+    "startPoints": [],
+    "gates": [],
+    "derived": true
+  },
+  "status": "PASS",
+  "warnings": [],
+  "errors": [],
+  "field": {
+    "vertices": 41539,
+    "faces": 64026,
+    "bytes": 4930232
+  },
+  "stageObjects": 0
+}

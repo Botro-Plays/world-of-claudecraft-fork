@@ -1,0 +1,65 @@
+{
+  "manifest": {
+    "id": "fall-game",
+    "fieldIndex": 39,
+    "mapName": null,
+    "state": "FIELD_STATE_ACTION",
+    "smdPath": "Field/Fall_Game/fall_game.smd",
+    "fieldOut": "generated/pt-maps/fall-game/field.generated.ts",
+    "sourceLabel": "client/Field/Fall_Game/fall_game.smd",
+    "stageObjects": {
+      "dir": "Field/Fall_Game",
+      "files": [
+        "chandelier-ani01.smd",
+        "chandelier-ani03.smd",
+        "chandelier-ani04.smd",
+        "chandelier-ani05.smd",
+        "chandelier-ani06.smd",
+        "chandelier-ani07.smd",
+        "chandelier-ani08.smd",
+        "chandelier-ani09.smd",
+        "chandelier-ani10.smd",
+        "chandelier-ani11.smd",
+        "chandelier-ani12.smd",
+        "chandelier-ani13.smd",
+        "chandelier-ani14.smd",
+        "chandelier-ani15.smd",
+        "chandelier-ani16.smd",
+        "chandelier-ani17.smd",
+        "chandelier-ani18.smd",
+        "chandelier-ani19.smd"
+      ],
+      "missing": [
+        "Fall_Game/chandelier-ani.ASE",
+        "Fall_Game/chandelier-ani02.ASE"
+      ],
+      "out": "generated/pt-maps/fall-game/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Fall_Game",
+    "textureOutDir": "public/textures/pt-fall-game",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": null,
+    "centerPos": [
+      5800,
+      36747
+    ],
+    "startPoints": [],
+    "gates": [],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "stage object declared in field.cpp but no .smd found: Fall_Game/chandelier-ani.ASE",
+    "stage object declared in field.cpp but no .smd found: Fall_Game/chandelier-ani02.ASE",
+    "no minimap declared"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 20140,
+    "faces": 28034,
+    "bytes": 2412828
+  },
+  "stageObjects": 18
+}

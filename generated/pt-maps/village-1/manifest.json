@@ -1,0 +1,72 @@
+{
+  "manifest": {
+    "id": "village-1",
+    "fieldIndex": 9,
+    "mapName": "village-1",
+    "state": "FIELD_STATE_DESERT",
+    "smdPath": "Field/forest/village-1.smd",
+    "fieldOut": "generated/pt-maps/village-1/field.generated.ts",
+    "sourceLabel": "client/Field/forest/village-1.smd",
+    "stageObjects": {
+      "dir": "Field/forest",
+      "files": [
+        "v2-ani01.smd"
+      ],
+      "missing": [],
+      "out": "generated/pt-maps/village-1/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/forest",
+    "textureOutDir": "public/textures/pt-village-1",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/village-1.tga",
+    "centerPos": [
+      22214,
+      -1182
+    ],
+    "startPoints": [
+      [
+        22214,
+        -1182
+      ]
+    ],
+    "gates": [
+      {
+        "targetIndex": 11,
+        "x": 27110,
+        "z": -479,
+        "y": 0
+      }
+    ],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "duplicate texture stem 'bunsu-1': bunsu-1.bmp vs bunsu-1.tga",
+    "duplicate texture stem 'bunsu-2': bunsu-2.tga vs bunsu-2.bmp",
+    "missing texture: field\\forest\\woomul-6wan.bmp (materials 24)",
+    "missing texture: field\\forest\\woomul-5wan.bmp (materials 25)",
+    "missing texture: field\\forest\\woomul-3.tga (materials 26)",
+    "duplicate texture stem 'garo-1': garo-1.bmp vs garo-1.tga",
+    "missing texture: field\\forest\\owcac011.bmp (materials 255)",
+    "missing texture: field\\forest\\fff.bmp (materials 275)",
+    "duplicate texture stem 'sod': sod.bmp vs sod.tga",
+    "missing texture: field\\forest\\L (materials 293)",
+    "missing texture: field\\forest\\sod_roof_t.bmp (materials 344)",
+    "missing texture: field\\forest\\sod_w_c.bmp (materials 349)",
+    "duplicate texture stem 'sod_w5': sod_w5.bmp vs sod_w5.tga",
+    "stage object v2-ani01.smd: texture 'fff.bmp' not found in Field/forest",
+    "stage object v2-ani01.smd: texture 'owcac011.bmp' not found in Field/forest",
+    "stage object v2-ani01.smd: texture 'woomul-3.tga' not found in Field/forest",
+    "stage object v2-ani01.smd: texture 'woomul-5wan.bmp' not found in Field/forest",
+    "stage object v2-ani01.smd: texture 'woomul-6wan.bmp' not found in Field/forest"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 17504,
+    "faces": 26014,
+    "bytes": 2413147
+  },
+  "stageObjects": 1
+}

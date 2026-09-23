@@ -1,0 +1,46 @@
+{
+  "manifest": {
+    "id": "sanc1",
+    "fieldIndex": 66,
+    "mapName": "sanc1",
+    "state": "FIELD_STATE_DUNGEON",
+    "smdPath": "Field/Custom/sanc1.smd",
+    "fieldOut": "generated/pt-maps/sanc1/field.generated.ts",
+    "sourceLabel": "client/Field/Custom/sanc1.smd",
+    "stageObjects": {
+      "dir": "Field/Custom",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/sanc1/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Custom",
+    "textureOutDir": "public/textures/pt-sanc1",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/sanc1.tga",
+    "centerPos": [
+      26445,
+      -41677
+    ],
+    "startPoints": [],
+    "gates": [],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "missing texture: field\\dungeon\\L (materials 64)",
+    "missing texture: field\\dungeon\\arrow.tga (materials 100)",
+    "missing texture: field\\dungeon\\w-1.bmp (materials 101)",
+    "missing texture: field\\dungeon\\d-l.tga (materials 113,135)",
+    "missing texture: field\\dungeon\\d-a.bmp (materials 116)",
+    "duplicate texture stem 'skeleton': skeleton.bmp vs skeleton.tga"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 33066,
+    "faces": 56845,
+    "bytes": 4249124
+  },
+  "stageObjects": 0
+}

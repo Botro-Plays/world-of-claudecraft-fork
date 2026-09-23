@@ -1,0 +1,49 @@
+{
+  "manifest": {
+    "id": "ba4",
+    "fieldIndex": 55,
+    "mapName": "ba4",
+    "state": "FIELD_STATE_DESERT",
+    "smdPath": "Field/Custom/ba4.smd",
+    "fieldOut": "generated/pt-maps/ba4/field.generated.ts",
+    "sourceLabel": "client/Field/Custom/ba4.smd",
+    "stageObjects": {
+      "dir": "Field/Custom",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/ba4/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Custom",
+    "textureOutDir": "public/textures/pt-ba4",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/ba4.tga",
+    "centerPos": [
+      -34798,
+      -1959
+    ],
+    "startPoints": [
+      [
+        -35393,
+        -2871
+      ]
+    ],
+    "gates": [],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "duplicate texture stem 'ruinmarket03': ruinmarket03.bmp vs ruinmarket03.tga",
+    "duplicate texture stem 'ruinmarket04': ruinmarket04.bmp vs ruinmarket04.tga",
+    "duplicate texture stem 'dun001': dun001.tga vs dun001.bmp",
+    "duplicate texture stem 'riy-w004': riy-w004.bmp vs riy-w004.tga"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 50464,
+    "faces": 55841,
+    "bytes": 4705030
+  },
+  "stageObjects": 0
+}

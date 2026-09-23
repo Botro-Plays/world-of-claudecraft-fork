@@ -1,0 +1,55 @@
+{
+  "manifest": {
+    "id": "ba3",
+    "fieldIndex": 54,
+    "mapName": "ba3",
+    "state": "FIELD_STATE_DESERT",
+    "smdPath": "Field/Custom/ba3.smd",
+    "fieldOut": "generated/pt-maps/ba3/field.generated.ts",
+    "sourceLabel": "client/Field/Custom/ba3.smd",
+    "stageObjects": {
+      "dir": "Field/Custom",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/ba3/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Custom",
+    "textureOutDir": "public/textures/pt-ba3",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/ba3.tga",
+    "centerPos": [
+      -29541,
+      8994
+    ],
+    "startPoints": [
+      [
+        -32435,
+        13515
+      ],
+      [
+        -33661,
+        8804
+      ]
+    ],
+    "gates": [
+      {
+        "targetIndex": 55,
+        "x": -32225,
+        "z": 4508,
+        "y": 0
+      }
+    ],
+    "derived": true
+  },
+  "status": "PASS",
+  "warnings": [],
+  "errors": [],
+  "field": {
+    "vertices": 40950,
+    "faces": 54281,
+    "bytes": 4456869
+  },
+  "stageObjects": 0
+}

@@ -1,0 +1,59 @@
+{
+  "manifest": {
+    "id": "dun-6",
+    "fieldIndex": 42,
+    "mapName": "dun-6",
+    "state": "FIELD_STATE_DUNGEON",
+    "smdPath": "Field/dungeon/Dun-6a.smd",
+    "fieldOut": "generated/pt-maps/dun-6/field.generated.ts",
+    "sourceLabel": "client/Field/dungeon/Dun-6a.smd",
+    "stageObjects": {
+      "dir": "Field/dungeon",
+      "files": [
+        "Dun-6a-ani-001.smd",
+        "Dun-6a-ani-002.smd",
+        "Dun-6a-ani-003.smd",
+        "Dun-6a-ani-004.smd",
+        "Dun-6a-ani-005.smd",
+        "Dun-6a-ani-006.smd",
+        "Dun-6a-ani-007.smd",
+        "Dun-6a-ani-008.smd",
+        "Dun-6a-ani-009.smd",
+        "Dun-6a-ani-010.smd",
+        "Dun-6a-ani-011.smd",
+        "Dun-6a-ani-012.smd",
+        "Dun-6a-ani-013.smd",
+        "Dun-6a-ani-014.smd",
+        "Dun-6a-ani-015.smd",
+        "Dun-6a-ani-016.smd",
+        "Dun-6a-ani-017.smd",
+        "Dun-6a-ani-018.smd",
+        "Dun-6a-ani-019.smd"
+      ],
+      "missing": [],
+      "out": "generated/pt-maps/dun-6/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/dungeon",
+    "textureOutDir": "public/textures/pt-dun-6",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/dun-6.tga",
+    "centerPos": [
+      -3660,
+      -45200
+    ],
+    "startPoints": [],
+    "gates": [],
+    "derived": true
+  },
+  "status": "PASS",
+  "warnings": [],
+  "errors": [],
+  "field": {
+    "vertices": 37173,
+    "faces": 62663,
+    "bytes": 4669299
+  },
+  "stageObjects": 19
+}

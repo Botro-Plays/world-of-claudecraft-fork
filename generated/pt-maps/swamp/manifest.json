@@ -1,0 +1,46 @@
+{
+  "manifest": {
+    "id": "swamp",
+    "fieldIndex": 71,
+    "mapName": "swamp",
+    "state": "FIELD_STATE_FOREST",
+    "smdPath": "Field/swamp/swamp.smd",
+    "fieldOut": "generated/pt-maps/swamp/field.generated.ts",
+    "sourceLabel": "client/Field/swamp/swamp.smd",
+    "stageObjects": {
+      "dir": "Field/swamp",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/swamp/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/swamp",
+    "textureOutDir": "public/textures/pt-swamp",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/swamp.tga",
+    "centerPos": [
+      4450,
+      42820
+    ],
+    "startPoints": [
+      [
+        4450,
+        42820
+      ]
+    ],
+    "gates": [],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "minimap not found: Field/map/swamp.tga"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 42409,
+    "faces": 51182,
+    "bytes": 4039947
+  },
+  "stageObjects": 0
+}

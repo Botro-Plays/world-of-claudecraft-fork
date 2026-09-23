@@ -1,0 +1,44 @@
+{
+  "manifest": {
+    "id": "heartoffire",
+    "fieldIndex": 62,
+    "mapName": "HeartOfFire",
+    "state": "FIELD_STATE_DUNGEON",
+    "smdPath": "Field/HeartOfFire/HeartOfFire.smd",
+    "fieldOut": "generated/pt-maps/heartoffire/field.generated.ts",
+    "sourceLabel": "client/Field/HeartOfFire/HeartOfFire.smd",
+    "stageObjects": {
+      "dir": "Field/HeartOfFire",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/heartoffire/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/HeartOfFire",
+    "textureOutDir": "public/textures/pt-heartoffire",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/HeartOfFire.tga",
+    "centerPos": [
+      28687,
+      -74007
+    ],
+    "startPoints": [
+      [
+        28687,
+        -74007
+      ]
+    ],
+    "gates": [],
+    "derived": true
+  },
+  "status": "PASS",
+  "warnings": [],
+  "errors": [],
+  "field": {
+    "vertices": 54185,
+    "faces": 98714,
+    "bytes": 7616296
+  },
+  "stageObjects": 0
+}

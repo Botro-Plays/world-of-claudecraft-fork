@@ -1,0 +1,45 @@
+{
+  "manifest": {
+    "id": "quest-iv",
+    "fieldIndex": 32,
+    "mapName": "quest_IV",
+    "state": "FIELD_STATE_QUEST_ARENA",
+    "smdPath": "Field/Quest/quest_IV.smd",
+    "fieldOut": "generated/pt-maps/quest-iv/field.generated.ts",
+    "sourceLabel": "client/Field/Quest/quest_IV.smd",
+    "stageObjects": {
+      "dir": "Field/quest",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/quest-iv/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Quest",
+    "textureOutDir": "public/textures/pt-quest-iv",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/quest_IV.tga",
+    "centerPos": [
+      22497,
+      9605
+    ],
+    "startPoints": [],
+    "gates": [],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "missing texture: field\\quest\\fw.bmp (materials 6)",
+    "duplicate texture stem 'f-ch10': f-ch10.bmp vs f-ch10.tga",
+    "missing texture: field\\quest\\sy_010.bmp (materials 48)",
+    "missing texture: field\\quest\\sy_012.bmp (materials 50)",
+    "minimap not found: Field/map/quest_IV.tga"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 5388,
+    "faces": 5844,
+    "bytes": 1029655
+  },
+  "stageObjects": 0
+}

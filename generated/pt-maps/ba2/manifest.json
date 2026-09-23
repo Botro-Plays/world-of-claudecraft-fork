@@ -1,0 +1,51 @@
+{
+  "manifest": {
+    "id": "ba2",
+    "fieldIndex": 53,
+    "mapName": "ba2",
+    "state": "FIELD_STATE_FOREST",
+    "smdPath": "Field/Custom/ba2.smd",
+    "fieldOut": "generated/pt-maps/ba2/field.generated.ts",
+    "sourceLabel": "client/Field/Custom/ba2.smd",
+    "stageObjects": {
+      "dir": "Field/Custom",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/ba2/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Custom",
+    "textureOutDir": "public/textures/pt-ba2",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/ba2.tga",
+    "centerPos": [
+      -29687,
+      20686
+    ],
+    "startPoints": [
+      [
+        -29687,
+        21324
+      ]
+    ],
+    "gates": [
+      {
+        "targetIndex": 54,
+        "x": -32203,
+        "z": 15803,
+        "y": 0
+      }
+    ],
+    "derived": true
+  },
+  "status": "PASS",
+  "warnings": [],
+  "errors": [],
+  "field": {
+    "vertices": 46714,
+    "faces": 57601,
+    "bytes": 4735042
+  },
+  "stageObjects": 0
+}

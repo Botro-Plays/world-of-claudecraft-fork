@@ -1,0 +1,39 @@
+{
+  "manifest": {
+    "id": "ad3",
+    "fieldIndex": 65,
+    "mapName": "ad3",
+    "state": "FIELD_STATE_DUNGEON",
+    "smdPath": "Field/Custom/ad3.smd",
+    "fieldOut": "generated/pt-maps/ad3/field.generated.ts",
+    "sourceLabel": "client/Field/Custom/ad3.smd",
+    "stageObjects": {
+      "dir": "Field/Custom",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/ad3/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/Custom",
+    "textureOutDir": "public/textures/pt-ad3",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/ad3.tga",
+    "centerPos": [
+      81808,
+      -28710
+    ],
+    "startPoints": [],
+    "gates": [],
+    "derived": true
+  },
+  "status": "PASS",
+  "warnings": [],
+  "errors": [],
+  "field": {
+    "vertices": 16961,
+    "faces": 26431,
+    "bytes": 2282112
+  },
+  "stageObjects": 0
+}

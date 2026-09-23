@@ -1,0 +1,55 @@
+{
+  "manifest": {
+    "id": "de-3",
+    "fieldIndex": 11,
+    "mapName": "De-3",
+    "state": "FIELD_STATE_DESERT",
+    "smdPath": "Field/desert/De-3.smd",
+    "fieldOut": "generated/pt-maps/de-3/field.generated.ts",
+    "sourceLabel": "client/Field/desert/De-3.smd",
+    "stageObjects": {
+      "dir": "Field/desert",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/de-3/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/desert",
+    "textureOutDir": "public/textures/pt-de-3",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/de-3.tga",
+    "centerPos": [
+      34758,
+      -1323
+    ],
+    "startPoints": [
+      [
+        34758,
+        -1323
+      ],
+      [
+        29424,
+        322
+      ]
+    ],
+    "gates": [
+      {
+        "targetIndex": 12,
+        "x": 34372,
+        "z": 4277,
+        "y": 0
+      }
+    ],
+    "derived": true
+  },
+  "status": "PASS",
+  "warnings": [],
+  "errors": [],
+  "field": {
+    "vertices": 44319,
+    "faces": 57458,
+    "bytes": 4663706
+  },
+  "stageObjects": 0
+}

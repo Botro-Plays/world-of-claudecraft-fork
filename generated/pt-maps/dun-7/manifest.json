@@ -1,0 +1,39 @@
+{
+  "manifest": {
+    "id": "dun-7",
+    "fieldIndex": 40,
+    "mapName": "dun-7",
+    "state": "FIELD_STATE_DUNGEON",
+    "smdPath": "Field/endless/dun-7.smd",
+    "fieldOut": "generated/pt-maps/dun-7/field.generated.ts",
+    "sourceLabel": "client/Field/endless/dun-7.smd",
+    "stageObjects": {
+      "dir": "Field/endless",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/dun-7/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/endless",
+    "textureOutDir": "public/textures/pt-dun-7",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/dun-7.tga",
+    "centerPos": [
+      14255,
+      -39099
+    ],
+    "startPoints": [],
+    "gates": [],
+    "derived": true
+  },
+  "status": "PASS",
+  "warnings": [],
+  "errors": [],
+  "field": {
+    "vertices": 25356,
+    "faces": 43539,
+    "bytes": 3629146
+  },
+  "stageObjects": 0
+}

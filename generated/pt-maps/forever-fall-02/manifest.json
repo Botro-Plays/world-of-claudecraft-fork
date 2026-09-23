@@ -1,0 +1,69 @@
+{
+  "manifest": {
+    "id": "forever-fall-02",
+    "fieldIndex": 19,
+    "mapName": "forever-fall-02",
+    "state": "FIELD_STATE_FOREST",
+    "smdPath": "Field/forever-fall/forever-fall-02.smd",
+    "fieldOut": "generated/pt-maps/forever-fall-02/field.generated.ts",
+    "sourceLabel": "client/Field/forever-fall/forever-fall-02.smd",
+    "stageObjects": {
+      "dir": "Field/forever-fall",
+      "files": [
+        "2ani-01.smd",
+        "2ani-02.smd",
+        "2ani-03.smd",
+        "2ani-04.smd",
+        "2ani-05.smd"
+      ],
+      "missing": [],
+      "out": "generated/pt-maps/forever-fall-02/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/forever-fall",
+    "textureOutDir": "public/textures/pt-forever-fall-02",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/forever-fall-02.tga",
+    "centerPos": [
+      1691,
+      52599
+    ],
+    "startPoints": [
+      [
+        -1024,
+        45437
+      ],
+      [
+        -1543,
+        52333
+      ],
+      [
+        -1310,
+        54945
+      ]
+    ],
+    "gates": [
+      {
+        "targetIndex": 20,
+        "x": 667,
+        "z": 59371,
+        "y": 0
+      }
+    ],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "stage object 2ani-03.smd: texture 'fomain.bmp' not found in Field/forever-fall",
+    "stage object 2ani-05.smd: texture 'fomain.bmp' not found in Field/forever-fall",
+    "start point (-1024,45437) outside map bounds"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 60377,
+    "faces": 65071,
+    "bytes": 5329395
+  },
+  "stageObjects": 5
+}

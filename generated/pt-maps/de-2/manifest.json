@@ -1,0 +1,51 @@
+{
+  "manifest": {
+    "id": "de-2",
+    "fieldIndex": 10,
+    "mapName": "De-2",
+    "state": "FIELD_STATE_DESERT",
+    "smdPath": "Field/desert/De-2.smd",
+    "fieldOut": "generated/pt-maps/de-2/field.generated.ts",
+    "sourceLabel": "client/Field/desert/De-2.smd",
+    "stageObjects": {
+      "dir": "Field/desert",
+      "files": [],
+      "missing": [],
+      "out": "generated/pt-maps/de-2/stage_objects.generated.ts"
+    },
+    "texturesDir": "Field/desert",
+    "textureOutDir": "public/textures/pt-de-2",
+    "water": {
+      "rule": "translucent"
+    },
+    "minimap": "Field/map/de-2.tga",
+    "centerPos": [
+      15887,
+      -11161
+    ],
+    "startPoints": [
+      [
+        11859,
+        -11257
+      ],
+      [
+        16169,
+        -12768
+      ]
+    ],
+    "gates": [],
+    "derived": true
+  },
+  "status": "WARN",
+  "warnings": [
+    "missing texture: field\\desert\\de-c1.bmp (materials 50)",
+    "missing texture: field\\desert\\de-c2.bmp (materials 51)"
+  ],
+  "errors": [],
+  "field": {
+    "vertices": 41450,
+    "faces": 54767,
+    "bytes": 4491199
+  },
+  "stageObjects": 0
+}
