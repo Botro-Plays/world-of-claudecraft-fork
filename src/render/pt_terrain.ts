@@ -164,6 +164,63 @@ export function ptApplyVertexScript(
 }
 
 // ---------------------------------------------------------------------------
+// Ocean ring horizon fade (visual only)
+// ---------------------------------------------------------------------------
+//
+// The extended ocean ring reuses the real harbor water texture, so its ~22 yd
+// tile repeats hundreds of times out to the horizon. The ring is static (its
+// eight corner verts cannot carry the water ripple), so the eye catches the
+// periodicity long before scene fog swallows it. This fade mixes the sampled
+// texel toward the texture's own mean - the 1x1 mip, which is the exact
+// baked riy-f030 x riy-w091 average - as box distance beyond the map-edge
+// rectangle grows. Anchoring to the shoreline rect (not the camera) keeps the
+// band a constant width all around the map: no radial ring, no moving
+// gradient, and no seam where the ring meets the real edge water, which stays
+// fully textured. The fade saturates below 1 so the far sea keeps a whisper
+// of modulation rather than reading as a flat plate, and scene fog still owns
+// the horizon beyond it (the band ends well inside the ~700 yd fog far).
+
+const PT_OCEAN_FADE_START_YD = 60;  // yd past the map edge: fade begins
+const PT_OCEAN_FADE_END_YD = 420;   // fully faded inside every fog far plane
+const PT_OCEAN_FADE_MAX = 0.85;     // residual modulation under the fog
+
+function ptApplyOceanHorizonFade(
+  material: THREE.Material,
+  center: THREE.Vector2,
+  mapHalf: THREE.Vector2,
+): void {
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uPtOceanFadeCenter = { value: center };
+    shader.uniforms.uPtOceanFadeHalf = { value: mapHalf };
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec2 vPtOceanXZ;')
+      .replace(
+        '#include <project_vertex>',
+        '#include <project_vertex>\nvPtOceanXZ = (modelMatrix * vec4(position, 1.0)).xz;',
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        `#include <common>
+varying vec2 vPtOceanXZ;
+uniform vec2 uPtOceanFadeCenter;
+uniform vec2 uPtOceanFadeHalf;`,
+      )
+      .replace(
+        '#include <map_fragment>',
+        `#ifdef USE_MAP
+	vec4 sampledDiffuseColor = texture2D( map, vMapUv );
+	vec2 ptEdgeD = abs(vPtOceanXZ - uPtOceanFadeCenter) - uPtOceanFadeHalf;
+	float ptOceanFade = smoothstep(${PT_OCEAN_FADE_START_YD.toFixed(1)}, ${PT_OCEAN_FADE_END_YD.toFixed(1)}, length(max(ptEdgeD, 0.0))) * ${PT_OCEAN_FADE_MAX};
+	vec4 ptSeaMean = textureLod( map, vMapUv, 16.0 );
+	diffuseColor *= vec4(mix(sampledDiffuseColor.rgb, ptSeaMean.rgb, ptOceanFade), sampledDiffuseColor.a);
+#endif`,
+      );
+  };
+  material.customProgramCacheKey = () => 'pt-ocean-horizon-fade';
+}
+
+// ---------------------------------------------------------------------------
 // Geometry
 // ---------------------------------------------------------------------------
 
@@ -537,6 +594,18 @@ export async function buildPtTerrainView(): Promise<PtTerrainView> {
       depthWrite: false, // transparency > 0.2 disables z-write (ZWriteAuto)
       fog: true,
     });
+    // Fade the tiled water texel toward its own mean with distance beyond the
+    // map edge (see ptApplyOceanHorizonFade). Only when the sea texture
+    // loaded: without a map there is no pattern to fade.
+    if (seaTex) {
+      seaTex.generateMipmaps = true;
+      seaTex.minFilter = THREE.LinearMipmapLinearFilter;
+      ptApplyOceanHorizonFade(
+        oceanMat,
+        new THREE.Vector2(cx, cz),
+        new THREE.Vector2(Math.abs(x1 - x0) / 2, Math.abs(z1 - z0) / 2),
+      );
+    }
     const oceanMesh = new THREE.Mesh(oceanGeo, oceanMat);
     oceanMesh.name = 'pt-ricarten-ocean';
     oceanMesh.position.set(cx, ptYToWoC(102) - seaDrop, cz);
