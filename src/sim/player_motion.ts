@@ -676,7 +676,10 @@ function stepInstancedRegion(
           const whe = woCToPtY(floor) + (51.1 >> 1) + 10;
           if (woCToPtY(wl) > whe && woCToPtY(wl) < whe + 5) return true;
         }
-        return !activePtField().wallHit(p.pos.x, p.pos.y, p.pos.z, tx, tz);
+        // The floor is already accepted: pass it so the wall sweep can tell
+        // the bounded stair faces being climbed from real walls (see
+        // pt_field wallHit's step-aware filter).
+        return !activePtField().wallHit(p.pos.x, p.pos.y, p.pos.z, tx, tz, floor);
       };
       if (!accepts(nx, nz)) {
         const dx = nx - p.pos.x;

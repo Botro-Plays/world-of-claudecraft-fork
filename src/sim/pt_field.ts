@@ -351,8 +351,18 @@ export interface PtField {
   supportHeight(x: number, z: number, r: number, maxY: number): number;
   /** PT CheckNextMove floor rule: highest surface within Stage_StepHeight of refY. */
   floorHeight(x: number, z: number, refY: number): number;
-  /** PT swept-capsule wall test for a move (sx,sy,sz) -> (ex,ez), WoC space. */
-  wallHit(sx: number, sy: number, sz: number, ex: number, ez: number): boolean;
+  /** PT swept-capsule wall test for a move (sx,sy,sz) -> (ex,ez), WoC space.
+   *  When the move already passed the floor rule, pass the accepted
+   *  destination floor (WoC Y) so step-aware filtering can tell stair
+   *  faces from real walls; omit it for floorless moves (swimmers). */
+  wallHit(
+    sx: number,
+    sy: number,
+    sz: number,
+    ex: number,
+    ez: number,
+    destFloorY?: number,
+  ): boolean;
   /** Ground height for a spawn point, 0 when no surface exists there. */
   spawnY(x: number, z: number): number;
   /** Water surface height at WoC (x, z), WoC Y, or -Infinity. */
@@ -544,6 +554,7 @@ export function createPtField(mod: PtFieldModule, xf: PtFieldTransform): PtField
     sz: number,
     ex: number,
     ez: number,
+    destFloorY?: number,
   ): boolean {
     ensureData();
     const vertices = _vertices!;
@@ -555,6 +566,19 @@ export function createPtField(mod: PtFieldModule, xf: PtFieldTransform): PtField
     const px = xf.woCToPtX(sx);
     const py = xf.woCToPtY(sy);
     const pz = xf.woCToPtZ(sz);
+    // Accepted destination floor in PT units (-Infinity when the move had
+    // no legal floor, e.g. the swimmer path): activates step-aware
+    // filtering below. PT never needed it — its ~1-2u per-frame dist kept
+    // the sweep ~14u ahead, so a stair face past the destination was next
+    // frame's problem. Our 20Hz tick sweeps ~10u plus the same 12u
+    // lookahead, so the low/top lines cross (a) the accepted floor face
+    // itself where it rises past feet+12 further uphill and (b) the next
+    // step's faces in the brake zone — without filtering, every tick of a
+    // stair climb reads as a wall and the walker zigzags up on the
+    // half-distance slide retries.
+    const floorPt =
+      destFloorY !== undefined ? xf.woCToPtY(destFloorY) : -Infinity;
+    const stepRef = Math.max(floorPt, py);
     const qx = xf.woCToPtX(ex);
     const qz = xf.woCToPtZ(ez);
 
@@ -607,6 +631,44 @@ export function createPtField(mod: PtFieldModule, xf: PtFieldTransform): PtField
           const ax = vertices[ai * 3], ay = vertices[ai * 3 + 1], az = vertices[ai * 3 + 2];
           const bx = vertices[bi * 3], by = vertices[bi * 3 + 1], bz = vertices[bi * 3 + 2];
           const cxv = vertices[ci2 * 3], cyv = vertices[ci2 * 3 + 1], czv = vertices[ci2 * 3 + 2];
+          if (floorPt !== -Infinity) {
+            const loY = Math.min(ay, by, cyv);
+            const hiY = Math.max(ay, by, cyv);
+            // A BOUNDED face rooted more than one Stage_StepHeight above
+            // the level being moved at is the next flight's riser or a
+            // low overhang lip, never a wall for this move. Taller spans
+            // (bridge arches, hull tops, real ceilings) keep blocking —
+            // their deflections are load-bearing for the path a walker
+            // takes past stacked structures. Observed stair stringer faces
+            // span up to ~1.6 step heights; structural blockers start at
+            // ~1.9, so the bound sits between them.
+            if (
+              loY - stepRef > PT_STEP_HEIGHT_UNITS &&
+              hiY - loY <= PT_STEP_HEIGHT_UNITS + 7
+            ) {
+              continue;
+            }
+            // While stepping up (accepted destination floor strictly above
+            // the feet), a BOUNDED face whose top stays within one step
+            // height (plus the authored-face slack observed in stair
+            // strips) of that floor is the stair/terrain surface being
+            // climbed — the same surface the floor rule just accepted —
+            // not a wall. Two guards keep this from opening walls: on
+            // level ground (floor == feet) bounded faces are curbs, banks
+            // and guide rails whose deflections keep the walker on open
+            // lanes, so the clause stays off; and a tall face rooted
+            // below the floor whose top happens to crest near an elevated
+            // floor (bridge edge ramps, parapet footings) is a wall, so
+            // the span is bounded too. Walls, hulls, trunks, parapets and
+            // cliffs fail one bound or the other and keep blocking.
+            if (
+              floorPt > py &&
+              hiY - floorPt <= PT_STEP_HEIGHT_UNITS + 4 &&
+              hiY - loY <= PT_STEP_HEIGHT_UNITS + 7
+            ) {
+              continue;
+            }
+          }
           for (let l = 0; l < 4; l++) {
             const L = lines[l];
             if (

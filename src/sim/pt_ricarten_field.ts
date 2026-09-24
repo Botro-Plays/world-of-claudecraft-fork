@@ -88,8 +88,9 @@ export function ptRicartenWallHit(
   sz: number,
   ex: number,
   ez: number,
+  destFloorY?: number,
 ): boolean {
-  return ptRicartenField().wallHit(sx, sy, sz, ex, ez);
+  return ptRicartenField().wallHit(sx, sy, sz, ex, ez, destFloorY);
 }
 
 /**
