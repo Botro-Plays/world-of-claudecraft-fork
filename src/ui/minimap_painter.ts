@@ -56,6 +56,7 @@ import {
 } from './minimap_markers';
 import type { PainterHostWriters } from './painter_host';
 import { isPtPos } from '../sim/pt_band';
+import { activePtMapDescriptor } from '../sim/pt_field_active';
 import { PT_MINIMAP_TEXTURE_URL, ptRicartenMapDestRect } from './pt_minimap_core';
 
 // The fixed circular minimap surface (the #minimap canvas is 162x162). Exported so Hud
@@ -1117,8 +1118,12 @@ export class MinimapPainter {
     }
     // PT Ricarten band: the authentic village-2 field map under the standard
     // marker union, projected through the PT band rect (pt_minimap_core.ts).
+    // A /ptmap dev selection paints the void + markers only: the village-2
+    // raster belongs to Ricarten and must never stand in for another map.
     if (isPtPos(world.player.pos.x)) {
-      this.paintRicarten(ctx, world, zoneLabelEl, zoom, colors);
+      const devMap = activePtMapDescriptor();
+      if (devMap) this.paintPtDevMap(ctx, world, zoneLabelEl, zoom, colors, devMap.id);
+      else this.paintRicarten(ctx, world, zoneLabelEl, zoom, colors);
       return;
     }
     const S = MINIMAP_SIZE;
@@ -1387,6 +1392,37 @@ export class MinimapPainter {
       const r = ptRicartenMapDestRect(p.pos.x, p.pos.z, S, pxPerYard);
       ctx.drawImage(img, r.x, r.y, r.w, r.h);
     }
+    this.drawMarkers(ctx, model.markers, colors, profile);
+    ctx.restore();
+  }
+
+  /**
+   * /ptmap dev-map minimap: no converted minimap texture exists for the
+   * generated packages (only village-2's was shipped), so the panel shows the
+   * PT void fill with the standard marker union and labels the band with the
+   * dev map id instead of borrowing Ricarten's raster.
+   */
+  paintPtDevMap(
+    ctx: CanvasRenderingContext2D,
+    world: IWorld,
+    zoneLabelEl: HTMLElement,
+    zoom: number,
+    colors: MinimapColors,
+    mapId: string,
+  ): void {
+    const S = MINIMAP_SIZE;
+    const pxPerYard = MINIMAP_BASE_SCALE * zoom;
+    const profile = this.markerProfile();
+    const model = this.markers.build(world, S, pxPerYard, profile);
+    this.writers.setText(zoneLabelEl, `pt-dev:${mapId}`);
+
+    ctx.clearRect(0, 0, S, S);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(S / 2, S / 2, S / 2 - MINIMAP_CLIP_INSET, 0, FULL_CIRCLE);
+    ctx.clip();
+    ctx.fillStyle = colors.ptVoid;
+    ctx.fillRect(0, 0, S, S);
     this.drawMarkers(ctx, model.markers, colors, profile);
     ctx.restore();
   }

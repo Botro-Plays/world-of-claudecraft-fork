@@ -7,6 +7,7 @@ import type * as THREE from 'three';
 import type { Entity } from '../sim/types';
 import { type DayNightDevHud, tryDayNightDevCommand } from './daynight_dev_command';
 import { tryIgnivarPlacerCommand } from './ignivar_placer';
+import { execPtMapDevCommand, isPtMapDevCommand } from './pt_map_dev_command';
 import { type PtDevHud, tryPtRicartenDevCommand } from './pt_ricarten_dev_command';
 
 export interface DevChatHookDeps {
@@ -19,6 +20,10 @@ export function tryDevChatHooks(raw: string, deps: DevChatHookDeps): boolean {
   if (!import.meta.env.DEV) return false;
   if (tryDayNightDevCommand(raw, deps.hud)) return true;
   if (tryPtRicartenDevCommand(raw, deps.hud, deps.world.player)) return true;
+  if (isPtMapDevCommand(raw)) {
+    execPtMapDevCommand(raw, deps.hud, deps.world.player);
+    return true;
+  }
   return tryIgnivarPlacerCommand(raw, {
     scene: deps.scene,
     getPlayer: () => deps.world.player,

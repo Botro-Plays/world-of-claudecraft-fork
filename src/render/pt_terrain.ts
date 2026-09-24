@@ -27,28 +27,25 @@
 // The mesh is placed in the world at the PT band offset (see pt_band.ts).
 
 import * as THREE from 'three';
-import {
-  PT_BOUNDS,
-  PT_N_FACE,
-  PT_N_VERTEX,
-  PT_VERTICES,
-  PT_RENDER_FACES,
-  PT_UVS,
-  PT_MATERIALS,
-  PT_WATER_FACE_INDICES,
-  PT_DECORATIVE_FACE_INDICES,
-} from '../sim/pt_ricarten_field.generated';
+import * as RICARTEN_FIELD from '../sim/pt_ricarten_field.generated';
 import {
   PT_SCALE,
   ptXToWoC,
   ptYToWoC,
   ptZToWoC,
   woCToPtX,
+  woCToPtY,
   woCToPtZ,
 } from '../sim/pt_band';
+import type { PtMapDescriptor } from '../sim/pt_field';
 import { loadTexture } from './assets/loader';
 import { sharedUniforms } from './gfx';
-import { buildPtStageObjectsView, type PtStageObjectsView } from './pt_stage_objects';
+import {
+  buildPtStageObjectsView,
+  ptStageBandMatrixFor,
+  type PtStageObjectsView,
+} from './pt_stage_objects';
+import { PT_STAGE_OBJECTS } from './pt_stage_objects.generated';
 
 export interface PtTerrainView {
   group: THREE.Group;
@@ -58,6 +55,26 @@ export interface PtTerrainView {
 }
 
 const TEXTURE_BASE = '/textures/pt-ricarten/';
+
+/**
+ * The committed Ricarten terrain source: the generated village-2 field
+ * module bound to its pt_band transform, its texture root, the compiled
+ * v-ani stage objects, and the authored ocean horizon extension. This is
+ * the production default; buildPtTerrainView() with no argument resolves
+ * to exactly the pre-parameterization path.
+ */
+export const PT_RICARTEN_SOURCE: PtMapDescriptor = {
+  id: 'ricarten',
+  field: RICARTEN_FIELD,
+  transform: { ptXToWoC, ptYToWoC, ptZToWoC, woCToPtX, woCToPtY, woCToPtZ },
+  textureBase: TEXTURE_BASE,
+  stageObjects: { PT_STAGE_OBJECTS },
+  oceanRing: true,
+};
+
+function fieldMaterials(src: PtMapDescriptor): PtMaterialInfo[] {
+  return src.field.PT_MATERIALS as unknown as PtMaterialInfo[];
+}
 
 // PT stores SMMAT_BLEND_ALPHA (1) as the default BlendType on every field
 // material (smTexture.cpp sets it unconditionally unless the ASE overrides
@@ -225,21 +242,21 @@ uniform vec2 uPtOceanFadeHalf;`,
 // ---------------------------------------------------------------------------
 
 // Build a typed-array view over the PT vertices, transformed into WoC
-// coordinates through the authoritative pt_band transform (X mirrored to
+// coordinates through the source's pt_band transform (X mirrored to
 // undo the DirectX left-handed -> Three.js right-handed chirality flip).
 // The mirror reverses face winding; normals are recomputed post-transform,
 // and the winding check against flat walkable faces confirms outward
 // normals, so PT single-sided materials map to THREE.FrontSide.
-function buildVertexBuffer(): Float32Array {
-  const vertices = PT_VERTICES();
-  const out = new Float32Array(PT_N_VERTEX * 3);
-  for (let i = 0; i < PT_N_VERTEX; i++) {
+function buildVertexBuffer(src: PtMapDescriptor): Float32Array {
+  const vertices = src.field.PT_VERTICES();
+  const out = new Float32Array(src.field.PT_N_VERTEX * 3);
+  for (let i = 0; i < src.field.PT_N_VERTEX; i++) {
     const px = vertices[i * 3];
     const py = vertices[i * 3 + 1];
     const pz = vertices[i * 3 + 2];
-    out[i * 3] = ptXToWoC(px);
-    out[i * 3 + 1] = ptYToWoC(py);
-    out[i * 3 + 2] = ptZToWoC(pz);
+    out[i * 3] = src.transform.ptXToWoC(px);
+    out[i * 3 + 1] = src.transform.ptYToWoC(py);
+    out[i * 3 + 2] = src.transform.ptZToWoC(pz);
   }
   return out;
 }
@@ -257,17 +274,18 @@ interface PtFaceEmit {
 // enter the mesh. Hidden (NOTVIEW) materials are skipped entirely - PT
 // never draws them.
 function buildGroupedFaces(
+  src: PtMapDescriptor,
   positions: Float32Array,
   faceFilter: (fi: number, mat: PtMaterialInfo | undefined) => boolean,
 ): PtFaceEmit {
-  const renderFaces = PT_RENDER_FACES();
-  const uvs = PT_UVS();
-  const vertices = PT_VERTICES();
-  const materials = PT_MATERIALS as PtMaterialInfo[];
+  const renderFaces = src.field.PT_RENDER_FACES();
+  const uvs = src.field.PT_UVS();
+  const vertices = src.field.PT_VERTICES();
+  const materials = fieldMaterials(src);
   const matByIdx = new Map(materials.map((m) => [m.index, m]));
 
   const facesByMaterial = new Map<number, number[]>();
-  for (let fi = 0; fi < PT_N_FACE; fi++) {
+  for (let fi = 0; fi < src.field.PT_N_FACE; fi++) {
     const matIdx = renderFaces[fi * 4 + 3];
     const mat = matByIdx.get(matIdx);
     if (ptMaterialIsHidden(mat)) continue;
@@ -314,22 +332,28 @@ function buildGroupedFaces(
 // Load a PT texture by material index. The converter
 // (scripts/pt-port/convert_pt_textures.ts) lowercases output filenames, so
 // the basename must be lowercased here too (e.g. L-VV.tga -> l-vv.png).
+// Ricarten-bound convenience kept for existing callers; parameterized
+// sources resolve through textureUrlForSource.
 export function textureUrlForMaterial(matIdx: number): string | null {
-  const mat = (PT_MATERIALS as PtMaterialInfo[]).find((m) => m.index === matIdx);
+  return textureUrlForSource(PT_RICARTEN_SOURCE, matIdx);
+}
+
+function textureUrlForSource(src: PtMapDescriptor, matIdx: number): string | null {
+  const mat = fieldMaterials(src).find((m) => m.index === matIdx);
   if (!mat || mat.textureNames.length === 0) return null;
   const name = mat.textureNames[0];
   const fileName = name.replace(/\\/g, '/').split('/').pop() || '';
   const baseName = fileName.replace(/\.[^.]+$/i, '').toLowerCase();
-  return TEXTURE_BASE + baseName + '.png';
+  return src.textureBase + baseName + '.png';
 }
 
-function textureUrlsForMaterial(matIdx: number): string[] {
-  const mat = (PT_MATERIALS as PtMaterialInfo[]).find((m) => m.index === matIdx);
+function textureUrlsForSource(src: PtMapDescriptor, matIdx: number): string[] {
+  const mat = fieldMaterials(src).find((m) => m.index === matIdx);
   if (!mat) return [];
   return mat.textureNames.map((name) => {
     const fileName = name.replace(/\\/g, '/').split('/').pop() || '';
     const baseName = fileName.replace(/\.[^.]+$/i, '').toLowerCase();
-    return TEXTURE_BASE + baseName + '.png';
+    return src.textureBase + baseName + '.png';
   });
 }
 
@@ -372,10 +396,11 @@ async function bakeMultiTexture(
 }
 
 async function loadPtTexture(
+  src: PtMapDescriptor,
   matIdx: number,
   textureCache: Map<string, THREE.Texture | null>,
 ): Promise<THREE.Texture | null> {
-  const urls = textureUrlsForMaterial(matIdx);
+  const urls = textureUrlsForSource(src, matIdx);
   if (urls.length === 0) return null;
   const cacheKey = urls.join('|');
   if (!textureCache.has(cacheKey)) {
@@ -422,6 +447,7 @@ function makePtMaterial(
 
 // Build one mesh from grouped faces: one geometry, per-material groups.
 async function buildGroupedMesh(
+  src: PtMapDescriptor,
   name: string,
   emit: PtFaceEmit,
   textureCache: Map<string, THREE.Texture | null>,
@@ -436,9 +462,9 @@ async function buildGroupedMesh(
   geo.computeVertexNormals();
 
   const materials: THREE.Material[] = [];
-  const matByIdx = new Map((PT_MATERIALS as PtMaterialInfo[]).map((m) => [m.index, m]));
+  const matByIdx = new Map(fieldMaterials(src).map((m) => [m.index, m]));
   for (const g of emit.groups) {
-    const texture = await loadPtTexture(g.material, textureCache);
+    const texture = await loadPtTexture(src, g.material, textureCache);
     const m = makePtMaterial(matByIdx.get(g.material), texture);
     m.name = `pt-mat-${g.material}`;
     materials.push(m);
@@ -451,16 +477,18 @@ async function buildGroupedMesh(
   return mesh;
 }
 
-export async function buildPtTerrainView(): Promise<PtTerrainView> {
+export async function buildPtTerrainView(
+  src: PtMapDescriptor = PT_RICARTEN_SOURCE,
+): Promise<PtTerrainView> {
   const group = new THREE.Group();
-  group.name = 'pt-ricarten-terrain';
+  group.name = `pt-${src.id}-terrain`;
 
-  const positions = buildVertexBuffer();
+  const positions = buildVertexBuffer(src);
   const waterSet = new Set<number>();
-  const waterIndices = PT_WATER_FACE_INDICES();
+  const waterIndices = src.field.PT_WATER_FACE_INDICES();
   for (let i = 0; i < waterIndices.length; i++) waterSet.add(waterIndices[i]);
   const decoSet = new Set<number>();
-  const decoIndices = PT_DECORATIVE_FACE_INDICES();
+  const decoIndices = src.field.PT_DECORATIVE_FACE_INDICES();
   for (let i = 0; i < decoIndices.length; i++) decoSet.add(decoIndices[i]);
 
   const textureCache = new Map<string, THREE.Texture | null>();
@@ -471,11 +499,13 @@ export async function buildPtTerrainView(): Promise<PtTerrainView> {
   // and not water). This covers walkable terrain plus opaque decorative
   // faces; TGA/PNG materials get alpha-test per the MapOpacity rule.
   const solidEmit = buildGroupedFaces(
+    src,
     positions,
     (fi, mat) => !waterSet.has(fi) && !ptMaterialIsTranslucent(mat),
   );
   const solidMesh = await buildGroupedMesh(
-    'pt-ricarten-solid',
+    src,
+    `pt-${src.id}-solid`,
     solidEmit,
     textureCache,
     allMaterials,
@@ -486,9 +516,10 @@ export async function buildPtTerrainView(): Promise<PtTerrainView> {
   // Water path: the KNOWN_WATER_MATS face set. Textured per material,
   // blended with opacity = 1 - transparency, z-write off (>0.2), and the
   // PT water vertex ripple on sMATS_SCRIPT_WATER materials.
-  const waterEmit = buildGroupedFaces(positions, (fi) => waterSet.has(fi));
+  const waterEmit = buildGroupedFaces(src, positions, (fi) => waterSet.has(fi));
   const waterMesh = await buildGroupedMesh(
-    'pt-ricarten-water',
+    src,
+    `pt-${src.id}-water`,
     waterEmit,
     textureCache,
     allMaterials,
@@ -499,11 +530,13 @@ export async function buildPtTerrainView(): Promise<PtTerrainView> {
   // Decorative translucent path: non-water faces whose material is
   // translucent (transparency > 0.1).
   const decoEmit = buildGroupedFaces(
+    src,
     positions,
     (fi, mat) => !waterSet.has(fi) && decoSet.has(fi) && ptMaterialIsTranslucent(mat),
   );
   const decoMesh = await buildGroupedMesh(
-    'pt-ricarten-decorative',
+    src,
+    `pt-${src.id}-decorative`,
     decoEmit,
     textureCache,
     allMaterials,
@@ -528,14 +561,18 @@ export async function buildPtTerrainView(): Promise<PtTerrainView> {
   // overlap band under the map-edge water cannot z-fight. It is visual only:
   // no collision, no gameplay surface, and its outer edge lands past the fog
   // far plane where it converges to the fog color.
-  {
+  //
+  // Ricarten-only: the ring's sea level (PT-Y ~102) and harbor material are
+  // authored for village-2, so dev-harness sources skip this block entirely
+  // rather than drawing a fabricated sea under a map that does not declare one.
+  if (src.oceanRing) {
     const oceanHalf = 4000; // yd from map center; past every camera far plane
     const holeInset = 3;    // yd: ring overlaps the map-edge water strip
     const seaDrop = 0.2;    // yd below sea level, avoids z-fighting
-    const x0 = ptXToWoC(PT_BOUNDS.maxX);
-    const x1 = ptXToWoC(PT_BOUNDS.minX);
-    const z0 = ptZToWoC(PT_BOUNDS.minZ);
-    const z1 = ptZToWoC(PT_BOUNDS.maxZ);
+    const x0 = src.transform.ptXToWoC(src.field.PT_BOUNDS.maxX);
+    const x1 = src.transform.ptXToWoC(src.field.PT_BOUNDS.minX);
+    const z0 = src.transform.ptZToWoC(src.field.PT_BOUNDS.minZ);
+    const z1 = src.transform.ptZToWoC(src.field.PT_BOUNDS.maxZ);
     const cx = (x0 + x1) / 2;
     const cz = (z0 + z1) / 2;
     const outer = new THREE.Shape();
@@ -571,20 +608,20 @@ export async function buildPtTerrainView(): Promise<PtTerrainView> {
       for (let i = 0; i < posA.count; i++) {
         uvA.setXY(
           i,
-          woCToPtX(cx + posA.getX(i)) * 0.00163,
-          woCToPtZ(cz + posA.getZ(i)) * 0.00209,
+          src.transform.woCToPtX(cx + posA.getX(i)) * 0.00163,
+          src.transform.woCToPtZ(cz + posA.getZ(i)) * 0.00209,
         );
       }
       uvA.needsUpdate = true;
     }
-    const seaMat = (PT_MATERIALS as PtMaterialInfo[]).find((m) =>
+    const seaMat = fieldMaterials(src).find((m) =>
       m.textureNames.some((n) => n.toLowerCase().endsWith('riy-w091.bmp')),
     );
     // Multimix needs the DOM canvas bake; outside the browser (vitest, SSR)
     // keep the flat fallback color.
     const seaTex =
       seaMat && typeof document !== 'undefined'
-        ? await loadPtTexture(seaMat.index, textureCache)
+        ? await loadPtTexture(src, seaMat.index, textureCache)
         : null;
     const oceanMat = new THREE.MeshLambertMaterial({
       map: seaTex,
@@ -607,8 +644,8 @@ export async function buildPtTerrainView(): Promise<PtTerrainView> {
       );
     }
     const oceanMesh = new THREE.Mesh(oceanGeo, oceanMat);
-    oceanMesh.name = 'pt-ricarten-ocean';
-    oceanMesh.position.set(cx, ptYToWoC(102) - seaDrop, cz);
+    oceanMesh.name = `pt-${src.id}-ocean`;
+    oceanMesh.position.set(cx, src.transform.ptYToWoC(102) - seaDrop, cz);
     oceanMesh.matrixAutoUpdate = false;
     oceanMesh.updateMatrix();
     group.add(oceanMesh);
@@ -630,7 +667,7 @@ export async function buildPtTerrainView(): Promise<PtTerrainView> {
       fog: true,
     });
     const deepMesh = new THREE.Mesh(deepGeo, deepMat);
-    deepMesh.name = 'pt-ricarten-deepsea';
+    deepMesh.name = `pt-${src.id}-deepsea`;
     deepMesh.position.set(cx, -0.5, cz);
     deepMesh.matrixAutoUpdate = false;
     deepMesh.updateMatrix();
@@ -639,12 +676,23 @@ export async function buildPtTerrainView(): Promise<PtTerrainView> {
     allMaterials.push(deepMat);
   }
 
-  // Stage objects (v-ani01..14: windmills, carts, fountains). field.cpp
-  // registers all of them for the Ricarten field; node transforms carry
-  // absolute map positions, so they land in place with no extra offset.
+  // Stage objects (v-ani01..14: windmills, carts, fountains on Ricarten).
+  // field.cpp registers the map's objects for the field; node transforms
+  // carry absolute map positions, so they land in place with no extra
+  // offset. Maps whose package has no stage_objects.generated.ts report
+  // stageObjects=null and skip this block entirely.
   let stageView: PtStageObjectsView | null = null;
   try {
-    stageView = await buildPtStageObjectsView();
+    stageView = await buildPtStageObjectsView(
+      src.stageObjects
+        ? {
+            id: src.id,
+            objects: src.stageObjects.PT_STAGE_OBJECTS,
+            bandMatrix: ptStageBandMatrixFor(src.transform),
+            textureBase: src.textureBase,
+          }
+        : undefined,
+    );
     group.add(stageView.group);
   } catch {
     stageView = null;

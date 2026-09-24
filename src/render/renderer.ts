@@ -32,6 +32,7 @@ import {
   zoneAt,
 } from '../sim/data';
 import { isPtPos } from '../sim/pt_band';
+import { activePtMapDescriptor } from '../sim/pt_field_active';
 import type { DelveModuleId } from '../sim/delve_layout';
 import { generateRiftFloor, riftLiftAt } from '../sim/rift/rift_gen';
 import type { BiomeId, ZoneDef } from '../sim/types';
@@ -70,7 +71,7 @@ import type { BattlegroundView } from './battleground';
 import { BattlegroundFx } from './battleground_fx';
 import { updateBattlegroundOccluderFades } from './battleground_placements';
 import { buildBattlegroundObject } from './battleground_props';
-import { buildPtTerrainView } from './pt_terrain';
+import { buildPtTerrainView, PT_RICARTEN_SOURCE } from './pt_terrain';
 import { PtTerrainGate } from './pt_terrain_gate';
 import {
   type BattlegroundViewHost,
@@ -8774,12 +8775,14 @@ export class Renderer {
   // yumi maze copies; the geometry is static, and the only per-frame work is the
   // occluder fade the placements own (battleground_placements.ts).
   private bgViews = new Map<number, BattlegroundView>();
-  // PT Ricarten terrain, built lazily when the player enters the PT band.
-  // The build awaits ~276 textures, so the gate suppresses a per-frame rebuild
-  // storm while the first build is still in flight (see pt_terrain_gate.ts).
+  // PT terrain, built lazily when the player enters the PT band, for the map
+  // currently bound (Ricarten, or a /ptmap dev selection). The build awaits
+  // ~276 textures, so the gate suppresses a per-frame rebuild storm while
+  // the first build is still in flight (see pt_terrain_gate.ts).
   private readonly ptTerrainGate = new PtTerrainGate(
-    () => buildPtTerrainView(),
+    (src) => buildPtTerrainView(src),
     (view) => this.scene.add(view.group),
+    (view) => this.scene.remove(view.group),
   );
   // The bookkeeping those copies need beside them (battleground_views.ts): the
   // reused ward-state carrier, and whether the prebuild's offer was ever seen.
@@ -9218,10 +9221,12 @@ export class Renderer {
     } else if (inside && isBgPos(px)) {
       ensureBattlegroundViewNear(this.bgViews, px, pz, this.battlegroundViewHost());
     } else if (inside && isPtPos(px)) {
-      // PT Ricarten terrain: build once when the player enters the band. The
+      // PT terrain: build once when the player enters the band, for whichever
+      // map is bound (production Ricarten, or the /ptmap dev selection). The
       // gate keeps the multi-second texture build from being restarted by
-      // every sync() frame that runs before it resolves.
-      void this.ptTerrainGate.ensure();
+      // every sync() frame that runs before it resolves, and swaps views
+      // when the bound map descriptor changes.
+      void this.ptTerrainGate.ensure(activePtMapDescriptor() ?? PT_RICARTEN_SOURCE);
       // Advance the v-ani stage objects (windmill blades etc.) to the shared
       // clock; no-op until the terrain view resolves.
       this.ptTerrainGate.current?.update();

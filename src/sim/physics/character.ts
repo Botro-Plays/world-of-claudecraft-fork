@@ -40,7 +40,7 @@ import {
   supportHeightAt,
 } from '../colliders';
 import { isPtPos } from '../pt_band';
-import { ptRicartenFloorHeight } from '../pt_ricarten_field';
+import { activePtField } from '../pt_field_active';
 import { rideSteepnessAt, shoreStepOut, stepWaterLevel, walkedSteepnessAt } from '../ride_height';
 import { groundHeight, terrainDownhill } from '../world';
 import { overlapCollider, SKIN_WIDTH, sweepCollider } from './sweep';
@@ -544,6 +544,6 @@ export function floorHeightAt(
   // triangles (canal bridge, warp-gate steps), so it answers with PT's own
   // floor rule: the highest CHECK_FACE surface within Stage_StepHeight of
   // the reference, exactly as GetFloorHeight/CheckNextMove select it.
-  if (isPtPos(x)) return ptRicartenFloorHeight(x, z, maxY);
+  if (isPtPos(x)) return activePtField().floorHeight(x, z, maxY);
   return Math.max(groundHeight(x, z, seed), supportHeightAt(seed, x, z, radius, maxY));
 }

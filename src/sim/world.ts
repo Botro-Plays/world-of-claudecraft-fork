@@ -44,7 +44,7 @@ import { GALE_DECK_FREEBOARD, galeDeckSurface } from './gale_harbor';
 import { KEEP_SITE, keepSitePadWeight } from './keep_site';
 import { reachDeckClear, reachDeckSurface } from './reach_decks';
 import { isPtPos } from './pt_band';
-import { ptRicartenGroundHeight, ptRicartenWaterLevel } from './pt_ricarten_field';
+import { activePtField } from './pt_field_active';
 import { fbm2, hash2, noise2 } from './rng';
 import {
   CALM_SKIRT_MAX_WIDTH,
@@ -165,7 +165,7 @@ export function waterLevelAt(x: number, z: number, seed: number): number {
   // PT Ricarten band: the harbor/canal water faces carry a real surface
   // height (smStage3d.cpp water-material faces at ~102 PT units), so a body
   // there swims instead of falling into a floorless void.
-  if (isPtPos(x)) return ptRicartenWaterLevel(x, z);
+  if (isPtPos(x)) return activePtField().waterLevel(x, z);
   if (isInWaterBody(x, z)) return waterLevel();
   return isOpenSeaAt(x, z, seed) ? waterLevel() : -Infinity;
 }
@@ -3866,7 +3866,7 @@ export function groundHeight(x: number, z: number, seed: number): number {
   // Routed before the dungeon threshold so the PT band (far east) is not
   // misclassified as a flat dungeon floor.
   if (isPtPos(x)) {
-    return ptRicartenGroundHeight(x, z);
+    return activePtField().groundHeight(x, z);
   }
   if (x > DUNGEON_X_THRESHOLD) {
     const dungeon = dungeonAt(x);

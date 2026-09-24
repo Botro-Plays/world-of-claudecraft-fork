@@ -40,10 +40,7 @@ import {
   stepWaterLevel,
 } from './ride_height';
 import { isPtPos, woCToPtY } from './pt_band';
-import {
-  ptRicartenFloorHeight,
-  ptRicartenWallHit,
-} from './pt_ricarten_field';
+import { activePtField } from './pt_field_active';
 import { GHOST_RUN_MULT } from './spirit';
 import {
   DT,
@@ -661,14 +658,14 @@ function stepInstancedRegion(
         ? Math.max(p.pos.y, waterLevelAt(p.pos.x, p.pos.z, deps.seed))
         : p.pos.y;
       const accepts = (tx: number, tz: number): boolean => {
-        const floor = ptRicartenFloorHeight(tx, tz, refY);
+        const floor = activePtField().floorHeight(tx, tz, refY);
         if (floor === -Infinity) {
           const wlT = waterLevelAt(tx, tz, deps.seed);
           const deepTarget =
             wlT !== -Infinity &&
             groundHeight(tx, tz, deps.seed) < wlT - SWIM_DEPTH;
           if (!swimming || !deepTarget) return false;
-          return !ptRicartenWallHit(p.pos.x, p.pos.y, p.pos.z, tx, tz);
+          return !activePtField().wallHit(p.pos.x, p.pos.y, p.pos.z, tx, tz);
         }
         // CheckNextMove water exemption: when the destination floor is real
         // but the water surface sits ObjHeight/2+10..+15 above it (wading
@@ -679,7 +676,7 @@ function stepInstancedRegion(
           const whe = woCToPtY(floor) + (51.1 >> 1) + 10;
           if (woCToPtY(wl) > whe && woCToPtY(wl) < whe + 5) return true;
         }
-        return !ptRicartenWallHit(p.pos.x, p.pos.y, p.pos.z, tx, tz);
+        return !activePtField().wallHit(p.pos.x, p.pos.y, p.pos.z, tx, tz);
       };
       if (!accepts(nx, nz)) {
         const dx = nx - p.pos.x;

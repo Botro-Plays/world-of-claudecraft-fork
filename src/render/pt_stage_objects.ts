@@ -31,6 +31,7 @@
 import * as THREE from 'three';
 import {
   PT_STAGE_OBJECTS,
+  type PtStageObject,
   type PtStageObjectMaterial,
   type PtStageObjectNode,
 } from './pt_stage_objects.generated';
@@ -42,6 +43,7 @@ import {
   PT_RICARTEN_MIN_Z,
   PT_SCALE,
 } from '../sim/pt_band';
+import type { PtFieldTransform } from '../sim/pt_field';
 import { loadTexture } from './assets/loader';
 import { sharedUniforms } from './gfx';
 import {
@@ -76,6 +78,36 @@ export const PT_STAGE_BAND_MATRIX = new THREE.Matrix4().set(
   0, 0, 0, 1,
 );
 
+/**
+ * The band matrix for an arbitrary PT transform. Every generated map's
+ * transform is a diagonal affine map (per-axis scale + offset, X mirrored),
+ * so the matrix is recoverable by evaluating each axis function at 0 and 1.
+ * For the Ricarten transform this reproduces PT_STAGE_BAND_MATRIX exactly.
+ */
+export function ptStageBandMatrixFor(transform: PtFieldTransform): THREE.Matrix4 {
+  const sx = transform.ptXToWoC(1) - transform.ptXToWoC(0);
+  const tx = transform.ptXToWoC(0);
+  const sy = transform.ptYToWoC(1) - transform.ptYToWoC(0);
+  const ty = transform.ptYToWoC(0);
+  const sz = transform.ptZToWoC(1) - transform.ptZToWoC(0);
+  const tz = transform.ptZToWoC(0);
+  return new THREE.Matrix4().set(
+    sx, 0, 0, tx,
+    0, sy, 0, ty,
+    0, 0, sz, tz,
+    0, 0, 0, 1,
+  );
+}
+
+/** Everything a stage-object build needs from one map package. */
+export interface PtStageObjectSource {
+  /** Map id used for the group name (pt-<id>-stage-objects). */
+  id: string;
+  objects: readonly PtStageObject[];
+  bandMatrix: THREE.Matrix4;
+  textureBase: string;
+}
+
 // Scratch objects shared by every per-frame node update (no allocation in
 // the animation loop).
 const _quat = new THREE.Quaternion();
@@ -86,8 +118,15 @@ const _nodeMat = new THREE.Matrix4();
 const _identityQuat = new THREE.Quaternion(0, 0, 0, 1);
 const _baseQuat = new THREE.Quaternion();
 
-// Back-compat alias for the band matrix used in this module.
-const BAND_MATRIX = PT_STAGE_BAND_MATRIX;
+// The committed Ricarten stage-object source: the compiled v-ani objects
+// bound to the Ricarten band matrix and texture root. buildPtStageObjectsView()
+// with no argument resolves to exactly the pre-parameterization path.
+const PT_RICARTEN_STAGE_SOURCE: PtStageObjectSource = {
+  id: 'ricarten',
+  objects: PT_STAGE_OBJECTS,
+  bandMatrix: PT_STAGE_BAND_MATRIX,
+  textureBase: TEXTURE_BASE,
+};
 
 // Convert a PT-space row-vector matrix (translation in row 4, as emitted for
 // node.localMatrix) into a THREE column-major matrix. A row-vector matrix
@@ -260,23 +299,24 @@ interface AnimatedNodeEntry {
 }
 
 interface ObjectEntry {
-  obj: (typeof PT_STAGE_OBJECTS)[number];
+  obj: PtStageObject;
   animNodes: AnimatedNodeEntry[];
 }
 
-function textureUrlFor(mat: PtStageObjectMaterial): string | null {
+function textureUrlFor(mat: PtStageObjectMaterial, textureBase: string): string | null {
   if (mat.textureNames.length === 0) return null;
   const fileName = mat.textureNames[0].replace(/\\/g, '/').split('/').pop() || '';
   const baseName = fileName.replace(/\.[^.]+$/i, '').toLowerCase();
   if (!baseName) return null;
-  return TEXTURE_BASE + baseName + '.png';
+  return textureBase + baseName + '.png';
 }
 
 async function loadStageTexture(
   mat: PtStageObjectMaterial,
+  textureBase: string,
   cache: Map<string, THREE.Texture | null>,
 ): Promise<THREE.Texture | null> {
-  const url = textureUrlFor(mat);
+  const url = textureUrlFor(mat, textureBase);
   if (!url) return null;
   if (!cache.has(url)) {
     try {
@@ -317,6 +357,7 @@ function makeStageMaterial(
 async function buildNodeMesh(
   node: PtStageObjectNode,
   matByIdx: Map<number, PtStageObjectMaterial>,
+  textureBase: string,
   textureCache: Map<string, THREE.Texture | null>,
   outMaterials: THREE.Material[],
 ): Promise<THREE.Mesh | null> {
@@ -375,7 +416,7 @@ async function buildNodeMesh(
   const materials: THREE.Material[] = [];
   for (const g of groups) {
     const mat = matByIdx.get(g.material);
-    const texture = mat ? await loadStageTexture(mat, textureCache) : null;
+    const texture = mat ? await loadStageTexture(mat, textureBase, textureCache) : null;
     const m = makeStageMaterial(mat, texture);
     m.name = `pt-obj-mat-${g.material}`;
     materials.push(m);
@@ -389,28 +430,31 @@ async function buildNodeMesh(
   return mesh;
 }
 
-export async function buildPtStageObjectsView(): Promise<PtStageObjectsView> {
+export async function buildPtStageObjectsView(
+  src: PtStageObjectSource = PT_RICARTEN_STAGE_SOURCE,
+): Promise<PtStageObjectsView> {
   const group = new THREE.Group();
-  group.name = 'pt-ricarten-stage-objects';
+  group.name = `pt-${src.id}-stage-objects`;
+  const bandMatrix = src.bandMatrix;
 
   const textureCache = new Map<string, THREE.Texture | null>();
   const allMaterials: THREE.Material[] = [];
   const meshes: THREE.Mesh[] = [];
   const objectEntries: ObjectEntry[] = [];
 
-  for (const obj of PT_STAGE_OBJECTS) {
+  for (const obj of src.objects) {
     const matByIdx = new Map<number, PtStageObjectMaterial>(
       obj.materials.map((m) => [m.index, m]),
     );
     const entry: ObjectEntry = { obj, animNodes: [] };
     for (const node of obj.nodes) {
-      const mesh = await buildNodeMesh(node, matByIdx, textureCache, allMaterials);
+      const mesh = await buildNodeMesh(node, matByIdx, src.textureBase, textureCache, allMaterials);
       if (!mesh) continue;
       // Static/base placement: node.matrix = B * transpose(localMatrix),
       // mapping PT-local units straight into WoC band coordinates.
       const staticLocal = new THREE.Matrix4();
       ptRowMatToThree(node.localMatrix, staticLocal);
-      const staticWorld = new THREE.Matrix4().multiplyMatrices(BAND_MATRIX, staticLocal);
+      const staticWorld = new THREE.Matrix4().multiplyMatrices(bandMatrix, staticLocal);
       if (node.animated) {
         entry.animNodes.push({ mesh, node, staticWorld });
         mesh.matrix.copy(staticWorld);
@@ -431,7 +475,7 @@ export async function buildPtStageObjectsView(): Promise<PtStageObjectsView> {
       const frame = ptObjectFrame(ticks, entry.obj.maxFrame);
       for (const { mesh, node, staticWorld } of entry.animNodes) {
         if (composeAnimatedMatrix(node, frame, _nodeMat)) {
-          mesh.matrix.multiplyMatrices(BAND_MATRIX, _nodeMat);
+          mesh.matrix.multiplyMatrices(bandMatrix, _nodeMat);
         } else {
           mesh.matrix.copy(staticWorld);
         }

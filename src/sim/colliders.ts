@@ -122,7 +122,7 @@ import { townPropPlacements } from './town_props';
 import type { WorldContent } from './types';
 import { WILDHEART_COLLIDERS } from './wildheart_field';
 import { isPtPos } from './pt_band';
-import { ptRicartenSupportHeight } from './pt_ricarten_field';
+import { activePtField } from './pt_field_active';
 import {
   crossesSealedBorder,
   type Decoration,
@@ -2071,7 +2071,7 @@ export function supportHeightAt(
   // Routed before the dungeon threshold so the PT band is not misclassified
   // as a dungeon interior.
   if (isPtPos(x)) {
-    return ptRicartenSupportHeight(x, z, r, maxY);
+    return activePtField().supportHeight(x, z, r, maxY);
   }
   if (x > DUNGEON_X_THRESHOLD && !isBgPos(x)) {
     // Dungeon interiors: the furniture tops (coffin lids, cargo stacks) are
