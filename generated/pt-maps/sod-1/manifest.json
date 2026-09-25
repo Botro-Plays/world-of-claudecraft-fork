@@ -59,31 +59,13 @@
     "duplicate texture stem 'wa03': wa03.tga vs wa03.bmp",
     "missing texture: field\\Sod\\sy_010.bmp (materials 137)",
     "missing texture: field\\Sod\\sy_012.bmp (materials 139)",
-    "duplicate texture stem 'ch07': ch07.tga vs ch07.bmp",
-    "stage object skipped: s-ani01_Bip.smd: s-ani01_Bip.smd/w_ani-01: body size 3340 != expected 3020",
-    "stage object skipped: s-ani02_Bip.smd: s-ani02_Bip.smd/w_ani-02: body size 3340 != expected 3020",
-    "stage object skipped: s-ani03_Bip.smd: s-ani03_Bip.smd/w_ani-03: body size 3340 != expected 3020",
-    "stage object skipped: s-ani04_Bip.smd: s-ani04_Bip.smd/w_ani-04: body size 3340 != expected 3020",
-    "stage object skipped: s-ani05_Bip.smd: s-ani05_Bip.smd/w_ani-05: body size 3340 != expected 3020",
-    "stage object skipped: s-ani06_Bip.smd: s-ani06_Bip.smd/w_ani-06: body size 3340 != expected 3020",
-    "stage object skipped: s-ani07_Bip.smd: s-ani07_Bip.smd/w_ani-07: body size 3340 != expected 3020",
-    "stage object skipped: s-ani08_Bip.smd: s-ani08_Bip.smd/w_ani-08: body size 3340 != expected 3020",
-    "stage object skipped: s-ani09_Bip.smd: s-ani09_Bip.smd/w_ani-09: body size 3340 != expected 3020",
-    "stage object skipped: s-ani10_Bip.smd: s-ani10_Bip.smd/w_ani-10: body size 3408 != expected 3088",
-    "stage object skipped: s-ani11_Bip.smd: s-ani11_Bip.smd/w_ani-11: body size 3340 != expected 3020",
-    "stage object skipped: s-ani12_Bip.smd: s-ani12_Bip.smd/w_ani-12: body size 3340 != expected 3020",
-    "stage object skipped: s-ani13_Bip.smd: s-ani13_Bip.smd/w_ani-13: body size 3340 != expected 3020",
-    "stage object skipped: s-ani14_Bip.smd: s-ani14_Bip.smd/w_ani-14: body size 3340 != expected 3020",
-    "stage object skipped: s-ani15_Bip.smd: s-ani15_Bip.smd/w_ani-15: body size 3340 != expected 3020",
-    "stage object skipped: s-ani16_Bip.smd: s-ani16_Bip.smd/w_ani-16: body size 3340 != expected 3020",
-    "stage object skipped: s-ani17_Bip.smd: s-ani17_Bip.smd/w_ani-17: body size 3340 != expected 3020",
-    "stage object skipped: s-ani18_Bip.smd: s-ani18_Bip.smd/w_ani-18: body size 3340 != expected 3020"
+    "duplicate texture stem 'ch07': ch07.tga vs ch07.bmp"
   ],
   "errors": [],
   "field": {
     "vertices": 42535,
     "faces": 48461,
-    "bytes": 4101288
+    "bytes": 4568909
   },
-  "stageObjects": 0
+  "stageObjects": 18
 }

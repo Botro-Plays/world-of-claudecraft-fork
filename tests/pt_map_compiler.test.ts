@@ -39,6 +39,8 @@ interface Manifest {
   sourceLabel?: string;
   water?: PtWaterRule;
   stageObjects?: { dir: string; files: string[] };
+  minimap?: string;
+  textureOutDir?: string;
 }
 
 async function loadRicarten(): Promise<Manifest> {
@@ -52,12 +54,17 @@ function compileFieldSource(manifest: Manifest): string {
   const built = classifyAndBuild(smd, water);
   const uvs = buildPerFaceUVs(smd);
   const textureManifest = buildTextureManifest(smd);
+  // Same minimap URL derivation as pt_map.mjs compileField.
+  const minimapPng = manifest.minimap && manifest.textureOutDir && existsSync(ptClientPath(manifest.minimap))
+    ? `/${manifest.textureOutDir.replace(/^public\//, '')}/minimap-${manifest.minimap.split('/').pop()!.replace(/\.[^.]*$/, '').toLowerCase()}.png`
+    : null;
   return emitModule(
     smd,
     built,
     uvs,
     textureManifest,
     manifest.sourceLabel ?? `client/${manifest.smdPath}`,
+    { minimapPng },
   );
 }
 

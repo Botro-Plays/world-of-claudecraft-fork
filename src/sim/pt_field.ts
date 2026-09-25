@@ -116,11 +116,27 @@ export interface PtMaterialLike {
   isWalkable: boolean;
   transparency: number;
   blendType: number;
+  shade: number;
   twoSide: boolean;
   useState: number;
   meshState: number;
   windMeshBottom: number;
+  /** smMATERIAL::MapOpacity (source float, texture-level opacity). */
+  mapOpacity: number;
+  /** smMATERIAL::TextureType (SMTEX_TYPE_ANIMATION = 0x1). */
+  textureType: number;
+  /** Base texture slots (smTexture[]). NOT animation frame 0 - animated
+   *  materials keep a distinct smAnimTexture[] list (see animTextureNames). */
   textureNames: string[];
+  /** smAnimTexture flipbook, present only when the material animates. */
+  animTexCounter?: number;
+  animTextureNames?: string[];
+  /** Frame index mask (numFrames - 1). */
+  frameMask?: number;
+  /** Playback: frame = (RendStatTime >> shiftFrameSpeed) & frameMask. */
+  shiftFrameSpeed?: number;
+  /** SMTEX_AUTOANIMATION (0x100) when the flipbook self-plays. */
+  animationFrame?: number;
 }
 
 /**
@@ -129,6 +145,31 @@ export interface PtMaterialLike {
  * so sim code can consume any compiled field without importing the
  * generated files directly.
  */
+/** smLIGHT3D record (field-level dynamic/object light), PT world units. */
+export interface PtFieldLight {
+  type: number;
+  x: number;
+  y: number;
+  z: number;
+  range: number;
+  r: number;
+  g: number;
+  b: number;
+}
+
+/** smSTAGE3D lighting header fields, emitted for later renderer phases. */
+export interface PtFieldLighting {
+  /** smSTAGE3D::nVertColor - count of authored vertex-color inputs. */
+  nVertColor: number;
+  /** smSTAGE3D::Contrast (shade saturation scalar). */
+  contrast: number;
+  /** smSTAGE3D::Bright (shade brightness scalar). */
+  bright: number;
+  /** smSTAGE3D::VectLight (POINT3D light direction, PT units). */
+  vectLight: number[];
+  lights: PtFieldLight[];
+}
+
 export interface PtFieldModule {
   readonly PT_BOUNDS: PtBounds;
   readonly PT_N_VERTEX: number;
@@ -138,9 +179,14 @@ export interface PtFieldModule {
   readonly PT_GRID_SIZE: number;
   readonly PT_CELL_SIZE: number;
   readonly PT_MATERIALS: readonly PtMaterialLike[];
+  readonly PT_FIELD_LIGHTING?: PtFieldLighting;
+  /** Converted minimap raster URL (covers PT_STAGE_MAP_RECT), or null. */
+  readonly PT_MINIMAP?: { png: string } | null;
   PT_VERTICES(): Float32Array;
   PT_RENDER_FACES(): Uint16Array;
   PT_UVS(): Float32Array;
+  /** Authored sDef_Color per vertex (RGBA int16, baked gouraud shade). */
+  PT_VERTEX_COLORS?(): Int16Array;
   PT_WALKABLE_FACES(): Uint16Array;
   PT_CELL_OFFSETS(): Int32Array;
   PT_CELL_COUNTS(): Int16Array;
@@ -165,6 +211,13 @@ export interface PtStageObjectMaterialLike {
   useState: number;
   meshState: number;
   windMeshBottom: number;
+  mapOpacity: number;
+  textureType: number;
+  animTexCounter?: number;
+  animTextureNames?: string[];
+  frameMask?: number;
+  shiftFrameSpeed?: number;
+  animationFrame?: number;
 }
 
 export interface PtStageObjectNodeLike {
@@ -182,6 +235,8 @@ export interface PtStageObjectNodeLike {
   rotFrameTable: Int32Array;
   posFrameTable: Int32Array;
   scaleFrameTable: Int32Array;
+  /** _Bip files: per-vertex bone node names (Physique[] trailer). */
+  boneNames?: string[];
   tmFrameCnt: number;
   baseRotQuat: number[];
   basePos: number[];

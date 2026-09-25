@@ -12,9 +12,25 @@ export interface PtMaterial {
   meshState: number;
   windMeshBottom: number;
   isWalkable: boolean;
+  mapOpacity: number;
+  textureType: number;
   animTexCounter: number;
+  frameMask: number;
+  shiftFrameSpeed: number;
+  animationFrame: number;
   textureNames: string[];
   animTextureNames: string[];
+}
+
+export interface PtStageLight {
+  type: number;
+  x: number;
+  y: number;
+  z: number;
+  range: number;
+  r: number;
+  g: number;
+  b: number;
 }
 
 export interface PtStageSmd {
@@ -22,12 +38,17 @@ export interface PtStageSmd {
   nVertex: number;
   nFace: number;
   vertices: Float32Array;
+  vertexColors: Int16Array;
   faces: Uint16Array;
   faceMat: Uint16Array;
   faceTexLinkIdx: Int32Array;
   texLinkU: Float32Array;
   texLinkV: Float32Array;
   materials: PtMaterial[];
+  contrast: number;
+  bright: number;
+  vectLight: number[];
+  lights: PtStageLight[];
   stageArea: (number[] | null)[];
   stageMapRect: unknown;
   bounds: { minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number };
@@ -47,6 +68,7 @@ export interface PtTextureEntry {
   name: string;
   format: string;
   materialIndices: number[];
+  anim: boolean;
 }
 
 export interface PtWaterRule {
@@ -72,4 +94,5 @@ export function emitModule(
   uvs: Float32Array,
   textureManifest: PtTextureEntry[],
   sourceLabel: string,
+  opts?: { minimapPng?: string | null },
 ): string;

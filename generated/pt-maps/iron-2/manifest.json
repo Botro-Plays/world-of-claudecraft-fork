@@ -89,20 +89,13 @@
     "stage object i2-bip02.smd: texture 'irk010.bmp' not found in Field/Iron",
     "stage object i2-bip02.smd: texture 'irk019.bmp' not found in Field/Iron",
     "stage object i2-bip03.smd: texture 'irk010.bmp' not found in Field/Iron",
-    "stage object i2-bip03.smd: texture 'irk019.bmp' not found in Field/Iron",
-    "stage object skipped: i2-bip04_ani.smd: i2-bip04_ani.smd/ani-2: body size 32700 != expected 28092",
-    "stage object skipped: i2-bip05_ani.smd: i2-bip05_ani.smd/ani-04: body size 32700 != expected 28092",
-    "stage object skipped: i2-bip06_ani.smd: i2-bip06_ani.smd/ani-5: body size 16028 != expected 14204",
-    "stage object skipped: i2-bip07_ani.smd: i2-bip07_ani.smd/ani-14: body size 32180 != expected 27412",
-    "stage object skipped: i2-bip08_ani.smd: i2-bip08_ani.smd/ani-13: body size 32180 != expected 27412",
-    "stage object skipped: i2-bip11_ani.smd: i2-bip11_ani.smd/ani-7: body size 16028 != expected 14204",
-    "stage object skipped: i2-bip12_ani.smd: i2-bip12_ani.smd/ani-9: body size 16028 != expected 14204"
+    "stage object i2-bip03.smd: texture 'irk019.bmp' not found in Field/Iron"
   ],
   "errors": [],
   "field": {
     "vertices": 49311,
     "faces": 67574,
-    "bytes": 5519665
+    "bytes": 6053281
   },
-  "stageObjects": 5
+  "stageObjects": 12
 }

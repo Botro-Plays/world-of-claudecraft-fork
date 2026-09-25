@@ -201,12 +201,18 @@ function compileField(manifest) {
   const built = classifyAndBuild(smd, water);
   const uvs = buildPerFaceUVs(smd);
   const textureManifest = buildTextureManifest(smd);
+  // Minimap PNG URL: mirrors convert_pt_textures.ts's `minimap-<stem>.png`
+  // naming under the package texture dir; null when the source TGA is absent.
+  const minimapPng = manifest.minimap && existsSync(ptClientPath(manifest.minimap))
+    ? `/${manifest.textureOutDir.replace(/^public\//, '')}/minimap-${basename(manifest.minimap).replace(/\.[^.]*$/, '').toLowerCase()}.png`
+    : null;
   const source = emitModule(
     smd,
     built,
     uvs,
     textureManifest,
     manifest.sourceLabel ?? `client/${manifest.smdPath}`,
+    { minimapPng },
   );
   return { smd, built, water, textureManifest, source };
 }
@@ -639,9 +645,12 @@ async function cmdTexturesAll() {
       console.log(`  [${m.fieldIndex}] ${m.id}: SKIP (missing ${!existsSync(genPath) ? 'generated module' : 'texture dir'})`);
       continue;
     }
+    const minimapSrc = m.minimap && existsSync(ptClientPath(m.minimap))
+      ? ptClientPath(m.minimap)
+      : '';
     const r = spawnSync(
       process.execPath,
-      [tsxCli, script, genPath, texDir, resolve(REPO_ROOT, m.textureOutDir)],
+      [tsxCli, script, genPath, texDir, resolve(REPO_ROOT, m.textureOutDir), minimapSrc],
       { encoding: 'utf8' },
     );
     const out = r.stdout ?? '';
@@ -670,6 +679,9 @@ async function cmdTextures(id) {
   // Invoke tsx's CLI under node directly - a shell:spawn would mis-split the
   // space in this repo's path ("PT Cross-Platform") on Windows.
   const tsxCli = resolve(REPO_ROOT, 'node_modules/tsx/dist/cli.mjs');
+  const minimapSrc = manifest.minimap && existsSync(ptClientPath(manifest.minimap))
+    ? ptClientPath(manifest.minimap)
+    : '';
   const r = spawnSync(
     process.execPath,
     [
@@ -677,6 +689,7 @@ async function cmdTextures(id) {
       resolve(REPO_ROOT, manifest.fieldOut),
       ptClientPath(manifest.texturesDir),
       resolve(REPO_ROOT, manifest.textureOutDir),
+      minimapSrc,
     ],
     { stdio: 'inherit' },
   );

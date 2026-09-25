@@ -15,12 +15,21 @@ function decodeB64(b64: string): Uint8Array {
 
 export interface PtStageObjectMaterial {
   index: number;
-  textureNames: string[];
+  textureNames: string[];       // base texture slots (smTexture[])
   twoSide: boolean;
   transparency: number;
   useState: number;
   meshState: number;
   windMeshBottom: number;
+  mapOpacity: number;
+  textureType: number;          // SMTEX_TYPE_ANIMATION = 1
+  // smAnimTexture flipbook, present only when the material animates.
+  // animTextureNames[0] is frame 0 - distinct from textureNames[0].
+  animTexCounter?: number;
+  animTextureNames?: string[];
+  frameMask?: number;           // frame index mask (numFrames-1)
+  shiftFrameSpeed?: number;     // (RendStatTime >> this) & frameMask
+  animationFrame?: number;      // SMTEX_AUTOANIMATION = 0x100
 }
 
 export interface PtStageObjectNode {
@@ -38,6 +47,8 @@ export interface PtStageObjectNode {
   rotFrameTable: Int32Array;   // 32 x smFRAME_POS (start,end,posNum,posCnt)
   posFrameTable: Int32Array;
   scaleFrameTable: Int32Array;
+  // _Bip files: per-vertex bone node names (Physique[] trailer).
+  boneNames?: string[];
   tmFrameCnt: number;
   baseRotQuat: number[]; // quat from base Tm rotation, PT order
   basePos: number[];     // Posi translation, PT units (x,y,z)
@@ -4652,7 +4663,7 @@ export const PT_STAGE_OBJECTS: PtStageObject[] = [
         animated: true,
       },
     ],
-    materials: [{"index":0,"textureNames":["field\\ancientW\\electric_bottom06.bmp"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0}],
+    materials: [{"index":0,"textureNames":["field\\ancientW\\electric_bottom06.bmp"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0}],
   },
   {
     name: "RotObj02.smd",
@@ -4754,7 +4765,7 @@ export const PT_STAGE_OBJECTS: PtStageObject[] = [
         animated: true,
       },
     ],
-    materials: [{"index":0,"textureNames":["field\\ancientW\\electric_bottom06.bmp"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0}],
+    materials: [{"index":0,"textureNames":["field\\ancientW\\electric_bottom06.bmp"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0}],
   },
   {
     name: "RotObj03.smd",
@@ -4856,7 +4867,7 @@ export const PT_STAGE_OBJECTS: PtStageObject[] = [
         animated: true,
       },
     ],
-    materials: [{"index":0,"textureNames":["field\\ancientW\\electric_bottom06.bmp"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0}],
+    materials: [{"index":0,"textureNames":["field\\ancientW\\electric_bottom06.bmp"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0}],
   },
   {
     name: "RotObj04.smd",
@@ -4958,7 +4969,7 @@ export const PT_STAGE_OBJECTS: PtStageObject[] = [
         animated: true,
       },
     ],
-    materials: [{"index":0,"textureNames":["field\\ancientW\\electric_bottom06.bmp"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0}],
+    materials: [{"index":0,"textureNames":["field\\ancientW\\electric_bottom06.bmp"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0}],
   },
   {
     name: "RotObj05.smd",
@@ -5060,7 +5071,7 @@ export const PT_STAGE_OBJECTS: PtStageObject[] = [
         animated: true,
       },
     ],
-    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0}],
+    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0}],
   },
   {
     name: "RotObj06.smd",
@@ -5162,7 +5173,7 @@ export const PT_STAGE_OBJECTS: PtStageObject[] = [
         animated: true,
       },
     ],
-    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0}],
+    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0}],
   },
   {
     name: "RotObj07.smd",
@@ -5264,7 +5275,7 @@ export const PT_STAGE_OBJECTS: PtStageObject[] = [
         animated: true,
       },
     ],
-    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0}],
+    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0}],
   },
   {
     name: "RotObj08.smd",
@@ -5366,7 +5377,7 @@ export const PT_STAGE_OBJECTS: PtStageObject[] = [
         animated: true,
       },
     ],
-    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0}],
+    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0}],
   },
   {
     name: "RotObj09.smd",
@@ -5468,7 +5479,7 @@ export const PT_STAGE_OBJECTS: PtStageObject[] = [
         animated: true,
       },
     ],
-    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0}],
+    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0}],
   },
   {
     name: "RotObj10.smd",
@@ -5570,6 +5581,6 @@ export const PT_STAGE_OBJECTS: PtStageObject[] = [
         animated: true,
       },
     ],
-    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0}],
+    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0}],
   },
 ];

@@ -50,6 +50,13 @@
   "status": "WARN",
   "warnings": [
     "missing texture: field\\Ruin\\WA01.BMP (materials 308)",
+    "missing texture: field\\Ruin\\sea_1.bmp (materials 312)",
+    "missing texture: field\\Ruin\\sea_2.bmp (materials 312)",
+    "missing texture: field\\Ruin\\sea_3.bmp (materials 312)",
+    "missing texture: field\\Ruin\\sea_4.bmp (materials 312)",
+    "missing texture: field\\Ruin\\sea_5.bmp (materials 312)",
+    "missing texture: field\\Ruin\\sea_6.bmp (materials 312)",
+    "missing texture: field\\Ruin\\sea_7.bmp (materials 312)",
     "missing texture: field\\Ruin\\stone-b-03-03.bmp (materials 415)",
     "missing texture: field\\Ruin\\stone-b-03-01.bmp (materials 416)",
     "missing texture: field\\Ruin\\stone-b-03.bmp (materials 417)",
@@ -59,7 +66,7 @@
   "field": {
     "vertices": 41208,
     "faces": 62174,
-    "bytes": 5005895
+    "bytes": 5471566
   },
   "stageObjects": 0
 }

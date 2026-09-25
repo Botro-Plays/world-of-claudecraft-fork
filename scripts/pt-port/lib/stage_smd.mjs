@@ -45,6 +45,17 @@ const OFF_STAGE3D_STAGE_MAP_RECT = OFF_STAGE3D_W_AREA_SIZE + 4;
 
 const OFF_MAT_IN_USE = 0;
 const OFF_MAT_TEXTURE_COUNTER = 4;
+// smMATERIAL (smType.h), 320 bytes serialized:
+//   104 ReformTexture, 108 MapOpacity (float), 112 TextureType
+//   (SMTEX_TYPE_ANIMATION = 1), 116 BlendType, 120 Shade, 124 TwoSide,
+//   128 SerialNum, 132 Diffuse (smRGB, 12), 144 Transparency (float),
+//   148 SelfIllum (float), 152 TextureSwap, 156 MatFrame, 160 TextureClip,
+//   164 UseState, 168 MeshState, 172 WindMeshBottom,
+//   176..303 smAnimTexture[32] (pointer slots), 304 AnimTexCounter,
+//   308 FrameMask, 312 Shift_FrameSpeed, 316 AnimationFrame
+//   (SMTEX_AUTOANIMATION = 0x100 when the flipbook self-plays).
+const OFF_MAT_MAP_OPACITY = 108;
+const OFF_MAT_TEXTURE_TYPE = 112;
 const OFF_MAT_BLEND_TYPE = 116;
 const OFF_MAT_SHADE = 120;
 const OFF_MAT_TWO_SIDE = 124;
@@ -53,10 +64,26 @@ const OFF_MAT_USE_STATE = 164;
 const OFF_MAT_MESH_STATE = 168;
 const OFF_MAT_WIND_MESH_BOTTOM = 172;
 const OFF_MAT_ANIM_TEX_COUNTER = 304;
+const OFF_MAT_FRAME_MASK = 308;
+const OFF_MAT_SHIFT_FRAME_SPEED = 312;
+const OFF_MAT_ANIMATION_FRAME = 316;
 
 const OFF_SV_X = 8;
 const OFF_SV_Y = 12;
 const OFF_SV_Z = 16;
+// smSTAGE_VERTEX tail: short sDef_Color[4] in RGBA order (baked gouraud
+// shade; values can exceed 255 where authored lighting overbrightens).
+const OFF_SV_DEF_COLOR = 20;
+
+// smLIGHT3D (smType.h): int type; int x,y,z; int Range; short r,g,b; pad.
+const OFF_LIGHT_TYPE = 0;
+const OFF_LIGHT_X = 4;
+const OFF_LIGHT_Y = 8;
+const OFF_LIGHT_Z = 12;
+const OFF_LIGHT_RANGE = 16;
+const OFF_LIGHT_R = 20;
+const OFF_LIGHT_G = 22;
+const OFF_LIGHT_B = 24;
 
 const OFF_SF_VERTEX_A = 8;
 const OFF_SF_VERTEX_B = 10;
@@ -109,6 +136,14 @@ export function parseSmd(buf) {
   const nFace = buf.readInt32LE(stage3dOffset + OFF_STAGE3D_N_FACE);
   const nTexLink = buf.readInt32LE(stage3dOffset + OFF_STAGE3D_N_TEXLINK);
   const nLight = buf.readInt32LE(stage3dOffset + OFF_STAGE3D_N_LIGHT);
+  const nVertColor = buf.readInt32LE(stage3dOffset + OFF_STAGE3D_N_VERT_COLOR);
+  const contrast = buf.readInt32LE(stage3dOffset + OFF_STAGE3D_CONTRAST);
+  const bright = buf.readInt32LE(stage3dOffset + OFF_STAGE3D_BRIGHT);
+  const vectLight = [
+    buf.readInt32LE(stage3dOffset + OFF_STAGE3D_VECT_LIGHT),
+    buf.readInt32LE(stage3dOffset + OFF_STAGE3D_VECT_LIGHT + 4),
+    buf.readInt32LE(stage3dOffset + OFF_STAGE3D_VECT_LIGHT + 8),
+  ];
 
   // Read pointer bases (for texlink index calculation)
   const texLinkBase = buf.readUInt32LE(stage3dOffset + OFF_STAGE3D_TEXLINK_PTR);
@@ -150,7 +185,12 @@ export function parseSmd(buf) {
     const useState = buf.readInt32LE(matBase + OFF_MAT_USE_STATE);
     const meshState = buf.readInt32LE(matBase + OFF_MAT_MESH_STATE);
     const windMeshBottom = buf.readInt32LE(matBase + OFF_MAT_WIND_MESH_BOTTOM);
+    const mapOpacity = buf.readFloatLE(matBase + OFF_MAT_MAP_OPACITY);
+    const textureType = buf.readInt32LE(matBase + OFF_MAT_TEXTURE_TYPE);
     const animTexCounter = buf.readUInt32LE(matBase + OFF_MAT_ANIM_TEX_COUNTER);
+    const frameMask = buf.readUInt32LE(matBase + OFF_MAT_FRAME_MASK);
+    const shiftFrameSpeed = buf.readInt32LE(matBase + OFF_MAT_SHIFT_FRAME_SPEED);
+    const animationFrame = buf.readUInt32LE(matBase + OFF_MAT_ANIMATION_FRAME);
     const isWalkable = (meshState & SMMAT_STAT_CHECK_FACE) !== 0;
 
     matOffset += SIZE_MATERIAL;
@@ -180,13 +220,15 @@ export function parseSmd(buf) {
         return s;
       };
 
+      // PT pads fixed-length name slots with spaces (e.g. Sod's
+      // "field\Sod\f-flame_0.tga "); trim so lookups match the real files.
       for (let ti = 0; ti < textureCounter; ti++) {
-        const name = readStr();
+        const name = readStr().trim();
         const nameA = readStr(); // NameA (alpha texture name, often empty)
         if (name) textureNames.push(name);
       }
       for (let ai = 0; ai < animTexCounter; ai++) {
-        const name = readStr();
+        const name = readStr().trim();
         const nameA = readStr();
         if (name) animTextureNames.push(name);
       }
@@ -204,7 +246,12 @@ export function parseSmd(buf) {
       meshState,
       windMeshBottom,
       isWalkable,
+      mapOpacity,
+      textureType,
       animTexCounter,
+      frameMask,
+      shiftFrameSpeed,
+      animationFrame,
       textureNames,
       animTextureNames,
     });
@@ -213,6 +260,7 @@ export function parseSmd(buf) {
   // -- Vertices --
   const verticesOffset = matOffset;
   const vertices = new Float32Array(nVertex * 3);
+  const vertexColors = new Int16Array(nVertex * 4);
   let minX = Infinity, maxX = -Infinity;
   let minY = Infinity, maxY = -Infinity;
   let minZ = Infinity, maxZ = -Infinity;
@@ -225,6 +273,10 @@ export function parseSmd(buf) {
     vertices[vi * 3] = x;
     vertices[vi * 3 + 1] = y;
     vertices[vi * 3 + 2] = z;
+    vertexColors[vi * 4] = buf.readInt16LE(base + OFF_SV_DEF_COLOR);
+    vertexColors[vi * 4 + 1] = buf.readInt16LE(base + OFF_SV_DEF_COLOR + 2);
+    vertexColors[vi * 4 + 2] = buf.readInt16LE(base + OFF_SV_DEF_COLOR + 4);
+    vertexColors[vi * 4 + 3] = buf.readInt16LE(base + OFF_SV_DEF_COLOR + 6);
     if (x < minX) minX = x;
     if (x > maxX) maxX = x;
     if (y < minY) minY = y;
@@ -270,12 +322,26 @@ export function parseSmd(buf) {
     texLinkV[ti * 3 + 2] = buf.readFloatLE(base + 20);
   }
 
-  // -- Lights (skip) --
+  // -- Lights --
+  // nLight smLIGHT3D records sit between the TexLink array and the
+  // StageArea cell data (smStage3d.cpp SaveFile order). Positions are PT
+  // world units; Range is the light radius in the same units.
   const lightsOffset = texLinksOffset + nTexLink * SIZE_TEXLINK;
-  let afterLightsOffset = lightsOffset;
-  if (nLight > 0) {
-    afterLightsOffset += nLight * SIZE_LIGHT3D;
+  const lights = [];
+  for (let li = 0; li < nLight; li++) {
+    const base = lightsOffset + li * SIZE_LIGHT3D;
+    lights.push({
+      type: buf.readInt32LE(base + OFF_LIGHT_TYPE),
+      x: buf.readInt32LE(base + OFF_LIGHT_X),
+      y: buf.readInt32LE(base + OFF_LIGHT_Y),
+      z: buf.readInt32LE(base + OFF_LIGHT_Z),
+      range: buf.readInt32LE(base + OFF_LIGHT_RANGE),
+      r: buf.readInt16LE(base + OFF_LIGHT_R),
+      g: buf.readInt16LE(base + OFF_LIGHT_G),
+      b: buf.readInt16LE(base + OFF_LIGHT_B),
+    });
   }
+  const afterLightsOffset = lightsOffset + nLight * SIZE_LIGHT3D;
 
   // -- StageArea cell data --
   const stageAreaBase = stage3dOffset + OFF_STAGE3D_STAGE_AREA;
@@ -321,9 +387,15 @@ export function parseSmd(buf) {
     nFace,
     nTexLink,
     nLight,
+    nVertColor,
+    contrast,
+    bright,
+    vectLight,
+    lights,
     matCounter,
     materials,
     vertices,
+    vertexColors,
     faceA,
     faceB,
     faceC,
@@ -449,11 +521,25 @@ export function buildTextureManifest(smd) {
     for (const name of mat.textureNames) {
       if (!name) continue;
       const lower = name.toLowerCase();
-      const format = lower.endsWith('.tga') || lower.endsWith('.tga') ? 'tga' : 'bmp';
+      const format = lower.endsWith('.tga') ? 'tga' : 'bmp';
       if (!textures.has(name)) {
-        textures.set(name, { name, format, materialIndices: [] });
+        textures.set(name, { name, format, materialIndices: [], anim: false });
       }
       textures.get(name).materialIndices.push(mat.index);
+    }
+    // Animation flipbook frames are converted through the same manifest; the
+    // `anim` flag records that the name came from an smAnimTexture slot (the
+    // base/anim distinction itself lives on PT_MATERIALS).
+    for (const name of mat.animTextureNames) {
+      if (!name) continue;
+      const lower = name.toLowerCase();
+      const format = lower.endsWith('.tga') ? 'tga' : 'bmp';
+      if (!textures.has(name)) {
+        textures.set(name, { name, format, materialIndices: [], anim: true });
+      }
+      const entry = textures.get(name);
+      entry.materialIndices.push(mat.index);
+      entry.anim = true;
     }
   }
 
@@ -464,7 +550,7 @@ export function buildTextureManifest(smd) {
 // Generated module emitter
 // ---------------------------------------------------------------------------
 
-export function emitModule(smd, built, uvs, textureManifest, sourceLabel) {
+export function emitModule(smd, built, uvs, textureManifest, sourceLabel, opts = {}) {
   const lines = [];
   lines.push('// GENERATED by scripts/pt-port/pt_map.mjs, do not edit by hand.');
   lines.push(`// Source: ${sourceLabel}`);
@@ -517,6 +603,11 @@ export function emitModule(smd, built, uvs, textureManifest, sourceLabel) {
   // UVs (Float32Array, 6 per face)
   emitBase64Array(lines, 'PT_UVS', 'Float32Array', uvs);
 
+  // Authored vertex colors (Int16Array, 4 per vertex: sDef_Color RGBA,
+  // baked gouraud shade). Phase 5A emits the data; the renderer binds it
+  // in a later phase.
+  emitBase64Array(lines, 'PT_VERTEX_COLORS', 'Int16Array', smd.vertexColors);
+
   // Walkable faces (Uint16Array, 3 per face: a, b, c)
   const walkableFaces = new Uint16Array(built.nWalkable * 3);
   for (let i = 0; i < built.nWalkable; i++) {
@@ -536,19 +627,55 @@ export function emitModule(smd, built, uvs, textureManifest, sourceLabel) {
   emitBase64Array(lines, 'PT_WATER_FACE_INDICES', 'Uint16Array', built.waterFaceIndices);
   emitBase64Array(lines, 'PT_DECORATIVE_FACE_INDICES', 'Uint16Array', built.decorativeFaceIndices);
 
-  // Materials (JSON, small enough)
+  // Materials (JSON, small enough). textureType/mapOpacity always emit;
+  // the smAnimTexture flipbook fields emit only when the material carries
+  // an animation set (animTexCounter > 0 keeps PT_MATERIALS compact and
+  // matches the source rule that FrameMask/Shift_FrameSpeed/AnimationFrame
+  // are meaningful only alongside smAnimTexture[]).
   const matData = smd.materials.filter(m => m.inUse).map(m => ({
     index: m.index,
     isWalkable: m.isWalkable,
     transparency: m.transparency,
     blendType: m.blendType,
+    shade: m.shade,
     twoSide: m.twoSide,
     useState: m.useState,
     meshState: m.meshState,
     windMeshBottom: m.windMeshBottom,
+    mapOpacity: +m.mapOpacity.toFixed(6),
+    textureType: m.textureType,
     textureNames: m.textureNames,
+    ...(m.animTexCounter > 0
+      ? {
+          animTexCounter: m.animTexCounter,
+          animTextureNames: m.animTextureNames,
+          frameMask: m.frameMask,
+          shiftFrameSpeed: m.shiftFrameSpeed,
+          animationFrame: m.animationFrame,
+        }
+      : {}),
   }));
   lines.push(`export const PT_MATERIALS = ${JSON.stringify(matData)};`);
+  lines.push('');
+
+  // Field lighting header fields (smSTAGE3D): Contrast/Bright scale baked
+  // vertex shades, VectLight is the authored light direction (POINT3D),
+  // lights[] are the serialized smLIGHT3D records (dynamic/object lights,
+  // positions in PT units, short RGB). Emitted for later renderer phases;
+  // nothing consumes it yet.
+  lines.push(`export const PT_FIELD_LIGHTING = ${JSON.stringify({
+    nVertColor: smd.nVertColor,
+    contrast: smd.contrast,
+    bright: smd.bright,
+    vectLight: smd.vectLight,
+    lights: smd.lights,
+  })};`);
+  lines.push('');
+
+  // Minimap raster pointer for Phase 5B: the converted Field/map/<map>.tga
+  // PNG URL (null when the source asset is absent). The rect it covers is
+  // PT_STAGE_MAP_RECT above.
+  lines.push(`export const PT_MINIMAP = ${JSON.stringify(opts.minimapPng ? { png: opts.minimapPng } : null)};`);
   lines.push('');
 
   // Texture manifest

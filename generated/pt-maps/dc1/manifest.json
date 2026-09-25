@@ -54,13 +54,15 @@
     "limitLevel": 180,
     "derived": true
   },
-  "status": "PASS",
-  "warnings": [],
+  "status": "WARN",
+  "warnings": [
+    "missing texture: field\\Boss\\\\ (materials 53,53,53,53,53,53,53,53)"
+  ],
   "errors": [],
   "field": {
     "vertices": 10082,
     "faces": 17056,
-    "bytes": 1691325
+    "bytes": 1802640
   },
   "stageObjects": 0
 }

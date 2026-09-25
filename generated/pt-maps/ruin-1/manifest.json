@@ -72,13 +72,20 @@
     "missing texture: field\\Ruin\\stone-b-03-01.bmp (materials 331)",
     "missing texture: field\\Ruin\\stone-b-03-03.bmp (materials 332)",
     "missing texture: field\\Ruin\\stone-b-03.bmp (materials 333)",
-    "duplicate texture stem 'wire-bridge-2-4': wire-bridge-2-4.bmp vs wire-bridge-2-4.tga"
+    "duplicate texture stem 'wire-bridge-2-4': wire-bridge-2-4.bmp vs wire-bridge-2-4.tga",
+    "missing texture: field\\Ruin\\sea_1.bmp (materials 436)",
+    "missing texture: field\\Ruin\\sea_2.bmp (materials 436)",
+    "missing texture: field\\Ruin\\sea_3.bmp (materials 436)",
+    "missing texture: field\\Ruin\\sea_4.bmp (materials 436)",
+    "missing texture: field\\Ruin\\sea_5.bmp (materials 436)",
+    "missing texture: field\\Ruin\\sea_6.bmp (materials 436)",
+    "missing texture: field\\Ruin\\sea_7.bmp (materials 436)"
   ],
   "errors": [],
   "field": {
     "vertices": 40655,
     "faces": 62962,
-    "bytes": 5081043
+    "bytes": 5542094
   },
   "stageObjects": 0
 }

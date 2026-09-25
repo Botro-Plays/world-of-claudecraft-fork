@@ -29,6 +29,8 @@ const uvs = buildPerFaceUVs(smd);
 const textureManifest = buildTextureManifest(smd);
 
 const sourceLabel = process.argv[2] || 'client/Field/Ricarten/village-2.smd';
-const out = emitModule(smd, built, uvs, textureManifest, sourceLabel);
+// The shim only knows Ricarten's minimap; arbitrary inputs get null.
+const minimapPng = process.argv[2] ? null : '/textures/pt-ricarten/minimap-village-2.png';
+const out = emitModule(smd, built, uvs, textureManifest, sourceLabel, { minimapPng });
 writeFileSync(outPath, out);
 console.log(`wrote ${outPath}`);

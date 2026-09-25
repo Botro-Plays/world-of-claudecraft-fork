@@ -31,12 +31,17 @@ const OFF_OBJ_TMFRAMECNT = 2232;
 
 const OFF_MAT_IN_USE = 0;
 const OFF_MAT_TEXTURE_COUNTER = 4;
+const OFF_MAT_MAP_OPACITY = 108;
+const OFF_MAT_TEXTURE_TYPE = 112;
 const OFF_MAT_TWO_SIDE = 124;
 const OFF_MAT_TRANSPARENCY = 144;
 const OFF_MAT_USE_STATE = 164;
 const OFF_MAT_MESH_STATE = 168;
 const OFF_MAT_WIND_MESH_BOTTOM = 172;
 const OFF_MAT_ANIM_TEX_COUNTER = 304;
+const OFF_MAT_FRAME_MASK = 308;
+const OFF_MAT_SHIFT_FRAME_SPEED = 312;
+const OFF_MAT_ANIMATION_FRAME = 316;
 
 // File order (a, b, c) = (x, z_depth, y_height) -> PT world (x, y, z).
 function fileToPt(a, b, c) {
@@ -151,8 +156,18 @@ function parseMaterialGroup(buf, offset, matCounterHeader) {
     const useState = buf.readInt32LE(base + OFF_MAT_USE_STATE);
     const meshState = buf.readInt32LE(base + OFF_MAT_MESH_STATE);
     const windMeshBottom = buf.readInt32LE(base + OFF_MAT_WIND_MESH_BOTTOM);
+    const mapOpacity = buf.readFloatLE(base + OFF_MAT_MAP_OPACITY);
+    const textureType = buf.readInt32LE(base + OFF_MAT_TEXTURE_TYPE);
+    const frameMask = buf.readUInt32LE(base + OFF_MAT_FRAME_MASK);
+    const shiftFrameSpeed = buf.readInt32LE(base + OFF_MAT_SHIFT_FRAME_SPEED);
+    const animationFrame = buf.readUInt32LE(base + OFF_MAT_ANIMATION_FRAME);
     matOffset += SIZE_MATERIAL;
+    // Base texture slots and smAnimTexture flipbook slots are DISTINCT in
+    // smMATERIAL (smTexture.cpp SaveFile writes base names first, then anim
+    // names). textureNames[0] is NOT animation frame 0 - e.g. a material can
+    // keep a static base while its anim set cycles different files.
     const textureNames = [];
+    const animTextureNames = [];
     if (inUse) {
       const strLen = buf.readInt32LE(matOffset);
       matOffset += 4;
@@ -166,10 +181,15 @@ function parseMaterialGroup(buf, offset, matCounterHeader) {
         pos = e === -1 ? nb.length : e + 1;
         return s;
       };
-      for (let t = 0; t < textureCounter; t++) { const n = rs(); rs(); if (n) textureNames.push(n); }
-      for (let t = 0; t < animTexCounter; t++) { const n = rs(); rs(); if (n) textureNames.push(n); }
+      // PT pads fixed-length name slots with spaces; trim before lookup.
+      for (let t = 0; t < textureCounter; t++) { const n = rs().trim(); rs(); if (n) textureNames.push(n); }
+      for (let t = 0; t < animTexCounter; t++) { const n = rs().trim(); rs(); if (n) animTextureNames.push(n); }
     }
-    materials.push({ index: mi, inUse, textureNames, twoSide, transparency, useState, meshState, windMeshBottom });
+    materials.push({
+      index: mi, inUse, textureNames, animTextureNames, twoSide, transparency,
+      useState, meshState, windMeshBottom, mapOpacity, textureType,
+      animTexCounter, frameMask, shiftFrameSpeed, animationFrame,
+    });
   }
   return { materials, endOffset: matOffset };
 }
@@ -226,9 +246,16 @@ export function parsePat(buf, fileName) {
       SIZE_OBJ3D_HEAD + nVertex * SIZE_VERTEX + nFace * SIZE_FACE +
       nTexLink * SIZE_TEXLINK + rotCnt * SIZE_TM_ROT + posCnt * SIZE_TM_POS +
       scaleCnt * SIZE_TM_SCALE + rotCnt * SIZE_PREVROT;
-    if (expected !== info.length) {
+    // _Bip variants append a physique block after TmPrevRot: one 32-byte
+    // bone node name per vertex (smOBJ3D::SaveFile writes
+    // Physique[cnt]->NodeName). The skeleton itself lives in a separate
+    // .smb the stage-object loader never resolves, so the names are
+    // preserved as data but drive no skinning.
+    const physiqueLen = info.length - expected;
+    if (physiqueLen !== 0 && physiqueLen !== nVertex * 32) {
       throw new Error(`${fileName}/${info.name}: body size ${info.length} != expected ${expected}`);
     }
+    const hasPhysique = physiqueLen === nVertex * 32 && nVertex > 0;
 
     let p = o + SIZE_OBJ3D_HEAD;
 
@@ -327,6 +354,10 @@ export function parsePat(buf, fileName) {
       rotKeys[i * 5 + 4] = q[3];
     }
 
+    const physiqueBones = hasPhysique
+      ? Array.from({ length: nVertex }, (_, i) => cstr(buf, p + i * 32, 32))
+      : null;
+
     // Base transform (row-vector, file order, fixed-point /256): emit the
     // translation and rotation pieces converted to PT order. The runtime
     // composes the local matrix from TRS.
@@ -391,6 +422,7 @@ export function parsePat(buf, fileName) {
       rotCnt,
       posCnt,
       scaleCnt,
+      physiqueBones,
       tmFrameCnt,
       rotFrameTable: readFrameTable(buf, o + OFF_OBJ_ROTFRAME),
       posFrameTable: readFrameTable(buf, o + OFF_OBJ_POSFRAME),
@@ -445,12 +477,21 @@ export function emitModule(objects, sourceLabel) {
   lines.push('');
   lines.push('export interface PtStageObjectMaterial {');
   lines.push('  index: number;');
-  lines.push('  textureNames: string[];');
+  lines.push('  textureNames: string[];       // base texture slots (smTexture[])');
   lines.push('  twoSide: boolean;');
   lines.push('  transparency: number;');
   lines.push('  useState: number;');
   lines.push('  meshState: number;');
   lines.push('  windMeshBottom: number;');
+  lines.push('  mapOpacity: number;');
+  lines.push('  textureType: number;          // SMTEX_TYPE_ANIMATION = 1');
+  lines.push('  // smAnimTexture flipbook, present only when the material animates.');
+  lines.push('  // animTextureNames[0] is frame 0 - distinct from textureNames[0].');
+  lines.push('  animTexCounter?: number;');
+  lines.push('  animTextureNames?: string[];');
+  lines.push('  frameMask?: number;           // frame index mask (numFrames-1)');
+  lines.push('  shiftFrameSpeed?: number;     // (RendStatTime >> this) & frameMask');
+  lines.push('  animationFrame?: number;      // SMTEX_AUTOANIMATION = 0x100');
   lines.push('}');
   lines.push('');
   lines.push('export interface PtStageObjectNode {');
@@ -468,6 +509,8 @@ export function emitModule(objects, sourceLabel) {
   lines.push('  rotFrameTable: Int32Array;   // 32 x smFRAME_POS (start,end,posNum,posCnt)');
   lines.push('  posFrameTable: Int32Array;');
   lines.push('  scaleFrameTable: Int32Array;');
+  lines.push('  // _Bip files: per-vertex bone node names (Physique[] trailer).');
+  lines.push('  boneNames?: string[];');
   lines.push('  tmFrameCnt: number;');
   lines.push('  baseRotQuat: number[]; // quat from base Tm rotation, PT order');
   lines.push('  basePos: number[];     // Posi translation, PT units (x,y,z)');
@@ -521,6 +564,9 @@ export function emitModule(objects, sourceLabel) {
       lines.push(`        rotFrameTable: ${O}_N${ni}_RFT(),`);
       lines.push(`        posFrameTable: ${O}_N${ni}_PFT(),`);
       lines.push(`        scaleFrameTable: ${O}_N${ni}_SFT(),`);
+      if (n.physiqueBones) {
+        lines.push(`        boneNames: ${JSON.stringify(n.physiqueBones)},`);
+      }
       lines.push(`        tmFrameCnt: ${n.tmFrameCnt},`);
       lines.push(`        baseRotQuat: ${JSON.stringify(n.baseRotQuat.map((v) => +v.toFixed(6)))},`);
       lines.push(`        basePos: ${JSON.stringify(n.basePos.map((v) => +v.toFixed(4)))},`);
@@ -536,6 +582,17 @@ export function emitModule(objects, sourceLabel) {
       useState: m.useState,
       meshState: m.meshState,
       windMeshBottom: m.windMeshBottom,
+      mapOpacity: +m.mapOpacity.toFixed(6),
+      textureType: m.textureType,
+      ...(m.animTexCounter > 0
+        ? {
+            animTexCounter: m.animTexCounter,
+            animTextureNames: m.animTextureNames,
+            frameMask: m.frameMask,
+            shiftFrameSpeed: m.shiftFrameSpeed,
+            animationFrame: m.animationFrame,
+          }
+        : {}),
     })))},`);
     lines.push('  },');
   });

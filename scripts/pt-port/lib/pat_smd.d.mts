@@ -4,11 +4,18 @@ export interface PtPatMaterial {
   index: number;
   inUse: boolean;
   textureNames: string[];
+  animTextureNames: string[];
   twoSide: boolean;
   transparency: number;
   useState: number;
   meshState: number;
   windMeshBottom: number;
+  mapOpacity: number;
+  textureType: number;
+  animTexCounter: number;
+  frameMask: number;
+  shiftFrameSpeed: number;
+  animationFrame: number;
 }
 
 export interface PtPatNode {
@@ -21,6 +28,7 @@ export interface PtPatNode {
   scaleCnt: number;
   tmFrameCnt: number;
   basePos: number[];
+  physiqueBones?: string[];
   [key: string]: unknown;
 }
 
