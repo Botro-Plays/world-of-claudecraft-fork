@@ -9,6 +9,9 @@
 //   /ptmap <id>   load generated/pt-maps/<id>/ into the PT band and spawn
 //   /ptmap off    restore the production Ricarten binding
 //   /ptmaps       enumerate every converted package with QA columns
+//   /ptmaplinks   print the active field's source-authentic connections
+//                 (FieldGate / WarpGate / wing UI / item / server), or
+//                 /ptmaplinks <id|index> for any registered field
 //
 // This is a development inspection mechanism only. It is NOT production map
 // routing: the selected map installs through src/sim/pt_field_active.ts and
@@ -18,9 +21,9 @@
 import type { Entity } from '../sim/types';
 import type { PtDevHud } from './pt_ricarten_dev_command';
 
-/** True when the chat line is a /ptmap or /ptmaps command. */
+/** True when the chat line is a /ptmap, /ptmaps or /ptmaplinks command. */
 export function isPtMapDevCommand(raw: string): boolean {
-  return /^\/ptmaps?\b/i.test(raw.trim());
+  return /^\/ptmaps?\b/i.test(raw.trim()) || /^\/ptmaplinks\b/i.test(raw.trim());
 }
 
 /**

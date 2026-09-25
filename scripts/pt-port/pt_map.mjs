@@ -6,6 +6,7 @@
 //   node scripts/pt-port/pt_map.mjs compile <map-id>   emit generated modules
 //   node scripts/pt-port/pt_map.mjs validate <map-id>  audit + drift check
 //   node scripts/pt-port/pt_map.mjs textures <map-id>  convert map textures
+//   node scripts/pt-port/pt_map.mjs maplinks           emit the world connection graph
 //   node scripts/pt-port/pt_map.mjs compile-all        bulk-convert all fields
 //   node scripts/pt-port/pt_map.mjs textures-all       bulk texture conversion
 //
@@ -18,6 +19,7 @@ import { basename, dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { ptClientDir, ptClientPath } from './lib/pt_client.mjs';
 import { loadFieldRegistry } from './lib/field_registry.mjs';
+import { buildMapLinks } from './lib/map_links.mjs';
 import {
   buildPerFaceUVs,
   buildTextureManifest,
@@ -579,6 +581,12 @@ async function cmdCompileAll() {
     );
   }
 
+  // World graph artifact: every source-defined connection between fields
+  // (FieldGate boundaries, WarpGate triggers/exits, wing-warp UI, NPC/item
+  // teleports, server transitions). One top-level file next to the per-map
+  // packages so the dev client can glob it beside */manifest.json.
+  emitMapLinks(manifests);
+
   const pass = rows.filter((r) => r.status === 'PASS').length;
   const warn = rows.filter((r) => r.status === 'WARN').length;
   const error = rows.filter((r) => r.status === 'ERROR').length;
@@ -596,6 +604,26 @@ async function cmdCompileAll() {
   }
   process.exitCode = error > 0 ? 1 : 0;
   return rows;
+}
+
+function emitMapLinks(manifests) {
+  const links = buildMapLinks(manifests);
+  const path = resolve(REPO_ROOT, 'generated/pt-maps/maplinks.json');
+  mkdirSync(dirname(path), { recursive: true });
+  writeFileSync(path, JSON.stringify(links, null, 2) + '\n');
+  return { path, links };
+}
+
+async function cmdMapLinks() {
+  const manifests = await manifestsForAll();
+  const { path, links } = emitMapLinks(manifests);
+  const foot = links.fields.filter((f) => f.reachability === 'foot').length;
+  const warp = links.fields.filter((f) => f.reachability === 'warp').length;
+  const ui = links.fields.filter((f) => f.reachability === 'ui-item').length;
+  const server = links.fields.filter((f) => f.reachability === 'server').length;
+  const isolated = links.fields.filter((f) => f.reachability === 'isolated').length;
+  console.log(`maplinks: ${links.fieldCount} fields, ${links.fieldGates.length} fieldGates, ${links.warpGates.length} warpGates -> ${path}`);
+  console.log(`  reachability: foot=${foot} warp=${warp} ui-item=${ui} server=${server} isolated=${isolated}`);
 }
 
 async function cmdTexturesAll() {
@@ -678,6 +706,9 @@ switch (cmd) {
   case 'textures':
     await cmdTextures(arg);
     break;
+  case 'maplinks':
+    await cmdMapLinks();
+    break;
   case 'compile-all':
     await cmdCompileAll();
     break;
@@ -685,6 +716,6 @@ switch (cmd) {
     await cmdTexturesAll();
     break;
   default:
-    console.log('usage: pt_map.mjs catalog | audit|compile|validate|textures <map-id> | compile-all | textures-all');
+    console.log('usage: pt_map.mjs catalog | audit|compile|validate|textures <map-id> | maplinks | compile-all | textures-all');
     process.exitCode = 1;
 }

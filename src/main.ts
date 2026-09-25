@@ -5204,6 +5204,12 @@ async function startGame(
             ptWingWarp: (fieldIndex: number) =>
               import('./game/pt_warp_gates').then((m) =>
                 m.ptWingWarpSelect(fieldIndex, offlineSim?.player, performance.now())),
+            /** Full source-derived connection record for one field
+             *  (FieldGate edges both directions, warp triggers/exits,
+             *  wing destinations, server inbound, reachability class).
+             *  Reads the generated maplinks.json graph; debug surface only. */
+            ptLinks: (ref: number | string) =>
+              import('./game/pt_map_links').then((m) => m.ptMapLinksForField(ref)),
             ptSetLevel: (level: number) => {
               if (offlineSim?.player) offlineSim.player.level = level;
             },

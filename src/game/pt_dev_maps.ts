@@ -31,9 +31,10 @@ import {
   type PtStageObjectsModule,
   type PtWarpGateLink,
 } from '../sim/pt_field';
-import { setActivePtMap } from '../sim/pt_field_active';
+import { activePtMapDescriptor, setActivePtMap } from '../sim/pt_field_active';
 import { ptRicartenSpawnY } from '../sim/pt_ricarten_field';
 import type { Entity } from '../sim/types';
+import { ptMapLinksForField, ptMapLinksGraph } from './pt_map_links';
 import type { PtDevHud } from './pt_ricarten_dev_command';
 
 // ---------------------------------------------------------------------------
@@ -414,6 +415,101 @@ function logMapInfo(hud: PtDevHud, loaded: PtDevLoadedMap): void {
   hud.log('[dev] /ptmap off restores Ricarten', LOG_INFO);
 }
 
+// ---------------------------------------------------------------------------
+// /ptmaplinks - the field's source-authentic connection inventory
+// ---------------------------------------------------------------------------
+
+const SE_LABEL = ['immediate', 'delayed', 'wing-ui'] as const;
+
+function listMapLinks(hud: PtDevHud, arg: string | undefined): void {
+  const g = ptMapLinksGraph();
+  if (!g) {
+    hud.log('[dev] maplinks graph missing; run `node scripts/pt-port/pt_map.mjs maplinks`', LOG_ERR);
+    return;
+  }
+
+  let ref: number | string | undefined;
+  if (arg !== undefined) {
+    ref = /^\d+$/.test(arg) ? Number(arg) : arg;
+    if (!ptMapLinksForField(ref)) {
+      hud.log(`[dev] no registered field '${arg}' (id or fieldIndex)`, LOG_WARN);
+      return;
+    }
+  } else {
+    const active = activePtMapDescriptor();
+    const byId = active ? ptMapLinksForField(active.id) : null;
+    ref = byId?.field.fieldIndex ?? 'ricarten';
+    if (!byId) {
+      hud.log(`[dev] active map not a PT field; showing ricarten (use /ptmaplinks <id|index>)`, LOG_WARN);
+    }
+  }
+
+  const links = ptMapLinksForField(ref);
+  if (!links) return;
+  const f = links.field;
+  hud.log(
+    `[dev] ${f.id ?? '?'} | field#${f.fieldIndex} | ${f.displayName ?? f.mapName ?? '?'} | state=${f.state ?? '?'}` +
+      ` | level>=${f.limitLevel} | reachability=${f.reachability} (component ${f.component})`,
+    LOG_INFO,
+  );
+  if (f.posWarpOut) {
+    hud.log(`[dev]   PosWarpOut: (${f.posWarpOut.x}, ${f.posWarpOut.y}, ${f.posWarpOut.z})`, LOG_INFO);
+  } else {
+    hud.log(`[dev]   PosWarpOut: none (wing warps cannot arrive here)`, LOG_INFO);
+  }
+
+  if (links.fieldGates.length === 0) {
+    hud.log('[dev]   FIELD_GATE: none', LOG_INFO);
+  }
+  for (const e of links.fieldGates) {
+    const dir = e.authoredIn === f.fieldIndex ? 'authored here' : 'reciprocal (AddGate2)';
+    hud.log(
+      `[dev]   FIELD_GATE -> ${e.otherId ?? `field#${e.other}`} @ (${e.x}, ${e.z}, ${e.y}) [${dir}]${e.dead ? ' DEAD (point outside both footprints)' : ''}`,
+      e.dead ? LOG_WARN : LOG_INFO,
+    );
+  }
+
+  if (links.warpGates.length === 0) hud.log('[dev]   WARP_GATE: none here', LOG_INFO);
+  for (const w of links.warpGates) {
+    const exits = w.exits.map((e) => `${e.toId ?? `field#${e.to}`}(${e.x},${e.z})`).join(' ');
+    hud.log(
+      `[dev]   WARP_GATE @ (${w.x}, ${w.z}, ${w.y}) r=${w.size} h=${w.height} lv>=${w.limitLevel} SE=${w.specialEffect} (${SE_LABEL[w.specialEffect] ?? '?'}) -> ${w.exits.length ? exits : 'no exits'}`,
+      LOG_INFO,
+    );
+  }
+  for (const w of links.warpInbound) {
+    hud.log(
+      `[dev]   WARP_IN <- ${w.fromFieldId ?? `field#${w.fromField}`} @ (${w.exit.x}, ${w.exit.z}, ${w.exit.y})`,
+      LOG_INFO,
+    );
+  }
+
+  if (links.wingDestinations) {
+    hud.log('[dev]   WARP_UI (wing map opens here; destinations):', LOG_INFO);
+    for (const d of links.wingDestinations) {
+      hud.log(
+        `[dev]     icon ${d.icon}: ${d.name ?? '?'} -> ${d.fieldId ?? `field#${d.fieldIndex}`} lv>=${d.requiredLevel}`,
+        LOG_INFO,
+      );
+    }
+    const ha = g.wingWarp.haGate;
+    hud.log(`[dev]     castle wing: ${ha.name ?? '?'} -> ${ha.fieldId ?? `field#${ha.fieldIndex}`} (Bless Castle clan only)`, LOG_INFO);
+  }
+
+  hud.log('[dev]   global teleports (usable anywhere the item/NPC is):', LOG_INFO);
+  hud.log(
+    `[dev]     NPC teleport: ${g.npcTeleport.destinations.map((d) => `${d.fieldId ?? d.fieldIndex}(${d.cost}c)`).join(' ')} | dungeon->dun-7 castle->castle war->dun-5(server) fall->fall-game`,
+    LOG_INFO,
+  );
+  hud.log(
+    `[dev]     ether cores: ${g.etherCore.map((d) => `${d.fieldId ?? d.fieldIndex}`).join(' ')} | teleport-core scrolls: ${g.teleportCore.length} destinations`,
+    LOG_INFO,
+  );
+  for (const t of links.serverInbound) {
+    hud.log(`[dev]   SERVER <- ${t.kind}${t.x !== undefined ? ` @ (${t.x}, ${t.z})` : ''} [${t.source}]`, LOG_WARN);
+  }
+}
+
 /** The async body behind pt_map_dev_command's DEV-gated dynamic import. */
 export async function execPtMapDevCommand(
   raw: string,
@@ -424,6 +520,11 @@ export async function execPtMapDevCommand(
 
   if (/^\/ptmaps$/i.test(args[0])) {
     listMaps(hud);
+    return;
+  }
+
+  if (/^\/ptmaplinks$/i.test(args[0])) {
+    listMapLinks(hud, args[1]?.toLowerCase());
     return;
   }
 

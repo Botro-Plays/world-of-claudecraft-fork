@@ -1,0 +1,4092 @@
+{
+  "generatedFrom": [
+    "PT-Source/field.cpp (field registry, gates, warp gates, limits)",
+    "PT-Source/field.h (sFIELD/sWARPGATE/sFGATE, START_FIELD_*)",
+    "PT-Source/sinbaram/sinWarpGate.cpp (wing UI: codes, tiers, costs, icons)",
+    "PT-Source/sinbaram/sinQuest.cpp (WarpGateDoc)",
+    "PT-Source/sinbaram/sinMsg.cpp (WarpGateName)",
+    "PT-Source/sinbaram/sinMessageBox.cpp (NPC teleports, MESSAGE_WARP)",
+    "PT-Source/sinbaram/sinHelp.cpp (SIN_HELP_KIND_TELEPORT, TeleportUseCose)",
+    "PT-Source/sinbaram/HaPremiumItem.cpp (TelePort_FieldNum)",
+    "PT-Source/character.cpp (ether cores, respawn, warp calls)",
+    "PT-Source/netplay.cpp + SrcServer/OnSever.cpp (smTRANSCODE_WARPFIELD)"
+  ],
+  "fieldCount": 70,
+  "startFields": {
+    "START_FIELD_NUM": 3,
+    "START_FIELD_NEBISCO": 9,
+    "START_FIELD_MORYON": 21,
+    "START_FIELD_CASTLE": 33,
+    "START_FIELD_ATLANTIS": 51,
+    "START_FIELD_DARKBOSS": 57,
+    "START_FIELD_EMOGUANGCHANG": 58,
+    "START_FIELD_LOULANGUCHENG": 52,
+    "START_FIELD_ZHONGSHENZHICHENG": 47,
+    "START_FIELD_ZHONGSHENZHICHENG1": 59,
+    "START_FIELD_ZHONGSHENZHICHENG2": 61,
+    "START_FIELD_ZHONGSHENZHICHENG3": 62,
+    "START_FIELD_ZHONGSHENZHICHENG4": 57
+  },
+  "fields": [
+    {
+      "fieldIndex": 0,
+      "id": "fore-3",
+      "mapName": "fore-3",
+      "displayName": "胶之林",
+      "asePath": "forest/fore-3.ase",
+      "state": "FIELD_STATE_FOREST",
+      "limitLevel": 0,
+      "centerPos": [
+        -16419,
+        -7054
+      ],
+      "startPoints": [
+        [
+          -10585,
+          -11810
+        ],
+        [
+          -13659,
+          -9753
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 1,
+      "id": "fore-2",
+      "mapName": "fore-2",
+      "displayName": "竹之林",
+      "asePath": "forest/fore-2.ase",
+      "state": "FIELD_STATE_FOREST",
+      "limitLevel": 0,
+      "centerPos": [
+        -5427,
+        -9915
+      ],
+      "startPoints": [
+        [
+          -2272,
+          -10314
+        ],
+        [
+          -7192,
+          -11175
+        ]
+      ],
+      "posWarpOut": {
+        "x": -3265,
+        "y": 214,
+        "z": -12583
+      },
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 2,
+      "id": "fore-1",
+      "mapName": "fore-1",
+      "displayName": "自由庭院",
+      "asePath": "forest/fore-1.ase",
+      "state": "FIELD_STATE_FOREST",
+      "limitLevel": 0,
+      "centerPos": [
+        4184,
+        -11016
+      ],
+      "startPoints": [
+        [
+          1350,
+          -13672
+        ],
+        [
+          1761,
+          -10815
+        ],
+        [
+          4777,
+          -10916
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 3,
+      "id": "ricarten",
+      "mapName": "village-2",
+      "displayName": "里查登",
+      "asePath": "ricarten/village-2.ase",
+      "state": "FIELD_STATE_VILLAGE",
+      "limitLevel": 0,
+      "centerPos": [
+        2596,
+        -18738
+      ],
+      "startPoints": [
+        [
+          2592,
+          -18566
+        ],
+        [
+          -1047,
+          -16973
+        ]
+      ],
+      "posWarpOut": {
+        "x": 822,
+        "y": 254,
+        "z": -19956
+      },
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 4,
+      "id": "ruin-4",
+      "mapName": "ruin-4",
+      "displayName": "废墟墓地",
+      "asePath": "Ruin/ruin-4.ase",
+      "state": "FIELD_STATE_RUIN",
+      "limitLevel": 0,
+      "centerPos": [
+        1384,
+        -918
+      ],
+      "startPoints": [
+        [
+          2578,
+          -5124
+        ],
+        [
+          1873,
+          3060
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 5,
+      "id": "ruin-3",
+      "mapName": "ruin-3",
+      "displayName": "废墟",
+      "asePath": "Ruin/ruin-3.ase",
+      "state": "FIELD_STATE_RUIN",
+      "limitLevel": 0,
+      "centerPos": [
+        4953,
+        10922
+      ],
+      "startPoints": [
+        [
+          875,
+          7910
+        ],
+        [
+          1576,
+          14307
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 6,
+      "id": "ruin-2",
+      "mapName": "ruin-2",
+      "displayName": "废墟村庄",
+      "asePath": "Ruin/ruin-2.ase",
+      "state": "FIELD_STATE_RUIN",
+      "limitLevel": 0,
+      "centerPos": [
+        7459,
+        23984
+      ],
+      "startPoints": [
+        [
+          3976,
+          19645
+        ],
+        [
+          5832,
+          23751
+        ],
+        [
+          5615,
+          25117
+        ]
+      ],
+      "posWarpOut": {
+        "x": 4547,
+        "y": 817,
+        "z": 22616
+      },
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 7,
+      "id": "ruin-1",
+      "mapName": "ruin-1",
+      "displayName": "遗忘之地",
+      "asePath": "Ruin/ruin-1.ase",
+      "state": "FIELD_STATE_RUIN",
+      "limitLevel": 0,
+      "centerPos": [
+        16362,
+        14959
+      ],
+      "startPoints": [
+        [
+          12242,
+          16034
+        ],
+        [
+          12194,
+          8969
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 8,
+      "id": "de-1",
+      "mapName": "De-1",
+      "displayName": "诅咒之地",
+      "asePath": "desert/De-1.ase",
+      "state": "FIELD_STATE_DESERT",
+      "limitLevel": 0,
+      "centerPos": [
+        15005,
+        -1421
+      ],
+      "startPoints": [
+        [
+          13306,
+          2000
+        ],
+        [
+          13083,
+          -2249
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 9,
+      "id": "village-1",
+      "mapName": "village-1",
+      "displayName": "内维斯克",
+      "asePath": "forest/village-1.ase",
+      "state": "FIELD_STATE_DESERT",
+      "limitLevel": 0,
+      "centerPos": [
+        22214,
+        -1182
+      ],
+      "startPoints": [
+        [
+          22214,
+          -1182
+        ]
+      ],
+      "posWarpOut": {
+        "x": 21826,
+        "y": 825,
+        "z": -1712
+      },
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 10,
+      "id": "de-2",
+      "mapName": "De-2",
+      "displayName": "绿洲",
+      "asePath": "desert/De-2.ase",
+      "state": "FIELD_STATE_DESERT",
+      "limitLevel": 0,
+      "centerPos": [
+        15887,
+        -11161
+      ],
+      "startPoints": [
+        [
+          11859,
+          -11257
+        ],
+        [
+          16169,
+          -12768
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 11,
+      "id": "de-3",
+      "mapName": "De-3",
+      "displayName": "古代战场",
+      "asePath": "desert/De-3.ase",
+      "state": "FIELD_STATE_DESERT",
+      "limitLevel": 55,
+      "centerPos": [
+        34758,
+        -1323
+      ],
+      "startPoints": [
+        [
+          34758,
+          -1323
+        ],
+        [
+          29424,
+          322
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 12,
+      "id": "de-4",
+      "mapName": "De-4",
+      "displayName": "封印之地",
+      "asePath": "desert/De-4.ase",
+      "state": "FIELD_STATE_DESERT",
+      "limitLevel": 55,
+      "centerPos": [
+        43988,
+        12053
+      ],
+      "startPoints": [
+        [
+          33740,
+          6491
+        ],
+        [
+          40691,
+          11056
+        ]
+      ],
+      "posWarpOut": {
+        "x": 34100,
+        "y": 940,
+        "z": 6214
+      },
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 13,
+      "id": "dun-1",
+      "mapName": "dun-1",
+      "displayName": "地牢1层",
+      "asePath": "dungeon/dun-1.ase",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 40,
+      "centerPos": [
+        -15384,
+        -24310
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 1,
+      "reachability": "warp"
+    },
+    {
+      "fieldIndex": 14,
+      "id": "dun-2",
+      "mapName": "dun-2",
+      "displayName": "地牢2层",
+      "asePath": "dungeon/dun-2.ase",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 50,
+      "centerPos": [
+        -6108,
+        -26880
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 2,
+      "reachability": "warp"
+    },
+    {
+      "fieldIndex": 15,
+      "id": "dun-3",
+      "mapName": "dun-3",
+      "displayName": "地牢3层",
+      "asePath": "dungeon/dun-3.ase",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 60,
+      "centerPos": [
+        1827,
+        -28586
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 3,
+      "reachability": "warp"
+    },
+    {
+      "fieldIndex": 16,
+      "id": "office",
+      "mapName": null,
+      "displayName": "GM房间",
+      "asePath": "room/office.ase",
+      "state": "FIELD_STATE_ROOM",
+      "limitLevel": 0,
+      "centerPos": [
+        -200000,
+        200000
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 4,
+      "reachability": "isolated"
+    },
+    {
+      "fieldIndex": 17,
+      "id": "forever-fall-04",
+      "mapName": "forever-fall-04",
+      "displayName": "黄昏树林",
+      "asePath": "forever-fall/forever-fall-04.ASE",
+      "state": "FIELD_STATE_FOREST",
+      "limitLevel": 0,
+      "centerPos": [
+        -1583,
+        37905
+      ],
+      "startPoints": [
+        [
+          -2135,
+          33668
+        ],
+        [
+          4073,
+          32119
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 18,
+      "id": "forever-fall-03",
+      "mapName": "forever-fall-03",
+      "displayName": "心情树林",
+      "asePath": "forever-fall/forever-fall-03.ASE",
+      "state": "FIELD_STATE_FOREST",
+      "limitLevel": 0,
+      "centerPos": [
+        -5823,
+        43244
+      ],
+      "startPoints": [
+        [
+          -1516,
+          45437
+        ],
+        [
+          -3586,
+          42886
+        ]
+      ],
+      "posWarpOut": {
+        "x": -4615,
+        "y": 1146,
+        "z": 48002
+      },
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 19,
+      "id": "forever-fall-02",
+      "mapName": "forever-fall-02",
+      "displayName": "秋之谷",
+      "asePath": "forever-fall/forever-fall-02.ASE",
+      "state": "FIELD_STATE_FOREST",
+      "limitLevel": 0,
+      "centerPos": [
+        1691,
+        52599
+      ],
+      "startPoints": [
+        [
+          -1024,
+          45437
+        ],
+        [
+          -1543,
+          52333
+        ],
+        [
+          -1310,
+          54945
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 20,
+      "id": "forever-fall-01",
+      "mapName": "forever-fall-01",
+      "displayName": "风之路",
+      "asePath": "forever-fall/forever-fall-01.ASE",
+      "state": "FIELD_STATE_FOREST",
+      "limitLevel": 0,
+      "centerPos": [
+        2032,
+        71183
+      ],
+      "startPoints": [
+        [
+          1875,
+          69871
+        ],
+        [
+          2637,
+          60219
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 21,
+      "id": "pilai",
+      "mapName": "pilai",
+      "displayName": "菲尔拉",
+      "asePath": "forever-fall/pilai.ASE",
+      "state": "FIELD_STATE_VILLAGE",
+      "limitLevel": 0,
+      "centerPos": [
+        2981,
+        75486
+      ],
+      "startPoints": [
+        [
+          2287,
+          74131
+        ],
+        [
+          3547,
+          75500
+        ]
+      ],
+      "posWarpOut": {
+        "x": 2252,
+        "y": 754,
+        "z": 78041
+      },
+      "component": 5,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 22,
+      "id": "dun-4",
+      "mapName": "dun-4",
+      "displayName": "晦气寺庙1层",
+      "asePath": "dungeon/dun-4.ase",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 70,
+      "centerPos": [
+        -11108,
+        -41681
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 6,
+      "reachability": "warp"
+    },
+    {
+      "fieldIndex": 23,
+      "id": "dun-5",
+      "mapName": "dun-5",
+      "displayName": "晦气寺庙2层",
+      "asePath": "dungeon/dun-5.ase",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 75,
+      "centerPos": [
+        -3675,
+        -36597
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 7,
+      "reachability": "warp"
+    },
+    {
+      "fieldIndex": 24,
+      "id": "tcave",
+      "mapName": "Tcave",
+      "displayName": "蘑菇洞穴",
+      "asePath": "cave/Tcave.ase",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 55,
+      "centerPos": [
+        120126,
+        26064
+      ],
+      "startPoints": [
+        [
+          119319,
+          26034
+        ],
+        [
+          125606,
+          24541
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 8,
+      "reachability": "warp"
+    },
+    {
+      "fieldIndex": 25,
+      "id": "mcave",
+      "mapName": "Mcave",
+      "displayName": "蜂房洞穴",
+      "asePath": "cave/Mcave.ase",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 55,
+      "centerPos": [
+        119966,
+        35466
+      ],
+      "startPoints": [
+        [
+          119320,
+          35680
+        ],
+        [
+          124380,
+          33260
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 9,
+      "reachability": "warp"
+    },
+    {
+      "fieldIndex": 26,
+      "id": "dcave",
+      "mapName": "Dcave",
+      "displayName": "暗黑圣殿",
+      "asePath": "cave/Dcave.ase",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 65,
+      "centerPos": [
+        158814,
+        20070
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 10,
+      "reachability": "warp"
+    },
+    {
+      "fieldIndex": 27,
+      "id": "iron-1",
+      "mapName": "iron-1",
+      "displayName": "末日都市",
+      "asePath": "Iron/iron-1.ASE",
+      "state": "FIELD_STATE_IRON",
+      "limitLevel": 80,
+      "centerPos": [
+        47617,
+        13626
+      ],
+      "startPoints": [
+        [
+          46905,
+          13478
+        ],
+        [
+          47357,
+          20845
+        ],
+        [
+          46741,
+          21349
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 28,
+      "id": "iron-2",
+      "mapName": "iron-2",
+      "displayName": "普龙心脏",
+      "asePath": "Iron/iron-2.ASE",
+      "state": "FIELD_STATE_IRON",
+      "limitLevel": 85,
+      "centerPos": [
+        33938,
+        24229
+      ],
+      "startPoints": [
+        [
+          35149,
+          24326
+        ],
+        [
+          44893,
+          21380
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 29,
+      "id": "ice-ura",
+      "mapName": "ice_ura",
+      "displayName": "幽拉村庄",
+      "asePath": "Ice/ice_ura.ASE",
+      "state": "FIELD_STATE_ICE",
+      "limitLevel": 90,
+      "centerPos": [
+        32621,
+        23865
+      ],
+      "startPoints": [],
+      "posWarpOut": {
+        "x": 30610,
+        "y": 1304,
+        "z": 22164
+      },
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 30,
+      "id": "sod-1",
+      "mapName": "sod-1",
+      "displayName": "SOD",
+      "asePath": "Sod/sod-1.ASE",
+      "state": "FIELD_STATE_RUIN",
+      "limitLevel": 0,
+      "centerPos": [
+        22018,
+        6569
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 31,
+      "id": "ice1",
+      "mapName": "ice1",
+      "displayName": "凯拉笔山谷",
+      "asePath": "Ice/ice1.ASE",
+      "state": "FIELD_STATE_ICE",
+      "limitLevel": 90,
+      "centerPos": [
+        32313,
+        28529
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 32,
+      "id": "quest-iv",
+      "mapName": "quest_IV",
+      "displayName": "任务地图",
+      "asePath": "quest/quest_IV.ASE",
+      "state": "FIELD_STATE_QUEST_ARENA",
+      "limitLevel": 0,
+      "centerPos": [
+        22497,
+        9605
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 11,
+      "reachability": "server"
+    },
+    {
+      "fieldIndex": 33,
+      "id": "castle",
+      "mapName": "castle",
+      "displayName": "祝福城堡",
+      "asePath": "castle/castle.ase",
+      "state": "FIELD_STATE_CASTLE",
+      "limitLevel": 0,
+      "centerPos": [
+        35225,
+        -23847
+      ],
+      "startPoints": [
+        [
+          33920,
+          -23479
+        ],
+        [
+          35247,
+          -23355
+        ],
+        [
+          36164,
+          -23446
+        ]
+      ],
+      "posWarpOut": {
+        "x": 32739,
+        "y": 711,
+        "z": -30474
+      },
+      "component": 12,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 34,
+      "id": "greedy",
+      "mapName": "Greedy",
+      "displayName": "贪婪之湖",
+      "asePath": "Greedy/Greedy.ase",
+      "state": "FIELD_STATE_ICE",
+      "limitLevel": 70,
+      "centerPos": [
+        13930,
+        23206
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 35,
+      "id": "ice2",
+      "mapName": "ice2",
+      "displayName": "冰之谷",
+      "asePath": "Ice/ice_2.ASE",
+      "state": "FIELD_STATE_ICE",
+      "limitLevel": 95,
+      "centerPos": [
+        36264,
+        40182
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 36,
+      "id": "boss",
+      "mapName": "Boss",
+      "displayName": "凯尔维苏洞穴",
+      "asePath": "Boss/Boss.ASE",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 100,
+      "centerPos": [
+        33000,
+        50036
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 13,
+      "reachability": "warp"
+    },
+    {
+      "fieldIndex": 37,
+      "id": "lost",
+      "mapName": "lost",
+      "displayName": "迷失之地",
+      "asePath": "lost/lostisland.ASE",
+      "state": "FIELD_STATE_RUIN",
+      "limitLevel": 95,
+      "centerPos": [
+        -12555,
+        -1113
+      ],
+      "startPoints": [],
+      "posWarpOut": {
+        "x": -12555,
+        "y": 668,
+        "z": -1113
+      },
+      "component": 14,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 38,
+      "id": "losttemple",
+      "mapName": "Losttemple",
+      "displayName": "迷失寺庙",
+      "asePath": "Losttemple/lost_temple.ASE",
+      "state": "FIELD_STATE_RUIN",
+      "limitLevel": 100,
+      "centerPos": [
+        -11718,
+        10794
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 14,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 39,
+      "id": "fall-game",
+      "mapName": null,
+      "displayName": "幽灵城堡",
+      "asePath": "Fall_Game/fall_game.ASE",
+      "state": "FIELD_STATE_ACTION",
+      "limitLevel": 1000,
+      "centerPos": [
+        5800,
+        36747
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 15,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 40,
+      "id": "dun-7",
+      "mapName": "dun-7",
+      "displayName": "无尽之塔1层",
+      "asePath": "endless/dun-7.ase",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 105,
+      "centerPos": [
+        14255,
+        -39099
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 16,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 41,
+      "id": "dun-8",
+      "mapName": "dun-8",
+      "displayName": "无尽之塔2层",
+      "asePath": "endless/dun-8.ase",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 110,
+      "centerPos": [
+        5255,
+        -37897
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 17,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 42,
+      "id": "dun-6",
+      "mapName": "dun-6",
+      "displayName": "晦气寺庙3层",
+      "asePath": "dungeon/Dun-6a.ASE",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 125,
+      "centerPos": [
+        -3660,
+        -45200
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 18,
+      "reachability": "warp"
+    },
+    {
+      "fieldIndex": 43,
+      "id": "dun-9",
+      "mapName": "dun-9",
+      "displayName": "无尽之塔3层",
+      "asePath": "endless/dun-9.ASE",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 115,
+      "centerPos": [
+        4896,
+        -42330
+      ],
+      "startPoints": [
+        [
+          4896,
+          -42330
+        ],
+        [
+          6418,
+          -42330
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 19,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 44,
+      "id": "mine-1",
+      "mapName": "mine-1",
+      "displayName": "凯拉比矿洞",
+      "asePath": "Mine/mine-1.ASE",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 120,
+      "centerPos": [
+        18006,
+        -34740
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 20,
+      "reachability": "warp"
+    },
+    {
+      "fieldIndex": 45,
+      "id": "slab",
+      "mapName": "Slab",
+      "displayName": "矿洞研究所",
+      "asePath": "Slab/Slab.ASE",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 130,
+      "centerPos": [
+        -12024,
+        -62846
+      ],
+      "startPoints": [
+        [
+          -11976,
+          -62455
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 21,
+      "reachability": "warp"
+    },
+    {
+      "fieldIndex": 46,
+      "id": "ancientw",
+      "mapName": "AncientW",
+      "displayName": "地精实验室",
+      "asePath": "AncientW/AncientW.ASE",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 135,
+      "centerPos": [
+        12788,
+        -73633
+      ],
+      "startPoints": [
+        [
+          12788,
+          -73633
+        ]
+      ],
+      "posWarpOut": {
+        "x": 12700,
+        "y": 510,
+        "z": -62387
+      },
+      "component": 22,
+      "reachability": "warp"
+    },
+    {
+      "fieldIndex": 47,
+      "id": "lost3",
+      "mapName": "lost3",
+      "displayName": "迷失岛屿",
+      "asePath": "lost/lost3.ASE",
+      "state": "FIELD_STATE_RUIN",
+      "limitLevel": 140,
+      "centerPos": [
+        116360,
+        92524
+      ],
+      "startPoints": [
+        [
+          116360,
+          92524
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 23,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 48,
+      "id": "fo3",
+      "mapName": "fo3",
+      "displayName": "远古草地",
+      "asePath": "custom/fo3.ase",
+      "state": "FIELD_STATE_FOREST",
+      "limitLevel": 110,
+      "centerPos": [
+        -57048,
+        -6894
+      ],
+      "startPoints": [
+        [
+          -50646,
+          -6363
+        ],
+        [
+          -55880,
+          -9733
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 24,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 49,
+      "id": "fo2",
+      "mapName": "fo2",
+      "displayName": "远古森林",
+      "asePath": "custom/fo2.ase",
+      "state": "FIELD_STATE_FOREST",
+      "limitLevel": 100,
+      "centerPos": [
+        -46733,
+        -14391
+      ],
+      "startPoints": [
+        [
+          -46644,
+          -10485
+        ],
+        [
+          -41291,
+          -11138
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 24,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 50,
+      "id": "fo1",
+      "mapName": "fo1",
+      "displayName": "绿野仙踪",
+      "asePath": "custom/fo1.ase",
+      "state": "FIELD_STATE_FOREST",
+      "limitLevel": 80,
+      "centerPos": [
+        -37627,
+        -10754
+      ],
+      "startPoints": [
+        [
+          -37627,
+          -10754
+        ],
+        [
+          -38759,
+          -13582
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 24,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 51,
+      "id": "town1",
+      "mapName": "town1",
+      "displayName": "阿瑞斯城",
+      "asePath": "custom/town1.ase",
+      "state": "FIELD_STATE_VILLAGE",
+      "limitLevel": 0,
+      "centerPos": [
+        -37888,
+        -17150
+      ],
+      "startPoints": [
+        [
+          -37725,
+          -17198
+        ],
+        [
+          -40254,
+          -17511
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 24,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 52,
+      "id": "ba1",
+      "mapName": "ba1",
+      "displayName": "楼兰古城",
+      "asePath": "Custom/ba1.ase",
+      "state": "FIELD_STATE_DESERT",
+      "limitLevel": 150,
+      "centerPos": [
+        -23793,
+        19419
+      ],
+      "startPoints": [
+        [
+          -25680,
+          20862
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 24,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 53,
+      "id": "ba2",
+      "mapName": "ba2",
+      "displayName": "西风古道",
+      "asePath": "Custom/ba2.ase",
+      "state": "FIELD_STATE_FOREST",
+      "limitLevel": 140,
+      "centerPos": [
+        -29687,
+        20686
+      ],
+      "startPoints": [
+        [
+          -29687,
+          21324
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 24,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 54,
+      "id": "ba3",
+      "mapName": "ba3",
+      "displayName": "庞贝遗迹",
+      "asePath": "Custom/ba3.ase",
+      "state": "FIELD_STATE_DESERT",
+      "limitLevel": 130,
+      "centerPos": [
+        -29541,
+        8994
+      ],
+      "startPoints": [
+        [
+          -32435,
+          13515
+        ],
+        [
+          -33661,
+          8804
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 24,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 55,
+      "id": "ba4",
+      "mapName": "ba4",
+      "displayName": "热沙栈道",
+      "asePath": "Custom/ba4.ase",
+      "state": "FIELD_STATE_DESERT",
+      "limitLevel": 120,
+      "centerPos": [
+        -34798,
+        -1959
+      ],
+      "startPoints": [
+        [
+          -35393,
+          -2871
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 24,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 56,
+      "id": "iron3",
+      "mapName": "iron3",
+      "displayName": "米拉遗迹",
+      "asePath": "Iron/iron3.ASE",
+      "state": "FIELD_STATE_IRON",
+      "limitLevel": 150,
+      "centerPos": [
+        -18286,
+        21104
+      ],
+      "startPoints": [
+        [
+          -18286,
+          21104
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 24,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 57,
+      "id": "dc1",
+      "mapName": "dc1",
+      "displayName": "熔岩之心",
+      "asePath": "Boss/dark_boss.ASE",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 180,
+      "centerPos": [
+        198279,
+        240452
+      ],
+      "startPoints": [
+        [
+          198279,
+          240452
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 25,
+      "reachability": "warp"
+    },
+    {
+      "fieldIndex": 58,
+      "id": "sod-2",
+      "mapName": "sod-2",
+      "displayName": "恶魔广场",
+      "asePath": "Sod/sod-2.ASE",
+      "state": "FIELD_STATE_RUIN",
+      "limitLevel": 100,
+      "centerPos": [
+        21143,
+        17473
+      ],
+      "startPoints": [
+        [
+          21143,
+          17473
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 26,
+      "reachability": "server"
+    },
+    {
+      "fieldIndex": 59,
+      "id": "ice3",
+      "mapName": "ice3",
+      "displayName": "风雪谷",
+      "asePath": "Ice/ice3.ASE",
+      "state": "FIELD_STATE_ICE",
+      "limitLevel": 150,
+      "centerPos": [
+        64303,
+        68806
+      ],
+      "startPoints": [
+        [
+          64303,
+          68806
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 27,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 60,
+      "id": "iron4",
+      "mapName": "iron4",
+      "displayName": "米拉幻境",
+      "asePath": "Iron/iron4.ASE",
+      "state": "FIELD_STATE_IRON",
+      "limitLevel": 145,
+      "centerPos": [
+        39952,
+        30214
+      ],
+      "startPoints": [
+        [
+          39952,
+          30214
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 0,
+      "reachability": "foot"
+    },
+    {
+      "fieldIndex": 61,
+      "id": "seaa",
+      "mapName": "SeaA",
+      "displayName": "迷雾之海",
+      "asePath": "SeaA/SeaA.ASE",
+      "state": "FIELD_STATE_FOREST",
+      "limitLevel": 155,
+      "centerPos": [
+        -19186,
+        -3858
+      ],
+      "startPoints": [
+        [
+          -19186,
+          -3858
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 28,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 62,
+      "id": "heartoffire",
+      "mapName": "HeartOfFire",
+      "displayName": "熔岩之心",
+      "asePath": "HeartOfFire/HeartOfFire.ASE",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 160,
+      "centerPos": [
+        28687,
+        -74007
+      ],
+      "startPoints": [
+        [
+          28687,
+          -74007
+        ]
+      ],
+      "posWarpOut": null,
+      "component": 29,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 63,
+      "id": "ad1",
+      "mapName": "ad1",
+      "displayName": "远古地牢一层",
+      "asePath": "Custom/ad1.ase",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 160,
+      "centerPos": [
+        64602,
+        -24325
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 30,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 64,
+      "id": "ad2",
+      "mapName": "ad2",
+      "displayName": "远古地牢二层",
+      "asePath": "Custom/ad2.ase",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 170,
+      "centerPos": [
+        73944,
+        -26874
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 31,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 65,
+      "id": "ad3",
+      "mapName": "ad3",
+      "displayName": "远古地牢三层",
+      "asePath": "Custom/ad3.ase",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 180,
+      "centerPos": [
+        81808,
+        -28710
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 32,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 66,
+      "id": "sanc1",
+      "mapName": "sanc1",
+      "displayName": "远古神殿一层",
+      "asePath": "Custom/sanc1.ase",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 190,
+      "centerPos": [
+        26445,
+        -41677
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 33,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 67,
+      "id": "sanc2",
+      "mapName": "sanc2",
+      "displayName": "远古神殿二层",
+      "asePath": "Custom/sanc2.ase",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 200,
+      "centerPos": [
+        33827,
+        -36476
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 34,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 68,
+      "id": "crystalnest",
+      "mapName": "CrystalNest",
+      "displayName": "冰晶峡谷",
+      "asePath": "CrystalNest/CrystalNest.ASE",
+      "state": "FIELD_STATE_DUNGEON",
+      "limitLevel": 180,
+      "centerPos": [
+        35235,
+        -93821
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 35,
+      "reachability": "ui-item"
+    },
+    {
+      "fieldIndex": 69,
+      "id": "landofnurwn",
+      "mapName": "LandofNurwn",
+      "displayName": "永霜圣殿",
+      "asePath": "LandofNurwn/LandofNurwn.ASE",
+      "state": "FIELD_STATE_FOREST",
+      "limitLevel": 200,
+      "centerPos": [
+        -11702,
+        -87663
+      ],
+      "startPoints": [],
+      "posWarpOut": null,
+      "component": 36,
+      "reachability": "ui-item"
+    }
+  ],
+  "fieldGates": [
+    {
+      "from": 0,
+      "to": 1,
+      "fromId": "fore-3",
+      "toId": "fore-2",
+      "x": -8508,
+      "z": -10576,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 0
+    },
+    {
+      "from": 1,
+      "to": 2,
+      "fromId": "fore-2",
+      "toId": "fore-1",
+      "x": -292,
+      "z": -9548,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 1
+    },
+    {
+      "from": 2,
+      "to": 4,
+      "fromId": "fore-1",
+      "toId": "ruin-4",
+      "x": 4844,
+      "z": -6835,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 2
+    },
+    {
+      "from": 2,
+      "to": 3,
+      "fromId": "fore-1",
+      "toId": "ricarten",
+      "x": 2275,
+      "z": -14828,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 2
+    },
+    {
+      "from": 4,
+      "to": 5,
+      "fromId": "ruin-4",
+      "toId": "ruin-3",
+      "x": 410,
+      "z": 4902,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 4
+    },
+    {
+      "from": 5,
+      "to": 6,
+      "fromId": "ruin-3",
+      "toId": "ruin-2",
+      "x": 3051,
+      "z": 16124,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 5
+    },
+    {
+      "from": 6,
+      "to": 7,
+      "fromId": "ruin-2",
+      "toId": "ruin-1",
+      "x": 10019,
+      "z": 18031,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 6
+    },
+    {
+      "from": 6,
+      "to": 17,
+      "fromId": "ruin-2",
+      "toId": "forever-fall-04",
+      "x": 4470,
+      "z": 27774,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 6
+    },
+    {
+      "from": 6,
+      "to": 34,
+      "fromId": "ruin-2",
+      "toId": "greedy",
+      "x": 12713,
+      "z": 23409,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 6
+    },
+    {
+      "from": 7,
+      "to": 8,
+      "fromId": "ruin-1",
+      "toId": "de-1",
+      "x": 13319,
+      "z": 7102,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 7
+    },
+    {
+      "from": 8,
+      "to": 10,
+      "fromId": "de-1",
+      "toId": "de-2",
+      "x": 13466,
+      "z": -5953,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 8
+    },
+    {
+      "from": 8,
+      "to": 9,
+      "fromId": "de-1",
+      "toId": "village-1",
+      "x": 20041,
+      "z": -892,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 8
+    },
+    {
+      "from": 9,
+      "to": 11,
+      "fromId": "village-1",
+      "toId": "de-3",
+      "x": 27110,
+      "z": -479,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 9
+    },
+    {
+      "from": 9,
+      "to": 30,
+      "fromId": "village-1",
+      "toId": "sod-1",
+      "x": 21840,
+      "z": 1062,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 9
+    },
+    {
+      "from": 11,
+      "to": 12,
+      "fromId": "de-3",
+      "toId": "de-4",
+      "x": 34372,
+      "z": 4277,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 11
+    },
+    {
+      "from": 12,
+      "to": 27,
+      "fromId": "de-4",
+      "toId": "iron-1",
+      "x": 44545,
+      "z": 13063,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 12
+    },
+    {
+      "from": 17,
+      "to": 18,
+      "fromId": "forever-fall-04",
+      "toId": "forever-fall-03",
+      "x": -2949,
+      "z": 40442,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 17
+    },
+    {
+      "from": 18,
+      "to": 19,
+      "fromId": "forever-fall-03",
+      "toId": "forever-fall-02",
+      "x": -2349,
+      "z": 49830,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 18
+    },
+    {
+      "from": 19,
+      "to": 20,
+      "fromId": "forever-fall-02",
+      "toId": "forever-fall-01",
+      "x": 667,
+      "z": 59371,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 19
+    },
+    {
+      "from": 20,
+      "to": 21,
+      "fromId": "forever-fall-01",
+      "toId": "pilai",
+      "x": -8508,
+      "z": -10576,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 20,
+      "dead": true
+    },
+    {
+      "from": 27,
+      "to": 28,
+      "fromId": "iron-1",
+      "toId": "iron-2",
+      "x": 45316,
+      "z": 21407,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 27
+    },
+    {
+      "from": 28,
+      "to": 29,
+      "fromId": "iron-2",
+      "toId": "ice-ura",
+      "x": 33618,
+      "z": 24011,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 28
+    },
+    {
+      "from": 28,
+      "to": 60,
+      "fromId": "iron-2",
+      "toId": "iron4",
+      "x": 39952,
+      "z": 30214,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 28
+    },
+    {
+      "from": 29,
+      "to": 31,
+      "fromId": "ice-ura",
+      "toId": "ice1",
+      "x": 31848,
+      "z": 27225,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 29
+    },
+    {
+      "from": 31,
+      "to": 35,
+      "fromId": "ice1",
+      "toId": "ice2",
+      "x": 33729,
+      "z": 38029,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 31
+    },
+    {
+      "from": 35,
+      "to": 31,
+      "fromId": "ice2",
+      "toId": "ice1",
+      "x": 35364,
+      "z": 39518,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 35
+    },
+    {
+      "from": 37,
+      "to": 38,
+      "fromId": "lost",
+      "toId": "losttemple",
+      "x": -11586,
+      "z": 7704,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 37
+    },
+    {
+      "from": 48,
+      "to": 49,
+      "fromId": "fo3",
+      "toId": "fo2",
+      "x": -48393,
+      "z": -10526,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 48
+    },
+    {
+      "from": 49,
+      "to": 50,
+      "fromId": "fo2",
+      "toId": "fo1",
+      "x": -40333,
+      "z": -9515,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 49
+    },
+    {
+      "from": 50,
+      "to": 51,
+      "fromId": "fo1",
+      "toId": "town1",
+      "x": -37653,
+      "z": -14972,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 50
+    },
+    {
+      "from": 50,
+      "to": 55,
+      "fromId": "fo1",
+      "toId": "ba4",
+      "x": -35228,
+      "z": -7397,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 50
+    },
+    {
+      "from": 52,
+      "to": 53,
+      "fromId": "ba1",
+      "toId": "ba2",
+      "x": -25122,
+      "z": 20938,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 52
+    },
+    {
+      "from": 52,
+      "to": 56,
+      "fromId": "ba1",
+      "toId": "iron3",
+      "x": -19022,
+      "z": 21052,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 52
+    },
+    {
+      "from": 53,
+      "to": 54,
+      "fromId": "ba2",
+      "toId": "ba3",
+      "x": -32203,
+      "z": 15803,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 53
+    },
+    {
+      "from": 54,
+      "to": 55,
+      "fromId": "ba3",
+      "toId": "ba4",
+      "x": -32225,
+      "z": 4508,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 54
+    },
+    {
+      "from": 60,
+      "to": 28,
+      "fromId": "iron4",
+      "toId": "iron-2",
+      "x": 33925,
+      "z": 29441,
+      "y": 0,
+      "bidirectional": true,
+      "authoredIn": 60
+    },
+    {
+      "from": 61,
+      "to": 61,
+      "fromId": "seaa",
+      "toId": "seaa",
+      "x": -22050,
+      "z": 7706,
+      "y": 841,
+      "bidirectional": true,
+      "authoredIn": 61
+    }
+  ],
+  "warpGates": [
+    {
+      "field": 0,
+      "fieldId": "fore-3",
+      "x": -16638,
+      "z": -6737,
+      "y": 267,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 55,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 24,
+          "toId": "tcave",
+          "x": 119112,
+          "z": 26028,
+          "y": 510
+        }
+      ]
+    },
+    {
+      "field": 1,
+      "fieldId": "fore-2",
+      "x": -3408,
+      "z": -12447,
+      "y": 251,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 2,
+      "exits": [
+        {
+          "to": 1,
+          "toId": "fore-2",
+          "x": -3265,
+          "z": -12583,
+          "y": 214
+        }
+      ]
+    },
+    {
+      "field": 3,
+      "fieldId": "ricarten",
+      "x": 734,
+      "z": -20119,
+      "y": 312,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 2,
+      "exits": [
+        {
+          "to": 3,
+          "toId": "ricarten",
+          "x": 822,
+          "z": -19956,
+          "y": 254
+        }
+      ]
+    },
+    {
+      "field": 3,
+      "fieldId": "ricarten",
+      "x": 2597,
+      "z": -18243,
+      "y": 236,
+      "size": 32,
+      "height": 32,
+      "limitLevel": 180,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 57,
+          "toId": "dc1",
+          "x": 198282,
+          "z": 240400,
+          "y": 1502
+        }
+      ]
+    },
+    {
+      "field": 6,
+      "fieldId": "ruin-2",
+      "x": 4428,
+      "z": 22511,
+      "y": 845,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 2,
+      "exits": [
+        {
+          "to": 6,
+          "toId": "ruin-2",
+          "x": 4547,
+          "z": 22616,
+          "y": 817
+        }
+      ]
+    },
+    {
+      "field": 7,
+      "fieldId": "ruin-1",
+      "x": 16809,
+      "z": 15407,
+      "y": 501,
+      "size": 128,
+      "height": 32,
+      "limitLevel": 40,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 13,
+          "toId": "dun-1",
+          "x": -15395,
+          "z": -24185,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "field": 9,
+      "fieldId": "village-1",
+      "x": 21936,
+      "z": -1833,
+      "y": 855,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 9,
+          "toId": "village-1",
+          "x": 21826,
+          "z": -1712,
+          "y": 825
+        }
+      ]
+    },
+    {
+      "field": 11,
+      "fieldId": "de-3",
+      "x": 36128,
+      "z": -2162,
+      "y": 804,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 70,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 22,
+          "toId": "dun-4",
+          "x": -11088,
+          "z": -41570,
+          "y": 343
+        }
+      ]
+    },
+    {
+      "field": 12,
+      "fieldId": "de-4",
+      "x": 33979,
+      "z": 6080,
+      "y": 969,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 12,
+          "toId": "de-4",
+          "x": 34100,
+          "z": 6214,
+          "y": 940
+        }
+      ]
+    },
+    {
+      "field": 13,
+      "fieldId": "dun-1",
+      "x": -15388,
+      "z": -24073,
+      "y": 100,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 7,
+          "toId": "ruin-1",
+          "x": 16649,
+          "z": 15238,
+          "y": 501
+        }
+      ]
+    },
+    {
+      "field": 13,
+      "fieldId": "dun-1",
+      "x": -15305,
+      "z": -28824,
+      "y": 1,
+      "size": 64,
+      "height": 2,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 14,
+          "toId": "dun-2",
+          "x": -6027,
+          "z": -26881,
+          "y": 99
+        }
+      ]
+    },
+    {
+      "field": 14,
+      "fieldId": "dun-2",
+      "x": -5908,
+      "z": -26878,
+      "y": 136,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 13,
+          "toId": "dun-1",
+          "x": -15314,
+          "z": -28718,
+          "y": 58
+        }
+      ]
+    },
+    {
+      "field": 14,
+      "fieldId": "dun-2",
+      "x": -8019,
+      "z": -25768,
+      "y": 21,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 60,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 15,
+          "toId": "dun-3",
+          "x": 1810,
+          "z": -28802,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "field": 14,
+      "fieldId": "dun-2",
+      "x": -3918,
+      "z": -27988,
+      "y": 21,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 60,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 15,
+          "toId": "dun-3",
+          "x": 1810,
+          "z": -28802,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "field": 15,
+      "fieldId": "dun-3",
+      "x": 1810,
+      "z": -28924,
+      "y": 0,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 14,
+          "toId": "dun-2",
+          "x": -8176,
+          "z": -25775,
+          "y": 77
+        },
+        {
+          "to": 14,
+          "toId": "dun-2",
+          "x": -3738,
+          "z": -27990,
+          "y": 73
+        }
+      ]
+    },
+    {
+      "field": 18,
+      "fieldId": "forever-fall-03",
+      "x": -4730,
+      "z": 48107,
+      "y": 1173,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 2,
+      "exits": [
+        {
+          "to": 18,
+          "toId": "forever-fall-03",
+          "x": -4615,
+          "z": 48002,
+          "y": 1146
+        }
+      ]
+    },
+    {
+      "field": 18,
+      "fieldId": "forever-fall-03",
+      "x": -6306,
+      "z": 43241,
+      "y": 779,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 55,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 25,
+          "toId": "mcave",
+          "x": 119025,
+          "z": 35680,
+          "y": 499
+        }
+      ]
+    },
+    {
+      "field": 20,
+      "fieldId": "forever-fall-01",
+      "x": 1962,
+      "z": 71184,
+      "y": 559,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 1,
+      "exits": [
+        {
+          "to": 21,
+          "toId": "pilai",
+          "x": 1993,
+          "z": 73134,
+          "y": 449
+        }
+      ]
+    },
+    {
+      "field": 21,
+      "fieldId": "pilai",
+      "x": 2000,
+      "z": 72907,
+      "y": 474,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 20,
+          "toId": "forever-fall-01",
+          "x": 1958,
+          "z": 70922,
+          "y": 536
+        }
+      ]
+    },
+    {
+      "field": 21,
+      "fieldId": "pilai",
+      "x": 2245,
+      "z": 78259,
+      "y": 745,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 2,
+      "exits": [
+        {
+          "to": 21,
+          "toId": "pilai",
+          "x": 2252,
+          "z": 78041,
+          "y": 754
+        }
+      ]
+    },
+    {
+      "field": 22,
+      "fieldId": "dun-4",
+      "x": -10860,
+      "z": -41666,
+      "y": 398,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 11,
+          "toId": "de-3",
+          "x": 35872,
+          "z": -2016,
+          "y": 804
+        }
+      ]
+    },
+    {
+      "field": 22,
+      "fieldId": "dun-4",
+      "x": -12089,
+      "z": -40380,
+      "y": 95,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 75,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 23,
+          "toId": "dun-5",
+          "x": -2527,
+          "z": -37196,
+          "y": 727
+        },
+        {
+          "to": 23,
+          "toId": "dun-5",
+          "x": -3669,
+          "z": -36444,
+          "y": 727
+        },
+        {
+          "to": 23,
+          "toId": "dun-5",
+          "x": -4795,
+          "z": -37198,
+          "y": 727
+        }
+      ]
+    },
+    {
+      "field": 23,
+      "fieldId": "dun-5",
+      "x": -3665,
+      "z": -36334,
+      "y": 762,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 22,
+          "toId": "dun-4",
+          "x": -12073,
+          "z": -40701,
+          "y": 95
+        }
+      ]
+    },
+    {
+      "field": 23,
+      "fieldId": "dun-5",
+      "x": -4895,
+      "z": -37132,
+      "y": 762,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 22,
+          "toId": "dun-4",
+          "x": -12073,
+          "z": -40701,
+          "y": 95
+        }
+      ]
+    },
+    {
+      "field": 23,
+      "fieldId": "dun-5",
+      "x": -2441,
+      "z": -37137,
+      "y": 762,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 22,
+          "toId": "dun-4",
+          "x": -12073,
+          "z": -40701,
+          "y": 95
+        }
+      ]
+    },
+    {
+      "field": 23,
+      "fieldId": "dun-5",
+      "x": -3207,
+      "z": -43830,
+      "y": 553,
+      "size": 128,
+      "height": 32,
+      "limitLevel": 125,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 42,
+          "toId": "dun-6",
+          "x": -3660,
+          "z": -45200,
+          "y": 114
+        }
+      ]
+    },
+    {
+      "field": 23,
+      "fieldId": "dun-5",
+      "x": -4025,
+      "z": -43821,
+      "y": 553,
+      "size": 128,
+      "height": 32,
+      "limitLevel": 125,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 42,
+          "toId": "dun-6",
+          "x": -3660,
+          "z": -45200,
+          "y": 114
+        }
+      ]
+    },
+    {
+      "field": 24,
+      "fieldId": "tcave",
+      "x": 125581,
+      "z": 25086,
+      "y": 480,
+      "size": 80,
+      "height": 32,
+      "limitLevel": 65,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 26,
+          "toId": "dcave",
+          "x": 158627,
+          "z": 20504,
+          "y": 240
+        }
+      ]
+    },
+    {
+      "field": 24,
+      "fieldId": "tcave",
+      "x": 118869,
+      "z": 26017,
+      "y": 538,
+      "size": 80,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 0,
+          "toId": "fore-3",
+          "x": -16490,
+          "z": -6930,
+          "y": 298
+        }
+      ]
+    },
+    {
+      "field": 25,
+      "fieldId": "mcave",
+      "x": 124391,
+      "z": 32913,
+      "y": 37,
+      "size": 80,
+      "height": 32,
+      "limitLevel": 65,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 26,
+          "toId": "dcave",
+          "x": 158543,
+          "z": 19557,
+          "y": 290
+        }
+      ]
+    },
+    {
+      "field": 25,
+      "fieldId": "mcave",
+      "x": 118808,
+      "z": 35686,
+      "y": 520,
+      "size": 80,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 18,
+          "toId": "forever-fall-03",
+          "x": -6056,
+          "z": 43245,
+          "y": 787
+        }
+      ]
+    },
+    {
+      "field": 26,
+      "fieldId": "dcave",
+      "x": 158042,
+      "z": 19525,
+      "y": 330,
+      "size": 120,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 25,
+          "toId": "mcave",
+          "x": 124396,
+          "z": 33291,
+          "y": 37
+        }
+      ]
+    },
+    {
+      "field": 26,
+      "fieldId": "dcave",
+      "x": 158023,
+      "z": 20453,
+      "y": 240,
+      "size": 120,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 24,
+          "toId": "tcave",
+          "x": 125566,
+          "z": 24825,
+          "y": 480
+        }
+      ]
+    },
+    {
+      "field": 28,
+      "fieldId": "iron-2",
+      "x": 39937,
+      "z": 29773,
+      "y": 1469,
+      "size": 200,
+      "height": 200,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": []
+    },
+    {
+      "field": 29,
+      "fieldId": "ice-ura",
+      "x": 30407,
+      "z": 22232,
+      "y": 1349,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 2,
+      "exits": [
+        {
+          "to": 29,
+          "toId": "ice-ura",
+          "x": 30610,
+          "z": 22164,
+          "y": 1304
+        }
+      ]
+    },
+    {
+      "field": 31,
+      "fieldId": "ice1",
+      "x": 35361,
+      "z": 31898,
+      "y": 829,
+      "size": 80,
+      "height": 32,
+      "limitLevel": 120,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 44,
+          "toId": "mine-1",
+          "x": 18006,
+          "z": -34698,
+          "y": 222
+        }
+      ]
+    },
+    {
+      "field": 33,
+      "fieldId": "castle",
+      "x": 32527,
+      "z": -30693,
+      "y": 774,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 2,
+      "exits": [
+        {
+          "to": 33,
+          "toId": "castle",
+          "x": 32739,
+          "z": -30474,
+          "y": 711
+        }
+      ]
+    },
+    {
+      "field": 35,
+      "fieldId": "ice2",
+      "x": 37981,
+      "z": 50790,
+      "y": 1216,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 36,
+          "toId": "boss",
+          "x": 33000,
+          "z": 50036,
+          "y": 1512
+        }
+      ]
+    },
+    {
+      "field": 36,
+      "fieldId": "boss",
+      "x": 33012,
+      "z": 49926,
+      "y": 1533,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 35,
+          "toId": "ice2",
+          "x": 37971,
+          "z": 50460,
+          "y": 1209
+        }
+      ]
+    },
+    {
+      "field": 37,
+      "fieldId": "lost",
+      "x": -12610,
+      "z": -1349,
+      "y": 694,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 2,
+      "exits": [
+        {
+          "to": 37,
+          "toId": "lost",
+          "x": -12555,
+          "z": -1113,
+          "y": 668
+        }
+      ]
+    },
+    {
+      "field": 40,
+      "fieldId": "dun-7",
+      "x": 14241,
+      "z": -41079,
+      "y": 220,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 110,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 41,
+          "toId": "dun-8",
+          "x": 5255,
+          "z": -37897,
+          "y": 84
+        }
+      ]
+    },
+    {
+      "field": 40,
+      "fieldId": "dun-7",
+      "x": 14246,
+      "z": -38912,
+      "y": 220,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 38,
+          "toId": "losttemple",
+          "x": -12272,
+          "z": 11299,
+          "y": 509
+        }
+      ]
+    },
+    {
+      "field": 41,
+      "fieldId": "dun-8",
+      "x": 5253,
+      "z": -37708,
+      "y": 69,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 40,
+          "toId": "dun-7",
+          "x": 14242,
+          "z": -41199,
+          "y": 220
+        }
+      ]
+    },
+    {
+      "field": 41,
+      "fieldId": "dun-8",
+      "x": 5254,
+      "z": -41500,
+      "y": 139,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 115,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 43,
+          "toId": "dun-9",
+          "x": 4896,
+          "z": -42220,
+          "y": 202
+        },
+        {
+          "to": 43,
+          "toId": "dun-9",
+          "x": 6408,
+          "z": -42220,
+          "y": 202
+        }
+      ]
+    },
+    {
+      "field": 42,
+      "fieldId": "dun-6",
+      "x": -3655,
+      "z": -50603,
+      "y": 3,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 45,
+          "toId": "slab",
+          "x": -12024,
+          "z": -62846,
+          "y": 173
+        }
+      ]
+    },
+    {
+      "field": 42,
+      "fieldId": "dun-6",
+      "x": -3664,
+      "z": -44886,
+      "y": 145,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 23,
+          "toId": "dun-5",
+          "x": -2851,
+          "z": -43792,
+          "y": 642
+        },
+        {
+          "to": 23,
+          "toId": "dun-5",
+          "x": -4422,
+          "z": -43801,
+          "y": 642
+        }
+      ]
+    },
+    {
+      "field": 43,
+      "fieldId": "dun-9",
+      "x": 4896,
+      "z": -42090,
+      "y": 230,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 41,
+          "toId": "dun-8",
+          "x": 5254,
+          "z": -41361,
+          "y": 139
+        }
+      ]
+    },
+    {
+      "field": 43,
+      "fieldId": "dun-9",
+      "x": 6408,
+      "z": -42090,
+      "y": 230,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 41,
+          "toId": "dun-8",
+          "x": 5254,
+          "z": -41361,
+          "y": 139
+        }
+      ]
+    },
+    {
+      "field": 44,
+      "fieldId": "mine-1",
+      "x": 17944,
+      "z": -34641,
+      "y": 246,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 31,
+          "toId": "ice1",
+          "x": 35352,
+          "z": 31928,
+          "y": 829
+        }
+      ]
+    },
+    {
+      "field": 45,
+      "fieldId": "slab",
+      "x": -12009,
+      "z": -62996,
+      "y": 171,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 42,
+          "toId": "dun-6",
+          "x": -3643,
+          "z": -50387,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "field": 45,
+      "fieldId": "slab",
+      "x": -12000,
+      "z": -54163,
+      "y": 374,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 120,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 46,
+          "toId": "ancientw",
+          "x": 12788,
+          "z": -73633,
+          "y": 458
+        }
+      ]
+    },
+    {
+      "field": 46,
+      "fieldId": "ancientw",
+      "x": 12799,
+      "z": -62227,
+      "y": 530,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 1,
+      "exits": [
+        {
+          "to": 46,
+          "toId": "ancientw",
+          "x": 12772,
+          "z": -59917,
+          "y": 562
+        }
+      ]
+    },
+    {
+      "field": 46,
+      "fieldId": "ancientw",
+      "x": 12778,
+      "z": -60119,
+      "y": 578,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 1,
+      "exits": [
+        {
+          "to": 46,
+          "toId": "ancientw",
+          "x": 12700,
+          "z": -62387,
+          "y": 510
+        }
+      ]
+    },
+    {
+      "field": 46,
+      "fieldId": "ancientw",
+      "x": 12790,
+      "z": -74070,
+      "y": 458,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 130,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 45,
+          "toId": "slab",
+          "x": -12000,
+          "z": -54309,
+          "y": 374
+        }
+      ]
+    },
+    {
+      "field": 52,
+      "fieldId": "ba1",
+      "x": -23801,
+      "z": 17726,
+      "y": 1105,
+      "size": 100,
+      "height": 100,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 51,
+          "toId": "town1",
+          "x": -35712,
+          "z": -17601,
+          "y": 1269
+        }
+      ]
+    },
+    {
+      "field": 55,
+      "fieldId": "ba4",
+      "x": -38593,
+      "z": 295,
+      "y": 1844,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 130,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 63,
+          "toId": "ad1",
+          "x": 64602,
+          "z": -24325,
+          "y": 100
+        }
+      ]
+    },
+    {
+      "field": 55,
+      "fieldId": "ba4",
+      "x": -37290,
+      "z": -4816,
+      "y": 1457,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 135,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 66,
+          "toId": "sanc1",
+          "x": 26445,
+          "z": -41677,
+          "y": 341
+        }
+      ]
+    },
+    {
+      "field": 57,
+      "fieldId": "dc1",
+      "x": 198284,
+      "z": 240295,
+      "y": 1517,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 3,
+          "toId": "ricarten",
+          "x": 2604,
+          "z": -18130,
+          "y": 236
+        }
+      ]
+    },
+    {
+      "field": 59,
+      "fieldId": "ice3",
+      "x": 64465,
+      "z": 68959,
+      "y": 990,
+      "size": 100,
+      "height": 100,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 3,
+          "toId": "ricarten",
+          "x": -131,
+          "z": -18123,
+          "y": 135
+        }
+      ]
+    },
+    {
+      "field": 63,
+      "fieldId": "ad1",
+      "x": 64605,
+      "z": -24128,
+      "y": 100,
+      "size": 64,
+      "height": 2,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 55,
+          "toId": "ba4",
+          "x": -38235,
+          "z": 293,
+          "y": 1840
+        }
+      ]
+    },
+    {
+      "field": 63,
+      "fieldId": "ad1",
+      "x": 64702,
+      "z": -28736,
+      "y": 52,
+      "size": 64,
+      "height": 2,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 64,
+          "toId": "ad2",
+          "x": 73938,
+          "z": -26886,
+          "y": 90
+        }
+      ]
+    },
+    {
+      "field": 64,
+      "fieldId": "ad2",
+      "x": 74042,
+      "z": -26898,
+      "y": 136,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 63,
+          "toId": "ad1",
+          "x": 64726,
+          "z": -28594,
+          "y": 63
+        }
+      ]
+    },
+    {
+      "field": 64,
+      "fieldId": "ad2",
+      "x": 71869,
+      "z": -25758,
+      "y": 63,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 65,
+          "toId": "ad3",
+          "x": 81808,
+          "z": -28710,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "field": 64,
+      "fieldId": "ad2",
+      "x": 76202,
+      "z": -28003,
+      "y": 58,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 65,
+          "toId": "ad3",
+          "x": 81808,
+          "z": -28710,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "field": 65,
+      "fieldId": "ad3",
+      "x": 81807,
+      "z": -28855,
+      "y": 270,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 64,
+          "toId": "ad2",
+          "x": 71744,
+          "z": -25775,
+          "y": 90
+        },
+        {
+          "to": 64,
+          "toId": "ad2",
+          "x": 76330,
+          "z": -27990,
+          "y": 90
+        }
+      ]
+    },
+    {
+      "field": 66,
+      "fieldId": "sanc1",
+      "x": 26599,
+      "z": -41671,
+      "y": 384,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 55,
+          "toId": "ba4",
+          "x": -37086,
+          "z": -4809,
+          "y": 1457
+        }
+      ]
+    },
+    {
+      "field": 66,
+      "fieldId": "sanc1",
+      "x": 25415,
+      "z": -40404,
+      "y": 95,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 67,
+          "toId": "sanc2",
+          "x": 33827,
+          "z": -36476,
+          "y": 721
+        }
+      ]
+    },
+    {
+      "field": 67,
+      "fieldId": "sanc2",
+      "x": 33831,
+      "z": -36327,
+      "y": 756,
+      "size": 64,
+      "height": 32,
+      "limitLevel": 0,
+      "specialEffect": 0,
+      "exits": [
+        {
+          "to": 66,
+          "toId": "sanc1",
+          "x": 25402,
+          "z": -40584,
+          "y": 95
+        }
+      ]
+    }
+  ],
+  "wingWarp": {
+    "destinations": [
+      {
+        "icon": 0,
+        "fieldIndex": 3,
+        "name": "里 查 登",
+        "doc": "Ricarten",
+        "iconPos": null,
+        "fieldId": "ricarten",
+        "requiredLevel": 0
+      },
+      {
+        "icon": 1,
+        "fieldIndex": 21,
+        "name": "菲 尔 拉",
+        "doc": "Pilai",
+        "iconPos": null,
+        "fieldId": "pilai",
+        "requiredLevel": 0
+      },
+      {
+        "icon": 2,
+        "fieldIndex": 18,
+        "name": "黄昏树林",
+        "doc": "Forest2",
+        "iconPos": null,
+        "fieldId": "forever-fall-03",
+        "requiredLevel": 0
+      },
+      {
+        "icon": 3,
+        "fieldIndex": 1,
+        "name": "竹 之 林",
+        "doc": "Forest3",
+        "iconPos": null,
+        "fieldId": "fore-2",
+        "requiredLevel": 0
+      },
+      {
+        "icon": 4,
+        "fieldIndex": 6,
+        "name": "废墟村庄",
+        "doc": "Ruinen",
+        "iconPos": null,
+        "fieldId": "ruin-2",
+        "requiredLevel": 0
+      },
+      {
+        "icon": 5,
+        "fieldIndex": 9,
+        "name": "内维斯克",
+        "doc": "Nevisco",
+        "iconPos": null,
+        "fieldId": "village-1",
+        "requiredLevel": 0
+      },
+      {
+        "icon": 6,
+        "fieldIndex": 12,
+        "name": "封禁之地",
+        "doc": "Desert4",
+        "iconPos": null,
+        "fieldId": "de-4",
+        "requiredLevel": 55
+      },
+      {
+        "icon": 7,
+        "fieldIndex": 29,
+        "name": "幽拉村庄",
+        "doc": "yura",
+        "iconPos": null,
+        "fieldId": "ice-ura",
+        "requiredLevel": 90
+      },
+      {
+        "icon": 8,
+        "fieldIndex": 37,
+        "name": null,
+        "doc": "chaoticpost",
+        "iconPos": null,
+        "fieldId": "lost",
+        "requiredLevel": 95
+      }
+    ],
+    "haGate": {
+      "fieldIndex": 33,
+      "name": "祝福城堡",
+      "doc": "B_Castle",
+      "iconPos": null,
+      "requiresBlessCastleClan": true,
+      "fieldId": "castle"
+    },
+    "costs": [
+      100,
+      300,
+      500,
+      1000,
+      2000,
+      4000
+    ],
+    "tiers": [
+      {
+        "item": "sinQW1|sin01",
+        "unlockCount": 4
+      },
+      {
+        "item": "sinQW1|sin02",
+        "unlockCount": 5
+      },
+      {
+        "item": "sinQW1|sin03",
+        "unlockCount": 6
+      },
+      {
+        "item": "sinQW1|sin04",
+        "unlockCount": 7
+      },
+      {
+        "item": "sinQW1|sin05",
+        "unlockCount": 8
+      },
+      {
+        "item": "sinQW1|sin06",
+        "unlockCount": 9
+      }
+    ],
+    "defaultUnlock": 2,
+    "rules": {
+      "freeIconsBelow": 2,
+      "paidWhenUnlockAtLeast": 4,
+      "costIndexBase": 4,
+      "sameAreaFree": true,
+      "levelGate": "FieldLimitLevel_Table[destField] <= playerLevel",
+      "arrival": "destination field PosWarpOut",
+      "trigger": "SpecialEffect=2 WarpGate touch opens the map UI"
+    }
+  },
+  "npcTeleport": {
+    "destinations": [
+      {
+        "select": 1,
+        "fieldIndex": 0,
+        "cost": 100,
+        "levelGateField": null,
+        "fieldId": "fore-3"
+      },
+      {
+        "select": 2,
+        "fieldIndex": 18,
+        "cost": 100,
+        "levelGateField": null,
+        "fieldId": "forever-fall-03"
+      },
+      {
+        "select": 3,
+        "fieldIndex": 7,
+        "cost": 500,
+        "levelGateField": null,
+        "fieldId": "ruin-1"
+      },
+      {
+        "select": 4,
+        "fieldIndex": 12,
+        "cost": 1000,
+        "levelGateField": 12,
+        "fieldId": "de-4"
+      }
+    ],
+    "arrival": "WarpField2: field center (castle fields use a StartPoint)",
+    "costIncludesSiegeTax": true,
+    "dungeonTeleport": {
+      "fieldIndex": 40
+    },
+    "castleTeleport": {
+      "fieldIndex": 33
+    },
+    "warTeleport": {
+      "fieldIndex": 23,
+      "server": true
+    },
+    "fallGame": {
+      "fieldIndex": 39
+    },
+    "jobChangeReturn": {
+      "tempskron": 3,
+      "morion": 21
+    }
+  },
+  "teleportCore": [
+    {
+      "select": 0,
+      "fieldIndex": 20,
+      "level": 0,
+      "fieldId": "forever-fall-01"
+    },
+    {
+      "select": 1,
+      "fieldIndex": 19,
+      "level": 0,
+      "fieldId": "forever-fall-02"
+    },
+    {
+      "select": 2,
+      "fieldIndex": 17,
+      "level": 0,
+      "fieldId": "forever-fall-04"
+    },
+    {
+      "select": 3,
+      "fieldIndex": 0,
+      "level": 0,
+      "fieldId": "fore-3"
+    },
+    {
+      "select": 4,
+      "fieldIndex": 2,
+      "level": 0,
+      "fieldId": "fore-1"
+    },
+    {
+      "select": 5,
+      "fieldIndex": 4,
+      "level": 0,
+      "fieldId": "ruin-4"
+    },
+    {
+      "select": 6,
+      "fieldIndex": 5,
+      "level": 0,
+      "fieldId": "ruin-3"
+    },
+    {
+      "select": 7,
+      "fieldIndex": 7,
+      "level": 0,
+      "fieldId": "ruin-1"
+    },
+    {
+      "select": 8,
+      "fieldIndex": 8,
+      "level": 0,
+      "fieldId": "de-1"
+    },
+    {
+      "select": 9,
+      "fieldIndex": 10,
+      "level": 0,
+      "fieldId": "de-2"
+    },
+    {
+      "select": 10,
+      "fieldIndex": 11,
+      "level": 55,
+      "fieldId": "de-3"
+    },
+    {
+      "select": 11,
+      "fieldIndex": 12,
+      "level": 55,
+      "fieldId": "de-4"
+    },
+    {
+      "select": 12,
+      "fieldIndex": 25,
+      "level": 55,
+      "fieldId": "mcave"
+    },
+    {
+      "select": 13,
+      "fieldIndex": 24,
+      "level": 55,
+      "fieldId": "tcave"
+    },
+    {
+      "select": 14,
+      "fieldIndex": 26,
+      "level": 65,
+      "fieldId": "dcave"
+    },
+    {
+      "select": 15,
+      "fieldIndex": 13,
+      "level": 40,
+      "fieldId": "dun-1"
+    },
+    {
+      "select": 16,
+      "fieldIndex": 14,
+      "level": 50,
+      "fieldId": "dun-2"
+    },
+    {
+      "select": 17,
+      "fieldIndex": 15,
+      "level": 60,
+      "fieldId": "dun-3"
+    },
+    {
+      "select": 18,
+      "fieldIndex": 22,
+      "level": 70,
+      "fieldId": "dun-4"
+    },
+    {
+      "select": 19,
+      "fieldIndex": 23,
+      "level": 75,
+      "fieldId": "dun-5"
+    },
+    {
+      "select": 20,
+      "fieldIndex": 42,
+      "level": 125,
+      "fieldId": "dun-6"
+    },
+    {
+      "select": 21,
+      "fieldIndex": 34,
+      "level": 70,
+      "fieldId": "greedy"
+    },
+    {
+      "select": 22,
+      "fieldIndex": 27,
+      "level": 80,
+      "fieldId": "iron-1"
+    },
+    {
+      "select": 23,
+      "fieldIndex": 28,
+      "level": 85,
+      "fieldId": "iron-2"
+    },
+    {
+      "select": 24,
+      "fieldIndex": 29,
+      "level": 90,
+      "fieldId": "ice-ura"
+    },
+    {
+      "select": 25,
+      "fieldIndex": 31,
+      "level": 90,
+      "fieldId": "ice1"
+    },
+    {
+      "select": 26,
+      "fieldIndex": 35,
+      "level": 95,
+      "fieldId": "ice2"
+    },
+    {
+      "select": 27,
+      "fieldIndex": 36,
+      "level": 100,
+      "fieldId": "boss"
+    },
+    {
+      "select": 28,
+      "fieldIndex": 37,
+      "level": 95,
+      "fieldId": "lost"
+    },
+    {
+      "select": 29,
+      "fieldIndex": 38,
+      "level": 100,
+      "fieldId": "losttemple"
+    },
+    {
+      "select": 30,
+      "fieldIndex": 40,
+      "level": 105,
+      "fieldId": "dun-7"
+    },
+    {
+      "select": 31,
+      "fieldIndex": 41,
+      "level": 110,
+      "fieldId": "dun-8"
+    },
+    {
+      "select": 32,
+      "fieldIndex": 43,
+      "level": 115,
+      "fieldId": "dun-9"
+    },
+    {
+      "select": 33,
+      "fieldIndex": 44,
+      "level": 120,
+      "fieldId": "mine-1"
+    },
+    {
+      "select": 34,
+      "fieldIndex": 42,
+      "level": 125,
+      "fieldId": "dun-6"
+    },
+    {
+      "select": 35,
+      "fieldIndex": 45,
+      "level": 130,
+      "fieldId": "slab"
+    },
+    {
+      "select": 36,
+      "fieldIndex": 46,
+      "level": 135,
+      "fieldId": "ancientw"
+    },
+    {
+      "select": 37,
+      "fieldIndex": 60,
+      "level": 145,
+      "fieldId": "iron4"
+    },
+    {
+      "select": 38,
+      "fieldIndex": 49,
+      "level": 100,
+      "fieldId": "fo2"
+    },
+    {
+      "select": 39,
+      "fieldIndex": 48,
+      "level": 110,
+      "fieldId": "fo3"
+    },
+    {
+      "select": 40,
+      "fieldIndex": 55,
+      "level": 120,
+      "fieldId": "ba4"
+    },
+    {
+      "select": 41,
+      "fieldIndex": 54,
+      "level": 130,
+      "fieldId": "ba3"
+    },
+    {
+      "select": 42,
+      "fieldIndex": 53,
+      "level": 140,
+      "fieldId": "ba2"
+    },
+    {
+      "select": 43,
+      "fieldIndex": 56,
+      "level": 150,
+      "fieldId": "iron3"
+    },
+    {
+      "select": 44,
+      "fieldIndex": 63,
+      "level": 160,
+      "fieldId": "ad1"
+    },
+    {
+      "select": 45,
+      "fieldIndex": 64,
+      "level": 170,
+      "fieldId": "ad2"
+    },
+    {
+      "select": 46,
+      "fieldIndex": 65,
+      "level": 180,
+      "fieldId": "ad3"
+    },
+    {
+      "select": 47,
+      "fieldIndex": 66,
+      "level": 190,
+      "fieldId": "sanc1"
+    },
+    {
+      "select": 48,
+      "fieldIndex": 67,
+      "level": 200,
+      "fieldId": "sanc2"
+    },
+    {
+      "select": 49,
+      "fieldIndex": 62,
+      "level": 160,
+      "fieldId": "heartoffire"
+    },
+    {
+      "select": 50,
+      "fieldIndex": 59,
+      "level": 150,
+      "fieldId": "ice3"
+    },
+    {
+      "select": 51,
+      "fieldIndex": 61,
+      "level": 155,
+      "fieldId": "seaa"
+    },
+    {
+      "select": 52,
+      "fieldIndex": 68,
+      "level": 180,
+      "fieldId": "crystalnest"
+    },
+    {
+      "select": 53,
+      "fieldIndex": 69,
+      "level": 200,
+      "fieldId": "landofnurwn"
+    }
+  ],
+  "etherCore": [
+    {
+      "item": "sinEC1|sin01",
+      "fieldIndex": 3,
+      "startFieldDefine": "START_FIELD_NUM",
+      "fieldId": "ricarten"
+    },
+    {
+      "item": "sinEC1|sin02",
+      "fieldIndex": 9,
+      "startFieldDefine": "START_FIELD_NEBISCO",
+      "fieldId": "village-1"
+    },
+    {
+      "item": "sinEC1|sin04",
+      "fieldIndex": 21,
+      "startFieldDefine": "START_FIELD_MORYON",
+      "fieldId": "pilai"
+    },
+    {
+      "item": "sinEC1|sin06",
+      "fieldIndex": 51,
+      "startFieldDefine": "START_FIELD_ATLANTIS",
+      "fieldId": "town1"
+    },
+    {
+      "item": "sinEC1|sin08",
+      "fieldIndex": 52,
+      "startFieldDefine": "START_FIELD_LOULANGUCHENG",
+      "fieldId": "ba1"
+    },
+    {
+      "item": "sinEC1|sin09",
+      "fieldIndex": 47,
+      "startFieldDefine": "START_FIELD_ZHONGSHENZHICHENG",
+      "fieldId": "lost3"
+    },
+    {
+      "item": "sinEC1|sin10",
+      "fieldIndex": 59,
+      "startFieldDefine": "START_FIELD_ZHONGSHENZHICHENG1",
+      "fieldId": "ice3"
+    },
+    {
+      "item": "sinEC1|sin11",
+      "fieldIndex": 61,
+      "startFieldDefine": "START_FIELD_ZHONGSHENZHICHENG2",
+      "fieldId": "seaa"
+    },
+    {
+      "item": "sinEC1|sin12",
+      "fieldIndex": 62,
+      "startFieldDefine": "START_FIELD_ZHONGSHENZHICHENG3",
+      "fieldId": "heartoffire"
+    },
+    {
+      "item": "sinEC1|sin13",
+      "fieldIndex": 57,
+      "startFieldDefine": "START_FIELD_ZHONGSHENZHICHENG4",
+      "fieldId": "dc1"
+    }
+  ],
+  "serverTransitions": [
+    {
+      "kind": "SOD_ENTER",
+      "fieldIndex": 30,
+      "source": "OnSever.cpp hardcore-event open",
+      "fieldId": "sod-1"
+    },
+    {
+      "kind": "SOD_EXIT",
+      "fieldIndex": 9,
+      "source": "OnSever.cpp hardcore-event timeout",
+      "fieldId": "village-1"
+    },
+    {
+      "kind": "SOD_STAGE",
+      "fieldIndex": 30,
+      "source": "playsub.cpp SodNextStageNum",
+      "fieldId": "sod-1"
+    },
+    {
+      "kind": "WAR_JOIN",
+      "fieldIndex": 23,
+      "x": -3630,
+      "z": -43167,
+      "source": "smTRANSCODE_JOIN_WARMODE",
+      "fieldId": "dun-5"
+    },
+    {
+      "kind": "WAR_END",
+      "fieldIndex": 3,
+      "x": 2596,
+      "z": -18738,
+      "source": "OnSever.cpp war cleanup",
+      "fieldId": "ricarten"
+    },
+    {
+      "kind": "DEVIL_CASTLE_ENTER",
+      "fieldIndex": 58,
+      "x": 21560,
+      "z": 16979,
+      "source": "OnSever.cpp devilCastle open",
+      "fieldId": "sod-2"
+    },
+    {
+      "kind": "DEVIL_CASTLE_EXIT",
+      "fieldIndex": 3,
+      "x": 2596,
+      "z": -18738,
+      "source": "OnSever.cpp DevCaleMain timeout",
+      "fieldId": "ricarten"
+    },
+    {
+      "kind": "QUEST_ARENA",
+      "fieldIndex": 32,
+      "source": "netplay.cpp Start_QuestArena (client WarpField2 + server QUEST_COMMAND)",
+      "fieldId": "quest-iv"
+    },
+    {
+      "kind": "CASTLE_RETURN",
+      "fieldIndex": 33,
+      "source": "netplay.cpp castle-mode end -> WarpField2(rsCASTLE_FIELD)",
+      "fieldId": "castle"
+    },
+    {
+      "kind": "CASTLE_MASTER",
+      "fieldIndex": 33,
+      "source": "field.cpp WarpCastleField CastleMasterPos",
+      "fieldId": "castle"
+    },
+    {
+      "kind": "ADMIN_TELEPORT",
+      "fieldIndex": null,
+      "source": "OnSever.cpp /near /call; client /field N -> WarpField2",
+      "fieldId": null
+    },
+    {
+      "kind": "PRISON",
+      "fieldIndex": 3,
+      "x": 1746,
+      "z": -19756,
+      "source": "field.cpp WarpPrisonField",
+      "fieldId": "ricarten"
+    },
+    {
+      "kind": "RESPAWN_FIELD",
+      "fieldIndex": null,
+      "source": "character.cpp RESTART_FEILD -> WarpFieldNearPos(current)",
+      "fieldId": null
+    },
+    {
+      "kind": "RESPAWN_TOWN",
+      "fieldIndex": 3,
+      "source": "character.cpp RESTART_TOWN -> WarpStartField (3 Tempskron / 21 Morion / castle master 33)",
+      "fieldId": "ricarten"
+    },
+    {
+      "kind": "LOGIN_DEAD",
+      "fieldIndex": null,
+      "source": "netplay.cpp login newLife==0 -> WarpStartField",
+      "fieldId": null
+    }
+  ]
+}
