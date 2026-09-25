@@ -74,7 +74,7 @@ import type { BattlegroundView } from './battleground';
 import { BattlegroundFx } from './battleground_fx';
 import { updateBattlegroundOccluderFades } from './battleground_placements';
 import { buildBattlegroundObject } from './battleground_props';
-import { buildPtTerrainView, PT_RICARTEN_SOURCE } from './pt_terrain';
+import { buildPtTerrainView, PT_RICARTEN_SOURCE, type PtTerrainView } from './pt_terrain';
 import { PtTerrainGate } from './pt_terrain_gate';
 import {
   type BattlegroundViewHost,
@@ -8337,6 +8337,32 @@ export class Renderer {
     if (look !== '') this.audioSink?.preloadMountEngine(look);
   }
 
+  // Attach a freshly built PT field view. The build resolves only after
+  // every referenced texture has decoded (missing URLs latch to null), so
+  // the group attaches atomically; the compile gate then links the Lambert
+  // programs and uploads the textures through its budgeted lanes, keeping
+  // the group hidden until the first presented frame cannot stall on a
+  // synchronous link or a block of texture uploads. Rigs without async
+  // compile keep the previous immediate attach.
+  private attachPtView(view: PtTerrainView): void {
+    this.scene.add(view.group);
+    if (!this.asyncCompileSupported) return;
+    const generation = this.lifecycleGeneration;
+    view.group.visible = false;
+    void this.compileGate(view.group).then(
+      () => {
+        if (!this.shutdownStarted && generation === this.lifecycleGeneration) {
+          view.group.visible = true;
+        }
+      },
+      (error) => {
+        this.recoverRejectedCompileGate(error, generation, () => {
+          view.group.visible = true;
+        });
+      },
+    );
+  }
+
   // Shared core for every compile gate below: link `target`'s programs off the
   // main thread (KHR_parallel_shader_compile via compileAsync) against the live
   // scene's exact lights + environment. The same priority arbiter owns live
@@ -8788,12 +8814,12 @@ export class Renderer {
   // ownership promotes the standby map to active.
   private ptTerrainGate = new PtTerrainGate(
     (src) => buildPtTerrainView(src),
-    (view) => this.scene.add(view.group),
+    (view) => this.attachPtView(view),
     (view) => this.scene.remove(view.group),
   );
   private ptStandbyTerrainGate = new PtTerrainGate(
     (src) => buildPtTerrainView(src),
-    (view) => this.scene.add(view.group),
+    (view) => this.attachPtView(view),
     (view) => this.scene.remove(view.group),
   );
   // The bookkeeping those copies need beside them (battleground_views.ts): the

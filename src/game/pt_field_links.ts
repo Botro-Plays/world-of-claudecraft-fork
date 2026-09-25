@@ -128,6 +128,7 @@ function nearestGate(
 
 let _scanCount = 0;
 let _pendingId: string | null = null;
+let _warmedActiveId: string | null = null;
 
 async function installCandidate(
   destId: string,
@@ -165,10 +166,30 @@ async function installCandidate(
  */
 export function tickPtFieldGates(wocX: number, wocZ: number): void {
   if (++_scanCount % PT_GATE_SCAN_FRAMES !== 0) return;
-  if (_pendingId !== null) return; // a destination load is in flight
 
   const active = activePtMapDescriptor();
   if (active === null) return; // no descriptor bound yet (pre-registration / bare hosts)
+
+  // Neighbor package warm: the first scan after a field activates starts
+  // the dynamic import + descriptor assembly of every authored gate
+  // neighbor. The generated field chunks are multi-MB, and measured standby
+  // latency was dominated by this fetch/eval (order 25s under a cold
+  // browser vs ~2s for the actual view build). Warming at activation -
+  // rather than at the ~39yd gate scan - lets installCandidate resolve
+  // against an already-settled module, so the standby slot reaches
+  // visual-ready early in the approach walk. This installs NOTHING: the
+  // source scan below still owns when a destination enters a slot, and
+  // each neighbor id warms once per activation.
+  if (active.id !== _warmedActiveId) {
+    _warmedActiveId = active.id;
+    for (const e of edgesByMap().get(active.id) ?? []) {
+      const other = e.aId === active.id ? e.bId : e.aId;
+      if (other === active.id) continue;
+      void loadPtDevMap(other).catch(() => undefined);
+    }
+  }
+
+  if (_pendingId !== null) return; // a destination load is in flight
   const standby = standbyPtMapDescriptor();
   const ptX = active.transform.woCToPtX(wocX);
   const ptZ = active.transform.woCToPtZ(wocZ);

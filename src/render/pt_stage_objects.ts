@@ -44,11 +44,11 @@ import {
   PT_SCALE,
 } from '../sim/pt_band';
 import type { PtFieldTransform } from '../sim/pt_field';
-import { loadTexture } from './assets/loader';
 import { sharedUniforms } from './gfx';
 import {
   PT_ALPHA_TEST_REF,
   PT_ANIM_AUTO,
+  loadPtTextureUrl,
   ptApplyShaderHooks,
   ptMaterialHasOpacityMap,
   ptMaterialIsAnimated,
@@ -324,7 +324,8 @@ function animTextureUrlFor(name: string, textureBase: string): string | null {
 
 // One promise map owns every texture fetch for the view: base slots and
 // animation frames dedupe per URL, so a texture used in both roles (or by
-// two objects) is fetched and decoded at most once.
+// two objects) is fetched and decoded at most once. loadPtTextureUrl adds
+// the session-level missing latch shared with the terrain loader.
 type StageTextureCache = Map<string, Promise<THREE.Texture | null>>;
 
 function stageFetchTexture(
@@ -332,7 +333,7 @@ function stageFetchTexture(
   url: string,
 ): Promise<THREE.Texture | null> {
   if (!cache.has(url)) {
-    cache.set(url, loadTexture(url, { srgb: true, repeat: true }).catch(() => null));
+    cache.set(url, loadPtTextureUrl(url));
   }
   return cache.get(url)!;
 }
@@ -494,10 +495,35 @@ export async function buildPtStageObjectsView(
   const meshes: THREE.Mesh[] = [];
   const objectEntries: ObjectEntry[] = [];
 
-  for (const obj of src.objects) {
-    const matByIdx = new Map<number, PtStageObjectMaterial>(
-      obj.materials.map((m) => [m.index, m]),
-    );
+  // Warm every texture the objects reference before building nodes: the
+  // fetch waves overlap at the loader's queue width, and the per-material
+  // awaits inside buildNodeMesh then join in-flight work instead of
+  // serializing one node at a time. Hidden/undrawn materials (the same
+  // filter buildNodeMesh applies) stay unfetched.
+  const objMats = src.objects.map(
+    (obj) => new Map<number, PtStageObjectMaterial>(obj.materials.map((m) => [m.index, m])),
+  );
+  for (let oi = 0; oi < src.objects.length; oi++) {
+    for (const node of src.objects[oi].nodes) {
+      const warmed = new Set<number>();
+      for (let fi = 0; fi < node.nFace; fi++) {
+        const matIdx = node.faces[fi * 4 + 3];
+        if (warmed.has(matIdx)) continue;
+        warmed.add(matIdx);
+        const mat = objMats[oi].get(matIdx);
+        if (ptMaterialIsHidden(mat) || ptMaterialIsUndrawn(mat)) continue;
+        if (mat === undefined) continue; // faces with no material entry draw untextured
+        void loadStageTexture(mat, src.textureBase, textureCache);
+        if (ptMaterialIsAnimated(mat)) {
+          void loadStageAnimFrames(mat, src.textureBase, textureCache);
+        }
+      }
+    }
+  }
+
+  for (let oi = 0; oi < src.objects.length; oi++) {
+    const obj = src.objects[oi];
+    const matByIdx = objMats[oi];
     const entry: ObjectEntry = { obj, animNodes: [] };
     for (const node of obj.nodes) {
       const mesh = await buildNodeMesh(node, matByIdx, src.textureBase, textureCache, allMaterials, anims);

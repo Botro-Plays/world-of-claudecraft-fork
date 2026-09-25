@@ -60,7 +60,6 @@ import { sharedUniforms } from './gfx';
 import {
   buildPtStageObjectsView,
   ptStageBandMatrixFor,
-  type PtStageObjectsView,
 } from './pt_stage_objects';
 import { PT_STAGE_OBJECTS } from './pt_stage_objects.generated';
 import { ptBakeVertexShade, ptVertexColorsOnly } from './pt_vertex_shade';
@@ -682,6 +681,39 @@ function animTextureUrlsForSource(src: PtMapDescriptor, matIdx: number): string[
 // that appears both as a base slot and an anim frame is fetched once.
 type PtTextureCache = Map<string, Promise<THREE.Texture | null>>;
 
+// The shared loader evicts rejected loads, so without a latch a genuinely
+// missing source texture (the ~1,560 Phase 5A gaps) would refetch on every
+// field install and every view rebuild. A 404'd URL is a static-file miss:
+// it stays missing for the session. The in-flight map bridges the
+// concurrent-burst window: the warm pass kicks every material's fetch in
+// one synchronous sweep, and a texture referenced by a base slot and an
+// anim frame under different per-view cache keys would otherwise enter the
+// loader twice before either settles (the loader's own global cache only
+// dedupes what it has already seen). Settled loads evict - repeat requests
+// are answered by the loader's resolved-entry cache instead. Shared with
+// the stage-object loader.
+const ptMissingTexUrls = new Set<string>();
+const ptTexInFlight = new Map<string, Promise<THREE.Texture | null>>();
+
+/** One PT texture URL through the shared loader: one in-flight request per
+ *  URL, missing state latched across field installs. Exported for
+ *  pt_stage_objects. */
+export function loadPtTextureUrl(url: string): Promise<THREE.Texture | null> {
+  if (ptMissingTexUrls.has(url)) return Promise.resolve(null);
+  let p = ptTexInFlight.get(url);
+  if (p === undefined) {
+    p = loadTexture(url, { srgb: true, repeat: true }).catch(() => {
+      ptMissingTexUrls.add(url);
+      return null;
+    });
+    ptTexInFlight.set(url, p);
+    void p.then(() => {
+      if (ptTexInFlight.get(url) === p) ptTexInFlight.delete(url);
+    });
+  }
+  return p;
+}
+
 function ptFetchTexture(
   cache: PtTextureCache,
   key: string,
@@ -699,11 +731,7 @@ async function loadPtTexture(
   const urls = textureUrlsForSource(src, matIdx);
   if (urls.length === 0) return null;
   return ptFetchTexture(textureCache, urls.join('|'), async () => {
-    const textures = await Promise.all(
-      urls.map((u) =>
-        loadTexture(u, { srgb: true, repeat: true }).catch(() => null),
-      ),
-    );
+    const textures = await Promise.all(urls.map(loadPtTextureUrl));
     let tex: THREE.Texture | null = textures.find((t) => t !== null) ?? null;
     if (urls.length > 1 && textures.filter(Boolean).length > 1) {
       const baked = await bakeMultiTexture(textures);
@@ -726,9 +754,7 @@ async function loadPtAnimFrames(
   const urls = animTextureUrlsForSource(src, matIdx);
   return Promise.all(
     urls.map((u) =>
-      ptFetchTexture(textureCache, u, () =>
-        loadTexture(u, { srgb: true, repeat: true }).catch(() => null),
-      ),
+      ptFetchTexture(textureCache, u, () => loadPtTextureUrl(u)),
     ),
   );
 }
@@ -817,6 +843,27 @@ async function buildGroupedMesh(
   return mesh;
 }
 
+// Kick every texture load the emitted groups will need before the first
+// await: ptFetchTexture inserts the promise synchronously, so the loader's
+// queue fills in one pass and the per-material awaits inside
+// buildGroupedMesh join in-flight work instead of starting a new fetch per
+// group. Hidden/undrawn materials stay unfetched (PT never draws them).
+function warmPtFieldTextures(
+  src: PtMapDescriptor,
+  materialIndices: Iterable<number>,
+  textureCache: PtTextureCache,
+): void {
+  const matByIdx = new Map(fieldMaterials(src).map((m) => [m.index, m]));
+  for (const mi of materialIndices) {
+    const ptMat = matByIdx.get(mi);
+    if (ptMaterialIsHidden(ptMat) || ptMaterialIsUndrawn(ptMat)) continue;
+    void loadPtTexture(src, mi, textureCache);
+    if (ptMaterialIsAnimated(ptMat)) {
+      void loadPtAnimFrames(src, mi, textureCache);
+    }
+  }
+}
+
 export async function buildPtTerrainView(
   src: PtMapDescriptor = PT_RICARTEN_SOURCE,
 ): Promise<PtTerrainView> {
@@ -855,8 +902,13 @@ export async function buildPtTerrainView(
   const anims: PtTextureAnim[] = [];
   const meshes: THREE.Mesh[] = [];
 
-  // Solid path: everything PT draws as opaque or cutout (transparency <= 0.1
-  // and not water). This covers walkable terrain plus opaque decorative
+  // All three face emits are synchronous, so compute them up front. That
+  // lets every texture the field references start fetching immediately -
+  // the per-material awaits inside buildGroupedMesh then join in-flight
+  // work at the loader's queue width instead of serializing one material
+  // group at a time (the pre-6A build effectively fetched at concurrency 1).
+  // Solid path: everything PT draws as opaque or cutout (transparency <=
+  // 0.1 and not water). This covers walkable terrain plus opaque decorative
   // faces; TGA/PNG materials get alpha-test per the MapOpacity rule.
   const solidEmit = buildGroupedFaces(
     src,
@@ -864,32 +916,10 @@ export async function buildPtTerrainView(
     (fi, mat) => !waterSet.has(fi) && !ptMaterialIsTranslucent(mat),
     vertRGB,
   );
-  const solidMesh = await buildGroupedMesh(
-    src,
-    `pt-${src.id}-solid`,
-    solidEmit,
-    textureCache,
-    allMaterials,
-    anims,
-    false,
-  );
-  if (solidMesh) meshes.push(solidMesh);
-
   // Water path: the KNOWN_WATER_MATS face set. Textured per material,
   // blended with opacity = 1 - transparency, z-write off (>0.2), and the
   // PT water vertex ripple on sMATS_SCRIPT_WATER materials.
   const waterEmit = buildGroupedFaces(src, positions, (fi) => waterSet.has(fi), vertRGB);
-  const waterMesh = await buildGroupedMesh(
-    src,
-    `pt-${src.id}-water`,
-    waterEmit,
-    textureCache,
-    allMaterials,
-    anims,
-    true,
-  );
-  if (waterMesh) meshes.push(waterMesh);
-
   // Decorative translucent path: non-water faces whose material is
   // translucent (transparency > 0.1).
   const decoEmit = buildGroupedFaces(
@@ -898,17 +928,67 @@ export async function buildPtTerrainView(
     (fi, mat) => !waterSet.has(fi) && decoSet.has(fi) && ptMaterialIsTranslucent(mat),
     vertRGB,
   );
-  const decoMesh = await buildGroupedMesh(
-    src,
-    `pt-${src.id}-decorative`,
-    decoEmit,
-    textureCache,
-    allMaterials,
-    anims,
-    false,
-  );
-  if (decoMesh) meshes.push(decoMesh);
 
+  // The ocean ring's sea material (multimix bake target) may be referenced
+  // by no render face at all; warm it with the rest so the ring is not the
+  // straggler of the build.
+  const seaMat = src.oceanRing
+    ? fieldMaterials(src).find((m) =>
+        m.textureNames.some((n) => n.toLowerCase().endsWith('riy-w091.bmp')),
+      )
+    : undefined;
+  const usedMats = new Set<number>();
+  for (const emit of [solidEmit, waterEmit, decoEmit]) {
+    for (const g of emit.groups) usedMats.add(g.material);
+  }
+  if (seaMat) usedMats.add(seaMat.index);
+  warmPtFieldTextures(src, usedMats, textureCache);
+
+  // Stage objects fetch/build in parallel with the terrain meshes: their
+  // own warm pass fires before the node loop for the same reason.
+  const stagePromise = (
+    src.stageObjects
+      ? buildPtStageObjectsView({
+          id: src.id,
+          objects: src.stageObjects.PT_STAGE_OBJECTS,
+          bandMatrix: ptStageBandMatrixFor(src.transform),
+          textureBase: src.textureBase,
+        })
+      : Promise.resolve(null)
+  ).catch(() => null);
+
+  const [solidMesh, waterMesh, decoMesh] = await Promise.all([
+    buildGroupedMesh(
+      src,
+      `pt-${src.id}-solid`,
+      solidEmit,
+      textureCache,
+      allMaterials,
+      anims,
+      false,
+    ),
+    buildGroupedMesh(
+      src,
+      `pt-${src.id}-water`,
+      waterEmit,
+      textureCache,
+      allMaterials,
+      anims,
+      true,
+    ),
+    buildGroupedMesh(
+      src,
+      `pt-${src.id}-decorative`,
+      decoEmit,
+      textureCache,
+      allMaterials,
+      anims,
+      false,
+    ),
+  ]);
+  for (const m of [solidMesh, waterMesh, decoMesh]) {
+    if (m) meshes.push(m);
+  }
   for (const m of meshes) group.add(m);
 
   // Visual ocean extension. Every map-boundary vertex sits exactly at the
@@ -979,9 +1059,6 @@ export async function buildPtTerrainView(
       }
       uvA.needsUpdate = true;
     }
-    const seaMat = fieldMaterials(src).find((m) =>
-      m.textureNames.some((n) => n.toLowerCase().endsWith('riy-w091.bmp')),
-    );
     // Multimix needs the DOM canvas bake; outside the browser (vitest, SSR)
     // keep the flat fallback color.
     const seaTex =
@@ -1046,22 +1123,8 @@ export async function buildPtTerrainView(
   // carry absolute map positions, so they land in place with no extra
   // offset. Maps whose package has no stage_objects.generated.ts report
   // stageObjects=null and skip this block entirely.
-  let stageView: PtStageObjectsView | null = null;
-  try {
-    stageView = await buildPtStageObjectsView(
-      src.stageObjects
-        ? {
-            id: src.id,
-            objects: src.stageObjects.PT_STAGE_OBJECTS,
-            bandMatrix: ptStageBandMatrixFor(src.transform),
-            textureBase: src.textureBase,
-          }
-        : undefined,
-    );
-    group.add(stageView.group);
-  } catch {
-    stageView = null;
-  }
+  const stageView = await stagePromise;
+  if (stageView) group.add(stageView.group);
 
   return {
     group,
