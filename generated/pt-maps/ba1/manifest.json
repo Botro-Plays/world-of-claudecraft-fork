@@ -45,6 +45,28 @@
         "targetId": "iron3"
       }
     ],
+    "warpGates": [
+      {
+        "x": -23801,
+        "z": 17726,
+        "y": 1105,
+        "size": 100,
+        "height": 100,
+        "limitLevel": 0,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 51,
+            "x": -35712,
+            "z": -17601,
+            "y": 1269,
+            "targetId": "town1"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": null,
+    "limitLevel": 150,
     "derived": true
   },
   "status": "WARN",

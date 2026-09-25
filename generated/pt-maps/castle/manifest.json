@@ -46,6 +46,32 @@
       ]
     ],
     "gates": [],
+    "warpGates": [
+      {
+        "x": 32527,
+        "z": -30693,
+        "y": 774,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 2,
+        "exits": [
+          {
+            "targetIndex": 33,
+            "x": 32739,
+            "z": -30474,
+            "y": 711,
+            "targetId": "castle"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": {
+      "x": 32739,
+      "y": 711,
+      "z": -30474
+    },
+    "limitLevel": 0,
     "derived": true
   },
   "status": "WARN",

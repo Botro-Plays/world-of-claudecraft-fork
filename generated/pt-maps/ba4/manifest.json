@@ -30,6 +30,46 @@
       ]
     ],
     "gates": [],
+    "warpGates": [
+      {
+        "x": -38593,
+        "z": 295,
+        "y": 1844,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 130,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 63,
+            "x": 64602,
+            "z": -24325,
+            "y": 100,
+            "targetId": "ad1"
+          }
+        ]
+      },
+      {
+        "x": -37290,
+        "z": -4816,
+        "y": 1457,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 135,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 66,
+            "x": 26445,
+            "z": -41677,
+            "y": 341,
+            "targetId": "sanc1"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": null,
+    "limitLevel": 120,
     "derived": true
   },
   "status": "WARN",

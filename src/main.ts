@@ -4537,7 +4537,9 @@ async function startGame(
       // Dev-only FieldGate boundary watch: preloads the neighboring PT map
       // into the standby slot when the player nears an authored gate point
       // (no-op in production bundles and while no dev map is installed).
-      tickPtMapDev(offlineSim.player);
+      // The warp check rides the same call (the client's per-frame
+      // CheckWarpGate on the owning field).
+      tickPtMapDev(offlineSim.player, performance.now());
       const pp = offlineSim.player;
       traceStart = perf.startTrace();
       try {
@@ -5194,6 +5196,17 @@ async function startGame(
             ptActiveMap: () => activePtMapDescriptor(),
             ptStandbyMap: () => standbyPtMapDescriptor(),
             ptField: () => activePtField(),
+            /** WarpGate debug surface (pt_warp_gates module state + the
+             *  wing-warp destination selection). E2E scripts read the
+             *  armed/wing state here rather than importing the module
+             *  in-page. Debug surface only. */
+            ptWarp: () => import('./game/pt_warp_gates').then((m) => m.ptWarpState()),
+            ptWingWarp: (fieldIndex: number) =>
+              import('./game/pt_warp_gates').then((m) =>
+                m.ptWingWarpSelect(fieldIndex, offlineSim?.player, performance.now())),
+            ptSetLevel: (level: number) => {
+              if (offlineSim?.player) offlineSim.player.level = level;
+            },
           };
           // Console realm teleports (go.vale() ... go.fen()): offline dev only,
           // never online (server-authoritative movement) and never production.

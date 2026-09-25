@@ -71,6 +71,28 @@
         "targetId": "pilai"
       }
     ],
+    "warpGates": [
+      {
+        "x": 1962,
+        "z": 71184,
+        "y": 559,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 1,
+        "exits": [
+          {
+            "targetIndex": 21,
+            "x": 1993,
+            "z": 73134,
+            "y": 449,
+            "targetId": "pilai"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": null,
+    "limitLevel": 0,
     "derived": true
   },
   "status": "WARN",

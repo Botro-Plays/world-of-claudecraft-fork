@@ -42,6 +42,9 @@
         "targetId": "ruin-3"
       }
     ],
+    "warpGates": [],
+    "posWarpOut": null,
+    "limitLevel": 0,
     "derived": true
   },
   "status": "WARN",

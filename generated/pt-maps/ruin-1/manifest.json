@@ -42,6 +42,28 @@
         "targetId": "de-1"
       }
     ],
+    "warpGates": [
+      {
+        "x": 16809,
+        "z": 15407,
+        "y": 501,
+        "size": 128,
+        "height": 32,
+        "limitLevel": 40,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 13,
+            "x": -15395,
+            "z": -24185,
+            "y": 0,
+            "targetId": "dun-1"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": null,
+    "limitLevel": 0,
     "derived": true
   },
   "status": "WARN",

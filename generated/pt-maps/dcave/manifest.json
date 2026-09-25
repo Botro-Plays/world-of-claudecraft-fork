@@ -41,6 +41,46 @@
     ],
     "startPoints": [],
     "gates": [],
+    "warpGates": [
+      {
+        "x": 158042,
+        "z": 19525,
+        "y": 330,
+        "size": 120,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 25,
+            "x": 124396,
+            "z": 33291,
+            "y": 37,
+            "targetId": "mcave"
+          }
+        ]
+      },
+      {
+        "x": 158023,
+        "z": 20453,
+        "y": 240,
+        "size": 120,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 24,
+            "x": 125566,
+            "z": 24825,
+            "y": 480,
+            "targetId": "tcave"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": null,
+    "limitLevel": 65,
     "derived": true
   },
   "status": "WARN",

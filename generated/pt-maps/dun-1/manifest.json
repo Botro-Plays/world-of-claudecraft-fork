@@ -27,6 +27,46 @@
     ],
     "startPoints": [],
     "gates": [],
+    "warpGates": [
+      {
+        "x": -15388,
+        "z": -24073,
+        "y": 100,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 7,
+            "x": 16649,
+            "z": 15238,
+            "y": 501,
+            "targetId": "ruin-1"
+          }
+        ]
+      },
+      {
+        "x": -15305,
+        "z": -28824,
+        "y": 1,
+        "size": 64,
+        "height": 2,
+        "limitLevel": 0,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 14,
+            "x": -6027,
+            "z": -26881,
+            "y": 99,
+            "targetId": "dun-2"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": null,
+    "limitLevel": 40,
     "derived": true
   },
   "status": "PASS",

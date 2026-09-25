@@ -40,6 +40,32 @@
         "targetId": "losttemple"
       }
     ],
+    "warpGates": [
+      {
+        "x": -12610,
+        "z": -1349,
+        "y": 694,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 2,
+        "exits": [
+          {
+            "targetIndex": 37,
+            "x": -12555,
+            "z": -1113,
+            "y": 668,
+            "targetId": "lost"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": {
+      "x": -12555,
+      "y": 668,
+      "z": -1113
+    },
+    "limitLevel": 95,
     "derived": true
   },
   "status": "WARN",

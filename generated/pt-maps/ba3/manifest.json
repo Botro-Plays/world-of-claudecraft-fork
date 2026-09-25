@@ -42,6 +42,9 @@
         "targetId": "ba4"
       }
     ],
+    "warpGates": [],
+    "posWarpOut": null,
+    "limitLevel": 130,
     "derived": true
   },
   "status": "PASS",

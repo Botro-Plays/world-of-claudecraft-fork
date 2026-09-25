@@ -25,6 +25,28 @@
     ],
     "startPoints": [],
     "gates": [],
+    "warpGates": [
+      {
+        "x": 33012,
+        "z": 49926,
+        "y": 1533,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 35,
+            "x": 37971,
+            "z": 50460,
+            "y": 1209,
+            "targetId": "ice2"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": null,
+    "limitLevel": 100,
     "derived": true
   },
   "status": "PASS",

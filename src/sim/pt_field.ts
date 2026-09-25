@@ -206,6 +206,51 @@ export interface PtFieldGateLink {
 }
 
 /**
+ * One authored WarpGate exit record (field.cpp AddWarpOutGate, the
+ * sFGATE OutGate[] slot): a destination field plus the exact PT world
+ * coordinate the player is SetPosi'd to. Coordinates are PT world units in
+ * the shared absolute PT space (the source stores them <<FLOATNS; these
+ * are the authored integers).
+ */
+export interface PtWarpOutExit {
+  /** Destination field registration index (psField[N]). */
+  targetIndex: number;
+  /** Destination package id, null when the target names no registered
+   *  field. */
+  targetId: string | null;
+  /** Exit position in the destination field's PT space. */
+  x: number;
+  z: number;
+  y: number;
+}
+
+/**
+ * One authored WarpGate trigger (field.cpp AddWarpGate, sWARPGATE). A
+ * proximity-triggered TELEPORT, not a FieldGate seam: CheckWarpGate tests
+ * the player against the trigger cylinder each frame (dx*dx+dz*dz <
+ * size*size, |dy| < height with the height check disabled when the
+ * authored y is 0), enforces limitLevel, then warps to a randomly chosen
+ * exit. specialEffect mirrors the source: 0 = immediate warp, 1 = the
+ * ~2s delayed return-effect warp, 2 = the wing-warp UI gate.
+ */
+export interface PtWarpGateLink {
+  /** Trigger center, PT world coordinates. */
+  x: number;
+  z: number;
+  y: number;
+  /** Trigger cylinder radius, PT units. */
+  size: number;
+  /** Trigger height, PT units. */
+  height: number;
+  /** Minimum player level (resolved from FieldLimitLevel_Table). */
+  limitLevel: number;
+  /** 0 immediate, 1 delayed return effect, 2 wing warp. */
+  specialEffect: number;
+  /** Authored exit records; CheckWarpGate requires at least one. */
+  exits: readonly PtWarpOutExit[];
+}
+
+/**
  * One loaded PT map package: the generated field module, its band
  * transform, its texture URL root, and the optional stage-object module.
  * Everything collision and rendering need, nothing more.
@@ -219,6 +264,14 @@ export interface PtFieldGateLink {
  * (including source anomalies like the ff-01 -> pilai dead coordinate and
  * the SeaA self-loop). The connected-world runtime treats each record as
  * one undirected boundary edge; see src/game/pt_field_links.ts.
+ *
+ * `warpGates` carries the field's authored AddWarpGate/AddWarpOutGate
+ * records verbatim (sWARPGATE): proximity teleports evaluated only while
+ * the field owns the player; see src/game/pt_warp_gates.ts. `posWarpOut`
+ * is the field's own warp-out point (sFIELD::PosWarpOut), stamped by the
+ * last self-targeting AddWarpOutGate - the wing-warp arrival coordinate.
+ * `limitLevel` is the field-level limit (FieldLimitLevel_Table[index]),
+ * consulted only by the wing-warp destination check.
  */
 export interface PtMapDescriptor {
   id: string;
@@ -228,6 +281,9 @@ export interface PtMapDescriptor {
   stageObjects: PtStageObjectsModule | null;
   oceanRing: boolean;
   fieldGates?: readonly PtFieldGateLink[];
+  warpGates?: readonly PtWarpGateLink[];
+  posWarpOut?: { x: number; y: number; z: number } | null;
+  limitLevel?: number;
 }
 
 // ---------------------------------------------------------------------------

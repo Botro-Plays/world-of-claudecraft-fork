@@ -25,6 +25,35 @@
     ],
     "startPoints": [],
     "gates": [],
+    "warpGates": [
+      {
+        "x": 81807,
+        "z": -28855,
+        "y": 270,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 64,
+            "x": 71744,
+            "z": -25775,
+            "y": 90,
+            "targetId": "ad2"
+          },
+          {
+            "targetIndex": 64,
+            "x": 76330,
+            "z": -27990,
+            "y": 90,
+            "targetId": "ad2"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": null,
+    "limitLevel": 180,
     "derived": true
   },
   "status": "PASS",

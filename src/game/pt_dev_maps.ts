@@ -29,6 +29,7 @@ import {
   type PtFieldModule,
   type PtMapDescriptor,
   type PtStageObjectsModule,
+  type PtWarpGateLink,
 } from '../sim/pt_field';
 import { setActivePtMap } from '../sim/pt_field_active';
 import { ptRicartenSpawnY } from '../sim/pt_ricarten_field';
@@ -52,6 +53,13 @@ interface PtDevMapManifest {
     stageObjects?: { files?: string[]; missing?: string[]; out?: string } | null;
     water?: { rule?: string } | null;
     gates?: { targetIndex: number; targetId?: string | null; x: number; z: number; y: number }[];
+    warpGates?: {
+      x: number; z: number; y: number; size: number; height: number;
+      limitLevel?: number; specialEffect?: number;
+      exits?: { targetIndex: number; targetId?: string | null; x: number; z: number; y: number }[];
+    }[];
+    posWarpOut?: { x: number; y: number; z: number } | null;
+    limitLevel?: number;
   };
   status?: string;
   warnings?: unknown[];
@@ -164,6 +172,59 @@ export function ptDevFieldGates(): {
   return out;
 }
 
+function manifestWarpGates(m: PtDevMapManifest): PtWarpGateLink[] {
+  return (m.manifest?.warpGates ?? []).map((g) => ({
+    x: g.x,
+    z: g.z,
+    y: g.y,
+    size: g.size,
+    height: g.height,
+    limitLevel: g.limitLevel ?? 0,
+    specialEffect: g.specialEffect ?? 0,
+    exits: (g.exits ?? []).map((e) => ({
+      targetIndex: e.targetIndex,
+      targetId: e.targetId ?? null,
+      x: e.x,
+      z: e.z,
+      y: e.y,
+    })),
+  }));
+}
+
+/**
+ * Every registered field's authored warp data (manifest data, verbatim):
+ * the WarpGate triggers, the field's PosWarpOut point, and its level
+ * limit. The warp runtime consults the destination side (posWarpOut /
+ * limitLevel) by field index, so the whole table is exported rather than
+ * just the active map's descriptor. Same phantom exclusion as
+ * ptDevFieldGates.
+ */
+export function ptDevWarpFields(): {
+  id: string;
+  fieldIndex: number;
+  warpGates: PtWarpGateLink[];
+  posWarpOut: { x: number; y: number; z: number } | null;
+  limitLevel: number;
+}[] {
+  const out: {
+    id: string; fieldIndex: number; warpGates: PtWarpGateLink[];
+    posWarpOut: { x: number; y: number; z: number } | null; limitLevel: number;
+  }[] = [];
+  for (const [path, m] of Object.entries(MANIFESTS)) {
+    const fieldIndex = m.manifest?.fieldIndex ?? -1;
+    if (fieldIndex < 0 || fieldIndex >= 70) continue;
+    const id = m.manifest?.id ?? path.match(/pt-maps\/([^/]+)\//)?.[1] ?? '?';
+    out.push({
+      id,
+      fieldIndex,
+      warpGates: manifestWarpGates(m),
+      posWarpOut: m.manifest?.posWarpOut ?? null,
+      limitLevel: m.manifest?.limitLevel ?? 0,
+    });
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // Loading (/ptmap <id>)
 // ---------------------------------------------------------------------------
@@ -271,6 +332,9 @@ export async function loadPtDevMap(id: string): Promise<PtDevLoadedMap> {
       z: g.z,
       y: g.y,
     })) satisfies PtFieldGateLink[],
+    warpGates: manifestWarpGates(m),
+    posWarpOut: m.manifest?.posWarpOut ?? null,
+    limitLevel: m.manifest?.limitLevel ?? 0,
   };
   return { descriptor, manifest: m, spawn: resolvePtDevSpawn(field, transform, m) };
 }

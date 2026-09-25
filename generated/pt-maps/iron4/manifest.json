@@ -45,6 +45,9 @@
         "targetId": "iron-2"
       }
     ],
+    "warpGates": [],
+    "posWarpOut": null,
+    "limitLevel": 145,
     "derived": true
   },
   "status": "WARN",

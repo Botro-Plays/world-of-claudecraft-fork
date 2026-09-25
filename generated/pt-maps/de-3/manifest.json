@@ -42,6 +42,28 @@
         "targetId": "de-4"
       }
     ],
+    "warpGates": [
+      {
+        "x": 36128,
+        "z": -2162,
+        "y": 804,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 70,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 22,
+            "x": -11088,
+            "z": -41570,
+            "y": 343,
+            "targetId": "dun-4"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": null,
+    "limitLevel": 55,
     "derived": true
   },
   "status": "PASS",

@@ -62,6 +62,32 @@
         "targetId": "greedy"
       }
     ],
+    "warpGates": [
+      {
+        "x": 4428,
+        "z": 22511,
+        "y": 845,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 2,
+        "exits": [
+          {
+            "targetIndex": 6,
+            "x": 4547,
+            "z": 22616,
+            "y": 817,
+            "targetId": "ruin-2"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": {
+      "x": 4547,
+      "y": 817,
+      "z": 22616
+    },
+    "limitLevel": 0,
     "derived": true
   },
   "status": "WARN",

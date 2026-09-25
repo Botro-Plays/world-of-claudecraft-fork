@@ -47,6 +47,9 @@
     ],
     "startPoints": [],
     "gates": [],
+    "warpGates": [],
+    "posWarpOut": null,
+    "limitLevel": 1000,
     "derived": true
   },
   "status": "WARN",

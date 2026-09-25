@@ -79,6 +79,50 @@
       ]
     ],
     "gates": [],
+    "warpGates": [
+      {
+        "x": 2000,
+        "z": 72907,
+        "y": 474,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 20,
+            "x": 1958,
+            "z": 70922,
+            "y": 536,
+            "targetId": "forever-fall-01"
+          }
+        ]
+      },
+      {
+        "x": 2245,
+        "z": 78259,
+        "y": 745,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 2,
+        "exits": [
+          {
+            "targetIndex": 21,
+            "x": 2252,
+            "z": 78041,
+            "y": 754,
+            "targetId": "pilai"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": {
+      "x": 2252,
+      "y": 754,
+      "z": 78041
+    },
+    "limitLevel": 0,
     "derived": true
   },
   "status": "WARN",

@@ -49,6 +49,9 @@
         "targetId": "village-1"
       }
     ],
+    "warpGates": [],
+    "posWarpOut": null,
+    "limitLevel": 0,
     "derived": true
   },
   "status": "PASS",

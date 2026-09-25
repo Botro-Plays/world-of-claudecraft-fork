@@ -50,6 +50,50 @@
         "targetId": "forever-fall-02"
       }
     ],
+    "warpGates": [
+      {
+        "x": -4730,
+        "z": 48107,
+        "y": 1173,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 2,
+        "exits": [
+          {
+            "targetIndex": 18,
+            "x": -4615,
+            "z": 48002,
+            "y": 1146,
+            "targetId": "forever-fall-03"
+          }
+        ]
+      },
+      {
+        "x": -6306,
+        "z": 43241,
+        "y": 779,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 55,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 25,
+            "x": 119025,
+            "z": 35680,
+            "y": 499,
+            "targetId": "mcave"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": {
+      "x": -4615,
+      "y": 1146,
+      "z": 48002
+    },
+    "limitLevel": 0,
     "derived": true
   },
   "status": "WARN",

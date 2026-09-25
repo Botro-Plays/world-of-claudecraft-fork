@@ -41,6 +41,68 @@
       ]
     ],
     "gates": [],
+    "warpGates": [
+      {
+        "x": 12799,
+        "z": -62227,
+        "y": 530,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 1,
+        "exits": [
+          {
+            "targetIndex": 46,
+            "x": 12772,
+            "z": -59917,
+            "y": 562,
+            "targetId": "ancientw"
+          }
+        ]
+      },
+      {
+        "x": 12778,
+        "z": -60119,
+        "y": 578,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 1,
+        "exits": [
+          {
+            "targetIndex": 46,
+            "x": 12700,
+            "z": -62387,
+            "y": 510,
+            "targetId": "ancientw"
+          }
+        ]
+      },
+      {
+        "x": 12790,
+        "z": -74070,
+        "y": 458,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 130,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 45,
+            "x": -12000,
+            "z": -54309,
+            "y": 374,
+            "targetId": "slab"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": {
+      "x": 12700,
+      "y": 510,
+      "z": -62387
+    },
+    "limitLevel": 135,
     "derived": true
   },
   "status": "PASS",

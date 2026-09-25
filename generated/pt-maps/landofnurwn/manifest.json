@@ -25,6 +25,9 @@
     ],
     "startPoints": [],
     "gates": [],
+    "warpGates": [],
+    "posWarpOut": null,
+    "limitLevel": 200,
     "derived": true
   },
   "status": "PASS",

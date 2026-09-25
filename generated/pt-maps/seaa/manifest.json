@@ -49,6 +49,9 @@
         "targetId": "seaa"
       }
     ],
+    "warpGates": [],
+    "posWarpOut": null,
+    "limitLevel": 155,
     "derived": true
   },
   "status": "PASS",

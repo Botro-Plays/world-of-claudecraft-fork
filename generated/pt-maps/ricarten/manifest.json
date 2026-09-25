@@ -47,7 +47,51 @@
         -16973
       ]
     ],
-    "gates": []
+    "gates": [],
+    "warpGates": [
+      {
+        "x": 734,
+        "z": -20119,
+        "y": 312,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 2,
+        "exits": [
+          {
+            "targetIndex": 3,
+            "x": 822,
+            "z": -19956,
+            "y": 254,
+            "targetId": "ricarten"
+          }
+        ]
+      },
+      {
+        "x": 2597,
+        "z": -18243,
+        "y": 236,
+        "size": 32,
+        "height": 32,
+        "limitLevel": 180,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 57,
+            "x": 198282,
+            "z": 240400,
+            "y": 1502,
+            "targetId": "dc1"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": {
+      "x": 822,
+      "y": 254,
+      "z": -19956
+    },
+    "limitLevel": 0
   },
   "status": "WARN",
   "warnings": [

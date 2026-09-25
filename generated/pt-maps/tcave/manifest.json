@@ -51,6 +51,46 @@
       ]
     ],
     "gates": [],
+    "warpGates": [
+      {
+        "x": 125581,
+        "z": 25086,
+        "y": 480,
+        "size": 80,
+        "height": 32,
+        "limitLevel": 65,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 26,
+            "x": 158627,
+            "z": 20504,
+            "y": 240,
+            "targetId": "dcave"
+          }
+        ]
+      },
+      {
+        "x": 118869,
+        "z": 26017,
+        "y": 538,
+        "size": 80,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 0,
+            "x": -16490,
+            "z": -6930,
+            "y": 298,
+            "targetId": "fore-3"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": null,
+    "limitLevel": 55,
     "derived": true
   },
   "status": "WARN",

@@ -25,6 +25,46 @@
     ],
     "startPoints": [],
     "gates": [],
+    "warpGates": [
+      {
+        "x": 14241,
+        "z": -41079,
+        "y": 220,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 110,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 41,
+            "x": 5255,
+            "z": -37897,
+            "y": 84,
+            "targetId": "dun-8"
+          }
+        ]
+      },
+      {
+        "x": 14246,
+        "z": -38912,
+        "y": 220,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 38,
+            "x": -12272,
+            "z": 11299,
+            "y": 509,
+            "targetId": "losttemple"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": null,
+    "limitLevel": 105,
     "derived": true
   },
   "status": "PASS",

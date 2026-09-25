@@ -35,6 +35,32 @@
         "targetId": "ice1"
       }
     ],
+    "warpGates": [
+      {
+        "x": 30407,
+        "z": 22232,
+        "y": 1349,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 2,
+        "exits": [
+          {
+            "targetIndex": 29,
+            "x": 30610,
+            "z": 22164,
+            "y": 1304,
+            "targetId": "ice-ura"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": {
+      "x": 30610,
+      "y": 1304,
+      "z": 22164
+    },
+    "limitLevel": 90,
     "derived": true
   },
   "status": "WARN",

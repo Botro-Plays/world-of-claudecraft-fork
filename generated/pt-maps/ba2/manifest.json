@@ -38,6 +38,9 @@
         "targetId": "ba3"
       }
     ],
+    "warpGates": [],
+    "posWarpOut": null,
+    "limitLevel": 140,
     "derived": true
   },
   "status": "PASS",

@@ -47,6 +47,32 @@
         "targetId": "sod-1"
       }
     ],
+    "warpGates": [
+      {
+        "x": 21936,
+        "z": -1833,
+        "y": 855,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 9,
+            "x": 21826,
+            "z": -1712,
+            "y": 825,
+            "targetId": "village-1"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": {
+      "x": 21826,
+      "y": 825,
+      "z": -1712
+    },
+    "limitLevel": 0,
     "derived": true
   },
   "status": "WARN",

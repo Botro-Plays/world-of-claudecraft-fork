@@ -44,6 +44,32 @@
         "targetId": "fore-1"
       }
     ],
+    "warpGates": [
+      {
+        "x": -3408,
+        "z": -12447,
+        "y": 251,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 2,
+        "exits": [
+          {
+            "targetIndex": 1,
+            "x": -3265,
+            "z": -12583,
+            "y": 214,
+            "targetId": "fore-2"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": {
+      "x": -3265,
+      "y": 214,
+      "z": -12583
+    },
+    "limitLevel": 0,
     "derived": true
   },
   "status": "WARN",

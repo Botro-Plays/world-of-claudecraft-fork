@@ -45,6 +45,28 @@
         "targetId": "ice2"
       }
     ],
+    "warpGates": [
+      {
+        "x": 35361,
+        "z": 31898,
+        "y": 829,
+        "size": 80,
+        "height": 32,
+        "limitLevel": 120,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 44,
+            "x": 18006,
+            "z": -34698,
+            "y": 222,
+            "targetId": "mine-1"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": null,
+    "limitLevel": 90,
     "derived": true
   },
   "status": "WARN",

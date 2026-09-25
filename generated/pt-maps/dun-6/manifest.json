@@ -45,6 +45,53 @@
     ],
     "startPoints": [],
     "gates": [],
+    "warpGates": [
+      {
+        "x": -3655,
+        "z": -50603,
+        "y": 3,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 45,
+            "x": -12024,
+            "z": -62846,
+            "y": 173,
+            "targetId": "slab"
+          }
+        ]
+      },
+      {
+        "x": -3664,
+        "z": -44886,
+        "y": 145,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 23,
+            "x": -2851,
+            "z": -43792,
+            "y": 642,
+            "targetId": "dun-5"
+          },
+          {
+            "targetIndex": 23,
+            "x": -4422,
+            "z": -43801,
+            "y": 642,
+            "targetId": "dun-5"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": null,
+    "limitLevel": 125,
     "derived": true
   },
   "status": "PASS",

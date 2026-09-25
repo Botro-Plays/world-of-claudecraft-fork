@@ -44,6 +44,9 @@
         "targetId": "fo1"
       }
     ],
+    "warpGates": [],
+    "posWarpOut": null,
+    "limitLevel": 100,
     "derived": true
   },
   "status": "WARN",

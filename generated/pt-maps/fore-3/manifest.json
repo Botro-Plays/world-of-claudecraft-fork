@@ -57,6 +57,28 @@
         "targetId": "fore-2"
       }
     ],
+    "warpGates": [
+      {
+        "x": -16638,
+        "z": -6737,
+        "y": 267,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 55,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 24,
+            "x": 119112,
+            "z": 26028,
+            "y": 510,
+            "targetId": "tcave"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": null,
+    "limitLevel": 0,
     "derived": true
   },
   "status": "WARN",

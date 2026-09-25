@@ -52,6 +52,9 @@
         "targetId": "forever-fall-01"
       }
     ],
+    "warpGates": [],
+    "posWarpOut": null,
+    "limitLevel": 0,
     "derived": true
   },
   "status": "WARN",

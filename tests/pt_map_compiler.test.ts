@@ -126,6 +126,7 @@ describe('pt-map compiler: water classification', () => {
 
 describe('pt-map compiler: field.cpp registry parser', () => {
   const fixture = `
+	int FieldLimitLevel_Table[MAX_FIELD] = { 0, 55, 70, 90, 100 };
 	psField[i]->SetName("ricarten\\\\village-2.ase","village-2"); //3
 	psField[i]->State			= FIELD_STATE_VILLAGE;
 	psField[i]->AddStageObject("ricarten\\\\v-ani01.ASE");
@@ -135,6 +136,18 @@ describe('pt-map compiler: field.cpp registry parser', () => {
 	psField[i]->AddGate(psField[i+1],-8508,-10576,0);
 	psField[i]->AddGate(psField[2],2275,-14828,0);
 	//psField[i]->AddGate(psField[i+4],1,2,3);
+	psField[i]->AddWarpGate(734,-20119,312,64,32);
+	psField[i]->AddWarpOutGate(psField[i],822,-19956,254);
+	psField[i]->WarpGate[psField[i]->WarpGateActiveNum].SpecialEffect = 2;
+	psField[i]->AddWarpGate(2597,-18243,236,32,32);
+	psField[i]->AddWarpOutGate(psField[2],198282,240400,1502);
+	psField[i]->WarpGate[psField[i]->WarpGateActiveNum].LimitLevel = FieldLimitLevel_Table[i+2];
+	//psField[i]->AddWarpGate(1,2,3,4,5);
+	//psField[i]->AddWarpOutGate(psField[i+1],9,9,9);
+	/*
+	psField[i]->AddWarpGate(7,7,7,7,7);
+	psField[i]->AddWarpOutGate(psField[1],8,8,8);
+	*/
 	psField[i]->SetName("Fall_Game\\\\fall_game.ASE",0) ; //39
 	psField[i]->State = FIELD_STATE_ROOM;
 	/*
@@ -162,6 +175,50 @@ describe('pt-map compiler: field.cpp registry parser', () => {
       { targetIndex: 1, x: -8508, z: -10576, y: 0 },
       { targetIndex: 2, x: 2275, z: -14828, y: 0 },
     ]);
+  });
+
+  it('parses AddWarpGate/AddWarpOutGate records with exits bound to the last gate', () => {
+    const fields = parseFieldRegistry(fixture);
+    const r = fields[0];
+    // Two live gates; the commented AddWarpGate/AddWarpOutGate lines and
+    // the block-commented pair never register.
+    expect(r.warpGates).toHaveLength(2);
+    expect(r.warpGates[0]).toEqual({
+      x: 734,
+      z: -20119,
+      y: 312,
+      size: 64,
+      height: 32,
+      limitLevel: 0,
+      specialEffect: 2,
+      exits: [{ targetIndex: 0, x: 822, z: -19956, y: 254 }],
+    });
+    expect(r.warpGates[1]).toEqual({
+      x: 2597,
+      z: -18243,
+      y: 236,
+      size: 32,
+      height: 32,
+      // FieldLimitLevel_Table[i+2] -> table[2] -> 70.
+      limitLevel: 70,
+      specialEffect: 0,
+      exits: [{ targetIndex: 2, x: 198282, z: 240400, y: 1502 }],
+    });
+  });
+
+  it('stamps posWarpOut from the last self-targeting AddWarpOutGate', () => {
+    const fields = parseFieldRegistry(fixture);
+    // AddWarpOutGate(psField[i],822,-19956,254): a self-exit, so the field's
+    // own PosWarpOut is set (x,y,z order per the source POINT3D).
+    expect(fields[0].posWarpOut).toEqual({ x: 822, y: 254, z: -19956 });
+    // A field with no self-exit keeps the ZeroMemory default.
+    expect(fields[1].posWarpOut).toBeNull();
+  });
+
+  it('resolves the field-level limit from FieldLimitLevel_Table[i]', () => {
+    const fields = parseFieldRegistry(fixture);
+    expect(fields[0].limitLevel).toBe(0);
+    expect(fields[1].limitLevel).toBe(55);
   });
 
   it('resolves absolute psField[N] AddGate targets against the registration table', () => {

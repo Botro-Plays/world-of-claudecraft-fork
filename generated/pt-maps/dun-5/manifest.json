@@ -48,6 +48,100 @@
     ],
     "startPoints": [],
     "gates": [],
+    "warpGates": [
+      {
+        "x": -3665,
+        "z": -36334,
+        "y": 762,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 22,
+            "x": -12073,
+            "z": -40701,
+            "y": 95,
+            "targetId": "dun-4"
+          }
+        ]
+      },
+      {
+        "x": -4895,
+        "z": -37132,
+        "y": 762,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 22,
+            "x": -12073,
+            "z": -40701,
+            "y": 95,
+            "targetId": "dun-4"
+          }
+        ]
+      },
+      {
+        "x": -2441,
+        "z": -37137,
+        "y": 762,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 22,
+            "x": -12073,
+            "z": -40701,
+            "y": 95,
+            "targetId": "dun-4"
+          }
+        ]
+      },
+      {
+        "x": -3207,
+        "z": -43830,
+        "y": 553,
+        "size": 128,
+        "height": 32,
+        "limitLevel": 125,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 42,
+            "x": -3660,
+            "z": -45200,
+            "y": 114,
+            "targetId": "dun-6"
+          }
+        ]
+      },
+      {
+        "x": -4025,
+        "z": -43821,
+        "y": 553,
+        "size": 128,
+        "height": 32,
+        "limitLevel": 125,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 42,
+            "x": -3660,
+            "z": -45200,
+            "y": 114,
+            "targetId": "dun-6"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": null,
+    "limitLevel": 75,
     "derived": true
   },
   "status": "WARN",

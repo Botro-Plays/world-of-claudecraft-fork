@@ -52,6 +52,46 @@
       ]
     ],
     "gates": [],
+    "warpGates": [
+      {
+        "x": 124391,
+        "z": 32913,
+        "y": 37,
+        "size": 80,
+        "height": 32,
+        "limitLevel": 65,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 26,
+            "x": 158543,
+            "z": 19557,
+            "y": 290,
+            "targetId": "dcave"
+          }
+        ]
+      },
+      {
+        "x": 118808,
+        "z": 35686,
+        "y": 520,
+        "size": 80,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 18,
+            "x": -6056,
+            "z": 43245,
+            "y": 787,
+            "targetId": "forever-fall-03"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": null,
+    "limitLevel": 55,
     "derived": true
   },
   "status": "WARN",

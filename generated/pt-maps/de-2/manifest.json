@@ -34,6 +34,9 @@
       ]
     ],
     "gates": [],
+    "warpGates": [],
+    "posWarpOut": null,
+    "limitLevel": 0,
     "derived": true
   },
   "status": "WARN",

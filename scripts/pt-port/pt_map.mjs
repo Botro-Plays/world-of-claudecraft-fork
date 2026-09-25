@@ -139,6 +139,9 @@ function deriveManifest(entry, takenIds) {
     centerPos: entry.centerPos,
     startPoints: entry.startPoints,
     gates: entry.gates,
+    warpGates: entry.warpGates,
+    posWarpOut: entry.posWarpOut,
+    limitLevel: entry.limitLevel,
     derived: true,
   };
 }
@@ -155,15 +158,32 @@ async function manifestsForAll() {
   }
   const takenIds = new Set([...byIndex.values()].map((m) => m.id));
   const all = registry.map((e) => byIndex.get(e.fieldIndex) ?? deriveManifest(e, takenIds));
+  // Authored connection data always comes from the registry, never the
+  // maps/<id>.mjs build overrides: gates/warpGates/posWarpOut/limitLevel are
+  // source facts, while the override only owns output paths and conversion
+  // choices (Ricarten's override predates the connection metadata).
+  for (const e of registry) {
+    const m = all.find((x) => x.fieldIndex === e.fieldIndex);
+    if (!m) continue;
+    m.gates = e.gates;
+    m.warpGates = e.warpGates;
+    m.posWarpOut = e.posWarpOut;
+    m.limitLevel = e.limitLevel;
+  }
   // Second pass: every gate record also resolves its destination package id
   // from the registration table, so runtime code never re-derives
   // fieldIndex -> package id itself. A gate whose targetIndex points outside
   // the registered set gets targetId: null (kept, not dropped - the record
-  // is authored data either way).
+  // is authored data either way). WarpGate exits resolve the same way.
   const byFieldIndex = new Map(all.map((m) => [m.fieldIndex, m.id]));
   for (const m of all) {
     for (const g of m.gates ?? []) {
       g.targetId = byFieldIndex.get(g.targetIndex) ?? null;
+    }
+    for (const g of m.warpGates ?? []) {
+      for (const e of g.exits) {
+        e.targetId = byFieldIndex.get(e.targetIndex) ?? null;
+      }
     }
   }
   return all;

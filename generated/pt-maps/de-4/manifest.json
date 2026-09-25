@@ -44,6 +44,32 @@
         "targetId": "iron-1"
       }
     ],
+    "warpGates": [
+      {
+        "x": 33979,
+        "z": 6080,
+        "y": 969,
+        "size": 64,
+        "height": 32,
+        "limitLevel": 0,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 12,
+            "x": 34100,
+            "z": 6214,
+            "y": 940,
+            "targetId": "de-4"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": {
+      "x": 34100,
+      "y": 940,
+      "z": 6214
+    },
+    "limitLevel": 55,
     "derived": true
   },
   "status": "WARN",

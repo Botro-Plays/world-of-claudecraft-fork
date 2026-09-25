@@ -30,6 +30,28 @@
       ]
     ],
     "gates": [],
+    "warpGates": [
+      {
+        "x": 64465,
+        "z": 68959,
+        "y": 990,
+        "size": 100,
+        "height": 100,
+        "limitLevel": 0,
+        "specialEffect": 0,
+        "exits": [
+          {
+            "targetIndex": 3,
+            "x": -131,
+            "z": -18123,
+            "y": 135,
+            "targetId": "ricarten"
+          }
+        ]
+      }
+    ],
+    "posWarpOut": null,
+    "limitLevel": 150,
     "derived": true
   },
   "status": "WARN",
