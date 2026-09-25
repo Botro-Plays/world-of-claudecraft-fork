@@ -180,6 +180,15 @@ export interface PtFieldModule {
   readonly PT_CELL_SIZE: number;
   readonly PT_MATERIALS: readonly PtMaterialLike[];
   readonly PT_FIELD_LIGHTING?: PtFieldLighting;
+  /** smSTAGE3D StageMapRect: the authored coverage of the field's map
+   *  raster, x256 fixed-point PT units. left/top are the numerically
+   *  smaller x/z edges; the image's top edge maps to `bottom`. */
+  readonly PT_STAGE_MAP_RECT?: {
+    left: number;
+    top: number;
+    right: number;
+    bottom: number;
+  } | null;
   /** Converted minimap raster URL (covers PT_STAGE_MAP_RECT), or null. */
   readonly PT_MINIMAP?: { png: string } | null;
   PT_VERTICES(): Float32Array;

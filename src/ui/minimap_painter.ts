@@ -56,8 +56,16 @@ import {
 } from './minimap_markers';
 import type { PainterHostWriters } from './painter_host';
 import { isPtPos } from '../sim/pt_band';
-import { activePtMapDescriptor } from '../sim/pt_field_active';
-import { PT_MINIMAP_TEXTURE_URL, ptRicartenMapDestRect } from './pt_minimap_core';
+import { activePtMapDescriptor, standbyPtMapDescriptor } from '../sim/pt_field_active';
+import {
+  PT_MINIMAP_MAX_X,
+  PT_MINIMAP_MAX_Z,
+  PT_MINIMAP_MIN_X,
+  PT_MINIMAP_MIN_Z,
+  PT_MINIMAP_TEXTURE_URL,
+  ptMinimapLayers,
+  ptRasterDestRect,
+} from './pt_minimap_core';
 
 // The fixed circular minimap surface (the #minimap canvas is 162x162). Exported so Hud
 // uses one source of truth for both the overworld paint and the delve delegation.
@@ -1058,7 +1066,10 @@ export class MinimapPainter {
   // The authentic PT Ricarten minimap texture (field/map/village-2.tga as PNG).
   // 'loading' / 'missing' latch the async state so the ~10Hz redraw never
   // re-kicks the fetch; the map simply waits a frame or two on first entry.
-  private ricartenBg: HTMLImageElement | 'loading' | 'missing' | null = null;
+  // Per-field minimap rasters, keyed by PNG URL. Each entry loads once and
+  // is reused every frame; 'missing' marks a failed fetch so the retry
+  // cadence does not hammer a 404. Bounded by the fields visited.
+  private ptMapBgs = new Map<string, HTMLImageElement | 'loading' | 'missing'>();
   constructor(
     private readonly writers: PainterHostWriters,
     private readonly classColor: (cls: string) => string,
@@ -1116,18 +1127,10 @@ export class MinimapPainter {
       this.paintBattleground(ctx, world, zoneLabelEl, zoom, colors);
       return;
     }
-    // PT Ricarten band: the authentic village-2 field map under the standard
-    // marker union, projected through the PT band rect (pt_minimap_core.ts).
-    // A /ptmap dev selection paints the void + markers only: the village-2
-    // raster belongs to Ricarten and must never stand in for another map.
+    // PT band: the connected-world field raster(s) under the standard marker
+    // union, projected through each field's StageMapRect (pt_minimap_core.ts).
     if (isPtPos(world.player.pos.x)) {
-      const devMap = activePtMapDescriptor();
-      // The default Ricarten binding is itself a descriptor now, so the
-      // id guard keeps the authored village-2 raster on production Ricarten
-      // while genuinely other maps paint the dev void.
-      if (devMap && devMap.id !== 'ricarten')
-        this.paintPtDevMap(ctx, world, zoneLabelEl, zoom, colors, devMap.id);
-      else this.paintRicarten(ctx, world, zoneLabelEl, zoom, colors);
+      this.paintPtFields(ctx, world, zoneLabelEl, zoom, colors);
       return;
     }
     const S = MINIMAP_SIZE;
@@ -1366,7 +1369,18 @@ export class MinimapPainter {
    * lands the panel shows the dark fill the clip circle leaves behind, exactly
    * like a not-yet-decoded zone background.
    */
-  paintRicarten(
+  /**
+   * PT connected-world minimap: the active field's authored Field/map/<id>
+   * raster plus the FieldGate-preloaded standby field's raster, composited in
+   * the source's draw order (the neighbor beneath the current field, matching
+   * DrawFieldMap's sCompactMap[1]-then-[0]). Placement comes from each field's
+   * authored StageMapRect through its descriptor transform, so connected
+   * rasters adjoin where the terrain does. Same contract as paintBattleground:
+   * the standard marker union over the raster, '#zone-label' set to the field
+   * name. Rasters still in flight (or absent in the source data) leave the PT
+   * void fill, exactly like a not-yet-decoded zone background.
+   */
+  paintPtFields(
     ctx: CanvasRenderingContext2D,
     world: IWorld,
     zoneLabelEl: HTMLElement,
@@ -1377,9 +1391,30 @@ export class MinimapPainter {
     const pxPerYard = MINIMAP_BASE_SCALE * zoom;
     const profile = this.markerProfile();
     const model = this.markers.build(world, S, pxPerYard, profile);
-    this.writers.setText(zoneLabelEl, this.ricartenName());
+    const active = activePtMapDescriptor();
+    // Production Ricarten keeps its localized name; any other bound field
+    // (a /ptmap dev selection or a crossed FieldGate) labels by package id.
+    this.writers.setText(
+      zoneLabelEl,
+      active === null || active.id === 'ricarten' ? this.ricartenName() : `pt-dev:${active.id}`,
+    );
     const p = world.player;
-    const img = this.ensureRicartenBg();
+    // A descriptor-less host (bare sim, pre-registration) keeps the pinned
+    // Ricarten path: the village-2 raster over the pt_band constants rect.
+    const layers = active
+      ? ptMinimapLayers(active, standbyPtMapDescriptor())
+      : [
+          {
+            id: 'ricarten',
+            png: PT_MINIMAP_TEXTURE_URL,
+            rect: {
+              minX: PT_MINIMAP_MIN_X,
+              maxX: PT_MINIMAP_MAX_X,
+              minZ: PT_MINIMAP_MIN_Z,
+              maxZ: PT_MINIMAP_MAX_Z,
+            },
+          },
+        ];
 
     ctx.clearRect(0, 0, S, S);
     ctx.save();
@@ -1387,69 +1422,41 @@ export class MinimapPainter {
     ctx.arc(S / 2, S / 2, S / 2 - MINIMAP_CLIP_INSET, 0, FULL_CIRCLE);
     ctx.clip();
     ctx.imageSmoothingEnabled = true;
-    // The authentic texture's unmapped area is alpha-0 (the source TGA carries
+    // The authentic textures' unmapped area is alpha-0 (the source TGAs carry
     // ~black RGB there); fill the clip with the PT void color first so the
     // HUD frame never shows through where PT rendered black.
     ctx.fillStyle = colors.ptVoid;
     ctx.fillRect(0, 0, S, S);
-    if (img) {
-      const r = ptRicartenMapDestRect(p.pos.x, p.pos.z, S, pxPerYard);
+    for (const layer of layers) {
+      const img = this.ensurePtBg(layer.png);
+      if (img === null) continue;
+      const r = ptRasterDestRect(layer.rect, p.pos.x, p.pos.z, S, pxPerYard);
       ctx.drawImage(img, r.x, r.y, r.w, r.h);
     }
     this.drawMarkers(ctx, model.markers, colors, profile);
     ctx.restore();
   }
 
-  /**
-   * /ptmap dev-map minimap: no converted minimap texture exists for the
-   * generated packages (only village-2's was shipped), so the panel shows the
-   * PT void fill with the standard marker union and labels the band with the
-   * dev map id instead of borrowing Ricarten's raster.
-   */
-  paintPtDevMap(
-    ctx: CanvasRenderingContext2D,
-    world: IWorld,
-    zoneLabelEl: HTMLElement,
-    zoom: number,
-    colors: MinimapColors,
-    mapId: string,
-  ): void {
-    const S = MINIMAP_SIZE;
-    const pxPerYard = MINIMAP_BASE_SCALE * zoom;
-    const profile = this.markerProfile();
-    const model = this.markers.build(world, S, pxPerYard, profile);
-    this.writers.setText(zoneLabelEl, `pt-dev:${mapId}`);
-
-    ctx.clearRect(0, 0, S, S);
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(S / 2, S / 2, S / 2 - MINIMAP_CLIP_INSET, 0, FULL_CIRCLE);
-    ctx.clip();
-    ctx.fillStyle = colors.ptVoid;
-    ctx.fillRect(0, 0, S, S);
-    this.drawMarkers(ctx, model.markers, colors, profile);
-    ctx.restore();
-  }
-
-  // Kick (or join) the one-time texture load. Returns the image only once the
-  // browser has decoded it; the redraw cadence retries naturally.
-  private ensureRicartenBg(): HTMLImageElement | null {
-    if (this.ricartenBg && this.ricartenBg !== 'loading' && this.ricartenBg !== 'missing')
-      return this.ricartenBg;
-    if (this.ricartenBg !== null) return null;
+  // Kick (or join) the one-time texture load for one field raster. Returns
+  // the image only once the browser has decoded it; the redraw cadence
+  // retries naturally. A 404 lands on 'missing' and is skipped thereafter.
+  private ensurePtBg(url: string): HTMLImageElement | null {
+    const cur = this.ptMapBgs.get(url);
+    if (cur === 'loading' || cur === 'missing') return null;
+    if (cur) return cur;
     if (typeof Image === 'undefined') {
-      this.ricartenBg = 'missing';
+      this.ptMapBgs.set(url, 'missing');
       return null;
     }
-    this.ricartenBg = 'loading';
+    this.ptMapBgs.set(url, 'loading');
     const img = new Image();
     img.onload = () => {
-      this.ricartenBg = img;
+      this.ptMapBgs.set(url, img);
     };
     img.onerror = () => {
-      this.ricartenBg = 'missing';
+      this.ptMapBgs.set(url, 'missing');
     };
-    img.src = PT_MINIMAP_TEXTURE_URL;
+    img.src = url;
     return null;
   }
 

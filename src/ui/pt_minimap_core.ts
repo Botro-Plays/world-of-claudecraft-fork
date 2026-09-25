@@ -24,6 +24,7 @@ import {
   ptXToWoC,
   ptZToWoC,
 } from '../sim/pt_band';
+import type { PtFieldTransform, PtMapDescriptor } from '../sim/pt_field';
 
 // The authentic PT minimap texture: client/Field/map/village-2.tga, a 256x256
 // 32-bit top-down map render covering the full StageMapRect, converted to PNG
@@ -72,11 +73,107 @@ export function ptRicartenMapDestRect(
   S: number,
   pxPerYard: number,
 ): { x: number; y: number; w: number; h: number } {
+  return ptRasterDestRect(
+    {
+      minX: PT_MINIMAP_MIN_X,
+      maxX: PT_MINIMAP_MAX_X,
+      minZ: PT_MINIMAP_MIN_Z,
+      maxZ: PT_MINIMAP_MAX_Z,
+    },
+    playerX,
+    playerZ,
+    S,
+    pxPerYard,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Connected-world rasters (Phase 5B)
+// ---------------------------------------------------------------------------
+
+/** WoC-space rect one field's minimap raster covers. */
+export interface PtRasterRect {
+  minX: number;
+  maxX: number;
+  minZ: number;
+  maxZ: number;
+}
+
+/** Authored StageMapRect coverage of a field's map raster (SMD header,
+ *  x256 fixed-point PT units): image left = rect.left, image top =
+ *  rect.bottom. */
+export interface PtStageMapRect {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+/**
+ * Project a field's StageMapRect into WoC space through the field's own
+ * band transform. The X mirror puts PT west (rect.left, the numerically
+ * smaller PT x) at the LARGER WoC x; Z maps straight through, so the
+ * image-top edge (rect.bottom) lands at maxZ.
+ */
+export function ptRasterWorldRect(
+  rect: PtStageMapRect,
+  transform: PtFieldTransform,
+): PtRasterRect {
+  const xA = transform.ptXToWoC(rect.left / 256);
+  const xB = transform.ptXToWoC(rect.right / 256);
+  const zA = transform.ptZToWoC(rect.top / 256);
+  const zB = transform.ptZToWoC(rect.bottom / 256);
+  return {
+    minX: Math.min(xA, xB),
+    maxX: Math.max(xA, xB),
+    minZ: Math.min(zA, zB),
+    maxZ: Math.max(zA, zB),
+  };
+}
+
+/** Generic form of ptRicartenMapDestRect for any field raster rect. */
+export function ptRasterDestRect(
+  rect: PtRasterRect,
+  playerX: number,
+  playerZ: number,
+  S: number,
+  pxPerYard: number,
+): { x: number; y: number; w: number; h: number } {
   const half = S / 2;
   return {
-    x: half - (PT_MINIMAP_MAX_X - playerX) * pxPerYard,
-    y: half - (PT_MINIMAP_MAX_Z - playerZ) * pxPerYard,
-    w: (PT_MINIMAP_MAX_X - PT_MINIMAP_MIN_X) * pxPerYard,
-    h: (PT_MINIMAP_MAX_Z - PT_MINIMAP_MIN_Z) * pxPerYard,
+    x: half - (rect.maxX - playerX) * pxPerYard,
+    y: half - (rect.maxZ - playerZ) * pxPerYard,
+    w: (rect.maxX - rect.minX) * pxPerYard,
+    h: (rect.maxZ - rect.minZ) * pxPerYard,
   };
+}
+
+/** One raster to composite: the converted PNG plus its WoC placement. */
+export interface PtMinimapLayer {
+  id: string;
+  png: string;
+  rect: PtRasterRect;
+}
+
+/**
+ * The connected-world minimap set in source draw order: the standby
+ * (FieldGate-preloaded) neighbor first, the active field on top - the PT
+ * client draws sCompactMap[1] then sCompactMap[0]. Fields whose source
+ * Field/map/<id>.tga was absent carry PT_MINIMAP = null and drop out,
+ * leaving the void fill (never a fabricated stand-in). Only the two
+ * loaded slots are composited; PT itself never holds more.
+ */
+export function ptMinimapLayers(
+  active: PtMapDescriptor | null,
+  standby: PtMapDescriptor | null,
+): PtMinimapLayer[] {
+  const layers: PtMinimapLayer[] = [];
+  for (const d of [standby, active]) {
+    if (d === null) continue;
+    const png = d.field.PT_MINIMAP?.png;
+    const rect = d.field.PT_STAGE_MAP_RECT;
+    if (!png || !rect) continue;
+    layers.push({ id: d.id, png, rect: ptRasterWorldRect(rect, d.transform) });
+  }
+  return layers;
 }

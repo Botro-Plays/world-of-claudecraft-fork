@@ -11,8 +11,11 @@ import {
   PT_MINIMAP_MAX_Z,
   PT_MINIMAP_MIN_X,
   PT_MINIMAP_MIN_Z,
+  ptMinimapLayers,
   ptMinimapScreenDelta,
   ptMinimapUV,
+  ptRasterDestRect,
+  ptRasterWorldRect,
   ptRicartenMapDestRect,
 } from '../src/ui/pt_minimap_core';
 import {
@@ -31,6 +34,14 @@ import {
   ptZToWoC,
 } from '../src/sim/pt_band';
 import { MinimapPainter, MINIMAP_SIZE } from '../src/ui/minimap_painter';
+import {
+  activePtMapDescriptor,
+  setActivePtMap,
+  setStandbyPtMap,
+  standbyPtMapDescriptor,
+} from '../src/sim/pt_field_active';
+import { makePtContinentTransform, type PtMapDescriptor } from '../src/sim/pt_field';
+import { loadPtDevMap } from '../src/game/pt_dev_maps';
 import type { IWorld } from '../src/world_api';
 
 // -- Authoritative PT coordinates (field.cpp field 3, "village-2") -----------
@@ -47,6 +58,7 @@ const RECT_H_PT = PT_RICARTEN_MAX_Z - PT_RICARTEN_MIN_Z; // 9179 PT units
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  setActivePtMap(null); // never leave a bound field across suites
 });
 
 describe('pt_minimap_core: bounds come from the authored StageMapRect', () => {
@@ -320,5 +332,148 @@ describe('paintOverworld: PT band routing', () => {
     expect(labels[0]).not.toBe('Ricarten');
     expect(FakeImage.constructed).toBe(0); // the PT texture is never fetched
     for (const b of blits) expect(b.image).not.toBeInstanceOf(FakeImage);
+  });
+});
+
+// -- Phase 5B: connected-world raster compositing -------------------------
+
+describe('ptRasterWorldRect: StageMapRect through the continent transform', () => {
+  it('places Ricarten on the same rect the pinned constants describe', async () => {
+    const ric = await loadPtDevMap('ricarten');
+    const rect = ptRasterWorldRect(
+      ric.descriptor.field.PT_STAGE_MAP_RECT!,
+      ric.descriptor.transform,
+    );
+    // The authored rect is x256 fixed-point, so it lands within a fraction
+    // of a yard of the rounded pt_band bounds constants.
+    expect(rect.minX).toBeCloseTo(PT_MINIMAP_MIN_X, 1);
+    expect(rect.maxX).toBeCloseTo(PT_MINIMAP_MAX_X, 1);
+    expect(rect.minZ).toBeCloseTo(PT_MINIMAP_MIN_Z, 1);
+    expect(rect.maxZ).toBeCloseTo(PT_MINIMAP_MAX_Z, 1);
+  });
+
+  it('lays the fore-1 neighbor north of and overlapping Ricarten', async () => {
+    const ric = await loadPtDevMap('ricarten');
+    const f1 = await loadPtDevMap('fore-1');
+    const rRect = ptRasterWorldRect(
+      ric.descriptor.field.PT_STAGE_MAP_RECT!,
+      ric.descriptor.transform,
+    );
+    const fRect = ptRasterWorldRect(
+      f1.descriptor.field.PT_STAGE_MAP_RECT!,
+      f1.descriptor.transform,
+    );
+    // fore-1's authored rect extends north of Ricarten (larger WoC z) and
+    // overlaps it in the shared seam band - the continent transform makes
+    // the two rasters overlap exactly where the terrains do.
+    expect(fRect.maxZ).toBeGreaterThan(rRect.maxZ);
+    expect(fRect.minZ).toBeLessThan(rRect.maxZ);
+    expect(fRect.minX).toBeLessThan(rRect.maxX);
+    expect(fRect.maxX).toBeGreaterThan(rRect.minX);
+  });
+
+  it('is deterministic: identical inputs give identical rects', () => {
+    const rect = { left: -895557, top: -5727554, right: 1429680, bottom: -3377756 };
+    const xf = makePtContinentTransform();
+    expect(ptRasterWorldRect(rect, xf)).toEqual(ptRasterWorldRect(rect, xf));
+  });
+});
+
+describe('ptMinimapLayers: source draw order and graceful skips', () => {
+  function fakeDescriptor(id: string, minimap: { png: string } | null): PtMapDescriptor {
+    return {
+      id,
+      field: {
+        PT_MINIMAP: minimap,
+        PT_STAGE_MAP_RECT: { left: 0, top: 0, right: 25600, bottom: 25600 },
+      } as PtMapDescriptor['field'],
+      transform: makePtContinentTransform(),
+      textureBase: `textures/pt-${id}`,
+      stageObjects: null,
+      oceanRing: false,
+    };
+  }
+
+  it('orders standby beneath active (sCompactMap[1] then [0])', () => {
+    const layers = ptMinimapLayers(
+      fakeDescriptor('fore-1', { png: '/a.png' }),
+      fakeDescriptor('fore-2', { png: '/b.png' }),
+    );
+    expect(layers.map((l) => l.id)).toEqual(['fore-2', 'fore-1']);
+  });
+
+  it('drops fields whose source raster was absent (PT_MINIMAP null)', () => {
+    const layers = ptMinimapLayers(
+      fakeDescriptor('office', null),
+      fakeDescriptor('fore-2', { png: '/b.png' }),
+    );
+    expect(layers.map((l) => l.id)).toEqual(['fore-2']);
+  });
+
+  it('returns nothing when neither loaded field has a raster', () => {
+    expect(ptMinimapLayers(null, null)).toEqual([]);
+    expect(
+      ptMinimapLayers(fakeDescriptor('office', null), fakeDescriptor('quest-iv', null)),
+    ).toEqual([]);
+  });
+});
+
+describe('paintOverworld: connected-field compositing', () => {
+  it('draws the standby neighbor raster beneath the active field', async () => {
+    stubDomGlobals();
+    const labels: string[] = [];
+    const painter = makePainter(labels);
+    const { ctx, blits } = recordingCtx();
+    const f1 = await loadPtDevMap('fore-1');
+    const ric = await loadPtDevMap('ricarten');
+    setActivePtMap(f1.descriptor);
+    setStandbyPtMap(ric.descriptor);
+    // Stand on the fore-1 side of the authored fore-1 -> ricarten gate so
+    // both fields' rasters straddle the viewport.
+    const g = f1.descriptor.fieldGates!.find((e) => e.targetId === 'ricarten')!;
+    const x = f1.descriptor.transform.ptXToWoC(g.x);
+    const z = f1.descriptor.transform.ptZToWoC(g.z);
+    const world = ptWorld(x, z);
+
+    painter.paintOverworld(ctx, world, {} as HTMLElement, {} as HTMLCanvasElement, 1);
+    painter.paintOverworld(ctx, world, {} as HTMLElement, {} as HTMLCanvasElement, 1);
+
+    expect(labels).toEqual(['pt-dev:fore-1', 'pt-dev:fore-1']);
+    expect(FakeImage.constructed).toBe(2); // one fetch per raster URL
+    expect(blits).toHaveLength(2);
+    // Standby paints first (beneath), then the active field on top.
+    const standby = standbyPtMapDescriptor()!;
+    const active = activePtMapDescriptor()!;
+    for (const [i, d] of [standby, active].entries()) {
+      const rect = ptRasterWorldRect(d.field.PT_STAGE_MAP_RECT!, d.transform);
+      const r = ptRasterDestRect(rect, x, z, MINIMAP_SIZE, 1.7);
+      expect(blits[i].x).toBeCloseTo(r.x, 6);
+      expect(blits[i].y).toBeCloseTo(r.y, 6);
+      expect(blits[i].w).toBeCloseTo(r.w, 6);
+      expect(blits[i].h).toBeCloseTo(r.h, 6);
+    }
+  });
+
+  it('skips a failed raster instead of throwing or blanking the panel', async () => {
+    class FailImage {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      set src(_v: string) {
+        this.onerror?.();
+      }
+    }
+    stubDomGlobals();
+    vi.stubGlobal('Image', FailImage);
+    const labels: string[] = [];
+    const painter = makePainter(labels);
+    const { ctx, blits } = recordingCtx();
+    const f1 = await loadPtDevMap('fore-1');
+    setActivePtMap(f1.descriptor);
+    const world = ptWorld(ptXToWoC(2592), ptZToWoC(-18566));
+
+    expect(() =>
+      painter.paintOverworld(ctx, world, {} as HTMLElement, {} as HTMLCanvasElement, 1),
+    ).not.toThrow();
+    expect(blits).toHaveLength(0); // failed raster skipped, void fill shown
   });
 });
