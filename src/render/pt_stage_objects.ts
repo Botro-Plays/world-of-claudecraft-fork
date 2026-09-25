@@ -48,11 +48,15 @@ import { loadTexture } from './assets/loader';
 import { sharedUniforms } from './gfx';
 import {
   PT_ALPHA_TEST_REF,
-  PT_SCRIPT_WATER,
-  PT_SCRIPT_WINDZ1,
+  PT_ANIM_AUTO,
   ptApplyVertexScript,
   ptMaterialHasOpacityMap,
+  ptMaterialIsAnimated,
   ptMaterialIsHidden,
+  ptMaterialIsUndrawn,
+  ptTickTextureAnims,
+  ptVertexScriptFor,
+  type PtTextureAnim,
 } from './pt_terrain';
 
 export interface PtStageObjectsView {
@@ -311,21 +315,52 @@ function textureUrlFor(mat: PtStageObjectMaterial, textureBase: string): string 
   return textureBase + baseName + '.png';
 }
 
-async function loadStageTexture(
-  mat: PtStageObjectMaterial,
-  textureBase: string,
-  cache: Map<string, THREE.Texture | null>,
+function animTextureUrlFor(name: string, textureBase: string): string | null {
+  const fileName = name.replace(/\\/g, '/').split('/').pop() || '';
+  const baseName = fileName.replace(/\.[^.]+$/i, '').toLowerCase();
+  if (!baseName) return null;
+  return textureBase + baseName + '.png';
+}
+
+// One promise map owns every texture fetch for the view: base slots and
+// animation frames dedupe per URL, so a texture used in both roles (or by
+// two objects) is fetched and decoded at most once.
+type StageTextureCache = Map<string, Promise<THREE.Texture | null>>;
+
+function stageFetchTexture(
+  cache: StageTextureCache,
+  url: string,
 ): Promise<THREE.Texture | null> {
-  const url = textureUrlFor(mat, textureBase);
-  if (!url) return null;
   if (!cache.has(url)) {
-    try {
-      cache.set(url, await loadTexture(url, { srgb: true, repeat: true }));
-    } catch {
-      cache.set(url, null);
-    }
+    cache.set(url, loadTexture(url, { srgb: true, repeat: true }).catch(() => null));
   }
   return cache.get(url)!;
+}
+
+function loadStageTexture(
+  mat: PtStageObjectMaterial,
+  textureBase: string,
+  cache: StageTextureCache,
+): Promise<THREE.Texture | null> {
+  const url = textureUrlFor(mat, textureBase);
+  if (!url) return Promise.resolve(null);
+  return stageFetchTexture(cache, url);
+}
+
+// SMTEX_TYPE_ANIMATION: the stage-0 slot binds the flipbook frame
+// (smAnimTexture), not the base smTexture entry.
+async function loadStageAnimFrames(
+  mat: PtStageObjectMaterial,
+  textureBase: string,
+  cache: StageTextureCache,
+): Promise<(THREE.Texture | null)[]> {
+  const names = mat.animTextureNames ?? [];
+  return Promise.all(
+    names.map((n) => {
+      const url = animTextureUrlFor(n, textureBase);
+      return url ? stageFetchTexture(cache, url) : Promise.resolve(null);
+    }),
+  );
 }
 
 function makeStageMaterial(
@@ -344,9 +379,8 @@ function makeStageMaterial(
     m.opacity = Math.min(1, Math.max(0, 1 - transparency));
     m.depthWrite = transparency <= 0.2;
   }
-  const script = mat?.windMeshBottom ?? 0;
-  if ((script & PT_SCRIPT_WATER) !== 0) ptApplyVertexScript(m, 'water');
-  else if ((script & PT_SCRIPT_WINDZ1) !== 0) ptApplyVertexScript(m, 'windz1');
+  const script = ptVertexScriptFor(mat?.windMeshBottom ?? 0);
+  if (script) ptApplyVertexScript(m, script);
   return m;
 }
 
@@ -358,21 +392,22 @@ async function buildNodeMesh(
   node: PtStageObjectNode,
   matByIdx: Map<number, PtStageObjectMaterial>,
   textureBase: string,
-  textureCache: Map<string, THREE.Texture | null>,
+  textureCache: StageTextureCache,
   outMaterials: THREE.Material[],
+  outAnims: PtTextureAnim[],
 ): Promise<THREE.Mesh | null> {
   const facesByMaterial = new Map<number, number[]>();
   for (let fi = 0; fi < node.nFace; fi++) {
     const matIdx = node.faces[fi * 4 + 3];
     const mat = matByIdx.get(matIdx);
-    if (ptMaterialIsHidden(mat)) continue;
+    if (ptMaterialIsHidden(mat) || ptMaterialIsUndrawn(mat)) continue;
     if (!facesByMaterial.has(matIdx)) facesByMaterial.set(matIdx, []);
     facesByMaterial.get(matIdx)!.push(fi);
   }
   if (facesByMaterial.size === 0) return null;
 
   const needsPtXZ = [...facesByMaterial.keys()].some(
-    (mi) => ((matByIdx.get(mi)?.windMeshBottom ?? 0) & PT_SCRIPT_WATER) !== 0,
+    (mi) => ptVertexScriptFor(matByIdx.get(mi)?.windMeshBottom ?? 0) === 'water',
   );
 
   const positions: number[] = [];
@@ -416,10 +451,27 @@ async function buildNodeMesh(
   const materials: THREE.Material[] = [];
   for (const g of groups) {
     const mat = matByIdx.get(g.material);
-    const texture = mat ? await loadStageTexture(mat, textureBase, textureCache) : null;
-    const m = makeStageMaterial(mat, texture);
-    m.name = `pt-obj-mat-${g.material}`;
-    materials.push(m);
+    const base = mat ? await loadStageTexture(mat, textureBase, textureCache) : null;
+    let texture = base;
+    if (ptMaterialIsAnimated(mat)) {
+      const frames = await loadStageAnimFrames(mat!, textureBase, textureCache);
+      texture = frames[0] ?? base;
+      const m = makeStageMaterial(mat, texture);
+      m.name = `pt-obj-mat-${g.material}`;
+      materials.push(m);
+      outAnims.push({
+        material: m,
+        frames,
+        frameMask: mat!.frameMask ?? frames.length - 1,
+        shiftFrameSpeed: mat!.shiftFrameSpeed ?? 0,
+        animationFrame: mat!.animationFrame ?? PT_ANIM_AUTO,
+        fallback: base,
+      });
+    } else {
+      const m = makeStageMaterial(mat, texture);
+      m.name = `pt-obj-mat-${g.material}`;
+      materials.push(m);
+    }
     geo.addGroup(g.start, g.count, materials.length - 1);
   }
 
@@ -437,8 +489,9 @@ export async function buildPtStageObjectsView(
   group.name = `pt-${src.id}-stage-objects`;
   const bandMatrix = src.bandMatrix;
 
-  const textureCache = new Map<string, THREE.Texture | null>();
+  const textureCache: StageTextureCache = new Map();
   const allMaterials: THREE.Material[] = [];
+  const anims: PtTextureAnim[] = [];
   const meshes: THREE.Mesh[] = [];
   const objectEntries: ObjectEntry[] = [];
 
@@ -448,7 +501,7 @@ export async function buildPtStageObjectsView(
     );
     const entry: ObjectEntry = { obj, animNodes: [] };
     for (const node of obj.nodes) {
-      const mesh = await buildNodeMesh(node, matByIdx, src.textureBase, textureCache, allMaterials);
+      const mesh = await buildNodeMesh(node, matByIdx, src.textureBase, textureCache, allMaterials, anims);
       if (!mesh) continue;
       // Static/base placement: node.matrix = B * transpose(localMatrix),
       // mapping PT-local units straight into WoC band coordinates.
@@ -469,7 +522,9 @@ export async function buildPtStageObjectsView(
   }
 
   function update(): void {
-    const ticks = Math.floor(sharedUniforms.uTime.value * 1000) * PT_TICKS_PER_MS;
+    const timeMs = sharedUniforms.uTime.value * 1000;
+    if (anims.length > 0) ptTickTextureAnims(anims, timeMs);
+    const ticks = Math.floor(timeMs) * PT_TICKS_PER_MS;
     for (const entry of objectEntries) {
       if (entry.animNodes.length === 0) continue;
       const frame = ptObjectFrame(ticks, entry.obj.maxFrame);
@@ -493,7 +548,9 @@ export async function buildPtStageObjectsView(
         const mats = Array.isArray(m.material) ? m.material : [m.material];
         for (const mm of mats) mm.dispose();
       }
-      for (const t of textureCache.values()) t?.dispose();
+      void Promise.all(textureCache.values()).then((textures) => {
+        for (const t of textures) t?.dispose();
+      });
     },
   };
 }

@@ -19,10 +19,22 @@
 //    Transparency > 0.2 additionally disables z-write (ZWriteAuto).
 //  - useState sMATS_SCRIPT_NOTVIEW (0x400) materials are never drawn
 //    (invisible collision walls).
-//  - WindMeshBottom script bits drive PT's per-vertex animation:
-//    sMATS_SCRIPT_WINDZ1 (0x20) = cosine Z sway, sMATS_SCRIPT_WATER
-//    (0x200) = position/time sin ripple. Both run in the vertex shader
-//    off the shared uTime clock (see ptApplyVertexScript).
+//  - A material with no texture and no anim frames is never drawn at all
+//    (RenderD3D returns FALSE); an authored-but-missing texture file still
+//    registers a handle and is drawn untextured.
+//  - WindMeshBottom drives per-vertex scripts via an exact-value switch on
+//    (WindMeshBottom & 0x7FF): WINDZ1 0x20 and WINDX1 0x80 sway +-8 PT
+//    units; WINDZ2 0x40 and WINDX2 0x100 sway +-32; WATER 0x200 is a
+//    position/time sin ripple (see ptVertexScriptFor/ptApplyVertexScript).
+//    Composite ASE tag residues (0x9, 0xb) match no case and stay rigid.
+//  - SMTEX_TYPE_ANIMATION materials bind the smAnimTexture flipbook at
+//    stage 0, frame = (RendStatTime >> Shift_FrameSpeed) & FrameMask,
+//    advanced per frame inside the shared texture cache (no refetch,
+//    no decode, no material churn - see ptTickTextureAnims).
+//  - Authored sDef_Color vertex colors bake once with the field gouraud
+//    shade (SetVertexShade: n.VectLight/Contrast + Bright) into a color
+//    attribute that modulates the texture, matching PT's bCol stream
+//    slot (see pt_vertex_shade.ts).
 //
 // The mesh is placed in the world at the PT band offset (see pt_band.ts).
 
@@ -51,6 +63,7 @@ import {
   type PtStageObjectsView,
 } from './pt_stage_objects';
 import { PT_STAGE_OBJECTS } from './pt_stage_objects.generated';
+import { ptBakeVertexShade, ptVertexColorsOnly } from './pt_vertex_shade';
 
 export interface PtTerrainView {
   group: THREE.Group;
@@ -170,9 +183,20 @@ export const PT_TRANSLUCENT_THRESHOLD = 0.1;
 // AlphaTestDepth = ALPHATESTDEPTH (60) with NATIVE_COMPARE_GREATEREQUAL.
 export const PT_ALPHA_TEST_REF = 60 / 255;
 
-// PT WindMeshBottom script bits (sMATS_SCRIPT_* in smRead3d.h).
+// PT WindMeshBottom script bits (sMATS_SCRIPT_* in smRead3d.h). The source
+// renderer switches on the exact value (WindMeshBottom & 0x7FF), so
+// composite residues like the ASE anim-tag bits (0x9, 0xb) produce no
+// vertex displacement at all.
 export const PT_SCRIPT_WINDZ1 = 0x20;
+export const PT_SCRIPT_WINDZ2 = 0x40;
+export const PT_SCRIPT_WINDX1 = 0x80;
+export const PT_SCRIPT_WINDX2 = 0x100;
 export const PT_SCRIPT_WATER = 0x200;
+// smMATERIAL::TextureType (smTexture.cpp): multimix modulates every stage;
+// ANIMATION binds smAnimTexture[cnt] alone.
+export const PT_TEX_TYPE_ANIMATION = 0x1;
+// smMATERIAL::AnimationFrame marker for self-playing flipbooks.
+export const PT_ANIM_AUTO = 0x100;
 // useState sMATS_SCRIPT_NOTVIEW (0x400): "wall:" materials are collision
 // only and are never drawn by the PT renderer.
 export const PT_SCRIPT_NOTVIEW = 0x400;
@@ -184,7 +208,13 @@ interface PtMaterialInfo {
   useState: number;
   meshState: number;
   windMeshBottom: number;
+  textureType?: number;
   textureNames: string[];
+  animTexCounter?: number;
+  animTextureNames?: string[];
+  frameMask?: number;
+  shiftFrameSpeed?: number;
+  animationFrame?: number;
 }
 
 export function ptMaterialIsTranslucent(
@@ -195,14 +225,50 @@ export function ptMaterialIsTranslucent(
 
 // PT MapOpacity rule (smTexture.cpp new_smCreateTexture): .tga and .png
 // texture files load with an opacity map; the material then renders with
-// alpha-test >= 60/255. BMP files are opaque.
-export function ptMaterialHasOpacityMap(mat: PtMaterialInfo | undefined): boolean {
-  const name = mat?.textureNames[0] ?? '';
+// alpha-test >= 60/255. BMP files are opaque. For animated materials the
+// bound stage-0 texture is the animation frame (SMTEX_TYPE_ANIMATION),
+// so the anim frame's own format decides, not the base slot.
+export function ptMaterialHasOpacityMap(
+  mat: PtMaterialInfo | { textureNames: string[]; animTextureNames?: string[]; textureType?: number } | undefined,
+): boolean {
+  const name =
+    mat?.textureType === PT_TEX_TYPE_ANIMATION && (mat.animTextureNames?.length ?? 0) > 0
+      ? mat.animTextureNames![0]
+      : mat?.textureNames[0] ?? '';
   return /\.(tga|png)$/i.test(name);
 }
 
 export function ptMaterialIsHidden(mat: PtMaterialInfo | undefined): boolean {
   return mat !== undefined && (mat.useState & PT_SCRIPT_NOTVIEW) !== 0;
+}
+
+// smMATERIAL::RenderD3D first line: `if (!TextureCounter && !AnimTexCounter)
+// return FALSE;` - a material with no base texture and no animation frames
+// is never drawn by the PT renderer at all. Distinct from an authored-but-
+// missing texture file, which still registers a texture handle at load and
+// IS drawn (the ~1560 client-copy gaps keep their geometry, flat-shaded).
+export function ptMaterialIsUndrawn(
+  mat: { textureNames: string[]; animTextureNames?: string[] } | undefined,
+): boolean {
+  return (
+    mat !== undefined &&
+    mat.textureNames.length === 0 &&
+    (mat.animTextureNames?.length ?? 0) === 0
+  );
+}
+
+// smRend3d.cpp case SMTEX_TYPE_ANIMATION: the material binds
+// smAnimTexture[cnt] instead of the base texture slots.
+export function ptMaterialIsAnimated(
+  mat:
+    | { textureType?: number; animTexCounter?: number; animTextureNames?: string[] }
+    | undefined,
+): boolean {
+  return (
+    mat !== undefined &&
+    mat.textureType === PT_TEX_TYPE_ANIMATION &&
+    (mat.animTexCounter ?? mat.animTextureNames?.length ?? 0) > 0
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -213,10 +279,13 @@ export function ptMaterialIsHidden(mat: PtMaterialInfo | undefined): boolean {
 // renderer's shared uTime clock (seconds) and convert. Angles index into
 // PT's 4096-entry sin/cos LUT (ANGLE_360 = 4096, values * 65536 fixed).
 //
-// WINDZ1 (0x20), smRend3d.cpp:729-737:
+// WIND channels share one triangle wave (smRend3d.cpp AddStageVertex,
+// switch on WindMeshBottom & 0x7FF):
 //   ttCnt = (t>>2)&0xFF; if (!(t>>10 & 1)) ttCnt = 255-ttCnt;
-//   shift = GetCos[ttCnt+256] >> 5;   // +-8 PT units
-//   z -= shift;                      // Z is not mirrored, same in WoC
+//   shift = GetCos[ttCnt+256] >> 5;   // *1 variants: +-8 PT units
+//   shift = GetCos[ttCnt+256] >> 3;   // *2 variants: +-32 PT units
+//   WINDX*: x -= shift;   WINDZ*: z -= shift;
+// PT x is mirrored into WoC, so the X displacement lands positive.
 //
 // WATER (0x200), smRend3d.cpp:784-790:
 //   rx = ((x<<3) + t)>>1;  rz = ((z<<3) + t)>>1;   // x,z = fixed-point vert
@@ -224,11 +293,40 @@ export function ptMaterialIsHidden(mat: PtMaterialInfo | undefined): boolean {
 //   z += GetSin[rz & 4095] >> 4;
 //   x is mirrored in WoC, so the x displacement is applied negated.
 
-const PT_WINDZ1_AMPLITUDE_YD = (2048 / 256) * PT_SCALE; // 8 PT units -> yd
+const PT_WIND1_AMPLITUDE_YD = (2048 / 256) * PT_SCALE; // >>5: 8 PT units -> yd
+const PT_WIND2_AMPLITUDE_YD = (8192 / 256) * PT_SCALE; // >>3: 32 PT units -> yd
 const PT_WATER_AMPLITUDE_YD = (4096 / 256) * PT_SCALE; // 16 PT units -> yd
 const PT_ANGLE_SCALE = (Math.PI * 2) / 4096;
 
-export type PtVertexScript = 'windz1' | 'water';
+export type PtVertexScript = 'windz1' | 'windz2' | 'windx1' | 'windx2' | 'water';
+
+// smRend3d.cpp switches on the exact WindMeshBottom value (masked to the
+// 0x7FF script bits); composite residues like 0x9 (ASE WIND|ANIM8) hit no
+// case and stay rigid, so this is an equality table, not a bitmask test.
+export function ptVertexScriptFor(script: number): PtVertexScript | null {
+  switch (script & 0x7ff) {
+    case PT_SCRIPT_WINDZ1:
+      return 'windz1';
+    case PT_SCRIPT_WINDZ2:
+      return 'windz2';
+    case PT_SCRIPT_WINDX1:
+      return 'windx1';
+    case PT_SCRIPT_WINDX2:
+      return 'windx2';
+    case PT_SCRIPT_WATER:
+      return 'water';
+    default:
+      return null;
+  }
+}
+
+// The shared wind triangle wave: ttCnt (ms>>2)&0xFF counts up then down on
+// the (ms>>10)&1 toggle. Injected once per wind material.
+const PT_WIND_TRIANGLE_GLSL = `
+        float ptTc = mod(floor(uPtTime * 250.0), 256.0);
+        float ptTf = mod(floor(uPtTime * 0.9765625), 2.0);
+        ptTc = mix(255.0 - ptTc, ptTc, step(0.5, ptTf));
+        float ptWindShift = cos((ptTc + 256.0) * ${PT_ANGLE_SCALE});`;
 
 // Injects the PT vertex-displacement script into a material's vertex
 // shader. `aPtXZ` (PT world x,z, mod-4 folded for fp32 precision) is only
@@ -240,18 +338,24 @@ export function ptApplyVertexScript(
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uPtTime = sharedUniforms.uTime;
     let inject: string;
-    if (script === 'windz1') {
-      inject = `
-        float ptTc = mod(floor(uPtTime * 250.0), 256.0);
-        float ptTf = mod(floor(uPtTime * 0.9765625), 2.0);
-        ptTc = mix(255.0 - ptTc, ptTc, step(0.5, ptTf));
-        transformed.z -= cos((ptTc + 256.0) * ${PT_ANGLE_SCALE}) * ${PT_WINDZ1_AMPLITUDE_YD};`;
-    } else {
+    if (script === 'water') {
       inject = `
         float ptRx = floor(mod(mod(aPtXZ.x, 4.0) * 2048.0 + mod(uPtTime * 1000.0, 8192.0), 8192.0) * 0.5);
         float ptRz = floor(mod(mod(aPtXZ.y, 4.0) * 2048.0 + mod(uPtTime * 1000.0, 8192.0), 8192.0) * 0.5);
         transformed.x -= sin(mod(ptRx, 4096.0) * ${PT_ANGLE_SCALE}) * ${PT_WATER_AMPLITUDE_YD};
         transformed.z += sin(mod(ptRz, 4096.0) * ${PT_ANGLE_SCALE}) * ${PT_WATER_AMPLITUDE_YD};`;
+    } else if (script === 'windz1') {
+      inject = `${PT_WIND_TRIANGLE_GLSL}
+        transformed.z -= ptWindShift * ${PT_WIND1_AMPLITUDE_YD};`;
+    } else if (script === 'windz2') {
+      inject = `${PT_WIND_TRIANGLE_GLSL}
+        transformed.z -= ptWindShift * ${PT_WIND2_AMPLITUDE_YD};`;
+    } else if (script === 'windx1') {
+      inject = `${PT_WIND_TRIANGLE_GLSL}
+        transformed.x += ptWindShift * ${PT_WIND1_AMPLITUDE_YD};`;
+    } else {
+      inject = `${PT_WIND_TRIANGLE_GLSL}
+        transformed.x += ptWindShift * ${PT_WIND2_AMPLITUDE_YD};`;
     }
     shader.vertexShader = shader.vertexShader
       .replace(
@@ -261,6 +365,55 @@ export function ptApplyVertexScript(
       .replace('#include <begin_vertex>', `#include <begin_vertex>\n${inject}`);
   };
   material.customProgramCacheKey = () => `pt-${script}`;
+}
+
+// ---------------------------------------------------------------------------
+// Animated textures (SMTEX_TYPE_ANIMATION flipbooks)
+// ---------------------------------------------------------------------------
+//
+// smRend3d.cpp SetD3DRendState case SMTEX_TYPE_ANIMATION: the material binds
+// smAnimTexture[cnt] alone (all other stages disabled), where
+//   cnt = (RendStatTime >> Shift_FrameSpeed) & FrameMask   (auto, 0x100)
+//   cnt = AnimationFrame                                 (fixed frame)
+// FrameMask = AnimTexCounter - 1; RendStatTime is wall-clock milliseconds.
+
+/** The animated-texture binding for one material slot. */
+export interface PtTextureAnim {
+  material: THREE.MeshLambertMaterial;
+  /** Preloaded frame textures (null = frame failed to convert/load). */
+  frames: readonly (THREE.Texture | null)[];
+  frameMask: number;
+  shiftFrameSpeed: number;
+  /** Fixed frame when animationFrame != PT_ANIM_AUTO. */
+  animationFrame: number;
+  /** Base texture fallback for frames that failed to load. */
+  fallback: THREE.Texture | null;
+}
+
+// Pure frame-index rule (source-faithful; milliseconds in, frame out).
+export function ptAnimFrameIndex(
+  timeMs: number,
+  shiftFrameSpeed: number,
+  frameMask: number,
+  animationFrame: number,
+): number {
+  if (animationFrame !== PT_ANIM_AUTO) return animationFrame;
+  return (Math.floor(timeMs) >> shiftFrameSpeed) & frameMask;
+}
+
+// Advance every animated material to the current clock. Only swaps the
+// already-loaded texture reference - no fetches, decodes, or allocations.
+export function ptTickTextureAnims(anims: readonly PtTextureAnim[], timeMs: number): void {
+  for (const a of anims) {
+    const idx = ptAnimFrameIndex(
+      timeMs,
+      a.shiftFrameSpeed,
+      a.frameMask,
+      a.animationFrame,
+    );
+    const tex = (idx >= 0 && idx < a.frames.length ? a.frames[idx] : null) ?? a.fallback;
+    if (a.material.map !== tex) a.material.map = tex;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -350,16 +503,21 @@ interface PtFaceEmit {
   uvs: number[];
   // PT world x,z (mod-4 folded) per emitted vertex, for the water script
   ptXZ: number[];
+  // Per-corner RGB vertex colors (authored sDef_Color x gouraud shade),
+  // matching PT's bCol render-stream slot. Empty when the field has none.
+  colors: number[];
   groups: { material: number; start: number; count: number }[];
 }
 
 // Emit faces grouped by material. `faceFilter` selects which face indices
-// enter the mesh. Hidden (NOTVIEW) materials are skipped entirely - PT
-// never draws them.
+// enter the mesh. Hidden (NOTVIEW) and undrawn (no texture of any kind,
+// RenderD3D returns FALSE) materials are skipped entirely - PT never draws
+// them; the walkable face set is unchanged, so collision is unaffected.
 function buildGroupedFaces(
   src: PtMapDescriptor,
   positions: Float32Array,
   faceFilter: (fi: number, mat: PtMaterialInfo | undefined) => boolean,
+  vertRGB: Float32Array | null,
 ): PtFaceEmit {
   const renderFaces = src.field.PT_RENDER_FACES();
   const uvs = src.field.PT_UVS();
@@ -371,13 +529,13 @@ function buildGroupedFaces(
   for (let fi = 0; fi < src.field.PT_N_FACE; fi++) {
     const matIdx = renderFaces[fi * 4 + 3];
     const mat = matByIdx.get(matIdx);
-    if (ptMaterialIsHidden(mat)) continue;
+    if (ptMaterialIsHidden(mat) || ptMaterialIsUndrawn(mat)) continue;
     if (!faceFilter(fi, mat)) continue;
     if (!facesByMaterial.has(matIdx)) facesByMaterial.set(matIdx, []);
     facesByMaterial.get(matIdx)!.push(fi);
   }
 
-  const out: PtFaceEmit = { positions: [], uvs: [], ptXZ: [], groups: [] };
+  const out: PtFaceEmit = { positions: [], uvs: [], ptXZ: [], colors: [], groups: [] };
   for (const [matIdx, faces] of facesByMaterial) {
     const start = out.positions.length / 3;
     for (const fi of faces) {
@@ -402,6 +560,13 @@ function buildGroupedFaces(
         ((vertices[b * 3] % 4) + 4) % 4, ((vertices[b * 3 + 2] % 4) + 4) % 4,
         ((vertices[c * 3] % 4) + 4) % 4, ((vertices[c * 3 + 2] % 4) + 4) % 4,
       );
+      if (vertRGB) {
+        out.colors.push(
+          vertRGB[a * 3], vertRGB[a * 3 + 1], vertRGB[a * 3 + 2],
+          vertRGB[b * 3], vertRGB[b * 3 + 1], vertRGB[b * 3 + 2],
+          vertRGB[c * 3], vertRGB[c * 3 + 1], vertRGB[c * 3 + 2],
+        );
+      }
     }
     out.groups.push({ material: matIdx, start, count: faces.length * 3 });
   }
@@ -478,15 +643,39 @@ async function bakeMultiTexture(
   return tex;
 }
 
+function animTextureUrlsForSource(src: PtMapDescriptor, matIdx: number): string[] {
+  const mat = fieldMaterials(src).find((m) => m.index === matIdx);
+  if (!mat?.animTextureNames) return [];
+  return mat.animTextureNames.map((name) => {
+    const fileName = name.replace(/\\/g, '/').split('/').pop() || '';
+    const baseName = fileName.replace(/\.[^.]+$/i, '').toLowerCase();
+    return src.textureBase + baseName + '.png';
+  });
+}
+
+// One promise map owns every texture fetch for a field build: base slots
+// (keyed by their joined URL list, so multimix bakes stay grouped) and
+// animation frames (keyed per URL) dedupe against each other - a texture
+// that appears both as a base slot and an anim frame is fetched once.
+type PtTextureCache = Map<string, Promise<THREE.Texture | null>>;
+
+function ptFetchTexture(
+  cache: PtTextureCache,
+  key: string,
+  fetcher: () => Promise<THREE.Texture | null>,
+): Promise<THREE.Texture | null> {
+  if (!cache.has(key)) cache.set(key, fetcher());
+  return cache.get(key)!;
+}
+
 async function loadPtTexture(
   src: PtMapDescriptor,
   matIdx: number,
-  textureCache: Map<string, THREE.Texture | null>,
+  textureCache: PtTextureCache,
 ): Promise<THREE.Texture | null> {
   const urls = textureUrlsForSource(src, matIdx);
   if (urls.length === 0) return null;
-  const cacheKey = urls.join('|');
-  if (!textureCache.has(cacheKey)) {
+  return ptFetchTexture(textureCache, urls.join('|'), async () => {
     const textures = await Promise.all(
       urls.map((u) =>
         loadTexture(u, { srgb: true, repeat: true }).catch(() => null),
@@ -497,9 +686,28 @@ async function loadPtTexture(
       const baked = await bakeMultiTexture(textures);
       if (baked) tex = baked;
     }
-    textureCache.set(cacheKey, tex);
-  }
-  return textureCache.get(cacheKey)!;
+    return tex;
+  });
+}
+
+// Load every converted animation frame for an SMTEX_TYPE_ANIMATION
+// material. Frames are deduped per URL through the shared cache, so each
+// frame is fetched and decoded at most once per field build. A missing
+// frame resolves to null and latches - no repeated fetches, no fabricated
+// substitute.
+async function loadPtAnimFrames(
+  src: PtMapDescriptor,
+  matIdx: number,
+  textureCache: PtTextureCache,
+): Promise<(THREE.Texture | null)[]> {
+  const urls = animTextureUrlsForSource(src, matIdx);
+  return Promise.all(
+    urls.map((u) =>
+      ptFetchTexture(textureCache, u, () =>
+        loadTexture(u, { srgb: true, repeat: true }).catch(() => null),
+      ),
+    ),
+  );
 }
 
 // Build the Three.js material for a PT material group following the PT
@@ -507,12 +715,16 @@ async function loadPtTexture(
 function makePtMaterial(
   ptMat: PtMaterialInfo | undefined,
   texture: THREE.Texture | null,
+  vertexColors: boolean,
 ): THREE.MeshLambertMaterial {
   const transparency = ptMat?.transparency ?? 0;
   const opacityMap = ptMaterialHasOpacityMap(ptMat);
   const mat = new THREE.MeshLambertMaterial({
     side: ptMat?.twoSide === false ? THREE.FrontSide : THREE.DoubleSide,
     map: texture ?? null,
+    // bCol is the render-stream diffuse slot in PT: texture is modulated by
+    // the per-vertex color (authored sDef_Color x gouraud shade).
+    vertexColors,
   });
   // MapOpacity -> alpha test at ref 60/255 with alpha blend (PT rear list).
   // Transparency != 0 also blends; Transparency > 0.2 disables z-write.
@@ -522,9 +734,8 @@ function makePtMaterial(
     mat.opacity = Math.min(1, Math.max(0, 1 - transparency));
     mat.depthWrite = transparency <= 0.2;
   }
-  const script = ptMat?.windMeshBottom ?? 0;
-  if ((script & PT_SCRIPT_WATER) !== 0) ptApplyVertexScript(mat, 'water');
-  else if ((script & PT_SCRIPT_WINDZ1) !== 0) ptApplyVertexScript(mat, 'windz1');
+  const script = ptVertexScriptFor(ptMat?.windMeshBottom ?? 0);
+  if (script) ptApplyVertexScript(mat, script);
   return mat;
 }
 
@@ -533,8 +744,9 @@ async function buildGroupedMesh(
   src: PtMapDescriptor,
   name: string,
   emit: PtFaceEmit,
-  textureCache: Map<string, THREE.Texture | null>,
+  textureCache: PtTextureCache,
   outMaterials: THREE.Material[],
+  outAnims: PtTextureAnim[],
   needsPtXZ: boolean,
 ): Promise<THREE.Mesh | null> {
   if (emit.positions.length === 0) return null;
@@ -542,15 +754,38 @@ async function buildGroupedMesh(
   geo.setAttribute('position', new THREE.Float32BufferAttribute(emit.positions, 3));
   geo.setAttribute('uv', new THREE.Float32BufferAttribute(emit.uvs, 2));
   if (needsPtXZ) geo.setAttribute('aPtXZ', new THREE.Float32BufferAttribute(emit.ptXZ, 2));
+  const hasColors = emit.colors.length === emit.positions.length;
+  if (hasColors) geo.setAttribute('color', new THREE.Float32BufferAttribute(emit.colors, 3));
   geo.computeVertexNormals();
 
   const materials: THREE.Material[] = [];
   const matByIdx = new Map(fieldMaterials(src).map((m) => [m.index, m]));
   for (const g of emit.groups) {
-    const texture = await loadPtTexture(src, g.material, textureCache);
-    const m = makePtMaterial(matByIdx.get(g.material), texture);
-    m.name = `pt-mat-${g.material}`;
-    materials.push(m);
+    const ptMat = matByIdx.get(g.material);
+    const base = await loadPtTexture(src, g.material, textureCache);
+    let texture = base;
+    if (ptMaterialIsAnimated(ptMat)) {
+      // SMTEX_TYPE_ANIMATION: stage-0 binds the animation frame list
+      // (smAnimTexture), NOT the base smTexture slots. The base texture
+      // only fills frames that failed to convert.
+      const frames = await loadPtAnimFrames(src, g.material, textureCache);
+      texture = frames[0] ?? base;
+      const m = makePtMaterial(ptMat, texture, hasColors);
+      m.name = `pt-mat-${g.material}`;
+      materials.push(m);
+      outAnims.push({
+        material: m,
+        frames,
+        frameMask: ptMat!.frameMask ?? frames.length - 1,
+        shiftFrameSpeed: ptMat!.shiftFrameSpeed ?? 0,
+        animationFrame: ptMat!.animationFrame ?? PT_ANIM_AUTO,
+        fallback: base,
+      });
+    } else {
+      const m = makePtMaterial(ptMat, texture, hasColors);
+      m.name = `pt-mat-${g.material}`;
+      materials.push(m);
+    }
     geo.addGroup(g.start, g.count, materials.length - 1);
   }
 
@@ -574,8 +809,28 @@ export async function buildPtTerrainView(
   const decoIndices = src.field.PT_DECORATIVE_FACE_INDICES();
   for (let i = 0; i < decoIndices.length; i++) decoSet.add(decoIndices[i]);
 
-  const textureCache = new Map<string, THREE.Texture | null>();
+  // Authored sDef_Color x the field's gouraud shade (SetVertexShade), baked
+  // once into a per-vertex RGB buffer: PT's render stream writes these as
+  // the vertex diffuse, modulating the texture.
+  let vertRGB: Float32Array | null = null;
+  const vertColors = src.field.PT_VERTEX_COLORS?.();
+  if (vertColors) {
+    const lighting = src.field.PT_FIELD_LIGHTING;
+    vertRGB = lighting
+      ? ptBakeVertexShade({
+          vertices: src.field.PT_VERTICES(),
+          faces: src.field.PT_RENDER_FACES(),
+          colors: vertColors,
+          contrast: lighting.contrast,
+          bright: lighting.bright,
+          vectLight: lighting.vectLight as unknown as readonly [number, number, number],
+        })
+      : ptVertexColorsOnly(vertColors, src.field.PT_N_VERTEX);
+  }
+
+  const textureCache: PtTextureCache = new Map();
   const allMaterials: THREE.Material[] = [];
+  const anims: PtTextureAnim[] = [];
   const meshes: THREE.Mesh[] = [];
 
   // Solid path: everything PT draws as opaque or cutout (transparency <= 0.1
@@ -585,6 +840,7 @@ export async function buildPtTerrainView(
     src,
     positions,
     (fi, mat) => !waterSet.has(fi) && !ptMaterialIsTranslucent(mat),
+    vertRGB,
   );
   const solidMesh = await buildGroupedMesh(
     src,
@@ -592,6 +848,7 @@ export async function buildPtTerrainView(
     solidEmit,
     textureCache,
     allMaterials,
+    anims,
     false,
   );
   if (solidMesh) meshes.push(solidMesh);
@@ -599,13 +856,14 @@ export async function buildPtTerrainView(
   // Water path: the KNOWN_WATER_MATS face set. Textured per material,
   // blended with opacity = 1 - transparency, z-write off (>0.2), and the
   // PT water vertex ripple on sMATS_SCRIPT_WATER materials.
-  const waterEmit = buildGroupedFaces(src, positions, (fi) => waterSet.has(fi));
+  const waterEmit = buildGroupedFaces(src, positions, (fi) => waterSet.has(fi), vertRGB);
   const waterMesh = await buildGroupedMesh(
     src,
     `pt-${src.id}-water`,
     waterEmit,
     textureCache,
     allMaterials,
+    anims,
     true,
   );
   if (waterMesh) meshes.push(waterMesh);
@@ -616,6 +874,7 @@ export async function buildPtTerrainView(
     src,
     positions,
     (fi, mat) => !waterSet.has(fi) && decoSet.has(fi) && ptMaterialIsTranslucent(mat),
+    vertRGB,
   );
   const decoMesh = await buildGroupedMesh(
     src,
@@ -623,6 +882,7 @@ export async function buildPtTerrainView(
     decoEmit,
     textureCache,
     allMaterials,
+    anims,
     false,
   );
   if (decoMesh) meshes.push(decoMesh);
@@ -785,6 +1045,9 @@ export async function buildPtTerrainView(
     group,
     update() {
       stageView?.update();
+      if (anims.length > 0) {
+        ptTickTextureAnims(anims, sharedUniforms.uTime.value * 1000);
+      }
     },
     dispose() {
       for (const m of meshes) {
@@ -792,7 +1055,9 @@ export async function buildPtTerrainView(
         const mats = Array.isArray(m.material) ? m.material : [m.material];
         for (const mm of mats) mm.dispose();
       }
-      for (const t of textureCache.values()) t?.dispose();
+      void Promise.all(textureCache.values()).then((textures) => {
+        for (const t of textures) t?.dispose();
+      });
       stageView?.dispose();
     },
   };

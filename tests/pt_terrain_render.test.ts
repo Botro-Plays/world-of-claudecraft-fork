@@ -29,6 +29,8 @@ import {
   ptMaterialHasOpacityMap,
   ptMaterialIsHidden,
   ptMaterialIsTranslucent,
+  ptMaterialIsUndrawn,
+  ptVertexScriptFor,
   textureUrlForMaterial,
 } from '../src/render/pt_terrain';
 import {
@@ -51,6 +53,9 @@ function countSolidFaces(): number {
   for (let fi = 0; fi < PT_N_FACE; fi++) {
     const mat = matForFace(fi);
     if (ptMaterialIsHidden(mat)) continue;
+    // smMATERIAL::RenderD3D returns FALSE for materials with no texture of
+    // any kind - those faces never reach the render mesh.
+    if (ptMaterialIsUndrawn(mat)) continue;
     if (waterSet.has(fi)) continue;
     if (ptMaterialIsTranslucent(mat)) continue;
     n++;
@@ -141,7 +146,9 @@ describe('buildPtTerrainView mesh routing', () => {
       if (ptMaterialIsHidden(matForFace(fi))) hidden++;
     }
     expect(hidden).toBe(47);
-    expect(countSolidFaces()).toBe(49888 - 1658 - hidden);
+    // 78 more faces use material 2, which carries no texture at all - PT's
+    // RenderD3D returns FALSE for it, so those faces are never drawn.
+    expect(countSolidFaces()).toBe(49888 - 1658 - hidden - 78);
   });
 
   it('keeps water on the dedicated transparent mesh with PT material fidelity', async () => {
@@ -233,8 +240,9 @@ describe('buildPtTerrainView mesh routing', () => {
     const solid = view.group.getObjectByName('pt-ricarten-solid') as THREE.Mesh;
     const mats = solid.material as THREE.MeshLambertMaterial[];
     const missing = mats.filter(m => m.map == null).length;
-    // Materials end up untextured only when they have no texture name at all
-    // or when their texture genuinely failed (tem_wall04.png in the mock).
+    // Materials end up untextured only when an authored texture genuinely
+    // failed to load (tem_wall04.png in the mock). Textureless materials
+    // produce no draw at all (RenderD3D FALSE), never a flat material.
     const waterSet = new Set(PT_WATER_FACE_INDICES());
     const expectedMissing = new Set<number>();
     let sawTemWall04 = false;
@@ -242,12 +250,13 @@ describe('buildPtTerrainView mesh routing', () => {
       if (waterSet.has(fi)) continue;
       const mat = matForFace(fi);
       if (ptMaterialIsHidden(mat)) continue;
+      if (ptMaterialIsUndrawn(mat)) continue;
       if (ptMaterialIsTranslucent(mat)) continue;
       const matIdx = PT_RENDER_FACES()[fi * 4 + 3];
       const url = textureUrlForMaterial(matIdx);
-      if (url === null || url.endsWith('tem_wall04.png')) {
+      if (url?.endsWith('tem_wall04.png')) {
         expectedMissing.add(matIdx);
-        if (url?.endsWith('tem_wall04.png')) sawTemWall04 = true;
+        sawTemWall04 = true;
       }
     }
     expect(sawTemWall04).toBe(true);
@@ -308,7 +317,7 @@ describe('PT material fidelity (P2-A)', () => {
       const idx = Number(m.name.replace('pt-mat-', ''));
       const ptMat = PT_MATERIALS.find(x => x.index === idx)!;
       const scripted = m.customProgramCacheKey() === 'pt-windz1';
-      expect(scripted).toBe((ptMat.windMeshBottom & 0x20) !== 0);
+      expect(scripted).toBe(ptVertexScriptFor(ptMat.windMeshBottom) === 'windz1');
       if (scripted) {
         windCount++;
         expect(windMats.has(idx)).toBe(true);
