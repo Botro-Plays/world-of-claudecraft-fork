@@ -168,7 +168,7 @@ export function tickPtFieldGates(wocX: number, wocZ: number): void {
   if (_pendingId !== null) return; // a destination load is in flight
 
   const active = activePtMapDescriptor();
-  if (active === null) return; // default Ricarten binding: no field graph
+  if (active === null) return; // no descriptor bound yet (pre-registration / bare hosts)
   const standby = standbyPtMapDescriptor();
   const ptX = active.transform.woCToPtX(wocX);
   const ptZ = active.transform.woCToPtZ(wocZ);

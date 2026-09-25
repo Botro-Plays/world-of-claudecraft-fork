@@ -47,15 +47,16 @@ export function execPtMapDevCommand(
 /**
  * Per-frame FieldGate boundary watch (the PT client's PlayNearGateField
  * cadence) plus the WarpGate trigger check (the client's per-frame
- * StageField[OnStageField]->CheckWarpGate call). Runs only while a dev
- * map is installed: the watch preloads the neighboring field's package
- * into the standby slot when the player nears an authored gate point, and
- * the warp check teleports on an authored trigger. The heavy halves live
- * in pt_field_links.ts / pt_warp_gates.ts behind the same DEV fold as the
- * command path, so production bundles drop them.
+ * StageField[OnStageField]->CheckWarpGate call). Runs whenever a PT field
+ * descriptor is bound - including the default Ricarten binding, which is a
+ * real graph participant in production: the watch preloads the
+ * neighboring field's package into the standby slot when the player nears
+ * an authored gate point, and the warp check teleports on an authored
+ * trigger. The modules stay dynamically imported so the first PT-band
+ * frame loads them once and later frames resolve from the module cache.
  */
 export function tickPtMapDev(player: Entity | undefined, nowMs: number): void {
-  if (!import.meta.env.DEV || !player) return;
+  if (!player) return;
   void import('./pt_field_links')
     .then((m) => m.tickPtFieldGates(player.pos.x, player.pos.z))
     .catch(() => undefined);

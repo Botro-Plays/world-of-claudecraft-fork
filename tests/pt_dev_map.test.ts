@@ -8,6 +8,7 @@ import * as RICARTEN_FIELD from '../src/sim/pt_ricarten_field.generated';
 import {
   PT_BAND_X_MIN,
   PT_BAND_Z,
+  PT_FIELD_ANCHOR_X,
   PT_RICARTEN_MAX_X,
   PT_RICARTEN_MIN_Y,
   PT_RICARTEN_MIN_Z,
@@ -28,6 +29,7 @@ import {
 } from '../src/sim/pt_field_active';
 import { ptStageBandMatrixFor } from '../src/render/pt_stage_objects';
 import { PT_STAGE_BAND_MATRIX } from '../src/render/pt_stage_objects';
+import { PT_RICARTEN_SOURCE } from '../src/render/pt_terrain';
 import {
   listPtDevMaps,
   loadPtDevMap,
@@ -56,8 +58,8 @@ describe('makePtBandTransform', () => {
       expect(xf.woCToPtZ(xf.ptZToWoC(pz))).toBeCloseTo(pz, 6);
     }
     // PT +X mirrors to WoC -X, anchored so the map's east edge sits at the
-    // band origin; Z maps 1:1 from the map's minZ at the band plane.
-    expect(xf.ptXToWoC(-8000)).toBeCloseTo(PT_BAND_X_MIN, 6);
+    // continent anchor; Z maps 1:1 from the map's minZ at the band plane.
+    expect(xf.ptXToWoC(-8000)).toBeCloseTo(PT_FIELD_ANCHOR_X, 6);
     expect(xf.ptZToWoC(-24310)).toBeCloseTo(PT_BAND_Z, 6);
     expect(xf.ptYToWoC(-500)).toBeCloseTo(0, 6);
   });
@@ -160,7 +162,9 @@ describe('loadPtDevMap', () => {
 
 describe('active PT map registry', () => {
   it('defaults to the committed Ricarten field', () => {
-    expect(activePtMapDescriptor()).toBeNull();
+    // The default binding is the production Ricarten descriptor itself,
+    // registered by pt_terrain at module load.
+    expect(activePtMapDescriptor()).toBe(PT_RICARTEN_SOURCE);
     expect(activePtField()).toBe(ptRicartenField());
   });
 
@@ -180,7 +184,7 @@ describe('active PT map registry', () => {
     expect(dev).toBe(spawn!.y);
 
     setActivePtMap(null);
-    expect(activePtMapDescriptor()).toBeNull();
+    expect(activePtMapDescriptor()).toBe(PT_RICARTEN_SOURCE);
     expect(activePtField()).toBe(ptRicartenField());
     expect(activePtField().groundHeight(spawn!.x, spawn!.z)).toBe(before);
   });

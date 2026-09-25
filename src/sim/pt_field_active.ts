@@ -45,6 +45,29 @@ let _activeField: PtField | null = null;
 let _standbyDescriptor: PtMapDescriptor | null = null;
 let _standbyField: PtField | null = null;
 
+// The field bound when nothing explicit is installed: production Ricarten
+// (PT_RICARTEN_SOURCE), registered by the render layer that owns that
+// descriptor. Hosts that never register a default (server, bare sim tests)
+// keep the legacy descriptor-less ptRicartenField() fallback.
+let _defaultDescriptor: PtMapDescriptor | null = null;
+
+/**
+ * Register the descriptor the world binds when no dev map is active. Called
+ * once at client boot by the layer that owns the production Ricarten
+ * descriptor; makes the default binding a real field-graph participant so
+ * the FieldGate/WarpGate watches can preload and promote its neighbors.
+ */
+export function setDefaultPtMap(descriptor: PtMapDescriptor | null): void {
+  _defaultDescriptor = descriptor;
+  // A registered default under a bare binding binds immediately; changing
+  // or clearing the default while a dev map is installed only affects the
+  // next restore.
+  if (_activeDescriptor === null && descriptor !== null) {
+    _activeDescriptor = descriptor;
+    _activeField = fieldForDescriptor(descriptor);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Two-slot connected-world binding (the PT client's StageField[0]/[1] model)
 // ---------------------------------------------------------------------------
@@ -155,6 +178,13 @@ export function standbyPtMapDescriptor(): PtMapDescriptor | null {
   return _standbyDescriptor;
 }
 
+// Building a PtField indexes the module's vertex/face data, so the committed
+// Ricarten descriptor binds the memoized ptRicartenField() instance instead
+// of a duplicate (also keeps activePtField() identity stable on restore).
+function fieldForDescriptor(d: PtMapDescriptor): PtField {
+  return d.field === RICARTEN_MODULE ? ptRicartenField() : createPtField(d.field, d.transform);
+}
+
 /**
  * Install a dev map (or null to restore Ricarten). Development-harness only:
  * nothing calls this in production flow, so the default path stays the
@@ -162,10 +192,11 @@ export function standbyPtMapDescriptor(): PtMapDescriptor | null {
  * it belongs to the previous map's neighborhood.
  */
 export function setActivePtMap(descriptor: PtMapDescriptor | null): void {
-  _activeDescriptor = descriptor;
-  _activeField = descriptor
-    ? createPtField(descriptor.field, descriptor.transform)
-    : null;
+  // Clearing the active map restores the default binding (production
+  // Ricarten once registered) rather than leaving the field graph dead.
+  const d = descriptor ?? _defaultDescriptor;
+  _activeDescriptor = d;
+  _activeField = d ? fieldForDescriptor(d) : null;
   _standbyDescriptor = null;
   _standbyField = null;
 }

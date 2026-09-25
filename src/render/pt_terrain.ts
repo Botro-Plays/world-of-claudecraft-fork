@@ -37,7 +37,12 @@ import {
   woCToPtY,
   woCToPtZ,
 } from '../sim/pt_band';
-import type { PtMapDescriptor } from '../sim/pt_field';
+import type {
+  PtFieldGateLink,
+  PtMapDescriptor,
+  PtWarpGateLink,
+} from '../sim/pt_field';
+import { setDefaultPtMap } from '../sim/pt_field_active';
 import { loadTexture } from './assets/loader';
 import { sharedUniforms } from './gfx';
 import {
@@ -63,6 +68,74 @@ const TEXTURE_BASE = '/textures/pt-ricarten/';
  * the production default; buildPtTerrainView() with no argument resolves
  * to exactly the pre-parameterization path.
  */
+// Authored FieldGate/WarpGate records for the default binding, read from
+// the generated package manifest so this descriptor is self-describing like
+// every loadPtDevMap descriptor. Ricarten authors no outbound FieldGate -
+// its fore-1 boundary is the AddGate2 reverse record the runtime
+// symmetrizes; what it DOES author are the two WarpGates below (the wing
+// gate and the field-57 exit), which go live once this descriptor is the
+// default binding.
+interface PtRicartenManifestGate {
+  targetIndex: number;
+  targetId?: string | null;
+  x: number;
+  z: number;
+  y: number;
+}
+interface PtRicartenManifestWarp {
+  x: number;
+  z: number;
+  y: number;
+  size: number;
+  height: number;
+  limitLevel?: number;
+  specialEffect?: number;
+  exits?: PtRicartenManifestGate[];
+}
+interface PtRicartenManifest {
+  manifest?: {
+    gates?: PtRicartenManifestGate[];
+    warpGates?: PtRicartenManifestWarp[];
+    posWarpOut?: { x: number; y: number; z: number } | null;
+    limitLevel?: number;
+  };
+}
+const RICARTEN_MANIFEST = (
+  import.meta.glob('../../generated/pt-maps/ricarten/manifest.json', {
+    eager: true,
+    import: 'default',
+  }) as Record<string, PtRicartenManifest>
+)['../../generated/pt-maps/ricarten/manifest.json'];
+
+const RICARTEN_FIELD_GATES: PtFieldGateLink[] = (
+  RICARTEN_MANIFEST?.manifest?.gates ?? []
+).map((g) => ({
+  targetIndex: g.targetIndex,
+  targetId: g.targetId ?? null,
+  x: g.x,
+  z: g.z,
+  y: g.y,
+}));
+
+const RICARTEN_WARP_GATES: PtWarpGateLink[] = (
+  RICARTEN_MANIFEST?.manifest?.warpGates ?? []
+).map((g) => ({
+  x: g.x,
+  z: g.z,
+  y: g.y,
+  size: g.size,
+  height: g.height,
+  limitLevel: g.limitLevel ?? 0,
+  specialEffect: g.specialEffect ?? 0,
+  exits: (g.exits ?? []).map((e) => ({
+    targetIndex: e.targetIndex,
+    targetId: e.targetId ?? null,
+    x: e.x,
+    z: e.z,
+    y: e.y,
+  })),
+}));
+
 export const PT_RICARTEN_SOURCE: PtMapDescriptor = {
   id: 'ricarten',
   field: RICARTEN_FIELD,
@@ -70,7 +143,17 @@ export const PT_RICARTEN_SOURCE: PtMapDescriptor = {
   textureBase: TEXTURE_BASE,
   stageObjects: { PT_STAGE_OBJECTS },
   oceanRing: true,
+  fieldGates: RICARTEN_FIELD_GATES,
+  warpGates: RICARTEN_WARP_GATES,
+  posWarpOut: RICARTEN_MANIFEST?.manifest?.posWarpOut ?? null,
+  limitLevel: RICARTEN_MANIFEST?.manifest?.limitLevel ?? 0,
 };
+
+// The production Ricarten binding is a real field-graph participant: the
+// FieldGate watch can preload fore-1 at the authored seam and the WarpGate
+// watch honors its authored triggers. Hosts that never import the render
+// layer (server, bare sim tests) keep the descriptor-less fallback.
+setDefaultPtMap(PT_RICARTEN_SOURCE);
 
 function fieldMaterials(src: PtMapDescriptor): PtMaterialInfo[] {
   return src.field.PT_MATERIALS as unknown as PtMaterialInfo[];

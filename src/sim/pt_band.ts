@@ -31,28 +31,26 @@
 import { INSTANCE_X_BASE } from './data';
 
 // Band placement: east of the battleground band (which ends at
-// INSTANCE_X_BASE + 34_000). The band is wide enough to hold the whole PT
-// field atlas at PT_SCALE: the union of every registered field's vertex
-// bounds spans ~400,295 PT units ~= 14,411 yards of X, so 15,000 yards of
-// headroom keeps every connected map inside one contiguous region (single
-// maps use under 400 yards of it). Nothing else classifies positions in
-// [+40k, +55k): dungeon overflow tops out at +19,200 and the next authored
-// band would start past +55k.
-export const PT_BAND_X_MIN = INSTANCE_X_BASE + 40_000;
+// INSTANCE_X_BASE + 34_000). The west edge covers the whole connected
+// continent under the Ricarten-anchored shared transform: iron-1's west
+// face lands at x ~= 137,735 (the continent extreme), so +38,100 keeps a
+// ~235-yard margin inside the otherwise-unused gap. East cap holds the
+// continent's east edge (~140,316) plus room for warp-only fields that
+// keep authored absolute positions.
+export const PT_BAND_X_MIN = INSTANCE_X_BASE + 38_100;
 export const PT_BAND_X_MAX = INSTANCE_X_BASE + 55_000;
 export const PT_BAND_Z = 0;
 
-// PT atlas anchors: the shared transform every connected PT map uses so
-// adjacent fields keep their authored relative positions (the source engine
-// places all fields in one absolute PT coordinate space; FieldGate boundary
-// crossing depends on that). Each anchor is the union extreme across the
-// registered field packages, rounded outward:
-//   union minX -200,799.7 / maxX 199,495.2 (maxX anchors the mirrored X axis)
-//   union minY   -2,219.5 (heights lift above WoC y=0)
-//   union minZ  -98,799.3 (the atlas starts at PT_BAND_Z and grows north)
-export const PT_ATLAS_MAX_X = 199_496;
-export const PT_ATLAS_MIN_Y = -2_220;
-export const PT_ATLAS_MIN_Z = -98_800;
+// The shared continent transform is Ricarten-anchored: production Ricarten
+// keeps its existing WoC placement, so the transform origin is NOT the
+// band's west edge - it is the fixed point where ptX = PT_RICARTEN_MAX_X
+// maps (the old band origin). Every connected field shares these anchors so
+// adjacent fields land at their authored relative positions (the source
+// engine places all fields in one absolute PT coordinate space; FieldGate
+// boundary crossing depends on that). Fields whose authored footprint would
+// fall outside the band (warp-only islands like dc1) use the per-map
+// makePtBandTransform fallback instead.
+export const PT_FIELD_ANCHOR_X = INSTANCE_X_BASE + 40_000;
 
 // 1 PT world unit = 0.036 WoC yards (see the scale note in the header).
 export const PT_SCALE = 0.036;
@@ -80,10 +78,10 @@ export function isPtPos(x: number): boolean {
 // -- Coordinate transforms: PT world units <-> WoC band coordinates --
 
 /** PT world X -> WoC band X, mirrored about the band so PT east (+X) maps
- *  to WoC east (-X). The map still occupies [PT_BAND_X_MIN, PT_BAND_X_MIN +
- *  (PT_RICARTEN_MAX_X - PT_RICARTEN_MIN_X) * PT_SCALE]. */
+ *  to WoC east (-X). The map still occupies [PT_FIELD_ANCHOR_X,
+ *  PT_FIELD_ANCHOR_X + (PT_RICARTEN_MAX_X - PT_RICARTEN_MIN_X) * PT_SCALE]. */
 export function ptXToWoC(ptX: number): number {
-  return PT_BAND_X_MIN + (PT_RICARTEN_MAX_X - ptX) * PT_SCALE;
+  return PT_FIELD_ANCHOR_X + (PT_RICARTEN_MAX_X - ptX) * PT_SCALE;
 }
 
 /** PT world Z -> WoC band Z. */
@@ -98,7 +96,7 @@ export function ptYToWoC(ptY: number): number {
 
 /** WoC band X -> PT world X (inverse of the mirrored ptXToWoC). */
 export function woCToPtX(x: number): number {
-  return PT_RICARTEN_MAX_X - (x - PT_BAND_X_MIN) / PT_SCALE;
+  return PT_RICARTEN_MAX_X - (x - PT_FIELD_ANCHOR_X) / PT_SCALE;
 }
 
 /** WoC band Z -> PT world Z. */

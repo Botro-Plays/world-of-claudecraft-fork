@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   PT_BAND_X_MIN,
   PT_BAND_Z,
+  PT_FIELD_ANCHOR_X,
   PT_RICARTEN_MAX_X,
   PT_RICARTEN_MAX_Z,
   PT_RICARTEN_MIN_X,
@@ -53,10 +54,10 @@ describe('pt_band coordinate transforms', () => {
   it('maps PT bounds to the PT band', () => {
     // X is mirrored about the band (PT is a left-handed DirectX world where
     // +X is east; WoC's right-handed compass reads east as -X), so PT max X
-    // maps to band min X and the footprint stays inside the band.
-    expect(ptXToWoC(PT_RICARTEN_MAX_X)).toBeCloseTo(PT_BAND_X_MIN);
+    // maps to the continent anchor and the footprint stays inside the band.
+    expect(ptXToWoC(PT_RICARTEN_MAX_X)).toBeCloseTo(PT_FIELD_ANCHOR_X);
     expect(ptXToWoC(PT_RICARTEN_MIN_X)).toBeCloseTo(
-      PT_BAND_X_MIN + (PT_RICARTEN_MAX_X - PT_RICARTEN_MIN_X) * PT_SCALE,
+      PT_FIELD_ANCHOR_X + (PT_RICARTEN_MAX_X - PT_RICARTEN_MIN_X) * PT_SCALE,
     );
     // PT min Z maps to band Z
     expect(ptZToWoC(PT_RICARTEN_MIN_Z)).toBeCloseTo(PT_BAND_Z);
@@ -71,7 +72,7 @@ describe('pt_band coordinate transforms', () => {
     const lo = ptXToWoC(PT_RICARTEN_MAX_X);
     const hi = ptXToWoC(PT_RICARTEN_MIN_X);
     expect(hi - lo).toBeCloseTo(width, 6);
-    expect(lo).toBeCloseTo(PT_BAND_X_MIN, 6);
+    expect(lo).toBeCloseTo(PT_FIELD_ANCHOR_X, 6);
   });
 
   it('maps PT compass directions to WoC compass directions', () => {

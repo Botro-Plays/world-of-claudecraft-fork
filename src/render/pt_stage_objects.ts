@@ -36,8 +36,8 @@ import {
   type PtStageObjectNode,
 } from './pt_stage_objects.generated';
 import {
-  PT_BAND_X_MIN,
   PT_BAND_Z,
+  PT_FIELD_ANCHOR_X,
   PT_RICARTEN_MAX_X,
   PT_RICARTEN_MIN_Y,
   PT_RICARTEN_MIN_Z,
@@ -69,10 +69,10 @@ const TEXTURE_BASE = '/textures/pt-ricarten/';
 const PT_TICKS_PER_MS = 2;
 const PT_MIN_LOOP_FRAME = 160;
 
-// B maps a PT world point to the WoC band: x_woc = BAND_X + (MAX_X - x) * s
+// B maps a PT world point to the WoC band: x_woc = ANCHOR_X + (MAX_X - x) * s
 // (mirrored), y_woc = (y - MIN_Y) * s, z_woc = BAND_Z + (z - MIN_Z) * s.
 export const PT_STAGE_BAND_MATRIX = new THREE.Matrix4().set(
-  -PT_SCALE, 0, 0, PT_BAND_X_MIN + PT_RICARTEN_MAX_X * PT_SCALE,
+  -PT_SCALE, 0, 0, PT_FIELD_ANCHOR_X + PT_RICARTEN_MAX_X * PT_SCALE,
   0, PT_SCALE, 0, -PT_RICARTEN_MIN_Y * PT_SCALE,
   0, 0, PT_SCALE, PT_BAND_Z - PT_RICARTEN_MIN_Z * PT_SCALE,
   0, 0, 0, 1,

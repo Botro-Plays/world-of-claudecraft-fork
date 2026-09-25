@@ -1122,7 +1122,11 @@ export class MinimapPainter {
     // raster belongs to Ricarten and must never stand in for another map.
     if (isPtPos(world.player.pos.x)) {
       const devMap = activePtMapDescriptor();
-      if (devMap) this.paintPtDevMap(ctx, world, zoneLabelEl, zoom, colors, devMap.id);
+      // The default Ricarten binding is itself a descriptor now, so the
+      // id guard keeps the authored village-2 raster on production Ricarten
+      // while genuinely other maps paint the dev void.
+      if (devMap && devMap.id !== 'ricarten')
+        this.paintPtDevMap(ctx, world, zoneLabelEl, zoom, colors, devMap.id);
       else this.paintRicarten(ctx, world, zoneLabelEl, zoom, colors);
       return;
     }

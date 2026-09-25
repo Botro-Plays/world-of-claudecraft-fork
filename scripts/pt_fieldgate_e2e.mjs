@@ -49,7 +49,7 @@ const CHAINS = [
 const ROUTES = {
   'fore-3->fore-2': [{ dh: 0, off: 0 }, { dh: 0, off: 2 }, { dh: 10, off: 2 }],
   'fore-2->fore-1': [{ dh: -30, off: 2 }, { dh: -40, off: 2 }, { dh: -20, off: 2 }, { dh: -10, off: 2 }],
-  // Ricarten's palisade has one real opening at WoC x~146492-146496; the
+  // Ricarten's palisade has one real opening at WoC x~139511-139515; the
   // route walks straight north through the gate (verified against the
   // linked-field floor/wall rules: crosses with a single ownership flip).
   'fore-1->ricarten': [{ dh: 19, off: -5 }, { dh: 19, off: -6 }, { dh: 19, off: -4 }, { dh: 19, off: -8 }],

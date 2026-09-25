@@ -24,7 +24,9 @@
 import { PT_RICARTEN_SPAWN_X, PT_RICARTEN_SPAWN_Z } from '../sim/pt_band';
 import {
   createPtField,
-  makePtAtlasTransform,
+  makePtBandTransform,
+  makePtContinentTransform,
+  ptFieldFitsContinent,
   type PtFieldGateLink,
   type PtFieldModule,
   type PtMapDescriptor,
@@ -315,10 +317,16 @@ export async function loadPtDevMap(id: string): Promise<PtDevLoadedMap> {
       ? () => import('../render/pt_stage_objects.generated')
       : undefined);
   const stageObjects = loadStage ? await loadStage() : null;
-  // Every dev map shares the atlas transform so adjacent fields land at
-  // their authored relative positions and FieldGate boundaries are
-  // physically walkable (see makePtAtlasTransform).
-  const transform = makePtAtlasTransform();
+  // Maps whose authored bounds land inside the widened band share the
+  // Ricarten-anchored continent transform, so adjacent fields keep their
+  // authored relative positions and FieldGate boundaries are physically
+  // walkable - including against the production Ricarten binding, which
+  // lives in the same frame. Fields that would fall outside the band
+  // (warp-only islands like dc1) keep the per-map band transform: they are
+  // never floor-adjacent to a shared-frame field, so no seam can break.
+  const transform = ptFieldFitsContinent(field.PT_BOUNDS)
+    ? makePtContinentTransform()
+    : makePtBandTransform(field.PT_BOUNDS);
   const descriptor: PtMapDescriptor = {
     id,
     field,

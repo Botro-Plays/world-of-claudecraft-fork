@@ -225,18 +225,22 @@ describe('FieldGate ownership switch', () => {
     setStandbyPtMap(ric.descriptor);
     const field = activePtField();
 
-    // Inside the palisade opening (WoC x~146494): fore-1's own floor at the
-    // seam edge is the moat lip (~84.8) while ricarten's road deck is ~86.5.
-    const refY = 86.2;
+    // Inside the palisade opening (PT ~2440,-14814): fore-1's own floor at
+    // the seam edge is the moat lip while ricarten's road deck rides ~47
+    // PT units higher.
+    const xf = f1.descriptor.transform;
+    const x = xf.ptXToWoC(2440.4);
+    const z = xf.ptZToWoC(-14813.9);
+    const refY = xf.ptYToWoC(174.4);
     const fA = createPtField(f1.descriptor.field, f1.descriptor.transform);
     const fB = createPtField(ric.descriptor.field, ric.descriptor.transform);
-    const a = fA.floorHeight(146494, 3023.5, refY);
-    const b = fB.floorHeight(146494, 3023.5, refY);
+    const a = fA.floorHeight(x, z, refY);
+    const b = fB.floorHeight(x, z, refY);
     expect(Number.isFinite(a)).toBe(true);
     expect(Number.isFinite(b)).toBe(true);
     expect(b - a).toBeGreaterThan(8 * 0.036);
 
-    const h = field.floorHeight(146494, 3023.5, refY);
+    const h = field.floorHeight(x, z, refY);
     expect(h).toBeCloseTo(b, 3);
     expect(activePtMapDescriptor()).toBe(ric.descriptor);
     expect(standbyPtMapDescriptor()).toBe(f1.descriptor);
@@ -249,19 +253,22 @@ describe('FieldGate ownership switch', () => {
     setStandbyPtMap(ric.descriptor);
     const field = activePtField();
 
-    // The gate-road overlap south of the seam: fore-1's deck ~86.2 and
-    // ricarten's deck ~86.45 are the same surface continuing, well inside
+    // The gate-road overlap south of the seam (PT ~2440,-14772): fore-1's
+    // deck and ricarten's deck are the same surface continuing, well inside
     // the 8-unit (0.288yd) divergence band.
-    const refY = 86.3;
+    const xf = f1.descriptor.transform;
+    const x = xf.ptXToWoC(2440.4);
+    const z = xf.ptZToWoC(-14772.2);
+    const refY = xf.ptYToWoC(177.2);
     const fA = createPtField(f1.descriptor.field, f1.descriptor.transform);
     const fB = createPtField(ric.descriptor.field, ric.descriptor.transform);
-    const a = fA.floorHeight(146494, 3025.0, refY);
-    const b = fB.floorHeight(146494, 3025.0, refY);
+    const a = fA.floorHeight(x, z, refY);
+    const b = fB.floorHeight(x, z, refY);
     expect(Number.isFinite(a)).toBe(true);
     expect(Number.isFinite(b)).toBe(true);
     expect(Math.abs(a - b)).toBeLessThan(8 * 0.036);
 
-    const h = field.floorHeight(146494, 3025.0, refY);
+    const h = field.floorHeight(x, z, refY);
     expect(h).toBeCloseTo(a, 3);
     expect(activePtMapDescriptor()).toBe(f1.descriptor);
   });
@@ -274,5 +281,24 @@ describe('FieldGate ownership switch', () => {
     const s = ff1.spawn!;
     tickWatch(s.x, s.z);
     expect(standbyPtMapDescriptor()).toBeNull();
+  });
+});
+
+describe('default Ricarten binding', () => {
+  it('preloads fore-1 at the authored seam once a default descriptor is registered', async () => {
+    // Production flow: pt_terrain registers PT_RICARTEN_SOURCE as the
+    // default binding, making the starting town a real graph participant
+    // (the fix for the dead production seam). Simulating that here.
+    const { PT_RICARTEN_SOURCE } = await import('../src/render/pt_terrain');
+    const { setDefaultPtMap } = await import('../src/sim/pt_field_active');
+    setDefaultPtMap(PT_RICARTEN_SOURCE);
+    expect(activePtMapDescriptor()?.id).toBe('ricarten');
+
+    // Stand on the authored fore-1 -> ricarten gate point PT(2275,-14828),
+    // converted through the shared continent transform.
+    const xf = PT_RICARTEN_SOURCE.transform;
+    tickWatch(xf.ptXToWoC(2275), xf.ptZToWoC(-14828));
+    await flushWatch();
+    expect(standbyPtMapDescriptor()?.id).toBe('fore-1');
   });
 });

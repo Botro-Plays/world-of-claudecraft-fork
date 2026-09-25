@@ -20,11 +20,13 @@
 // They are rendered separately by src/render/pt_terrain.ts.
 
 import {
-  PT_ATLAS_MAX_X,
-  PT_ATLAS_MIN_Y,
-  PT_ATLAS_MIN_Z,
   PT_BAND_X_MIN,
+  PT_BAND_X_MAX,
   PT_BAND_Z,
+  PT_FIELD_ANCHOR_X,
+  PT_RICARTEN_MAX_X,
+  PT_RICARTEN_MIN_Y,
+  PT_RICARTEN_MIN_Z,
   PT_SCALE,
 } from './pt_band';
 
@@ -60,34 +62,49 @@ export interface PtFieldTransform {
  */
 export function makePtBandTransform(b: PtBounds): PtFieldTransform {
   return {
-    ptXToWoC: (ptX) => PT_BAND_X_MIN + (b.maxX - ptX) * PT_SCALE,
+    ptXToWoC: (ptX) => PT_FIELD_ANCHOR_X + (b.maxX - ptX) * PT_SCALE,
     ptZToWoC: (ptZ) => PT_BAND_Z + (ptZ - b.minZ) * PT_SCALE,
     ptYToWoC: (ptY) => (ptY - b.minY) * PT_SCALE,
-    woCToPtX: (x) => b.maxX - (x - PT_BAND_X_MIN) / PT_SCALE,
+    woCToPtX: (x) => b.maxX - (x - PT_FIELD_ANCHOR_X) / PT_SCALE,
     woCToPtY: (y) => y / PT_SCALE + b.minY,
     woCToPtZ: (z) => (z - PT_BAND_Z) / PT_SCALE + b.minZ,
   };
 }
 
 /**
- * Build the shared ATLAS transform: every connected PT map keeps its
- * authored absolute PT coordinates, anchored to the union of all field
- * bounds (PT_ATLAS_* in pt_band.ts). Same mirrored-X math as
- * makePtBandTransform, but the anchor is the whole atlas rather than one
- * map's own bounds, so two adjacent fields occupy adjacent WoC positions
- * exactly as their authored coordinates abut. This is what makes a
- * FieldGate boundary physically walkable: crossing a map's east edge lands
- * on the neighbor's west edge with no teleport.
+ * Build the shared CONTINENT transform: every connected PT map keeps its
+ * authored absolute PT coordinates, anchored to Ricarten's bounds so the
+ * production Ricarten placement is the continent anchor (see
+ * PT_FIELD_ANCHOR_X in pt_band.ts). Same mirrored-X math as
+ * makePtBandTransform, but the anchor is the shared continent rather than
+ * one map's own bounds, so two adjacent fields occupy adjacent WoC
+ * positions exactly as their authored coordinates abut. This is what makes
+ * a FieldGate boundary physically walkable: crossing a map's edge lands on
+ * the neighbor's edge with no teleport. For Ricarten itself this transform
+ * is numerically identical to the production pt_band transform.
  */
-export function makePtAtlasTransform(): PtFieldTransform {
+export function makePtContinentTransform(): PtFieldTransform {
   return {
-    ptXToWoC: (ptX) => PT_BAND_X_MIN + (PT_ATLAS_MAX_X - ptX) * PT_SCALE,
-    ptZToWoC: (ptZ) => PT_BAND_Z + (ptZ - PT_ATLAS_MIN_Z) * PT_SCALE,
-    ptYToWoC: (ptY) => (ptY - PT_ATLAS_MIN_Y) * PT_SCALE,
-    woCToPtX: (x) => PT_ATLAS_MAX_X - (x - PT_BAND_X_MIN) / PT_SCALE,
-    woCToPtY: (y) => y / PT_SCALE + PT_ATLAS_MIN_Y,
-    woCToPtZ: (z) => (z - PT_BAND_Z) / PT_SCALE + PT_ATLAS_MIN_Z,
+    ptXToWoC: (ptX) => PT_FIELD_ANCHOR_X + (PT_RICARTEN_MAX_X - ptX) * PT_SCALE,
+    ptZToWoC: (ptZ) => PT_BAND_Z + (ptZ - PT_RICARTEN_MIN_Z) * PT_SCALE,
+    ptYToWoC: (ptY) => (ptY - PT_RICARTEN_MIN_Y) * PT_SCALE,
+    woCToPtX: (x) => PT_RICARTEN_MAX_X - (x - PT_FIELD_ANCHOR_X) / PT_SCALE,
+    woCToPtY: (y) => y / PT_SCALE + PT_RICARTEN_MIN_Y,
+    woCToPtZ: (z) => (z - PT_BAND_Z) / PT_SCALE + PT_RICARTEN_MIN_Z,
   };
+}
+
+/**
+ * True when a field's authored bounds land inside the PT band under the
+ * shared continent transform. Fields that fail this (warp-only islands
+ * whose authored absolute coordinates sit outside the band, e.g. dc1 west
+ * of the battleground band) keep the per-map makePtBandTransform fallback:
+ * they are never floor-adjacent to the continent, so their seams cannot
+ * break.
+ */
+export function ptFieldFitsContinent(b: PtBounds): boolean {
+  const xf = makePtContinentTransform();
+  return xf.ptXToWoC(b.maxX) >= PT_BAND_X_MIN && xf.ptXToWoC(b.minX) < PT_BAND_X_MAX;
 }
 
 /**

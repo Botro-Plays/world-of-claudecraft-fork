@@ -58,6 +58,12 @@ const PT_WARP_BLOCKED = Number.POSITIVE_INFINITY;
 // WingWarpGate_Field(-1) (UI cancel) sets dwWarpDelayTime = 5000 absolute,
 // blocking while dwPlayTime < 8000 - kept verbatim.
 const PT_WARP_CANCEL_UNTIL = 8000;
+// Phase-4 interim: the source's SE2 arm blocks until the wing-select UI
+// answers, but that UI does not exist yet - an unbounded block would
+// soft-lock anyone who walks into the Ricarten wing gate. Hold the arm for
+// this long, then release it with the normal re-trigger lockout (the
+// player can simply stand in the cylinder again to re-arm).
+const PT_WING_HOLD_MS = 3000;
 
 export interface PtWarpDebugState {
   warpDelayUntil: number;
@@ -74,6 +80,7 @@ let _wingFieldIndex = -1; // WingWarpField
 let _lastWarpFieldId: string | null = null; // lpLastWarpField
 let _armedGate: PtWarpGateLink | null = null; // the SE!=0 gate awaiting its second pass
 let _armedFieldId: string | null = null; // field the armed gate belongs to
+let _armedAtMs = 0; // timestamp the current arm was taken (SE2 hold bound)
 let _warpInFlight = false; // async destination load in progress
 
 let _rng: () => number = Math.random;
@@ -199,7 +206,7 @@ async function finishWarp(
  */
 export function tickPtWarpGates(player: Entity, now: number): void {
   const active = activePtMapDescriptor();
-  if (active === null) return; // default Ricarten binding: no warp graph
+  if (active === null) return; // no descriptor bound yet (pre-registration / bare hosts)
   // A map switch under an armed gate drops the arm (the armed gate
   // belongs to the previous field's trigger list).
   if (_armedGate && _armedFieldId !== active.id) {
@@ -211,6 +218,23 @@ export function tickPtWarpGates(player: Entity, now: number): void {
   // center (MoveFlag = 0 + the snap). Pin position the same way so the
   // armed gate re-triggers on its second pass.
   if (_armedGate && !_warpInFlight) snapToGate(player, active, _armedGate);
+  // No wing-select surface exists yet (Phase 4), so an SE2 arm that has
+  // waited past the hold bound is released instead of blocking forever:
+  // the arm drops, the 3s re-warp lockout runs, and the player walks away
+  // from the gate center where the snap left them.
+  if (
+    _armedGate !== null &&
+    _armedGate.specialEffect === 2 &&
+    _warpDelayUntil === PT_WARP_BLOCKED &&
+    now - _armedAtMs > PT_WING_HOLD_MS
+  ) {
+    _armedGate = null;
+    _armedFieldId = null;
+    _nextWarpDelay = false;
+    _wingFieldIndex = -1;
+    _warpDelayUntil = now + PT_WARP_DELAY_MS;
+    return;
+  }
   // dwWarpDelayTime guard: a global lockout after each warp (or while a
   // wing-warp arm blocks it indefinitely).
   if (_warpDelayUntil !== 0 && _warpDelayUntil > now) return;
@@ -230,6 +254,7 @@ export function tickPtWarpGates(player: Entity, now: number): void {
     _nextWarpDelay = true;
     _armedGate = gate;
     _armedFieldId = active.id;
+    _armedAtMs = now;
     snapToGate(player, active, gate);
     if (gate.specialEffect === 2) {
       // cSinWarpGate.SerchUseWarpGate(): the wing-warp gate blocks until a
@@ -321,6 +346,7 @@ export function resetPtWarpState(): void {
   _lastWarpFieldId = null;
   _armedGate = null;
   _armedFieldId = null;
+  _armedAtMs = 0;
   _warpInFlight = false;
   _rng = Math.random;
 }
