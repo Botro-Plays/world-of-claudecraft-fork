@@ -49,7 +49,7 @@ import { sharedUniforms } from './gfx';
 import {
   PT_ALPHA_TEST_REF,
   PT_ANIM_AUTO,
-  ptApplyVertexScript,
+  ptApplyShaderHooks,
   ptMaterialHasOpacityMap,
   ptMaterialIsAnimated,
   ptMaterialIsHidden,
@@ -379,8 +379,7 @@ function makeStageMaterial(
     m.opacity = Math.min(1, Math.max(0, 1 - transparency));
     m.depthWrite = transparency <= 0.2;
   }
-  const script = ptVertexScriptFor(mat?.windMeshBottom ?? 0);
-  if (script) ptApplyVertexScript(m, script);
+  ptApplyShaderHooks(m, ptVertexScriptFor(mat?.windMeshBottom ?? 0));
   return m;
 }
 

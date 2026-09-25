@@ -25,7 +25,7 @@
 //  - WindMeshBottom drives per-vertex scripts via an exact-value switch on
 //    (WindMeshBottom & 0x7FF): WINDZ1 0x20 and WINDX1 0x80 sway +-8 PT
 //    units; WINDZ2 0x40 and WINDX2 0x100 sway +-32; WATER 0x200 is a
-//    position/time sin ripple (see ptVertexScriptFor/ptApplyVertexScript).
+//    position/time sin ripple (see ptVertexScriptFor/ptApplyShaderHooks).
 //    Composite ASE tag residues (0x9, 0xb) match no case and stay rigid.
 //  - SMTEX_TYPE_ANIMATION materials bind the smAnimTexture flipbook at
 //    stage 0, frame = (RendStatTime >> Shift_FrameSpeed) & FrameMask,
@@ -328,16 +328,30 @@ const PT_WIND_TRIANGLE_GLSL = `
         ptTc = mix(255.0 - ptTc, ptTc, step(0.5, ptTf));
         float ptWindShift = cos((ptTc + 256.0) * ${PT_ANGLE_SCALE});`;
 
-// Injects the PT vertex-displacement script into a material's vertex
-// shader. `aPtXZ` (PT world x,z, mod-4 folded for fp32 precision) is only
+// Installs the shared PT Lambert shader patch: the optional vertex
+// displacement script plus the hemisphere fill lift. Every PT material is a
+// MeshLambertMaterial, which never samples the scene IBL, so under the
+// standard-materials rig it would sit on that rig's deliberately weak
+// hemisphere alone. The WoC Lambert terrain fixes exactly that with
+// uWocFillBoost (terrain.ts buildLambertMaterial), riding the eased
+// uTerrainFillBoost the renderer derives from outdoor_light_rig_core.ts.
+// PT materials bind the SAME uniform object, so the connected world gets
+// the identical Lambert fill the WoC ground does: 1 under the Lambert rig
+// or an interior state, the Lambert/standard hemisphere ratio under the
+// standard rig. The lift multiplies hemisphere irradiance only, so the sun
+// term, shadows, and the Phase 5C vertex shading stay untouched, and being
+// a uniform (not a material-color mutation) it cannot accumulate across
+// field installs.
+// `aPtXZ` (PT world x,z, mod-4 folded for fp32 precision) is only
 // required by the water script; declare it only when present.
-export function ptApplyVertexScript(
+export function ptApplyShaderHooks(
   material: THREE.Material,
-  script: PtVertexScript,
+  script: PtVertexScript | null,
 ): void {
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uPtTime = sharedUniforms.uTime;
-    let inject: string;
+    shader.uniforms.uWocFillBoost = sharedUniforms.uTerrainFillBoost;
+    let inject = '';
     if (script === 'water') {
       inject = `
         float ptRx = floor(mod(mod(aPtXZ.x, 4.0) * 2048.0 + mod(uPtTime * 1000.0, 8192.0), 8192.0) * 0.5);
@@ -353,7 +367,7 @@ export function ptApplyVertexScript(
     } else if (script === 'windx1') {
       inject = `${PT_WIND_TRIANGLE_GLSL}
         transformed.x += ptWindShift * ${PT_WIND1_AMPLITUDE_YD};`;
-    } else {
+    } else if (script === 'windx2') {
       inject = `${PT_WIND_TRIANGLE_GLSL}
         transformed.x += ptWindShift * ${PT_WIND2_AMPLITUDE_YD};`;
     }
@@ -362,9 +376,18 @@ export function ptApplyVertexScript(
         '#include <common>',
         `#include <common>\nuniform float uPtTime;${script === 'water' ? '\nattribute vec2 aPtXZ;' : ''}`,
       )
-      .replace('#include <begin_vertex>', `#include <begin_vertex>\n${inject}`);
+      .replace('#include <begin_vertex>', `#include <begin_vertex>${inject ? `\n${inject}` : ''}`);
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>\nuniform float uWocFillBoost;`)
+      .replace(
+        '#include <lights_fragment_begin>',
+        `#include <lights_fragment_begin>
+        #if defined( RE_IndirectDiffuse )
+        irradiance *= uWocFillBoost;
+        #endif`,
+      );
   };
-  material.customProgramCacheKey = () => `pt-${script}`;
+  material.customProgramCacheKey = () => `pt-${script ?? 'flat'}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -734,8 +757,7 @@ function makePtMaterial(
     mat.opacity = Math.min(1, Math.max(0, 1 - transparency));
     mat.depthWrite = transparency <= 0.2;
   }
-  const script = ptVertexScriptFor(ptMat?.windMeshBottom ?? 0);
-  if (script) ptApplyVertexScript(mat, script);
+  ptApplyShaderHooks(mat, ptVertexScriptFor(ptMat?.windMeshBottom ?? 0));
   return mat;
 }
 
