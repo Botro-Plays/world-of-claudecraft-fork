@@ -38,7 +38,8 @@
         "targetIndex": 5,
         "x": 410,
         "z": 4902,
-        "y": 0
+        "y": 0,
+        "targetId": "ruin-3"
       }
     ],
     "derived": true

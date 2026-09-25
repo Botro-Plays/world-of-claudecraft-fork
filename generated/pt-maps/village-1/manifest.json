@@ -36,7 +36,15 @@
         "targetIndex": 11,
         "x": 27110,
         "z": -479,
-        "y": 0
+        "y": 0,
+        "targetId": "de-3"
+      },
+      {
+        "targetIndex": 30,
+        "x": 21840,
+        "z": 1062,
+        "y": 0,
+        "targetId": "sod-1"
       }
     ],
     "derived": true

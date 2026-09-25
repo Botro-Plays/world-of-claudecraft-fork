@@ -42,13 +42,15 @@
         "targetIndex": 4,
         "x": 4844,
         "z": -6835,
-        "y": 0
+        "y": 0,
+        "targetId": "ruin-4"
       },
       {
         "targetIndex": 3,
         "x": 2275,
         "z": -14828,
-        "y": 0
+        "y": 0,
+        "targetId": "ricarten"
       }
     ],
     "derived": true

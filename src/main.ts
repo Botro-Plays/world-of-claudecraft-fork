@@ -62,6 +62,12 @@ import { desktopPresentationHidden } from './game/desktop_presentation';
 import { initDesktopShellIntegration } from './game/desktop_shell_integration';
 import { applyDesktopShellSetting, syncDesktopShellSettings } from './game/desktop_shell_settings';
 import { tryDevChatHooks } from './game/dev_chat_hooks';
+import { tickPtMapDev } from './game/pt_map_dev_command';
+import {
+  activePtField,
+  activePtMapDescriptor,
+  standbyPtMapDescriptor,
+} from './sim/pt_field_active';
 import { installDevTeleports } from './game/dev_shortcuts';
 import {
   clearDiscordChoice,
@@ -4528,6 +4534,10 @@ async function startGame(
       // renderer.sync reads the new position; this call is idempotent while a
       // warmup is already active or the destination is ready.
       maybeWarmCurrentZone();
+      // Dev-only FieldGate boundary watch: preloads the neighboring PT map
+      // into the standby slot when the player nears an authored gate point
+      // (no-op in production bundles and while no dev map is installed).
+      tickPtMapDev(offlineSim.player);
       const pp = offlineSim.player;
       traceStart = perf.startTrace();
       try {
@@ -5176,6 +5186,14 @@ async function startGame(
             lockpickAction: (action: string) =>
               hud.submitLockpickAction(action as import('./sim/lockpick').PickAction),
             flushLockpickEvents: () => hud.flushLockpickEvents(),
+            /** PT FieldGate connected-world slots (the PT client's
+             *  StageField[0]/[1]): the bound map and its preloaded neighbor,
+             *  or null. E2E scripts must read these instead of importing
+             *  pt_field_active in-page, where a second module instance would
+             *  report stale null state. Debug surface only. */
+            ptActiveMap: () => activePtMapDescriptor(),
+            ptStandbyMap: () => standbyPtMapDescriptor(),
+            ptField: () => activePtField(),
           };
           // Console realm teleports (go.vale() ... go.fen()): offline dev only,
           // never online (server-authoritative movement) and never production.

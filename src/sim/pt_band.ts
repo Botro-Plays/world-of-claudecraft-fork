@@ -31,11 +31,28 @@
 import { INSTANCE_X_BASE } from './data';
 
 // Band placement: east of the battleground band (which ends at
-// INSTANCE_X_BASE + 34_000). 4000 yards wide, enough for any PT town map
-// at PT_SCALE (Ricarten is ~330 yd across).
+// INSTANCE_X_BASE + 34_000). The band is wide enough to hold the whole PT
+// field atlas at PT_SCALE: the union of every registered field's vertex
+// bounds spans ~400,295 PT units ~= 14,411 yards of X, so 15,000 yards of
+// headroom keeps every connected map inside one contiguous region (single
+// maps use under 400 yards of it). Nothing else classifies positions in
+// [+40k, +55k): dungeon overflow tops out at +19,200 and the next authored
+// band would start past +55k.
 export const PT_BAND_X_MIN = INSTANCE_X_BASE + 40_000;
-export const PT_BAND_X_MAX = INSTANCE_X_BASE + 44_000;
+export const PT_BAND_X_MAX = INSTANCE_X_BASE + 55_000;
 export const PT_BAND_Z = 0;
+
+// PT atlas anchors: the shared transform every connected PT map uses so
+// adjacent fields keep their authored relative positions (the source engine
+// places all fields in one absolute PT coordinate space; FieldGate boundary
+// crossing depends on that). Each anchor is the union extreme across the
+// registered field packages, rounded outward:
+//   union minX -200,799.7 / maxX 199,495.2 (maxX anchors the mirrored X axis)
+//   union minY   -2,219.5 (heights lift above WoC y=0)
+//   union minZ  -98,799.3 (the atlas starts at PT_BAND_Z and grows north)
+export const PT_ATLAS_MAX_X = 199_496;
+export const PT_ATLAS_MIN_Y = -2_220;
+export const PT_ATLAS_MIN_Z = -98_800;
 
 // 1 PT world unit = 0.036 WoC yards (see the scale note in the header).
 export const PT_SCALE = 0.036;

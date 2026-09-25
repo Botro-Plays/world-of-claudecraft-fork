@@ -57,7 +57,8 @@
         "targetIndex": 28,
         "x": 45316,
         "z": 21407,
-        "y": 0
+        "y": 0,
+        "targetId": "iron-2"
       }
     ],
     "derived": true

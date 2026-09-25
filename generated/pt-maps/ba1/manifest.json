@@ -34,7 +34,15 @@
         "targetIndex": 53,
         "x": -25122,
         "z": 20938,
-        "y": 0
+        "y": 0,
+        "targetId": "ba2"
+      },
+      {
+        "targetIndex": 56,
+        "x": -19022,
+        "z": 21052,
+        "y": 0,
+        "targetId": "iron3"
       }
     ],
     "derived": true

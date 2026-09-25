@@ -19,7 +19,14 @@
 // Non-CHECK_FACE faces (water, decorative) are never queried for collision.
 // They are rendered separately by src/render/pt_terrain.ts.
 
-import { PT_BAND_X_MIN, PT_BAND_Z, PT_SCALE } from './pt_band';
+import {
+  PT_ATLAS_MAX_X,
+  PT_ATLAS_MIN_Y,
+  PT_ATLAS_MIN_Z,
+  PT_BAND_X_MIN,
+  PT_BAND_Z,
+  PT_SCALE,
+} from './pt_band';
 
 // ---------------------------------------------------------------------------
 // Field data + transform contracts
@@ -59,6 +66,27 @@ export function makePtBandTransform(b: PtBounds): PtFieldTransform {
     woCToPtX: (x) => b.maxX - (x - PT_BAND_X_MIN) / PT_SCALE,
     woCToPtY: (y) => y / PT_SCALE + b.minY,
     woCToPtZ: (z) => (z - PT_BAND_Z) / PT_SCALE + b.minZ,
+  };
+}
+
+/**
+ * Build the shared ATLAS transform: every connected PT map keeps its
+ * authored absolute PT coordinates, anchored to the union of all field
+ * bounds (PT_ATLAS_* in pt_band.ts). Same mirrored-X math as
+ * makePtBandTransform, but the anchor is the whole atlas rather than one
+ * map's own bounds, so two adjacent fields occupy adjacent WoC positions
+ * exactly as their authored coordinates abut. This is what makes a
+ * FieldGate boundary physically walkable: crossing a map's east edge lands
+ * on the neighbor's west edge with no teleport.
+ */
+export function makePtAtlasTransform(): PtFieldTransform {
+  return {
+    ptXToWoC: (ptX) => PT_BAND_X_MIN + (PT_ATLAS_MAX_X - ptX) * PT_SCALE,
+    ptZToWoC: (ptZ) => PT_BAND_Z + (ptZ - PT_ATLAS_MIN_Z) * PT_SCALE,
+    ptYToWoC: (ptY) => (ptY - PT_ATLAS_MIN_Y) * PT_SCALE,
+    woCToPtX: (x) => PT_ATLAS_MAX_X - (x - PT_BAND_X_MIN) / PT_SCALE,
+    woCToPtY: (y) => y / PT_SCALE + PT_ATLAS_MIN_Y,
+    woCToPtZ: (z) => (z - PT_BAND_Z) / PT_SCALE + PT_ATLAS_MIN_Z,
   };
 }
 
@@ -155,6 +183,29 @@ export interface PtStageObjectsModule {
 }
 
 /**
+ * One authored FieldGate adjacency record (field.cpp AddGate). In the
+ * source engine AddGate is a seamless-boundary preload hint, NOT a
+ * teleport: the gate coordinate is a shared point near the boundary
+ * between the two fields, and PlayNearGateField loads the destination
+ * when the player gets within DIST_TRANSLEVEL_CONNECT of it. AddGate also
+ * registers the reverse edge on the destination (AddGate2), so each
+ * record describes one bidirectional boundary.
+ *
+ * Coordinates are PT world units in the shared absolute PT space.
+ */
+export interface PtFieldGateLink {
+  /** Destination field registration index (psField[N]). */
+  targetIndex: number;
+  /** Destination package id (generated/pt-maps/<targetId>), null when the
+   *  target index names no registered field. */
+  targetId: string | null;
+  /** Shared gate point, PT world coordinates. */
+  x: number;
+  z: number;
+  y: number;
+}
+
+/**
  * One loaded PT map package: the generated field module, its band
  * transform, its texture URL root, and the optional stage-object module.
  * Everything collision and rendering need, nothing more.
@@ -163,6 +214,11 @@ export interface PtStageObjectsModule {
  * horizon ring + deep-sea blocker keyed to that map's authored sea level
  * and harbor material). Dev-harness maps leave it off: faking a sea level
  * for a map that does not declare one would misreport the conversion.
+ *
+ * `fieldGates` carries the field's authored AddGate records verbatim
+ * (including source anomalies like the ff-01 -> pilai dead coordinate and
+ * the SeaA self-loop). The connected-world runtime treats each record as
+ * one undirected boundary edge; see src/game/pt_field_links.ts.
  */
 export interface PtMapDescriptor {
   id: string;
@@ -171,6 +227,7 @@ export interface PtMapDescriptor {
   textureBase: string;
   stageObjects: PtStageObjectsModule | null;
   oceanRing: boolean;
+  fieldGates?: readonly PtFieldGateLink[];
 }
 
 // ---------------------------------------------------------------------------

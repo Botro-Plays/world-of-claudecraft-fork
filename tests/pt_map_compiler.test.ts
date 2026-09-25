@@ -133,8 +133,14 @@ describe('pt-map compiler: field.cpp registry parser', () => {
 	psField[i]->SetCenterPos(2596,-18738);
 	psField[i]->AddStartPoint(2592,-18566);
 	psField[i]->AddGate(psField[i+1],-8508,-10576,0);
+	psField[i]->AddGate(psField[2],2275,-14828,0);
+	//psField[i]->AddGate(psField[i+4],1,2,3);
 	psField[i]->SetName("Fall_Game\\\\fall_game.ASE",0) ; //39
 	psField[i]->State = FIELD_STATE_ROOM;
+	/*
+	psField[i]->SetName("Stemple\\\\stemple.ASE","Stemple"); //62
+	psField[i]->AddGate(psField[i+1],9,9,9);
+	*/
 `;
 
   it('parses SetName/State/objects/center/starts/gates', () => {
@@ -152,7 +158,25 @@ describe('pt-map compiler: field.cpp registry parser', () => {
     ]);
     expect(r.centerPos).toEqual([2596, -18738]);
     expect(r.startPoints).toEqual([[2592, -18566]]);
-    expect(r.gates).toEqual([{ targetIndex: 1, x: -8508, z: -10576, y: 0 }]);
+    expect(r.gates).toEqual([
+      { targetIndex: 1, x: -8508, z: -10576, y: 0 },
+      { targetIndex: 2, x: 2275, z: -14828, y: 0 },
+    ]);
+  });
+
+  it('resolves absolute psField[N] AddGate targets against the registration table', () => {
+    const fields = parseFieldRegistry(fixture);
+    // AddGate(psField[2],...) names registration index 2 verbatim, not i+2.
+    expect(fields[0].gates[1].targetIndex).toBe(2);
+  });
+
+  it('excludes commented-out gates and fields inside block comments', () => {
+    const fields = parseFieldRegistry(fixture);
+    // The //-commented AddGate never registers (2 live gates, not 3), and
+    // the /* */ Stemple block never becomes a field (2 fields, not 3).
+    expect(fields).toHaveLength(2);
+    expect(fields[0].gates).toHaveLength(2);
+    expect(fields.some((f) => /stemple/i.test(f.asePath))).toBe(false);
   });
 
   it('records a null minimap name for SetName(...,0)', () => {

@@ -44,13 +44,22 @@
         "targetIndex": 7,
         "x": 10019,
         "z": 18031,
-        "y": 0
+        "y": 0,
+        "targetId": "ruin-1"
       },
       {
         "targetIndex": 17,
         "x": 4470,
         "z": 27774,
-        "y": 0
+        "y": 0,
+        "targetId": "forever-fall-04"
+      },
+      {
+        "targetIndex": 34,
+        "x": 12713,
+        "z": 23409,
+        "y": 0,
+        "targetId": "greedy"
       }
     ],
     "derived": true

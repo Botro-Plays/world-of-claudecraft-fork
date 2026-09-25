@@ -67,7 +67,8 @@
         "targetIndex": 21,
         "x": -8508,
         "z": -10576,
-        "y": 0
+        "y": 0,
+        "targetId": "pilai"
       }
     ],
     "derived": true

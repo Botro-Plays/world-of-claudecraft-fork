@@ -51,7 +51,15 @@
         "targetIndex": 29,
         "x": 33618,
         "z": 24011,
-        "y": 0
+        "y": 0,
+        "targetId": "ice-ura"
+      },
+      {
+        "targetIndex": 60,
+        "x": 39952,
+        "z": 30214,
+        "y": 0,
+        "targetId": "iron4"
       }
     ],
     "derived": true

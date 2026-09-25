@@ -36,6 +36,11 @@ export class PtTerrainGate {
     return this.view;
   }
 
+  /** The descriptor this gate is bound to (built or building), or null. */
+  get source(): PtMapDescriptor | null {
+    return this.src;
+  }
+
   /**
    * Start the terrain build for `src` if none is in flight and none has
    * completed for it. A different `src` than the current/pending one tears

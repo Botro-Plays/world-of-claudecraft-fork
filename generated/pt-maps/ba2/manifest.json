@@ -34,7 +34,8 @@
         "targetIndex": 54,
         "x": -32203,
         "z": 15803,
-        "y": 0
+        "y": 0,
+        "targetId": "ba3"
       }
     ],
     "derived": true

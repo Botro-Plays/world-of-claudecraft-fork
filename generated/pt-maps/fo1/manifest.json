@@ -38,7 +38,15 @@
         "targetIndex": 51,
         "x": -37653,
         "z": -14972,
-        "y": 0
+        "y": 0,
+        "targetId": "town1"
+      },
+      {
+        "targetIndex": 55,
+        "x": -35228,
+        "z": -7397,
+        "y": 0,
+        "targetId": "ba4"
       }
     ],
     "derived": true

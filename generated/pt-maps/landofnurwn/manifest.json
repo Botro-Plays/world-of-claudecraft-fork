@@ -3,7 +3,7 @@
     "id": "landofnurwn",
     "fieldIndex": 69,
     "mapName": "LandofNurwn",
-    "state": "FIELD_STATE_DUNGEON",
+    "state": "FIELD_STATE_FOREST",
     "smdPath": "Field/LandofNurwn/LandofNurwn.smd",
     "fieldOut": "generated/pt-maps/landofnurwn/field.generated.ts",
     "sourceLabel": "client/Field/LandofNurwn/LandofNurwn.smd",

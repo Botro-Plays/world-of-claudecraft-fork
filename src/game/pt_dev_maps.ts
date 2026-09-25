@@ -24,7 +24,8 @@
 import { PT_RICARTEN_SPAWN_X, PT_RICARTEN_SPAWN_Z } from '../sim/pt_band';
 import {
   createPtField,
-  makePtBandTransform,
+  makePtAtlasTransform,
+  type PtFieldGateLink,
   type PtFieldModule,
   type PtMapDescriptor,
   type PtStageObjectsModule,
@@ -50,6 +51,7 @@ interface PtDevMapManifest {
     textureOutDir?: string;
     stageObjects?: { files?: string[]; missing?: string[]; out?: string } | null;
     water?: { rule?: string } | null;
+    gates?: { targetIndex: number; targetId?: string | null; x: number; z: number; y: number }[];
   };
   status?: string;
   warnings?: unknown[];
@@ -130,6 +132,38 @@ function manifestFor(id: string): PtDevMapManifest | null {
   return MANIFESTS[manifestPath(id)] ?? null;
 }
 
+/**
+ * Every registered field's authored FieldGate records (manifest data,
+ * verbatim). Phantom conversion artifacts are excluded by registration
+ * index: the source engine registers fields 0-69 only (the conditional
+ * custom slot is index 70 and never emitted a package), so stale manifests
+ * carrying fieldIndex >= 70 are not part of the field graph.
+ */
+export function ptDevFieldGates(): {
+  id: string;
+  fieldIndex: number;
+  gates: PtFieldGateLink[];
+}[] {
+  const out: { id: string; fieldIndex: number; gates: PtFieldGateLink[] }[] = [];
+  for (const [path, m] of Object.entries(MANIFESTS)) {
+    const fieldIndex = m.manifest?.fieldIndex ?? -1;
+    if (fieldIndex < 0 || fieldIndex >= 70) continue;
+    const id = m.manifest?.id ?? path.match(/pt-maps\/([^/]+)\//)?.[1] ?? '?';
+    out.push({
+      id,
+      fieldIndex,
+      gates: (m.manifest?.gates ?? []).map((g) => ({
+        targetIndex: g.targetIndex,
+        targetId: g.targetId ?? null,
+        x: g.x,
+        z: g.z,
+        y: g.y,
+      })),
+    });
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // Loading (/ptmap <id>)
 // ---------------------------------------------------------------------------
@@ -198,15 +232,31 @@ export interface PtDevLoadedMap {
 
 /** Lazy-load a generated package into a descriptor. Throws on unknown id. */
 export async function loadPtDevMap(id: string): Promise<PtDevLoadedMap> {
-  const loadField = FIELD_LOADERS[fieldPath(id)];
+  // Ricarten is the one package whose modules live outside generated/pt-maps
+  // (its field is the committed src/sim/pt_ricarten_field.generated.ts, its
+  // stage objects src/render/pt_stage_objects.generated.ts - the golden
+  // reference outputs). Its package dir carries only manifest.json, so the
+  // two loaders fall back to the committed modules for that one id.
+  const loadField =
+    FIELD_LOADERS[fieldPath(id)] ??
+    (id === 'ricarten'
+      ? () => import('../sim/pt_ricarten_field.generated')
+      : undefined);
   const m = manifestFor(id);
   if (!loadField || !m) {
     throw new Error(`no generated package '${id}' (see /ptmaps)`);
   }
   const field = await loadField();
-  const loadStage = STAGE_LOADERS[stagePath(id)];
+  const loadStage =
+    STAGE_LOADERS[stagePath(id)] ??
+    (id === 'ricarten'
+      ? () => import('../render/pt_stage_objects.generated')
+      : undefined);
   const stageObjects = loadStage ? await loadStage() : null;
-  const transform = makePtBandTransform(field.PT_BOUNDS);
+  // Every dev map shares the atlas transform so adjacent fields land at
+  // their authored relative positions and FieldGate boundaries are
+  // physically walkable (see makePtAtlasTransform).
+  const transform = makePtAtlasTransform();
   const descriptor: PtMapDescriptor = {
     id,
     field,
@@ -214,6 +264,13 @@ export async function loadPtDevMap(id: string): Promise<PtDevLoadedMap> {
     textureBase: textureBaseFor(m, id),
     stageObjects,
     oceanRing: false,
+    fieldGates: (m.manifest?.gates ?? []).map((g) => ({
+      targetIndex: g.targetIndex,
+      targetId: g.targetId ?? null,
+      x: g.x,
+      z: g.z,
+      y: g.y,
+    })) satisfies PtFieldGateLink[],
   };
   return { descriptor, manifest: m, spawn: resolvePtDevSpawn(field, transform, m) };
 }

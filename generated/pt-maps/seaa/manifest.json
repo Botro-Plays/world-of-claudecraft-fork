@@ -40,7 +40,15 @@
         -3858
       ]
     ],
-    "gates": [],
+    "gates": [
+      {
+        "targetIndex": 61,
+        "x": -22050,
+        "z": 7706,
+        "y": 841,
+        "targetId": "seaa"
+      }
+    ],
     "derived": true
   },
   "status": "PASS",

@@ -38,7 +38,8 @@
         "targetIndex": 8,
         "x": 13319,
         "z": 7102,
-        "y": 0
+        "y": 0,
+        "targetId": "de-1"
       }
     ],
     "derived": true

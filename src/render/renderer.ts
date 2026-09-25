@@ -32,7 +32,10 @@ import {
   zoneAt,
 } from '../sim/data';
 import { isPtPos } from '../sim/pt_band';
-import { activePtMapDescriptor } from '../sim/pt_field_active';
+import {
+  activePtMapDescriptor,
+  standbyPtMapDescriptor,
+} from '../sim/pt_field_active';
 import type { DelveModuleId } from '../sim/delve_layout';
 import { generateRiftFloor, riftLiftAt } from '../sim/rift/rift_gen';
 import type { BiomeId, ZoneDef } from '../sim/types';
@@ -8779,7 +8782,16 @@ export class Renderer {
   // currently bound (Ricarten, or a /ptmap dev selection). The build awaits
   // ~276 textures, so the gate suppresses a per-frame rebuild storm while
   // the first build is still in flight (see pt_terrain_gate.ts).
-  private readonly ptTerrainGate = new PtTerrainGate(
+  // The second gate mirrors the PT client's second stage slot: it holds the
+  // preloaded FieldGate neighbor's view so the destination map is visible
+  // before the player crosses, and the gates swap (not rebuild) when floor
+  // ownership promotes the standby map to active.
+  private ptTerrainGate = new PtTerrainGate(
+    (src) => buildPtTerrainView(src),
+    (view) => this.scene.add(view.group),
+    (view) => this.scene.remove(view.group),
+  );
+  private ptStandbyTerrainGate = new PtTerrainGate(
     (src) => buildPtTerrainView(src),
     (view) => this.scene.add(view.group),
     (view) => this.scene.remove(view.group),
@@ -9226,10 +9238,31 @@ export class Renderer {
       // gate keeps the multi-second texture build from being restarted by
       // every sync() frame that runs before it resolves, and swaps views
       // when the bound map descriptor changes.
-      void this.ptTerrainGate.ensure(activePtMapDescriptor() ?? PT_RICARTEN_SOURCE);
+      const activeDesc = activePtMapDescriptor() ?? PT_RICARTEN_SOURCE;
+      const standbyDesc = standbyPtMapDescriptor();
+      // FieldGate ownership swap: when the standby map promoted, its view
+      // is already built (or building) under the standby gate. Swapping the
+      // gates keeps that work instead of tearing down and rebuilding the
+      // destination terrain at the moment the player crosses.
+      if (
+        standbyDesc !== null &&
+        this.ptStandbyTerrainGate.source === activeDesc &&
+        this.ptTerrainGate.source === standbyDesc
+      ) {
+        const t = this.ptTerrainGate;
+        this.ptTerrainGate = this.ptStandbyTerrainGate;
+        this.ptStandbyTerrainGate = t;
+      }
+      void this.ptTerrainGate.ensure(activeDesc);
+      if (standbyDesc !== null) {
+        void this.ptStandbyTerrainGate.ensure(standbyDesc);
+      } else {
+        this.ptStandbyTerrainGate.reset();
+      }
       // Advance the v-ani stage objects (windmill blades etc.) to the shared
       // clock; no-op until the terrain view resolves.
       this.ptTerrainGate.current?.update();
+      this.ptStandbyTerrainGate.current?.update();
     } else if (inside && isArenaPos(px)) {
       void ensureDungeonAssets().catch(() => undefined);
       // build the Ashen Coliseum copy the player was matched into

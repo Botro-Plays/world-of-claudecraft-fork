@@ -40,3 +40,18 @@ export function execPtMapDevCommand(
       hud.log(`[dev] /ptmap failed: ${err instanceof Error ? err.message : String(err)}`, '#ff6a6a');
     });
 }
+
+/**
+ * Per-frame FieldGate boundary watch (the PT client's PlayNearGateField
+ * cadence). Runs only while a dev map is installed: it preloads the
+ * neighboring field's package into the standby slot when the player nears
+ * an authored gate point. The heavy half lives in pt_field_links.ts behind
+ * the same DEV fold as the command path, so production bundles drop it.
+ * Never moves the player.
+ */
+export function tickPtMapDev(player: Entity | undefined): void {
+  if (!import.meta.env.DEV || !player) return;
+  void import('./pt_field_links')
+    .then((m) => m.tickPtFieldGates(player.pos.x, player.pos.z))
+    .catch(() => undefined);
+}

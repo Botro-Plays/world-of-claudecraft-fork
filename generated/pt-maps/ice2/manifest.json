@@ -24,7 +24,15 @@
       40182
     ],
     "startPoints": [],
-    "gates": [],
+    "gates": [
+      {
+        "targetIndex": 31,
+        "x": 35364,
+        "z": 39518,
+        "y": 0,
+        "targetId": "ice1"
+      }
+    ],
     "derived": true
   },
   "status": "WARN",

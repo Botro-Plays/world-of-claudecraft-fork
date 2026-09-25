@@ -154,7 +154,19 @@ async function manifestsForAll() {
     if (m && m.fieldIndex !== undefined) byIndex.set(m.fieldIndex, m);
   }
   const takenIds = new Set([...byIndex.values()].map((m) => m.id));
-  return registry.map((e) => byIndex.get(e.fieldIndex) ?? deriveManifest(e, takenIds));
+  const all = registry.map((e) => byIndex.get(e.fieldIndex) ?? deriveManifest(e, takenIds));
+  // Second pass: every gate record also resolves its destination package id
+  // from the registration table, so runtime code never re-derives
+  // fieldIndex -> package id itself. A gate whose targetIndex points outside
+  // the registered set gets targetId: null (kept, not dropped - the record
+  // is authored data either way).
+  const byFieldIndex = new Map(all.map((m) => [m.fieldIndex, m.id]));
+  for (const m of all) {
+    for (const g of m.gates ?? []) {
+      g.targetId = byFieldIndex.get(g.targetIndex) ?? null;
+    }
+  }
+  return all;
 }
 
 // ---------------------------------------------------------------------------

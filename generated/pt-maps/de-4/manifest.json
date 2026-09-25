@@ -35,7 +35,15 @@
         11056
       ]
     ],
-    "gates": [],
+    "gates": [
+      {
+        "targetIndex": 27,
+        "x": 44545,
+        "z": 13063,
+        "y": 0,
+        "targetId": "iron-1"
+      }
+    ],
     "derived": true
   },
   "status": "WARN",

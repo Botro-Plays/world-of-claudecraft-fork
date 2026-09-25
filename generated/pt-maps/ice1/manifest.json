@@ -36,7 +36,15 @@
       28529
     ],
     "startPoints": [],
-    "gates": [],
+    "gates": [
+      {
+        "targetIndex": 35,
+        "x": 33729,
+        "z": 38029,
+        "y": 0,
+        "targetId": "ice2"
+      }
+    ],
     "derived": true
   },
   "status": "WARN",

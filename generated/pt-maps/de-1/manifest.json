@@ -38,13 +38,15 @@
         "targetIndex": 10,
         "x": 13466,
         "z": -5953,
-        "y": 0
+        "y": 0,
+        "targetId": "de-2"
       },
       {
         "targetIndex": 9,
         "x": 20041,
         "z": -892,
-        "y": 0
+        "y": 0,
+        "targetId": "village-1"
       }
     ],
     "derived": true

@@ -36,7 +36,8 @@
         "targetIndex": 38,
         "x": -11586,
         "z": 7704,
-        "y": 0
+        "y": 0,
+        "targetId": "losttemple"
       }
     ],
     "derived": true

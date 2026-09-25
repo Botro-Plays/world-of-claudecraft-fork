@@ -40,7 +40,8 @@
         "targetIndex": 50,
         "x": -40333,
         "z": -9515,
-        "y": 0
+        "y": 0,
+        "targetId": "fo1"
       }
     ],
     "derived": true
