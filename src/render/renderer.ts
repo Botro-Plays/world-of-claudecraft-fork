@@ -8363,6 +8363,23 @@ export class Renderer {
     );
   }
 
+  // PT field visual-readiness probe for the transition curtain
+  // (game/pt_field_transition.ts). Reports the ACTIVE terrain gate's state
+  // for a map id: 'none' before the sync pass binds the descriptor, 'building'
+  // while the view (textures included) is still resolving, 'compiling' while
+  // the attached group waits on the compile gate's link/upload lanes, 'ready'
+  // once the group is actually revealed, and 'failed' when the build rejected
+  // (the gate retries on the next ensure, so 'failed' is only observed between
+  // attempts). The standby gate deliberately does not report: the curtain
+  // only cares whether the field the player is entering can be shown.
+  ptFieldViewState(mapId: string): 'none' | 'building' | 'compiling' | 'ready' | 'failed' {
+    const gate = this.ptTerrainGate;
+    if (gate.source?.id !== mapId) return 'none';
+    const view = gate.current;
+    if (view === null) return gate.busy ? 'building' : 'failed';
+    return view.group.visible ? 'ready' : 'compiling';
+  }
+
   // Shared core for every compile gate below: link `target`'s programs off the
   // main thread (KHR_parallel_shader_compile via compileAsync) against the live
   // scene's exact lights + environment. The same priority arbiter owns live

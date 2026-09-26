@@ -46,7 +46,10 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
     "hudChrome.keybinds.toggleRunWalk",
-    "hudChrome.pt.title"
+    "hudChrome.pt.title",
+    "loading.enteringField",
+    "loading.ptEntering",
+    "loading.ptFieldFailed"
   ],
   "es_ES": [
     "auth.selectTribe",
@@ -85,7 +88,10 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
     "hudChrome.keybinds.toggleRunWalk",
-    "hudChrome.pt.title"
+    "hudChrome.pt.title",
+    "loading.enteringField",
+    "loading.ptEntering",
+    "loading.ptFieldFailed"
   ],
   "fr_FR": [
     "auth.selectTribe",
@@ -124,7 +130,10 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
     "hudChrome.keybinds.toggleRunWalk",
-    "hudChrome.pt.title"
+    "hudChrome.pt.title",
+    "loading.enteringField",
+    "loading.ptEntering",
+    "loading.ptFieldFailed"
   ],
   "fr_CA": [
     "auth.selectTribe",
@@ -163,7 +172,10 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
     "hudChrome.keybinds.toggleRunWalk",
-    "hudChrome.pt.title"
+    "hudChrome.pt.title",
+    "loading.enteringField",
+    "loading.ptEntering",
+    "loading.ptFieldFailed"
   ],
   "en_CA": [],
   "it_IT": [
@@ -203,7 +215,10 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
     "hudChrome.keybinds.toggleRunWalk",
-    "hudChrome.pt.title"
+    "hudChrome.pt.title",
+    "loading.enteringField",
+    "loading.ptEntering",
+    "loading.ptFieldFailed"
   ],
   "de_DE": [
     "auth.selectTribe",
@@ -242,7 +257,10 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
     "hudChrome.keybinds.toggleRunWalk",
-    "hudChrome.pt.title"
+    "hudChrome.pt.title",
+    "loading.enteringField",
+    "loading.ptEntering",
+    "loading.ptFieldFailed"
   ],
   "zh_CN": [
     "auth.selectTribe",
@@ -281,7 +299,10 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
     "hudChrome.keybinds.toggleRunWalk",
-    "hudChrome.pt.title"
+    "hudChrome.pt.title",
+    "loading.enteringField",
+    "loading.ptEntering",
+    "loading.ptFieldFailed"
   ],
   "zh_TW": [
     "auth.selectTribe",
@@ -320,7 +341,10 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
     "hudChrome.keybinds.toggleRunWalk",
-    "hudChrome.pt.title"
+    "hudChrome.pt.title",
+    "loading.enteringField",
+    "loading.ptEntering",
+    "loading.ptFieldFailed"
   ],
   "ko_KR": [
     "auth.selectTribe",
@@ -359,7 +383,10 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
     "hudChrome.keybinds.toggleRunWalk",
-    "hudChrome.pt.title"
+    "hudChrome.pt.title",
+    "loading.enteringField",
+    "loading.ptEntering",
+    "loading.ptFieldFailed"
   ],
   "ja_JP": [
     "auth.selectTribe",
@@ -398,7 +425,10 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
     "hudChrome.keybinds.toggleRunWalk",
-    "hudChrome.pt.title"
+    "hudChrome.pt.title",
+    "loading.enteringField",
+    "loading.ptEntering",
+    "loading.ptFieldFailed"
   ],
   "pt_BR": [
     "auth.selectTribe",
@@ -437,7 +467,10 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
     "hudChrome.keybinds.toggleRunWalk",
-    "hudChrome.pt.title"
+    "hudChrome.pt.title",
+    "loading.enteringField",
+    "loading.ptEntering",
+    "loading.ptFieldFailed"
   ],
   "ru_RU": [
     "auth.selectTribe",
@@ -476,7 +509,10 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
     "hudChrome.keybinds.toggleRunWalk",
-    "hudChrome.pt.title"
+    "hudChrome.pt.title",
+    "loading.enteringField",
+    "loading.ptEntering",
+    "loading.ptFieldFailed"
   ],
   "cs_CZ": [
     "auth.selectTribe",
@@ -515,7 +551,10 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
     "hudChrome.keybinds.toggleRunWalk",
-    "hudChrome.pt.title"
+    "hudChrome.pt.title",
+    "loading.enteringField",
+    "loading.ptEntering",
+    "loading.ptFieldFailed"
   ],
   "nl_NL": [
     "auth.selectTribe",
@@ -554,7 +593,10 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
     "hudChrome.keybinds.toggleRunWalk",
-    "hudChrome.pt.title"
+    "hudChrome.pt.title",
+    "loading.enteringField",
+    "loading.ptEntering",
+    "loading.ptFieldFailed"
   ],
   "pl_PL": [
     "auth.selectTribe",
@@ -593,7 +635,10 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
     "hudChrome.keybinds.toggleRunWalk",
-    "hudChrome.pt.title"
+    "hudChrome.pt.title",
+    "loading.enteringField",
+    "loading.ptEntering",
+    "loading.ptFieldFailed"
   ],
   "id_ID": [
     "auth.selectTribe",
@@ -632,7 +677,10 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
     "hudChrome.keybinds.toggleRunWalk",
-    "hudChrome.pt.title"
+    "hudChrome.pt.title",
+    "loading.enteringField",
+    "loading.ptEntering",
+    "loading.ptFieldFailed"
   ],
   "tr_TR": [
     "auth.selectTribe",
@@ -671,7 +719,10 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
     "hudChrome.keybinds.toggleRunWalk",
-    "hudChrome.pt.title"
+    "hudChrome.pt.title",
+    "loading.enteringField",
+    "loading.ptEntering",
+    "loading.ptFieldFailed"
   ],
   "sv_SE": [
     "auth.selectTribe",
@@ -710,7 +761,10 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
     "hudChrome.keybinds.toggleRunWalk",
-    "hudChrome.pt.title"
+    "hudChrome.pt.title",
+    "loading.enteringField",
+    "loading.ptEntering",
+    "loading.ptFieldFailed"
   ],
   "vi_VN": [
     "auth.selectTribe",
@@ -749,7 +803,10 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
     "hudChrome.keybinds.toggleRunWalk",
-    "hudChrome.pt.title"
+    "hudChrome.pt.title",
+    "loading.enteringField",
+    "loading.ptEntering",
+    "loading.ptFieldFailed"
   ],
   "da_DK": [
     "auth.selectTribe",
@@ -788,6 +845,9 @@ export const pending: Record<string, readonly string[]> = {
     "classes.tempskron_pikeman",
     "classes.tempskron_pikemanAria",
     "hudChrome.keybinds.toggleRunWalk",
-    "hudChrome.pt.title"
+    "hudChrome.pt.title",
+    "loading.enteringField",
+    "loading.ptEntering",
+    "loading.ptFieldFailed"
   ]
 };

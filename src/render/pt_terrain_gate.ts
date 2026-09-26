@@ -41,6 +41,11 @@ export class PtTerrainGate {
     return this.src;
   }
 
+  /** A build is in flight for the bound source. */
+  get busy(): boolean {
+    return this.pending !== null;
+  }
+
   /**
    * Start the terrain build for `src` if none is in flight and none has
    * completed for it. A different `src` than the current/pending one tears

@@ -1,4 +1,4 @@
-// PT 3D world visual loading E2E (Phase 6A, dev harness, offline world).
+// PT 3D world visual loading E2E (Phase 6A + 6B, dev harness, offline world).
 //
 // Measures the real loading pipeline in the browser:
 //   INITIAL LOAD (cold, first /ptmap):
@@ -9,6 +9,10 @@
 //   CONNECTED FIELD: standby descriptor -> standby attach -> standby
 //     visible -> FieldGate crossing. Destination must be VISIBLE before
 //     ownership flips, with headroom.
+//   TRANSITION CURTAIN (Phase 6B): #pt-transition-screen must raise when the
+//     bound map's view is not ready, name the destination, hold the ~2s
+//     minimum presentation, lift without leaving a blank viewport, and never
+//     repeat or spuriously fail.
 //   RESOURCE CHECKS: every pt texture fetch must settle before the view
 //   attaches (visual-ready before visible), no duplicate URL requests,
 //   bounded 404s, no page/shader errors.
@@ -165,9 +169,21 @@ await page.evaluate(() => {
       const grp = g()?.renderer?.scene?.getObjectByName(`pt-${id}-terrain`);
       return grp ? grp.visible === true : null;
     },
+    curtainState() {
+      const el = document.getElementById('pt-transition-screen');
+      return {
+        on: el?.classList.contains('visible') === true,
+        name: el?.querySelector('.pts-field')?.textContent ?? '',
+        failed: el?.classList.contains('failed') === true,
+      };
+    },
   });
   L._vis = new Set();
-  // Watcher: descriptor flips, view attach, and the compile-gated reveal.
+  L._curtain = false;
+  L._curtainName = '';
+  L._curtainFail = false;
+  // Watcher: descriptor flips, view attach, the compile-gated reveal, and the
+  // Phase 6B transition curtain (DOM overlay, polled like the scene graph).
   setInterval(() => {
     const st = L.state();
     if (st.active !== L._active) {
@@ -191,6 +207,17 @@ await page.evaluate(() => {
         L.rec(`visible:${id}`);
       }
     }
+    const pts = document.getElementById('pt-transition-screen');
+    const on = pts?.classList.contains('visible') === true;
+    const nm = pts?.querySelector('.pts-field')?.textContent ?? '';
+    if (on && !L._curtain) L.rec('curtain:show');
+    if (on && nm && nm !== L._curtainName) L.rec(`curtain-name:${nm}`);
+    if (!on && L._curtain) L.rec('curtain:hide');
+    const failed = on && pts.classList.contains('failed');
+    if (failed && !L._curtainFail) L.rec('curtain:fail');
+    L._curtain = on;
+    L._curtainName = nm;
+    L._curtainFail = failed;
   }, 30);
 });
 
@@ -204,6 +231,11 @@ const mark = (name) =>
   }, name);
 const state = () => page.evaluate(() => window.__ptload.state());
 const clearRes = () => page.evaluate(() => performance.clearResourceTimings());
+const curtainEvents = (t0) =>
+  page.evaluate(
+    (tt) => window.__ptload.events.filter((e) => e.t >= tt && e.name.startsWith('curtain')),
+    t0,
+  );
 
 async function waitEventAfter(name, t, timeoutMs) {
   return page
@@ -232,11 +264,46 @@ async function installMap(id, tag) {
   const attached = await waitEventAfter(`attach:${id}`, cmdT, 120000);
   if (!attached) return null;
   await waitEventAfter(`visible:${id}`, cmdT, 60000);
+  // Phase 6B: the transition curtain must have raised for this install and
+  // lifted only after real readiness + the minimum presentation.
+  await waitEventAfter('curtain:hide', cmdT, 60000);
+  const ce = await curtainEvents(cmdT);
+  const tShow = ce.find((e) => e.name === 'curtain:show')?.t ?? null;
+  const tHide = ce.find((e) => e.name === 'curtain:hide')?.t ?? null;
+  const names = ce.filter((e) => e.name.startsWith('curtain-name:')).map((e) => e.name.slice(13));
+  const wanted = id.toUpperCase();
+  check(`${tag} transition curtain raised`, tShow !== null);
+  check(
+    `${tag} curtain names the destination`,
+    names.some((n) => n.includes(wanted)),
+    names.join(' | ') || 'none',
+  );
+  check(
+    `${tag} curtain held the minimum presentation`,
+    tShow !== null && tHide !== null && tHide - tShow >= 1900,
+    tShow !== null && tHide !== null ? `${(tHide - tShow).toFixed(0)}ms` : 'missing events',
+  );
+  check(
+    `${tag} curtain did not repeat or fail`,
+    ce.filter((e) => e.name === 'curtain:show').length === 1 &&
+      !ce.some((e) => e.name === 'curtain:fail'),
+  );
+  const post = await page.evaluate((i) => {
+    const cs = window.__ptload.curtainState();
+    return { on: cs.on, vis: window.__ptload.groupVisible(i) };
+  }, id);
+  check(
+    `${tag} stays visible after the curtain closes (no blank)`,
+    post.on === false && post.vis === true,
+    `curtain on=${post.on} visible=${post.vis}`,
+  );
   return {
     cmd: cmdT,
     active: (await atAfter(`active:${id}`, cmdT)) ?? cmdT,
     attach: await atAfter(`attach:${id}`, cmdT),
     visible: await atAfter(`visible:${id}`, cmdT),
+    curtainShow: tShow,
+    curtainHide: tHide,
   };
 }
 
@@ -283,7 +350,8 @@ if (cold) {
   const tTotal = (cold.visible ?? cold.attach) - cold.cmd;
   console.log(
     `  module ready: ${tModule.toFixed(0)}ms | build+textures: ${tBuild.toFixed(0)}ms | ` +
-      `gpu link/upload: ${tGpu.toFixed(0)}ms | cmd->visible: ${tTotal.toFixed(0)}ms`,
+      `gpu link/upload: ${tGpu.toFixed(0)}ms | cmd->visible: ${tTotal.toFixed(0)}ms | ` +
+      `curtain ${fmtDelta(cold.curtainShow, cold.cmd)}..${fmtDelta(cold.curtainHide, cold.cmd)}`,
   );
   console.log(
     `  texture requests: ${stats.count}, first ${(stats.firstStart - cold.cmd).toFixed(0)}ms after cmd`,
@@ -433,6 +501,48 @@ async function walkLeg(fromId, toId) {
   check(`ownership flipped to ${toId}`, crossed, `active=${s2.active}`);
   if (!crossed) return false;
   const tCross = await evLast(`active:${toId}`);
+  // Phase 6B: the promotion raises the transition curtain; it must lift only
+  // after the minimum presentation and never leave a blank viewport.
+  await waitEventAfter('curtain:hide', tCross, 30000);
+  const legCurtain = await curtainEvents(tApproach);
+  const legShow = legCurtain.filter((e) => e.name === 'curtain:show');
+  const legHide = legCurtain.find((e) => e.name === 'curtain:hide')?.t ?? null;
+  const legNames = legCurtain
+    .filter((e) => e.name.startsWith('curtain-name:'))
+    .map((e) => e.name.slice(13));
+  const tShow = legShow.at(-1)?.t ?? null;
+  check(`${toId} transition curtain raised on promotion`, tShow !== null);
+  if (tShow !== null && tCross !== null) {
+    check(
+      `${toId} curtain tied to the crossing`,
+      tShow >= tCross - 500 && tShow <= tCross + 3000,
+      `show ${fmtDelta(tShow, tCross)} vs cross`,
+    );
+  }
+  check(
+    `${toId} curtain names the destination`,
+    legNames.some((n) => n.includes(toId.toUpperCase())),
+    legNames.join(' | ') || 'none',
+  );
+  check(
+    `${toId} curtain held the minimum presentation`,
+    tShow !== null && legHide !== null && legHide - tShow >= 1900,
+    tShow !== null && legHide !== null ? `${(legHide - tShow).toFixed(0)}ms` : 'missing events',
+  );
+  check(
+    `${toId} curtain did not repeat or fail`,
+    legShow.length === 1 && !legCurtain.some((e) => e.name === 'curtain:fail'),
+    `${legShow.length} shows`,
+  );
+  const postCurtain = await page.evaluate((id) => {
+    const cs = window.__ptload.curtainState();
+    return { on: cs.on, failed: cs.failed, vis: window.__ptload.groupVisible(id) };
+  }, toId);
+  check(
+    `${toId} stays visible after the curtain closes (no blank)`,
+    postCurtain.on === false && postCurtain.vis === true,
+    `curtain on=${postCurtain.on} visible=${postCurtain.vis}`,
+  );
   // Re-read events now that the walk is over: standby/attach/visible may
   // have landed mid-walk, or predate the approach mark entirely (already
   // warm). Headroom counts only a visible event that precedes the cross.
@@ -466,7 +576,8 @@ async function walkLeg(fromId, toId) {
       `  timing: standby ${fmtDelta(tStandby, tApproach)} | ` +
         `attach ${fmtDelta(tAttach, tApproach)} | ` +
         `visible ${fmtDelta(tVisible, tApproach)} | ` +
-        `cross +${(tCross - tApproach).toFixed(0)}ms | headroom ${headroom.toFixed(0)}ms`,
+        `cross +${(tCross - tApproach).toFixed(0)}ms | headroom ${headroom.toFixed(0)}ms | ` +
+        `curtain ${fmtDelta(tShow, tCross)}..${fmtDelta(legHide, tCross)} rel cross`,
     );
     check(`${toId} visible before crossing (headroom)`, headroom > 0, `${headroom.toFixed(0)}ms`);
   } else {

@@ -62,6 +62,7 @@ import { desktopPresentationHidden } from './game/desktop_presentation';
 import { initDesktopShellIntegration } from './game/desktop_shell_integration';
 import { applyDesktopShellSetting, syncDesktopShellSettings } from './game/desktop_shell_settings';
 import { tryDevChatHooks } from './game/dev_chat_hooks';
+import { createPtFieldTransition, ptFieldLabel } from './game/pt_field_transition';
 import { tickPtMapDev } from './game/pt_map_dev_command';
 import {
   activePtField,
@@ -397,6 +398,7 @@ import { MARKET_HOUSE_STOCK } from './sim/market';
 import { bagOwnedMounts } from './sim/mounts';
 import { findPlayerPath, resolvePlayerDestination } from './sim/pathfind';
 import { isSubmerged } from './sim/player_motion';
+import { isPtPos } from './sim/pt_band';
 import { Sim } from './sim/sim';
 import { TAB_NEAR_RADIUS, TAB_QUERY_RADIUS, tabConeHalfAt } from './sim/tab_target';
 import {
@@ -500,6 +502,12 @@ import {
   tribeStageEntries,
   tribeStageUsesRotation,
 } from './ui/pt_formation';
+import {
+  failPtTransition,
+  hidePtTransition,
+  setPtTransitionProgress,
+  showPtTransition,
+} from './ui/pt_transition_screen';
 import { PT_CLASS_DISPLAY_NAMES, PT_TRIBES, ptTribeForClass } from './sim/content/pt_tribes';
 import { ptStartingStatsFor } from './sim/content/pt_starting_stats';
 import {
@@ -3787,6 +3795,26 @@ async function startGame(
   let gameInputReady = false;
   let zoneWarmup: Promise<void> | null = null;
 
+  // PT field-transition curtain ("YOU ARE ENTERING <FIELD>"): watches the
+  // bound active map against the renderer's view-readiness probe and covers
+  // the viewport until the destination is actually drawable plus a minimum
+  // presentation beat. DOM-free orchestrator (game/pt_field_transition) over
+  // the own-DOM overlay (ui/pt_transition_screen); it does not drive the
+  // load - the Phase 6A preload/gate machinery owns that unchanged.
+  const ptTransition = createPtFieldTransition({
+    inPtBand: () => isPtPos(world.player.pos.x),
+    activeMap: () => activePtMapDescriptor(),
+    viewState: (mapId) => renderer.ptFieldViewState(mapId),
+    fieldName: ptFieldLabel,
+    overlay: {
+      show: showPtTransition,
+      setProgress: setPtTransitionProgress,
+      fail: failPtTransition,
+      hide: hidePtTransition,
+    },
+    nowMs: () => performance.now(),
+  });
+
   // Rift exits block and stream widely because their arrival ring may be evicted.
   const warmTracker = createZoneWarmTracker(isRiftPos);
   const RIFT_EXIT_STREAM_RADIUS = 240;
@@ -4383,8 +4411,12 @@ async function startGame(
       mobileControls.syncAutorun(false);
     }
     raceMovementWasLocked = raceMovementLocked;
+    // Raise/advance/dismiss the PT transition curtain before the suspend read
+    // so its inputHeld flag applies to this same frame's movement.
+    ptTransition.tick();
     input.setSuspendMovement(
       !gameInputReady ||
+        ptTransition.inputHeld ||
         hud.isModalOpen() ||
         cameraPromptOpen() ||
         intro !== null ||
