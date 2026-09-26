@@ -438,7 +438,7 @@ describe('paintOverworld: connected-field compositing', () => {
     painter.paintOverworld(ctx, world, {} as HTMLElement, {} as HTMLCanvasElement, 1);
     painter.paintOverworld(ctx, world, {} as HTMLElement, {} as HTMLCanvasElement, 1);
 
-    expect(labels).toEqual(['pt-dev:fore-1', 'pt-dev:fore-1']);
+    expect(labels).toEqual(['Garden of Freedom', 'Garden of Freedom']);
     expect(FakeImage.constructed).toBe(2); // one fetch per raster URL
     expect(blits).toHaveLength(2);
     // Standby paints first (beneath), then the active field on top.

@@ -28,6 +28,8 @@
 // card. The bound map changing under an open curtain retargets the same
 // screen rather than stacking a second one.
 
+import { getPtFieldDisplayName } from '../sim/content/pt_field_names';
+
 export type PtFieldViewState = 'none' | 'building' | 'compiling' | 'ready' | 'failed';
 
 /** Curtain callbacks, satisfied by the DOM overlay (ui/pt_transition_screen). */
@@ -79,20 +81,22 @@ export interface PtFieldTransition {
 }
 
 /**
- * Field label for the curtain: the package id immediately (`FORE-1`), with
- * the source-authored displayName folded in once the lazily imported
- * maplinks registry resolves (`FORE-1 (自由庭院)`). onUpgrade fires only
- * when a display name exists; the orchestrator drops it if the curtain
- * retargeted to another field first.
+ * Field label for the curtain: the authentic display name immediately
+ * (`GARDEN OF FREEDOM`), with the source-authored zh displayName folded in
+ * once the lazily imported maplinks registry resolves
+ * (`GARDEN OF FREEDOM (自由庭院)`). onUpgrade fires only when a zh name
+ * exists and differs from the resolved display name; the orchestrator
+ * drops it if the curtain retargeted to another field first.
  */
 export function ptFieldLabel(id: string, onUpgrade: (id: string, label: string) => void): string {
+  const display = getPtFieldDisplayName(id);
   void import('./pt_map_links')
     .then((m) => {
-      const display = m.ptMapLinksForField(id)?.field.displayName;
-      if (display) onUpgrade(id, `${id.toUpperCase()} (${display})`);
+      const zh = m.ptMapLinksForField(id)?.field.displayName;
+      if (zh && zh !== display) onUpgrade(id, `${display} (${zh})`);
     })
     .catch(() => undefined);
-  return id.toUpperCase();
+  return display.toUpperCase();
 }
 
 export function createPtFieldTransition(deps: PtFieldTransitionDeps): PtFieldTransition {

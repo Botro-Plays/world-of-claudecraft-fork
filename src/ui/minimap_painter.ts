@@ -55,6 +55,7 @@ import {
   type MinimapObjectSemantic,
 } from './minimap_markers';
 import type { PainterHostWriters } from './painter_host';
+import { getPtFieldDisplayName } from '../sim/content/pt_field_names';
 import { isPtPos } from '../sim/pt_band';
 import { activePtMapDescriptor, standbyPtMapDescriptor } from '../sim/pt_field_active';
 import {
@@ -1393,10 +1394,12 @@ export class MinimapPainter {
     const model = this.markers.build(world, S, pxPerYard, profile);
     const active = activePtMapDescriptor();
     // Production Ricarten keeps its localized name; any other bound field
-    // (a /ptmap dev selection or a crossed FieldGate) labels by package id.
+    // (a /ptmap dev selection or a crossed FieldGate) labels by its
+    // authentic display name (the id only survives as the fallback for a
+    // field outside the generated map set).
     this.writers.setText(
       zoneLabelEl,
-      active === null || active.id === 'ricarten' ? this.ricartenName() : `pt-dev:${active.id}`,
+      active === null || active.id === 'ricarten' ? this.ricartenName() : getPtFieldDisplayName(active.id),
     );
     const p = world.player;
     // A descriptor-less host (bare sim, pre-registration) keeps the pinned

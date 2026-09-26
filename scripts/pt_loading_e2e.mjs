@@ -249,6 +249,20 @@ async function waitEventAfter(name, t, timeoutMs) {
     .catch(() => false);
 }
 
+// The curtain shows the authentic display name (Phase 6C), not the raw
+// package id. This mirrors PT_FIELD_DISPLAY_NAMES for the exercised fields;
+// any other id falls back to its uppercased id as before.
+const FIELD_LABELS = {
+  ricarten: 'Ricarten',
+  'fore-1': 'Garden of Freedom',
+  'fore-2': 'Bamboo Forest',
+  'fore-3': 'Acacia Forest',
+};
+// The curtain paints the label uppercased; the minimap '#zone-label' shows
+// the mixed-case name.
+const fieldLabel = (id) => (FIELD_LABELS[id] ?? id).toUpperCase();
+const fieldZoneLabel = (id) => FIELD_LABELS[id] ?? id;
+
 // Install a field through the real /ptmap path; returns the event timeline.
 // All waits are scoped to the cmd mark so revisits measure THIS install.
 async function installMap(id, tag) {
@@ -271,7 +285,7 @@ async function installMap(id, tag) {
   const tShow = ce.find((e) => e.name === 'curtain:show')?.t ?? null;
   const tHide = ce.find((e) => e.name === 'curtain:hide')?.t ?? null;
   const names = ce.filter((e) => e.name.startsWith('curtain-name:')).map((e) => e.name.slice(13));
-  const wanted = id.toUpperCase();
+  const wanted = fieldLabel(id);
   check(`${tag} transition curtain raised`, tShow !== null);
   check(
     `${tag} curtain names the destination`,
@@ -296,6 +310,14 @@ async function installMap(id, tag) {
     `${tag} stays visible after the curtain closes (no blank)`,
     post.on === false && post.vis === true,
     `curtain on=${post.on} visible=${post.vis}`,
+  );
+  const zoneLabel = await page.evaluate(
+    () => document.getElementById('zone-label')?.textContent ?? '',
+  );
+  check(
+    `${tag} minimap title shows the field name`,
+    zoneLabel.includes(fieldZoneLabel(id)),
+    zoneLabel || 'empty',
   );
   return {
     cmd: cmdT,
@@ -521,7 +543,7 @@ async function walkLeg(fromId, toId) {
   }
   check(
     `${toId} curtain names the destination`,
-    legNames.some((n) => n.includes(toId.toUpperCase())),
+    legNames.some((n) => n.includes(fieldLabel(toId))),
     legNames.join(' | ') || 'none',
   );
   check(
@@ -542,6 +564,14 @@ async function walkLeg(fromId, toId) {
     `${toId} stays visible after the curtain closes (no blank)`,
     postCurtain.on === false && postCurtain.vis === true,
     `curtain on=${postCurtain.on} visible=${postCurtain.vis}`,
+  );
+  const zoneLabel = await page.evaluate(
+    () => document.getElementById('zone-label')?.textContent ?? '',
+  );
+  check(
+    `${toId} minimap title shows the field name`,
+    zoneLabel.includes(fieldZoneLabel(toId)),
+    zoneLabel || 'empty',
   );
   // Re-read events now that the walk is over: standby/attach/visible may
   // have landed mid-walk, or predate the approach mark entirely (already

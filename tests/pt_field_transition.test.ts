@@ -331,25 +331,30 @@ describe('pt_field_transition orchestrator', () => {
 });
 
 describe('ptFieldLabel', () => {
-  it('returns the uppercased id immediately and upgrades with the authored displayName', async () => {
+  it('returns the authentic display name immediately and upgrades with the authored zh name', async () => {
     let upgrade: { id: string; label: string } | null = null;
     const immediate = ptFieldLabel('fore-1', (id, label) => {
       upgrade = { id, label };
     });
-    expect(immediate).toBe('FORE-1');
+    expect(immediate).toBe('GARDEN OF FREEDOM');
     // The maplinks registry lands on a dynamic import: flush the loader,
     // with a poll budget generous enough for a heavily loaded test host.
     for (let i = 0; i < 1000 && !upgrade; i++) {
       await new Promise((r) => setTimeout(r, 5));
     }
-    expect(upgrade).toEqual({ id: 'fore-1', label: 'FORE-1 (自由庭院)' });
+    expect(upgrade).toEqual({ id: 'fore-1', label: 'Garden of Freedom (自由庭院)' });
   });
 
-  it('never calls the upgrade for a field with no displayName', async () => {
+  it('uses the authored zh name for fields with no canonical English name', () => {
+    expect(ptFieldLabel('landofnurwn', () => {})).toBe('永霜圣殿');
+  });
+
+  it('falls back to the uppercased id for a field with no displayName', async () => {
     let fired = false;
-    ptFieldLabel('no-such-field', () => {
+    const label = ptFieldLabel('no-such-field', () => {
       fired = true;
     });
+    expect(label).toBe('NO-SUCH-FIELD');
     await new Promise((r) => setTimeout(r, 0));
     expect(fired).toBe(false);
   });
