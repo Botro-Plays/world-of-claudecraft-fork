@@ -2081,6 +2081,24 @@ export interface MobTemplate {
   // Fixed respawn delay in seconds, overriding respawnSeconds*respawnMult; also
   // caps corpse decay so the mob returns on schedule. (Training dummy: 10s.)
   respawnSeconds?: number;
+  // Exact authored damage bounds, replacing the dmgBase*0.8/1.25 spread when
+  // both are set (PT .inf attack range; createMob). hp/dmg scaling still runs
+  // for templates that leave them undefined.
+  weaponMin?: number;
+  weaponMax?: number;
+  // Flat armor at level 1, added on top of armorPerLevel*(level-1). The
+  // classic templates intentionally keep armorBase 0; PT mobs carry their
+  // authored .inf defense here.
+  armorBase?: number;
+  // Authored group size range (PT .inf organization). Read by the PT field
+  // population scheduler when it rolls a group at an anchor; ordinary camp
+  // spawns ignore it.
+  groupMin?: number;
+  groupMax?: number;
+  // PT field-population mob (src/sim/content/pt_mobs.ts): lives inside the PT
+  // connected world, not the WoC kill-credit economy. Source levels run far
+  // above the WoC creditable ceiling, so deed credit skips them like dummies.
+  ptField?: boolean;
   // Training dummy: a stationary practice target - attackable (so it counts for
   // damage and the combat meters) but never moves, aggros, or retaliates; drops
   // combat and heals to full a few seconds after the last hit. Guarded in
@@ -5388,6 +5406,10 @@ export interface Entity extends ClientMirroredEntityFields {
   varkhulAssemblyAttempt?: number; // survives encounter resets so Heroic rune slots reshuffle per pull
   spawnPos: Vec3;
   leashAnchor: Vec3 | null; // refreshed by hostile player/pet actions; spawnPos remains the true home
+  // Set only on PT field-population mobs (src/sim/pt_population.ts): which
+  // field + .spp anchor slot owns this entity, so the population controller
+  // can release it on absence despawn or when the field goes inactive.
+  ptFieldAnchor?: { fieldId: string; anchorIndex: number };
   evadeStall: number; // seconds an evading mob has failed to get closer to home; snaps it home if it can't path back (e.g. across water)
   chaseStall: number; // seconds an engaged mob has been pinned unable to close on its target; at CHASE_STALL_TIMEOUT (mob/reachability.ts) it evades home like a leash break
   evadeEpoch: number; // bumped every full evade-home reset (resetEvadingMob): a test-observable count of pulls this mob has walked home from

@@ -7,16 +7,14 @@
 // PT-band collision/water query routes to that map's data instead. Clearing
 // the descriptor restores Ricarten with no state carried over.
 
-import * as RICARTEN_MODULE from './pt_ricarten_field.generated';
-import { createPtField, type PtField, type PtFieldTransform, type PtMapDescriptor } from './pt_field';
+import { ptXToWoC, ptYToWoC, ptZToWoC, woCToPtX, woCToPtY, woCToPtZ } from './pt_band';
 import {
-  ptXToWoC,
-  ptYToWoC,
-  ptZToWoC,
-  woCToPtX,
-  woCToPtY,
-  woCToPtZ,
-} from './pt_band';
+  createPtField,
+  type PtField,
+  type PtFieldTransform,
+  type PtMapDescriptor,
+} from './pt_field';
+import * as RICARTEN_MODULE from './pt_ricarten_field.generated';
 
 // Ricarten keeps its existing pt_band transform constants (the rounded
 // bounds in pt_band.ts), not PT_BOUNDS-derived values, so this binding is
@@ -170,6 +168,17 @@ export function activePtMapDescriptor(): PtMapDescriptor | null {
 }
 
 /**
+ * The field bound to the ACTIVE slot, never the linked composite. Spawn and
+ * ownership-sensitive logic (pt_population.ts) queries this so its floor
+ * probes cannot trigger the composite's promote-standby side effect and a
+ * standby field's geometry never satisfies the active field's checks.
+ * Null only while no descriptor is bound at all (bare Ricarten fallback).
+ */
+export function activeOwnedPtField(): PtField | null {
+  return _activeField;
+}
+
+/**
  * The preloaded FieldGate neighbor descriptor, or null. The renderer keeps
  * a second terrain view bound to it so the destination is visible before
  * the player crosses.
@@ -211,7 +220,5 @@ export function setStandbyPtMap(descriptor: PtMapDescriptor | null): void {
     descriptor = null;
   }
   _standbyDescriptor = descriptor;
-  _standbyField = descriptor
-    ? createPtField(descriptor.field, descriptor.transform)
-    : null;
+  _standbyField = descriptor ? createPtField(descriptor.field, descriptor.transform) : null;
 }

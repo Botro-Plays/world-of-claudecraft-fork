@@ -799,13 +799,15 @@ export function createMob(id: number, template: MobTemplate, level: number, pos:
   }
   const dmg = (template.dmgBase + template.dmgPerLevel * (level - 1)) * dmgMult;
   e.weapon = {
-    min: Math.round(dmg * 0.8),
-    max: Math.round(dmg * 1.25),
+    // PT templates carry their authored .inf min/max; the spread stays the
+    // derived 0.8/1.25 default for every template that leaves them unset.
+    min: template.weaponMin ?? Math.round(dmg * 0.8),
+    max: template.weaponMax ?? Math.round(dmg * 1.25),
     speed: template.attackSpeed,
   };
-  // Armor scales from level 1 like hp/dmg above: a template has no armorBase,
-  // so a level-1 mob gets 0 and each level adds armorPerLevel.
-  e.stats.armor = Math.round(template.armorPerLevel * (level - 1));
+  // Armor scales from level 1 like hp/dmg above; armorBase is the authored
+  // flat term PT templates carry (0 for every classic template).
+  e.stats.armor = (template.armorBase ?? 0) + Math.round(template.armorPerLevel * (level - 1));
   e.moveSpeed = template.moveSpeed;
   e.scale = template.scale;
   e.color = template.color;

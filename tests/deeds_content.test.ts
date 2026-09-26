@@ -1146,7 +1146,9 @@ describe('retro fallback proof sets stay anchored to the real tables', () => {
     // authored above the ceiling can never be credited: warlock and mage pets
     // sync to their owner's level and die outside kill credit (combat/damage.ts
     // owned-pet early return), and the Yumi cat's damage is intercepted before
-    // the death path (social/yumi.ts).
+    // the death path (social/yumi.ts). PT field-population mobs (`ptField`)
+    // carry source levels far above the ceiling and are excluded from deed
+    // kill credit at the giantslayer gate (deeds.ts).
     const heroicLevels = Object.values(HEROIC_DUNGEON_TUNING).map((t) => t.level);
     expect(RIFT_MAX_MOB_LEVEL).toBe(MAX_CREDITABLE_MOB_LEVEL);
     expect(Math.max(...heroicLevels)).toBeLessThanOrEqual(MAX_CREDITABLE_MOB_LEVEL);
@@ -1162,7 +1164,13 @@ describe('retro fallback proof sets stay anchored to the real tables', () => {
     ]);
     const dynamicallyLevelCapped = new Set(Object.keys(RIFT_MOBS));
     for (const [id, m] of Object.entries(MOBS)) {
-      if (m.dummy || m.worldBoss || neverCreditable.has(id) || dynamicallyLevelCapped.has(id))
+      if (
+        m.dummy ||
+        m.worldBoss ||
+        m.ptField ||
+        neverCreditable.has(id) ||
+        dynamicallyLevelCapped.has(id)
+      )
         continue;
       expect(m.maxLevel, id).toBeLessThanOrEqual(MAX_CREDITABLE_MOB_LEVEL);
     }

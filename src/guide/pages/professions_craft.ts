@@ -68,7 +68,7 @@ export function craftById(id: string): GuideProfCraft | undefined {
  *
  *  Exported for that pin. */
 export function itemNameKey(itemId: string): TranslationKey {
-  return `entities.items.${itemId.replace(/[^A-Za-z0-9_]/g, '_')}.name` as TranslationKey;
+  return `entities.items.${itemId.replace(/[^A-Za-z0-9_-]/g, '_')}.name` as TranslationKey;
 }
 
 /** A reagent's display name in the READER's language.

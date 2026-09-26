@@ -36,6 +36,7 @@ import { ITEM_WEAPON_VARIANTS } from '../../ui/weapon_variants';
 import type { OverheadEmoteId } from '../../world_api';
 import { VARKHUL_FORGING_STRIKE_TIMESCALE } from '../varkhul_forge_hammer';
 import { NPC_PROP_SET_IDS, type NpcPropSet } from './npc_looks';
+import { PT_MOB_KEYS, PT_MOB_VISUALS } from './pt_mob_visuals';
 
 export interface EmoteClipSpec {
   clips: readonly string[];
@@ -78,7 +79,7 @@ export interface ClipMap {
   attackTimeScaleByAbility?: Record<string, number>;
   /** Optional weapon-style override for plain auto attacks. */
   attackByHand?: { twohand?: string; dualwield?: string };
-  death: string;
+  death?: string;
   /** hit-react one-shots (optional — spider/raptor rigs have none) */
   hit?: string[];
   /** looping cast channel */
@@ -1415,6 +1416,10 @@ const VELOCIRAPTOR: ClipMap = {
 // ---------------------------------------------------------------------------
 
 export const VISUALS: Record<string, VisualDef> = {
+  // PT ordinary monster visuals generated from the Phase 6H-1 catalog
+  // (pt_mob_visuals.ts): all lazyPreload, fetched on first sight. Spread
+  // first so a hand-authored def below can still win a shared key.
+  ...PT_MOB_VISUALS,
   // -- player classes ------------------------------------------------------
   player_warrior: swims({
     url: `${PLAYERS}/knight.glb`,
@@ -2461,7 +2466,7 @@ export const VISUALS: Record<string, VisualDef> = {
   player_morion_priestess: {
     url: `${CREATURES}/pt_priestess.glb`,
     height: HUMANOID_H,
-    rawHeight: 45.30,
+    rawHeight: 45.3,
     clips: {
       idle: 'STAND',
       combatIdle: 'STAND_COMBAT',
@@ -2479,7 +2484,7 @@ export const VISUALS: Record<string, VisualDef> = {
   player_morion_priestess_hair2: {
     url: `${CREATURES}/pt_priestess_hair2.glb`,
     height: HUMANOID_H,
-    rawHeight: 45.30,
+    rawHeight: 45.3,
     clips: {
       idle: 'STAND',
       combatIdle: 'STAND_COMBAT',
@@ -2497,7 +2502,7 @@ export const VISUALS: Record<string, VisualDef> = {
   player_morion_priestess_hair3: {
     url: `${CREATURES}/pt_priestess_hair3.glb`,
     height: HUMANOID_H,
-    rawHeight: 45.30,
+    rawHeight: 45.3,
     clips: {
       idle: 'STAND',
       combatIdle: 'STAND_COMBAT',
@@ -2519,7 +2524,7 @@ export const VISUALS: Record<string, VisualDef> = {
   player_morion_magician: {
     url: `${CREATURES}/pt_magician.glb`,
     height: HUMANOID_H,
-    rawHeight: 45.30,
+    rawHeight: 45.3,
     clips: {
       idle: 'STAND',
       combatIdle: 'STAND_COMBAT',
@@ -2537,7 +2542,7 @@ export const VISUALS: Record<string, VisualDef> = {
   player_morion_magician_hair2: {
     url: `${CREATURES}/pt_magician_hair2.glb`,
     height: HUMANOID_H,
-    rawHeight: 45.30,
+    rawHeight: 45.3,
     clips: {
       idle: 'STAND',
       combatIdle: 'STAND_COMBAT',
@@ -2555,7 +2560,7 @@ export const VISUALS: Record<string, VisualDef> = {
   player_morion_magician_hair3: {
     url: `${CREATURES}/pt_magician_hair3.glb`,
     height: HUMANOID_H,
-    rawHeight: 45.30,
+    rawHeight: 45.3,
     clips: {
       idle: 'STAND',
       combatIdle: 'STAND_COMBAT',
@@ -2691,7 +2696,7 @@ export const VISUALS: Record<string, VisualDef> = {
   player_atlanteon_shaman: {
     url: `${CREATURES}/pt_shaman.glb`,
     height: HUMANOID_H,
-    rawHeight: 47.20,
+    rawHeight: 47.2,
     clips: {
       idle: 'STAND',
       combatIdle: 'STAND_COMBAT',
@@ -2709,7 +2714,7 @@ export const VISUALS: Record<string, VisualDef> = {
   player_atlanteon_shaman_hair2: {
     url: `${CREATURES}/pt_shaman_hair2.glb`,
     height: HUMANOID_H,
-    rawHeight: 47.20,
+    rawHeight: 47.2,
     clips: {
       idle: 'STAND',
       combatIdle: 'STAND_COMBAT',
@@ -2727,7 +2732,7 @@ export const VISUALS: Record<string, VisualDef> = {
   player_atlanteon_shaman_hair3: {
     url: `${CREATURES}/pt_shaman_hair3.glb`,
     height: HUMANOID_H,
-    rawHeight: 47.20,
+    rawHeight: 47.2,
     clips: {
       idle: 'STAND',
       combatIdle: 'STAND_COMBAT',
@@ -4467,7 +4472,20 @@ export const VISUALS: Record<string, VisualDef> = {
 // (modularLookForClass returns null for PT classes, and startOffline leaves
 // modularAppearance unset so inWorldLookFor returns null).
 for (const cls of ALL_CLASSES) {
-  if (cls === 'tempskron_fighter' || cls === 'tempskron_mechanician' || cls === 'tempskron_pikeman' || cls === 'tempskron_archer' || cls === 'morion_knight' || cls === 'morion_atalanta' || cls === 'morion_priestess' || cls === 'morion_magician' || cls === 'atlanteon_assassin' || cls === 'atlanteon_martial_artist' || cls === 'atlanteon_shaman') continue;
+  if (
+    cls === 'tempskron_fighter' ||
+    cls === 'tempskron_mechanician' ||
+    cls === 'tempskron_pikeman' ||
+    cls === 'tempskron_archer' ||
+    cls === 'morion_knight' ||
+    cls === 'morion_atalanta' ||
+    cls === 'morion_priestess' ||
+    cls === 'morion_magician' ||
+    cls === 'atlanteon_assassin' ||
+    cls === 'atlanteon_martial_artist' ||
+    cls === 'atlanteon_shaman'
+  )
+    continue;
   const {
     show: _show,
     tint: _tint,
@@ -4537,6 +4555,8 @@ for (const propSet of NPC_PROP_SET_IDS) {
 // ---------------------------------------------------------------------------
 
 const MOB_KEYS: Record<string, string> = {
+  // PT ordinary monsters: pt_<key> -> mob_pt_<key> (pt_mob_visuals.ts).
+  ...PT_MOB_KEYS,
   // WIP forge mech enemy (crawl/standup/die placeholder rig).
   derelict_mech: 'mob_mech',
   [IGNIVAR_BOSS_ID]: 'mob_ignivar',

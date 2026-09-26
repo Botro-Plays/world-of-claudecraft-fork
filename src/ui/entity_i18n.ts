@@ -236,7 +236,11 @@ export function knownLetterId(letterId: string): boolean {
 }
 
 function entityPathSegment(value: string): string {
-  return value.replace(/[^A-Za-z0-9_]/g, '_');
+  // `-` survives: it is legal inside a dotted flat-key segment (only `.`
+  // separates path parts) and PT source ids carry it (pt_56_avelisk-s). The
+  // en catalog nests the raw id, so the flat path stays identical on both
+  // sides of the manifest mint.
+  return value.replace(/[^A-Za-z0-9_-]/g, '_');
 }
 
 function entry(

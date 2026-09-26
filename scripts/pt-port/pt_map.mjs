@@ -24,6 +24,7 @@ import {
   buildFieldPopulation,
   buildMonsterRegistry,
   buildPopulationSummary,
+  emitMobCatalogModule,
   emitPopulationModule,
   emitRegistryModule,
 } from './lib/population.mjs';
@@ -710,6 +711,10 @@ function emitPopulationArtifactsShared(manifests) {
     resolve(REPO_ROOT, 'generated/pt-maps/population.json'),
     JSON.stringify(buildPopulationSummary(records, registry), null, 2) + '\n',
   );
+  writeFileSync(
+    resolve(REPO_ROOT, 'generated/pt-maps/pt_mob_catalog.generated.ts'),
+    emitMobCatalogModule(registry, records),
+  );
 }
 
 // Population-only regeneration: writes population.generated.ts per field plus
@@ -749,6 +754,52 @@ async function cmdPopulationAll() {
     `population: ${manifests.length} fields (${populated} populated) ` +
       `actors=${actors} bosses=${bosses} anchors=${anchors} ` +
       `unresolved=${unresolved.size}${unresolved.size ? ` [${[...unresolved].join(', ')}]` : ''}`,
+  );
+}
+
+// Copy every GLB referenced by the mob catalog into the shipped creature dir
+// (public/models/creatures/pt/). Idempotent byte compare; the files ride the
+// repo's existing *.glb LFS rule like the hopy/Monbagon precedent.
+async function cmdPopulationAssets() {
+  const registry = monsterRegistry();
+  if (!registry) {
+    console.log('population-assets: server tree not found (PT_SERVER_DIR) - nothing copied');
+    process.exitCode = 1;
+    return;
+  }
+  const manifests = await manifestsForAll();
+  const records = manifests.map((m) => buildFieldPopulation(m, registry));
+  const byKey = new Map(registry.defs.map((d) => [d.key, d]));
+  const wanted = new Set();
+  for (const r of records) {
+    for (const a of r.actors) {
+      if (!a.monster) continue;
+      const d = byKey.get(a.monster);
+      if (d?.asset) wanted.add(d.asset);
+      if (d?.dieAsset) wanted.add(d.dieAsset);
+    }
+  }
+  const convertedDir = join(dirname(fileURLToPath(import.meta.url)), 'converted');
+  const outDir = resolve(REPO_ROOT, 'public/models/creatures/pt');
+  mkdirSync(outDir, { recursive: true });
+  let copied = 0;
+  let skipped = 0;
+  let bytes = 0;
+  for (const rel of [...wanted].sort()) {
+    const src = resolve(REPO_ROOT, 'scripts/pt-port', rel);
+    const dst = join(outDir, rel.split('/').pop());
+    const srcBuf = readFileSync(src);
+    if (existsSync(dst) && readFileSync(dst).equals(srcBuf)) {
+      skipped++;
+      continue;
+    }
+    writeFileSync(dst, srcBuf);
+    copied++;
+    bytes += srcBuf.length;
+  }
+  console.log(
+    `population-assets: ${wanted.size} GLBs referenced, ` +
+      `copied=${copied} (${(bytes / 1048576).toFixed(1)}MB) up-to-date=${skipped} -> public/models/creatures/pt/`,
   );
 }
 
@@ -889,6 +940,9 @@ switch (cmd) {
   case 'population-all':
     await cmdPopulationAll();
     break;
+  case 'population-assets':
+    await cmdPopulationAssets();
+    break;
   case 'maplinks':
     await cmdMapLinks();
     break;
@@ -899,6 +953,6 @@ switch (cmd) {
     await cmdTexturesAll();
     break;
   default:
-    console.log('usage: pt_map.mjs catalog | audit|compile|validate|textures <map-id> | maplinks | population-all | compile-all | textures-all');
+    console.log('usage: pt_map.mjs catalog | audit|compile|validate|textures <map-id> | maplinks | population-all | population-assets | compile-all | textures-all');
     process.exitCode = 1;
 }

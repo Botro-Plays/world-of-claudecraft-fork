@@ -196,11 +196,37 @@ const INF_FIELDS = {
   属性: 'kind',
   音效: 'sound',
   活动时间: 'activeTime',
+  // Combat/size stats consumed by the runtime mob template adapter
+  // (src/sim/content/pt_mobs.ts). Values stay in raw source units; the
+  // adapter, not this reader, owns the PT->WoC mapping.
+  生命力: 'life',
+  攻击力: 'attack',
+  防御: 'defense',
+  攻击速度: 'attackSpeed',
+  移动速度: 'moveSpeed',
+  视野: 'vision',
+  攻击范围: 'attackRange',
+  经验值: 'xp',
+  尺寸: 'size',
+  怪物种族: 'race',
+  移动类型: 'moveType',
 };
+
+const INF_INT_FIELDS = new Set([
+  'level', 'life', 'defense', 'attackSpeed', 'moveSpeed', 'vision',
+  'attackRange', 'xp', 'moveType',
+]);
+const INF_PAIR_FIELDS = new Set(['group', 'attack']);
 
 export function parseInf(buf) {
   const text = GBK.decode(buf);
-  const out = { name: null, model: null, group: null, level: null, kind: null, sound: null, activeTime: null };
+  const out = {
+    name: null, model: null, group: null, level: null, kind: null,
+    sound: null, activeTime: null,
+    life: null, attack: null, defense: null, attackSpeed: null,
+    moveSpeed: null, vision: null, attackRange: null, xp: null,
+    size: null, race: null, moveType: null,
+  };
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.trim();
     if (!line || line.startsWith('//') || !line.startsWith('*')) continue;
@@ -211,11 +237,11 @@ export function parseInf(buf) {
     const rest = m[2].trim();
     const quoted = rest.match(/^"([^"]*)"/);
     const val = quoted ? quoted[1] : rest;
-    if (field === 'group') {
+    if (INF_PAIR_FIELDS.has(field)) {
       const nums = rest.match(/-?\d+/g);
-      out.group = nums && nums.length >= 2 ? [atoi(nums[0]), atoi(nums[1])] : null;
-    } else if (field === 'level') {
-      out.level = atoi(val);
+      out[field] = nums && nums.length >= 2 ? [atoi(nums[0]), atoi(nums[1])] : null;
+    } else if (INF_INT_FIELDS.has(field)) {
+      out[field] = atoi(val);
     } else {
       out[field] = val || null;
     }
@@ -233,6 +259,35 @@ function infVariantClass(stem) {
   return 'base';
 }
 const VARIANT_RANK = { base: 0, vip: 1, event: 2 };
+
+// Minimal GLB introspection for the converted monster models: bind-space
+// POSITION bounds (for a natural-height hint) and the animation clip name
+// list (so the generated catalog only references clips that exist).
+function readGlbInfo(path) {
+  const buf = readFileSync(path);
+  if (buf.length < 20 || buf.readUInt32LE(0) !== 0x46546c67) return null;
+  const jsonLen = buf.readUInt32LE(12);
+  let json;
+  try {
+    json = JSON.parse(buf.subarray(20, 20 + jsonLen).toString('utf8'));
+  } catch {
+    return null;
+  }
+  let top = -Infinity;
+  let bottom = Infinity;
+  for (const mesh of json.meshes ?? []) {
+    for (const prim of mesh.primitives ?? []) {
+      const acc = json.accessors?.[prim.attributes?.POSITION];
+      if (!acc?.min || !acc?.max) continue;
+      top = Math.max(top, acc.max[1]);
+      bottom = Math.min(bottom, acc.min[1]);
+    }
+  }
+  return {
+    rawHeight: Number.isFinite(top) ? +(top - Math.min(bottom, 0)).toFixed(2) : null,
+    anims: (json.animations ?? []).map((a) => a.name ?? '').filter(Boolean).sort(cmpStr),
+  };
+}
 
 // Deterministic canonical pick for names shared by multiple .inf files.
 // The server picks by FindFirstFile enumeration order, which is filesystem-
@@ -266,6 +321,21 @@ export function buildMonsterRegistry(monsterDir, { convertedDir } = {}) {
       activeTime: inf.activeTime,
       variant: infVariantClass(stem),
       stem,
+      // Raw combat/stat fields for the runtime template adapter. All values
+      // are source units (PT map units, stat points); no WoC mapping here.
+      stats: {
+        life: inf.life,
+        attack: inf.attack,
+        defense: inf.defense,
+        attackSpeed: inf.attackSpeed,
+        moveSpeed: inf.moveSpeed,
+        vision: inf.vision,
+        attackRange: inf.attackRange,
+        xp: inf.xp,
+        size: inf.size,
+        race: inf.race,
+        moveType: inf.moveType,
+      },
     };
     // GLB conversion outputs live under scripts/pt-port/converted/monster/
     // keyed on the model directory name.
@@ -276,9 +346,19 @@ export function buildMonsterRegistry(monsterDir, { convertedDir } = {}) {
       def.dieAsset = existsSync(join(convertedDir, `${def.modelDir}-die.glb`))
         ? `converted/monster/${def.modelDir}-die.glb`
         : null;
+      const info = def.asset ? readGlbInfo(join(convertedDir, `${def.modelDir}.glb`)) : null;
+      const dieInfo = def.dieAsset
+        ? readGlbInfo(join(convertedDir, `${def.modelDir}-die.glb`))
+        : null;
+      def.rawHeight = info?.rawHeight ?? null;
+      def.anims = info?.anims ?? [];
+      def.dieAnims = dieInfo?.anims ?? [];
     } else {
       def.asset = null;
       def.dieAsset = null;
+      def.rawHeight = null;
+      def.anims = [];
+      def.dieAnims = [];
     }
     defs.push(def);
     if (def.name !== null) {
@@ -462,6 +542,66 @@ export function emitRegistryModule(registry) {
   lines.push(`export const PT_MONSTER_REGISTRY = ${jsVal(defs)};`);
   lines.push('');
   lines.push(`export const PT_MONSTER_BY_NAME = ${jsVal(byName)};`);
+  lines.push('');
+  return lines.join('\n');
+}
+
+// Mob catalog: one entry per registry key referenced by a live .spm *ACTOR
+// record. Boss-only references stay out - their runtime is a later phase and
+// ordinary population must never reach them. The entry keeps raw source
+// stats (the sim adapter owns PT->WoC mapping) plus the measured GLB facts a
+// VisualDef needs (file names, natural height hint, clip name lists).
+export function emitMobCatalogModule(registry, records) {
+  const byKey = new Map(registry.defs.map((d) => [d.key, d]));
+  const referenced = new Set();
+  for (const r of records) {
+    for (const a of r.actors) if (a.monster) referenced.add(a.monster);
+  }
+  const entries = {};
+  for (const key of [...referenced].sort(cmpStr)) {
+    const d = byKey.get(key);
+    // Referenced but no converted GLB: keep the entry with visual.file null
+    // so the runtime can quarantine it with a real diagnostic instead of
+    // silently dropping the source reference.
+    if (!d) continue;
+    const anims = d.anims ?? [];
+    const dieAnims = d.dieAnims ?? [];
+    const has = (name) => anims.includes(name) || dieAnims.includes(name);
+    const clips = {
+      idle: anims.includes('STAND') ? 'STAND' : anims[0] ?? 'STAND',
+      walk: anims.includes('WALK') ? 'WALK' : anims.includes('RUN') ? 'RUN' : 'STAND',
+      run: anims.includes('RUN') ? 'RUN' : anims.includes('WALK') ? 'WALK' : 'STAND',
+      attack: anims.includes('ATTACK') ? ['ATTACK'] : [],
+      // 'DEAD' may live on the main rig or the paired -die model
+      // (deathModelUrl); absent on both means the source authored no death
+      // anim - the adapter falls back to the idle pose (documented).
+      death: has('DEAD') ? 'DEAD' : null,
+      hit: anims.includes('DAMAGE') ? ['DAMAGE'] : [],
+    };
+    entries[`pt_${d.key}`] = {
+      key: d.key,
+      name: d.name,
+      level: d.level,
+      group: d.group,
+      stats: d.stats,
+      visual: {
+        file: d.asset ? d.asset.split('/').pop() : null,
+        dieFile: d.dieAsset ? d.dieAsset.split('/').pop() : null,
+        // GLB bind height (PT map units) -> world height via PT_SCALE. The
+        // renderer re-measures the posed bounds, so this is only the target
+        // height; it keeps PT's authored proportions instead of inventing one.
+        height: d.rawHeight !== null ? +(d.rawHeight * 0.036).toFixed(2) : null,
+        anims,
+        dieAnims,
+        clips,
+      },
+    };
+  }
+  const lines = [POP_HEADER];
+  lines.push('// Source: server/GameServer/Monster/*.inf + converted GLB metadata.');
+  lines.push('// Keys: pt_<registry key>; only keys referenced by live *ACTOR records.');
+  lines.push('');
+  lines.push(`export const PT_MOB_CATALOG = ${jsVal(entries)};`);
   lines.push('');
   return lines.join('\n');
 }

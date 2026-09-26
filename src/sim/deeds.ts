@@ -1765,7 +1765,7 @@ export function onMobKillCreditForDeeds(
   // owner), on a mob at least five levels up; dummies and the world boss are
   // excluded by design.
   const killerPid = killer ? (killer.kind === 'player' ? killer.id : killer.ownerId) : null;
-  if (killerPid !== null && !tmpl?.dummy && !tmpl?.worldBoss) {
+  if (killerPid !== null && !tmpl?.dummy && !tmpl?.worldBoss && !tmpl?.ptField) {
     const killerEntity = ctx.entities.get(killerPid);
     const killerMeta = ctx.players.get(killerPid);
     if (killerEntity && killerMeta && mob.level >= killerEntity.level + 5) {

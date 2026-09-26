@@ -29,6 +29,10 @@
 // screen rather than stacking a second one.
 
 import { getPtFieldDisplayName } from '../sim/content/pt_field_names';
+// Side-effect import: registers the generated per-field population modules
+// with the sim's PT population scheduler (src/sim/pt_population.ts) so the
+// active field can spawn ordinary monsters (Phase 6H-2).
+import './pt_population_data';
 
 export type PtFieldViewState = 'none' | 'building' | 'compiling' | 'ready' | 'failed';
 

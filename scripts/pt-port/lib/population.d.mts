@@ -50,9 +50,36 @@ export interface PtInfRecord {
   kind: string | null;
   sound: string | null;
   activeTime: string | null;
+  // Combat/size stats in raw source units (consumed by the runtime template
+  // adapter; no PT->WoC mapping happens in this reader).
+  life: number | null;
+  attack: [number, number] | null;
+  defense: number | null;
+  attackSpeed: number | null;
+  moveSpeed: number | null;
+  vision: number | null;
+  attackRange: number | null;
+  xp: number | null;
+  size: string | null;
+  race: string | null;
+  moveType: number | null;
 }
 
 export function parseInf(buf: Buffer): PtInfRecord;
+
+export interface PtMonsterStats {
+  life: number | null;
+  attack: [number, number] | null;
+  defense: number | null;
+  attackSpeed: number | null;
+  moveSpeed: number | null;
+  vision: number | null;
+  attackRange: number | null;
+  xp: number | null;
+  size: string | null;
+  race: string | null;
+  moveType: number | null;
+}
 
 export interface PtMonsterDef {
   key: string;
@@ -67,8 +94,12 @@ export interface PtMonsterDef {
   activeTime: string | null;
   variant: 'base' | 'vip' | 'event';
   stem: string;
+  stats: PtMonsterStats;
   asset: string | null;
   dieAsset: string | null;
+  rawHeight: number | null;
+  anims: string[];
+  dieAnims: string[];
 }
 
 export interface PtNameResolution {
@@ -154,6 +185,36 @@ export function buildFieldPopulation(
 
 export function emitPopulationModule(rec: PtFieldPopulation, sourceLabel: string): string;
 export function emitRegistryModule(registry: PtMonsterRegistry): string;
+
+export interface PtMobCatalogClips {
+  idle: string;
+  walk: string;
+  run: string;
+  attack: string[];
+  death: string | null;
+  hit: string[];
+}
+
+export interface PtMobCatalogEntry {
+  key: string;
+  name: string | null;
+  level: number | null;
+  group: [number, number] | null;
+  stats: PtMonsterStats;
+  visual: {
+    file: string | null;
+    dieFile: string | null;
+    height: number | null;
+    anims: string[];
+    dieAnims: string[];
+    clips: PtMobCatalogClips;
+  };
+}
+
+export function emitMobCatalogModule(
+  registry: PtMonsterRegistry,
+  records: PtFieldPopulation[],
+): string;
 
 export interface PtPopulationSummary {
   registry: {

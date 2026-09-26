@@ -189,6 +189,7 @@ import {
   PROVING_SHORE_ROADS,
   PROVING_SHORE_ZONE,
 } from './content/proving_shore';
+import { PT_MOBS } from './content/pt_mobs';
 import {
   REALM_CAMPS,
   REALM_ITEMS,
@@ -423,6 +424,9 @@ export const MOBS: Record<string, MobTemplate> = {
   ...GALECREST_MOBS,
   ...FARSHORE_MOBS,
   ...PROVING_SHORE_MOBS,
+  // PT field-population templates (src/sim/content/pt_mobs.ts): keyed pt_*,
+  // spawned only by the pt_population scheduler inside PT fields.
+  ...PT_MOBS,
 };
 
 // Heroic upgraded drop variants: generated from the base item + mob loot tables and

@@ -985,7 +985,8 @@ export class CharacterVisual {
         if (clip) this.actions.set(name, this.mixer.clipAction(clip));
       }
       if (skipDeathClip) {
-        this.deathClip = prep.clips.get(prep.def.clips.death) ?? null;
+        const deathName = prep.def.clips.death;
+        this.deathClip = deathName ? (prep.clips.get(deathName) ?? null) : null;
         this.deathNormScale = prep.deathNormScale;
       }
       this.mixer.addEventListener('finished', (ev) => this.onFinished(ev.action));

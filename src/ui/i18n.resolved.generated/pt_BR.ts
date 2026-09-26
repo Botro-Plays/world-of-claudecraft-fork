@@ -16990,6 +16990,744 @@ export const pt_BR: EnTranslations = {
       "wildheart_high_priest": {
         "name": "Zulgar, Voz da Bacia"
       },
+      "pt_10_minig": {
+        "name": "绿豆糕"
+      },
+      "pt_11_imp": {
+        "name": "火精灵"
+      },
+      "pt_12_doral": {
+        "name": "双足虫"
+      },
+      "pt_12_mutantplant": {
+        "name": "变异植物"
+      },
+      "pt_14_hobgoblin": {
+        "name": "魔兽兵"
+      },
+      "pt_14_northgoblin": {
+        "name": "巨魔兽"
+      },
+      "pt_15_mutantrabie": {
+        "name": "变异兔妖"
+      },
+      "pt_16_mutanttree": {
+        "name": "树根怪"
+      },
+      "pt_17_hauntingmaple": {
+        "name": "红木精"
+      },
+      "pt_17_hauntingplant": {
+        "name": "绿木精"
+      },
+      "pt_18_corrupt": {
+        "name": "青骷髅"
+      },
+      "pt_18_skeleton": {
+        "name": "红骷髅"
+      },
+      "pt_19_zombie": {
+        "name": "僵尸"
+      },
+      "pt_21_cokris": {
+        "name": "独眼蜈蚣"
+      },
+      "pt_22_beedog": {
+        "name": "蜂巢怪"
+      },
+      "pt_23_mephit": {
+        "name": "青精灵"
+      },
+      "pt_25_minigsilver": {
+        "name": "蓝豆糕"
+      },
+      "pt_27_scorpion": {
+        "name": "蝎兽"
+      },
+      "pt_28_devilishtree": {
+        "name": "恶梦树"
+      },
+      "pt_28_plantlord": {
+        "name": "梦魇树"
+      },
+      "pt_30_leech": {
+        "name": "入地龙"
+      },
+      "pt_31_decoy": {
+        "name": "浮灵"
+      },
+      "pt_32_ghoul": {
+        "name": "盗贼"
+      },
+      "pt_33_cyclops": {
+        "name": "独眼魔人"
+      },
+      "pt_34_web": {
+        "name": "大头蜘蛛"
+      },
+      "pt_35_armoredbettle": {
+        "name": "重甲蝎兽"
+      },
+      "pt_36_buma": {
+        "name": "布玛熊"
+      },
+      "pt_37_skeletonarcher": {
+        "name": "骷髅射手"
+      },
+      "pt_38_crypt": {
+        "name": "地精"
+      },
+      "pt_40_bargon": {
+        "name": "刀斧手"
+      },
+      "pt_43_mightygoblin": {
+        "name": "魔兽怪"
+      },
+      "pt_44_skeletonranger": {
+        "name": "骷髅游骑兵"
+      },
+      "pt_47_cyclopsknight": {
+        "name": "独眼魔神"
+      },
+      "pt_48_hungky": {
+        "name": "小绿人"
+      },
+      "pt_49_skeletonwarrior": {
+        "name": "骷髅战士"
+      },
+      "pt_49_vampiricbat": {
+        "name": "独眼蝙蝠"
+      },
+      "pt_4_hopy": {
+        "name": "独角兽"
+      },
+      "pt_4_rabie": {
+        "name": "兔妖"
+      },
+      "pt_4_tobie": {
+        "name": "红兔妖"
+      },
+      "pt_50_evilsnail": {
+        "name": "蜗牛怪"
+      },
+      "pt_50_greven": {
+        "name": "巨蜥怪"
+      },
+      "pt_52_direbee": {
+        "name": "蜜蜂精"
+      },
+      "pt_52_muffin": {
+        "name": "松饼怪"
+      },
+      "pt_53_titan": {
+        "name": "泰坦巨人"
+      },
+      "pt_54_mudygolem": {
+        "name": "泥妖"
+      },
+      "pt_54_skeletonknight": {
+        "name": "骷髅爵士"
+      },
+      "pt_55_sandlem": {
+        "name": "沙妖"
+      },
+      "pt_56_avelisk-s": {
+        "name": "魔剑人马"
+      },
+      "pt_57_mirekeeper": {
+        "name": "泥潭守护者"
+      },
+      "pt_59_headcutter": {
+        "name": "魔剑士"
+      },
+      "pt_5_cuepy": {
+        "name": "红独角兽"
+      },
+      "pt_5_mush": {
+        "name": "红蘑菇精"
+      },
+      "pt_5_mushroomghost": {
+        "name": "蘑菇精"
+      },
+      "pt_5_zeldy": {
+        "name": "透明妖"
+      },
+      "pt_60_evilplant": {
+        "name": "黑暗魔树"
+      },
+      "pt_60_solidsnail": {
+        "name": "变种蜗牛"
+      },
+      "pt_61_avelisk-l": {
+        "name": "魔枪人马"
+      },
+      "pt_62_beevil": {
+        "name": "蜂王"
+      },
+      "pt_62_thorncrawler": {
+        "name": "荆棘爬行者"
+      },
+      "pt_64_mummy": {
+        "name": "木乃伊"
+      },
+      "pt_65_darkknight": {
+        "name": "黑暗骑士"
+      },
+      "pt_66_slaughter": {
+        "name": "魔剑圣"
+      },
+      "pt_67_illusionknight": {
+        "name": "魔战妖王"
+      },
+      "pt_67_nightmare": {
+        "name": "梦魇"
+      },
+      "pt_69_doomguard": {
+        "name": "黑暗爵士"
+      },
+      "pt_69_figon": {
+        "name": "火灵王"
+      },
+      "pt_69_naz": {
+        "name": "夜行者"
+      },
+      "pt_6_arma": {
+        "name": "穿山甲"
+      },
+      "pt_70_avelisklord": {
+        "name": "魔锤人马"
+      },
+      "pt_71_witch": {
+        "name": "女巫"
+      },
+      "pt_72_heavygoblin": {
+        "name": "重装魔兽兵"
+      },
+      "pt_73_stonegiant": {
+        "name": "无双石怪"
+      },
+      "pt_74_stonegolem": {
+        "name": "无双石魔"
+      },
+      "pt_7_sen": {
+        "name": "路灯怪"
+      },
+      "pt_86_kinghopy": {
+        "name": "独角兽王"
+      },
+      "pt_8_egan": {
+        "name": "草帽怪"
+      },
+      "pt_8_ghost": {
+        "name": "鬼魂"
+      },
+      "pt_8_orbit": {
+        "name": "火眼怪"
+      },
+      "pt_bargon": {
+        "name": "Bargon"
+      },
+      "pt_boss_135_death_knight": {
+        "name": "死亡骑士"
+      },
+      "pt_boss_140_draxos": {
+        "name": "埃克斯"
+      },
+      "pt_boss_145_bguardian": {
+        "name": "恐惧魔王"
+      },
+      "pt_boss_150_greedy": {
+        "name": "巨灵泰坦"
+      },
+      "pt_c_100_monzombi": {
+        "name": "精英僵尸王"
+      },
+      "pt_c_105_moncyclops": {
+        "name": "精英独眼魔神"
+      },
+      "pt_c_110_beetle": {
+        "name": "精英独眼甲虫"
+      },
+      "pt_c_115_skeletonknight": {
+        "name": "精英骷髅战士"
+      },
+      "pt_c_120_illusionknight": {
+        "name": "精英魔战妖王"
+      },
+      "pt_c_125_navelriskstf": {
+        "name": "精英人马女皇"
+      },
+      "pt_c_128_rguard": {
+        "name": "精英铁甲狂魔"
+      },
+      "pt_c_129_mountain": {
+        "name": "精英巨锤泰坦"
+      },
+      "pt_c_130_towergolem": {
+        "name": "精英城堡傀儡"
+      },
+      "pt_c_131_dmystery": {
+        "name": "精英暗影杀手"
+      },
+      "pt_c_134_inferno": {
+        "name": "精英暗黑元素"
+      },
+      "pt_c_135_redeye": {
+        "name": "精英火眼魔王"
+      },
+      "pt_c_136_billy": {
+        "name": "精英比利"
+      },
+      "pt_c_137_lizard_soldier": {
+        "name": "精英蜥蜴战士"
+      },
+      "pt_c_140_crios": {
+        "name": "精英杀马特"
+      },
+      "pt_c_142_bonehound": {
+        "name": "精英地狱猎犬"
+      },
+      "pt_c_144_shogoth": {
+        "name": "精英灵魂战士"
+      },
+      "pt_c_150_web": {
+        "name": "精英大头蜘蛛"
+      },
+      "pt_c_160_s_ar": {
+        "name": "精英箭神"
+      },
+      "pt_c_162_s_fi": {
+        "name": "精英圣殿武士"
+      },
+      "pt_c_165_s_pa": {
+        "name": "精英皇家骑士"
+      },
+      "pt_c_166_s_meca": {
+        "name": "精英机甲武士"
+      },
+      "pt_c_167_s_pr": {
+        "name": "精英圣灵法师"
+      },
+      "pt_c_168_s_atal": {
+        "name": "精英女武神"
+      },
+      "pt_c_170_s_kn": {
+        "name": "精英剑圣"
+      },
+      "pt_c_172_s_magi": {
+        "name": "精英黑魔导师"
+      },
+      "pt_c_175_tulla": {
+        "name": "精英假面伯爵"
+      },
+      "pt_c_176_lizard_papa": {
+        "name": "精英雷蛇猎手"
+      },
+      "pt_c_178_lizard_elder": {
+        "name": "精英雷蛇巫师"
+      },
+      "pt_c_180_bigmama": {
+        "name": "精英雷蛇斧手"
+      },
+      "pt_c_200_monmokova": {
+        "name": "精英暗夜死灵"
+      },
+      "pt_c_204_wlord": {
+        "name": "精英暗黑元首"
+      },
+      "pt_c_208_boitata": {
+        "name": "精英蛇发女巫"
+      },
+      "pt_c_95_goblinchief": {
+        "name": "精英魔斧怪"
+      },
+      "pt_event_100_strawberry_bear": {
+        "name": "熊二"
+      },
+      "pt_event_85_apple_bear": {
+        "name": "苹果熊"
+      },
+      "pt_event_90_banana_bear": {
+        "name": "香蕉熊"
+      },
+      "pt_event_95_maracuja_bear": {
+        "name": "百香果熊"
+      },
+      "pt_heartoffire_8": {
+        "name": "H8"
+      },
+      "pt_hopy": {
+        "name": "Hopy"
+      },
+      "pt_hp_72_great_greven": {
+        "name": "铁甲巨蜥"
+      },
+      "pt_hp_73_omu": {
+        "name": "变异甲虫"
+      },
+      "pt_hp_76_stingray": {
+        "name": "毒眼飞蛾"
+      },
+      "pt_hp_79_m_lord": {
+        "name": "木乃伊旗主"
+      },
+      "pt_hp_80_lizardfolk": {
+        "name": "嗜血屠狼"
+      },
+      "pt_hp_82_strider": {
+        "name": "双刀娜迦"
+      },
+      "pt_hp_85_spider": {
+        "name": "蜘蛛女皇"
+      },
+      "pt_hy1_156_dey": {
+        "name": "两栖猎手"
+      },
+      "pt_hy1_157_gurkob": {
+        "name": "深海章鱼"
+      },
+      "pt_hy1_158_faugn": {
+        "name": "嗜污水母"
+      },
+      "pt_hy1_159_yagditha": {
+        "name": "潮汐猎人"
+      },
+      "pt_hy1_160_wlord": {
+        "name": "暗黑元首"
+      },
+      "pt_ice_8": {
+        "name": "E8"
+      },
+      "pt_kd1_131ltechnician": {
+        "name": "研究所技师"
+      },
+      "pt_kd1_132lengineer": {
+        "name": "研究所工程师"
+      },
+      "pt_kd1_133itechnician": {
+        "name": "技师侵略者"
+      },
+      "pt_kd1_134isoldier": {
+        "name": "渗透侵略者"
+      },
+      "pt_kd1_135ielite": {
+        "name": "精兵侵略者"
+      },
+      "pt_kd2_136lguardian": {
+        "name": "研究所装甲兵"
+      },
+      "pt_kd2_137ibomber": {
+        "name": "爆破侵略者"
+      },
+      "pt_kd2_138_acero": {
+        "name": "假面战神"
+      },
+      "pt_kd2_139_chalybs": {
+        "name": "火炮拳手"
+      },
+      "pt_kd2_140_nihil": {
+        "name": "幽灵法师"
+      },
+      "pt_landofnurwn_1": {
+        "name": "S3"
+      },
+      "pt_landofnurwn_2": {
+        "name": "S2"
+      },
+      "pt_landofnurwn_3": {
+        "name": "S1"
+      },
+      "pt_landofnurwn_4": {
+        "name": "S4"
+      },
+      "pt_landofnurwn_5": {
+        "name": "S5"
+      },
+      "pt_landofnurwn_6": {
+        "name": "S6"
+      },
+      "pt_landofnurwn_7": {
+        "name": "S7"
+      },
+      "pt_ms1_100_darkmage": {
+        "name": "暗月法师"
+      },
+      "pt_ms1_101_darkphalanx": {
+        "name": "破日魔王"
+      },
+      "pt_ms1_96_fireworm": {
+        "name": "火烈树"
+      },
+      "pt_ms1_97_chimera": {
+        "name": "龙鹰灵兽"
+      },
+      "pt_ms1_98_hellhound": {
+        "name": "地狱猎犬"
+      },
+      "pt_ms1_99_darkguard": {
+        "name": "神弓魔"
+      },
+      "pt_ms2_102_seto": {
+        "name": "暗凰冤魂"
+      },
+      "pt_ms2_103_kingspider": {
+        "name": "红岭蛛王"
+      },
+      "pt_ms2_105_templeguard": {
+        "name": "坦普守护者"
+      },
+      "pt_ms2_106_bloodyknight": {
+        "name": "嗜血骑士"
+      },
+      "pt_ms3_141_koon": {
+        "name": "两栖鱼人"
+      },
+      "pt_ms3_142_marionette": {
+        "name": "灵魂丧尸"
+      },
+      "pt_ms3_143_lizard_soldier": {
+        "name": "蜥蜴战士"
+      },
+      "pt_ms3_144_sathla": {
+        "name": "虚空假面"
+      },
+      "pt_ms3_145_monmokova": {
+        "name": "暗夜死灵"
+      },
+      "pt_sd1_72_sliver": {
+        "name": "三角魔神"
+      },
+      "pt_sd1_75_succubus": {
+        "name": "萨酷巴斯"
+      },
+      "pt_sd1_77_dawlin": {
+        "name": "双头独眼"
+      },
+      "pt_sd1_79_stygian": {
+        "name": "幽灵"
+      },
+      "pt_sd1_85_typhoon": {
+        "name": "台风"
+      },
+      "pt_sd2_100_ratoo": {
+        "name": "鲁图怪"
+      },
+      "pt_sd2_75_dusk": {
+        "name": "达克"
+      },
+      "pt_sd2_79_shadow": {
+        "name": "鬼影杀手"
+      },
+      "pt_sd2_82_incubus": {
+        "name": "英酷巴斯"
+      },
+      "pt_sd2_83_omicron": {
+        "name": "神秘十五"
+      },
+      "pt_sd3_125_mimic": {
+        "name": "怪物箱子"
+      },
+      "pt_sd3_126_niken": {
+        "name": "尼肯"
+      },
+      "pt_sd3_127_kingbat": {
+        "name": "吸血蝙蝠"
+      },
+      "pt_sd3_128_goblinshaman": {
+        "name": "魔法魔兽兵"
+      },
+      "pt_sd3_130_hest": {
+        "name": "奥兹"
+      },
+      "pt_ta1_105_d_ar": {
+        "name": "箭神"
+      },
+      "pt_ta1_106_d_fi": {
+        "name": "圣殿武士"
+      },
+      "pt_ta1_107_d_meca": {
+        "name": "机甲武士"
+      },
+      "pt_ta1_108_d_pa": {
+        "name": "皇家骑士"
+      },
+      "pt_ta1_111_hobogolem": {
+        "name": "无息魔王"
+      },
+      "pt_ta2_110_deadkinghopy": {
+        "name": "无息兽王"
+      },
+      "pt_ta2_111_d_atal": {
+        "name": "女武神"
+      },
+      "pt_ta2_112_d_kn": {
+        "name": "剑圣"
+      },
+      "pt_ta2_113_d_pr": {
+        "name": "圣灵法师"
+      },
+      "pt_ta2_114_d_magi": {
+        "name": "黑魔导师"
+      },
+      "pt_ta2_116_gorgon": {
+        "name": "米诺陶斯"
+      },
+      "pt_ta3_120_kakoa": {
+        "name": "卡卡噢"
+      },
+      "pt_ta3_121_nazsenior": {
+        "name": "纳兹"
+      },
+      "pt_ta3_122_ruca": {
+        "name": "幽灵之主"
+      },
+      "pt_ta3_123_sprin": {
+        "name": "斯普林"
+      },
+      "pt_ta3_124_igolation": {
+        "name": "死神"
+      },
+      "pt_ta3_125_undeadmaple": {
+        "name": "死亡枫树"
+      },
+      "pt_ta3_126_xetan": {
+        "name": "氙谭"
+      },
+      "pt_tl1_100_grotesque": {
+        "name": "亚特兰斯巨人"
+      },
+      "pt_tl1_81_ironguard": {
+        "name": "铁甲狂魔"
+      },
+      "pt_tl1_82_avelin": {
+        "name": "魔弓人马"
+      },
+      "pt_tl1_83_chaingolem": {
+        "name": "链锤傀儡"
+      },
+      "pt_tl1_84_hypermachine": {
+        "name": "杀戮机械"
+      },
+      "pt_tl1_84_rampage": {
+        "name": "暴跳怪"
+      },
+      "pt_tl1_85_deadzone": {
+        "name": "机械魔蚊"
+      },
+      "pt_tl1_85_vampiricmachine": {
+        "name": "嗜血机械"
+      },
+      "pt_tl1_87_darkspecter": {
+        "name": "鬼影魔神"
+      },
+      "pt_tl2_100_ironfist": {
+        "name": "铁拳"
+      },
+      "pt_tl2_87_morgon": {
+        "name": "巨斧萨满"
+      },
+      "pt_tl2_87_runicguardian": {
+        "name": "远古守卫"
+      },
+      "pt_tl2_88_metron": {
+        "name": "异形"
+      },
+      "pt_tl2_88_sadness": {
+        "name": "机械刑天"
+      },
+      "pt_tl2_89_d-machine": {
+        "name": "霸天蛛"
+      },
+      "pt_tl2_89_mountain": {
+        "name": "巨锤魔"
+      },
+      "pt_tl2_92_omega": {
+        "name": "神秘十八"
+      },
+      "pt_tl3_146_undeadstalker": {
+        "name": "死亡巫师"
+      },
+      "pt_tl3_147_morgon": {
+        "name": "巨斧守卫"
+      },
+      "pt_tl3_148_ignis": {
+        "name": "三头虫"
+      },
+      "pt_tl3_149_najan": {
+        "name": "小恶魔"
+      },
+      "pt_tl3_150_midranda": {
+        "name": "暗影爵士"
+      },
+      "pt_xd1_100_chaoscara": {
+        "name": "卡奥斯"
+      },
+      "pt_xd1_88_mystic": {
+        "name": "神秘尖晶石"
+      },
+      "pt_xd1_91_coldeye": {
+        "name": "冷眼魔"
+      },
+      "pt_xd1_92_frozen": {
+        "name": "冰妖"
+      },
+      "pt_xd1_93_icegoblin": {
+        "name": "冰甲魔兽兵"
+      },
+      "pt_xd1_94_frost": {
+        "name": "寒霜魔"
+      },
+      "pt_xd1_95_icegolem": {
+        "name": "冰石人"
+      },
+      "pt_xd2_100_devilbird": {
+        "name": "冰风魔王"
+      },
+      "pt_xd2_96_cyclopswarrior": {
+        "name": "冰甲独眼"
+      },
+      "pt_xd2_97_turtlecannon": {
+        "name": "霸天龟"
+      },
+      "pt_xd2_98_incubussummer": {
+        "name": "冰风女妖"
+      },
+      "pt_xd2_99_blizzardgiant": {
+        "name": "冰甲无双"
+      },
+      "pt_xd3_121_iceworm": {
+        "name": "寒冰树"
+      },
+      "pt_xd3_122_minebat": {
+        "name": "寒冰恶魔"
+      },
+      "pt_xd3_123_minegolem": {
+        "name": "矿山机械"
+      },
+      "pt_xd3_124_sealcrasher": {
+        "name": "矿山晶石"
+      },
+      "pt_xd3_125_tarantulika": {
+        "name": "冰甲毒蛛"
+      },
+      "pt_xd3_126_undeadmanager": {
+        "name": "矿山管理者"
+      },
+      "pt_xd4_151_royalmummy": {
+        "name": "冰霜木乃伊"
+      },
+      "pt_xd4_152_lena": {
+        "name": "冰艳雷娜"
+      },
+      "pt_xd4_153_bknight": {
+        "name": "寒冰骑士"
+      },
+      "pt_xd4_154_iceserpent": {
+        "name": "极地海龙"
+      },
+      "pt_xd4_155_boitata": {
+        "name": "蛇发女巫"
+      },
       "ironvein_foreman": {
         "name": "Capataz Veio de Ferro"
       },

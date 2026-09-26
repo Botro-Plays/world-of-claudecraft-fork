@@ -227,8 +227,6 @@ import {
   SPIRIT_HEALER_NPC_ID,
   zoneAt,
 } from './data';
-import { isPtPos } from './pt_band';
-import { ptStartPosForClass } from './pt_start';
 import { refusedWhileDead } from './dead_gate';
 import { deckFloorHeight } from './deck_floor';
 import * as deedsMod from './deeds';
@@ -630,6 +628,9 @@ import {
 } from './progression/talents';
 import { prestige as prestigeImpl, updateRested } from './progression/xp';
 import { advancePendingProjectiles, type PendingProjectile } from './projectile_travel';
+import { isPtPos } from './pt_band';
+import { ptPopulationTick } from './pt_population';
+import { ptStartPosForClass } from './pt_start';
 import * as honorMod from './pvp';
 // By path, not through the pvp barrel: see the comment in src/sim/pvp/index.ts.
 import {
@@ -2630,9 +2631,7 @@ export class Sim {
       // shore). Gated on the same compulsoryTutorial flag, which doubles as
       // the "default world, fresh character" signal - editor play-test maps
       // (cfg.world set) never redirect to a PT town.
-      const ptStart = this.cfg.compulsoryTutorial
-        ? ptStartPosForClass(this.cfg.playerClass)
-        : null;
+      const ptStart = this.cfg.compulsoryTutorial ? ptStartPosForClass(this.cfg.playerClass) : null;
       const freshArrival = ptStart ?? (this.cfg.compulsoryTutorial ? PROVING_SHORE_ARRIVAL : null);
       const ownPlayer = freshArrival ? this.entities.get(this.ownPlayerPid) : undefined;
       if (ownPlayer && freshArrival) {
@@ -6139,6 +6138,11 @@ export class Sim {
 
     runDespawnDecay(this.ctx);
     lap?.('despawnDecay');
+    // PT connected-field monster population: active-field-only, player-near,
+    // anchor-capped (pt_population.ts). No-ops where no population module is
+    // registered or the sim field is not a PT field.
+    ptPopulationTick(this.ctx, MOBS);
+    lap?.('ptPopulation');
     // Step in-flight projectiles toward their live targets before this tick's casts and
     // swings, so a homing bolt resolves on a fixed, deterministic phase boundary.
     advancePendingProjectiles(this.ctx);
