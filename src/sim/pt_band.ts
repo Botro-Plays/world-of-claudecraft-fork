@@ -16,8 +16,8 @@
 // (minimap_markers draws +X as map-left). A verbatim copy therefore renders
 // the map mirrored east-west, so ptXToWoC inverts X about the band: PT +X
 // (east) lands at WoC -X (east). Z maps 1:1 because both games agree on
-// north=+Z. PT facing angle t maps to WoC facing -t under this mirror; the
-// Ricarten spawn facing (pi, toward town at -Z) is unaffected.
+// north=+Z. PT facing angle t maps to WoC facing -t under this mirror; a
+// facing on the Z axis (the Ricarten spawn faces 0 = north) is unaffected.
 //
 // Scale: 1 PT world unit = PT_SCALE WoC yards. The calibration anchor is
 // the PT character itself: the posed Tempskron character models measure
@@ -115,7 +115,7 @@ export function woCToPtY(y: number): number {
 export const PT_RICARTEN_SPAWN_X = ptXToWoC(PT_RICARTEN_START_X);
 /** WoC Z for the primary Ricarten start point. */
 export const PT_RICARTEN_SPAWN_Z = ptZToWoC(PT_RICARTEN_START_Z);
-/** Arrival facing at the Ricarten spawn: the start point sits north of the
- *  town center (PT 2596,-18738), so facing -Z (pi = south, per the compass
- *  convention facing 0 = +Z) looks into town. */
-export const PT_RICARTEN_SPAWN_FACING = Math.PI;
+/** Arrival facing at the Ricarten spawn: 0 = +Z, north on the WoC compass
+ *  (facing convention 0 = +Z; the minimap draws +Z as map-up), so a fresh
+ *  Tempskron character enters Ricarten facing north up-map. */
+export const PT_RICARTEN_SPAWN_FACING = 0;

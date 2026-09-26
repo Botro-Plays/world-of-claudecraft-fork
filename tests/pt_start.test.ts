@@ -12,6 +12,7 @@
 //   threshold to DUNGEON_LIST[0]'s door.
 // - Y is resolved from the Ricarten collision field
 //   (ptRicartenGroundHeight), never a hardcoded constant.
+// - Arrival facing is pinned north (facing 0 = +Z = map-up).
 
 import { describe, expect, it } from 'vitest';
 import { PROVING_SHORE_ARRIVAL } from '../src/sim/content/proving_shore';
@@ -88,6 +89,15 @@ describe('fresh-character entry (the offline path)', () => {
     expect(p.pos.z).toBeCloseTo(PT_RICARTEN_SPAWN_Z, 6);
     expect(isPtPos(p.pos.x)).toBe(true);
     expect(p.facing).toBeCloseTo(PT_RICARTEN_SPAWN_FACING, 6);
+  });
+
+  it('enters Ricarten facing north', () => {
+    // Facing convention: radians, 0 = +Z (types.ts). WoC compass: north = +Z
+    // (compass.ts; the minimap draws +Z as map-up). The spawn constant and
+    // the applied player facing must both be north.
+    expect(PT_RICARTEN_SPAWN_FACING).toBe(0);
+    const sim = makeSim('tempskron_fighter');
+    expect(player(sim).facing).toBe(0);
   });
 
   it('resolves spawn Y from the Ricarten collision field, not a constant', () => {
