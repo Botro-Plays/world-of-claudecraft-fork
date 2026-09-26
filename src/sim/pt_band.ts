@@ -70,6 +70,22 @@ export const PT_RICARTEN_START_Z = -18566;
 export const PT_RICARTEN_START2_X = -1047;
 export const PT_RICARTEN_START2_Z = -16973;
 
+// Pillai (field 21 "pilai", Morion starting town) and Atlantis Town
+// (field 51 "town1", Atlanteon starting town) start points from field.cpp,
+// same source table as Ricarten's. GetStartPoint resolves the NEAREST
+// authored point to the query and StartField() queries (0,0), which selects
+// point 1 for both towns; WarpStartField picks uniformly at random. Point 1
+// is kept as the deterministic spawn, point 2 as the documented fallback.
+export const PT_PILAI_START_X = 2287;
+export const PT_PILAI_START_Z = 74131;
+export const PT_PILAI_START2_X = 3547;
+export const PT_PILAI_START2_Z = 75500;
+
+export const PT_TOWN1_START_X = -37725;
+export const PT_TOWN1_START_Z = -17198;
+export const PT_TOWN1_START2_X = -40254;
+export const PT_TOWN1_START2_Z = -17511;
+
 /** True when WoC x falls inside the PT band. */
 export function isPtPos(x: number): boolean {
   return x >= PT_BAND_X_MIN && x < PT_BAND_X_MAX;
@@ -119,3 +135,23 @@ export const PT_RICARTEN_SPAWN_Z = ptZToWoC(PT_RICARTEN_START_Z);
  *  (facing convention 0 = +Z; the minimap draws +Z as map-up), so a fresh
  *  Tempskron character enters Ricarten facing north up-map. */
 export const PT_RICARTEN_SPAWN_FACING = 0;
+
+/** WoC X/Z for the Pillai start point (Morion) and the Atlantis Town start
+ *  point (Atlanteon). Both fields fit the shared continent transform
+ *  (ptFieldFitsContinent), so the pt_band transform is their own
+ *  descriptor's transform verbatim. */
+export const PT_PILAI_SPAWN_X = ptXToWoC(PT_PILAI_START_X);
+export const PT_PILAI_SPAWN_Z = ptZToWoC(PT_PILAI_START_Z);
+export const PT_TOWN1_SPAWN_X = ptXToWoC(PT_TOWN1_START_X);
+export const PT_TOWN1_SPAWN_Z = ptZToWoC(PT_TOWN1_START_Z);
+
+/** Arrival facing at the Pillai/Atlantis spawns. The source never authors a
+ *  per-town angle: start points are x/z only, and every warp/login
+ *  placement runs SetPosi(x,0,z, 0,0,0) (field.cpp StartField /
+ *  playmain.cpp), which sets the character's Angle.y = 0. PT Angle.y 0
+ *  moves along +Z under MoveAngle2 (north), and the mirrored X transform
+ *  leaves a Z-axis facing unchanged (facing maps t -> -t, so 0 stays 0).
+ *  WoC facing 0 = +Z = north - the same source-authentic orientation as
+ *  Ricarten's, not a per-town invention. */
+export const PT_PILAI_SPAWN_FACING = 0;
+export const PT_TOWN1_SPAWN_FACING = 0;

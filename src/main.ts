@@ -176,6 +176,7 @@ import { tryNearbyInteraction } from './game/nearby_interaction';
 import { nextNpcTarget } from './game/npc_cycle';
 import { isOfflineModeAvailable } from './game/offline_mode_gate';
 import { offlineWorldConfig } from './game/offline_world_config';
+import { bindPtStartField } from './game/pt_start_field';
 import { interpolatedOnlineSelfFacing } from './game/online_facing_mirror';
 import { sendOnlineMovementFrame } from './game/online_movement_frame';
 import { padCastPress, padCastRelease } from './game/pad_cast_routing';
@@ -5394,6 +5395,10 @@ async function startOffline(
   // Editor play-test: route terrain + props at the custom world too (the renderer
   // reaches it by module global), in addition to the Sim reading cfg.world.
   if (world) setActiveWorldContent(world);
+  // PT tribe start: bind the starting town's field before the Sim resolves
+  // the spawn floor through activePtField (Pillai/Atlantis live in lazily
+  // loaded generated packages; Ricarten restores the default binding).
+  await bindPtStartField(playerClass, world === undefined);
   const sim = loadSpan(
     'sim-build',
     () =>
@@ -7473,6 +7478,9 @@ async function enterWorld(c: CharacterSummary, button?: HTMLButtonElement): Prom
   resetLoadProfile();
   loadPhaseStart('entry');
   loadPhaseStart('realm-connect');
+  // PT tribe start: bind the character's starting-town field so floor
+  // queries and the PT view resolve the right town's data on join.
+  await bindPtStartField(c.class, true);
   const world = new ClientWorld(api.token, c.id, c.class, api.base, getClientSeed());
   // Wire shareable player cards for this online session: publishing uploads the
   // composited PNG to this realm and returns an absolute public page URL, and

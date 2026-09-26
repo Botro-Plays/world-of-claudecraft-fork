@@ -10,7 +10,11 @@
 import { ptXToWoC, ptYToWoC, ptZToWoC, woCToPtX, woCToPtY, woCToPtZ } from './pt_band';
 import {
   createPtField,
+  makePtBandTransform,
+  makePtContinentTransform,
+  ptFieldFitsContinent,
   type PtField,
+  type PtFieldModule,
   type PtFieldTransform,
   type PtMapDescriptor,
 } from './pt_field';
@@ -149,13 +153,82 @@ function promoteStandbyField(): void {
   _activeField = f;
 }
 
+// ---------------------------------------------------------------------------
+// Static fallback fields (descriptor-less hosts: server realm, bare tests)
+// ---------------------------------------------------------------------------
+//
+// The descriptor-less fallback historically meant "Ricarten always": the one
+// statically bundled field covered the only PT position a headless sim could
+// ever see. The Morion/Atlanteon starting towns put headless saves at pilai /
+// town1 coordinates, which Ricarten's geometry does not cover. Hosts that
+// need those fields WITHOUT the client descriptor pipeline (the server can
+// host characters in several towns at once, so a single active binding could
+// never serve them) register the generated modules here; the fallback then
+// dispatches per query by which field's WoC bounds contain the position.
+// With nothing registered the path is byte-identical to before.
+
+interface PtStaticFieldEntry {
+  field: PtField;
+  minX: number;
+  maxX: number;
+  minZ: number;
+  maxZ: number;
+}
+
+const _staticFields: PtStaticFieldEntry[] = [];
+const _staticModules = new Set<PtFieldModule>();
+
+/**
+ * Register a generated field module as a static fallback field. The
+ * transform follows the same rule the package loader uses (continent when
+ * the bounds fit the band, per-map band otherwise) so WoC positions agree
+ * with the descriptor-bound client. Idempotent per module.
+ */
+export function registerPtStaticField(field: PtFieldModule): void {
+  if (_staticModules.has(field)) return;
+  _staticModules.add(field);
+  const transform = ptFieldFitsContinent(field.PT_BOUNDS)
+    ? makePtContinentTransform()
+    : makePtBandTransform(field.PT_BOUNDS);
+  const b = field.PT_BOUNDS;
+  _staticFields.push({
+    field: createPtField(field, transform),
+    // X mirrors under the transform, so the WoC X range runs maxX -> minX.
+    minX: transform.ptXToWoC(b.maxX),
+    maxX: transform.ptXToWoC(b.minX),
+    minZ: transform.ptZToWoC(b.minZ),
+    maxZ: transform.ptZToWoC(b.maxZ),
+  });
+}
+
+/** The registered static field covering WoC (x, z), or the Ricarten
+ *  fallback when none does. */
+function staticFieldAt(x: number, z: number): PtField {
+  for (const s of _staticFields) {
+    if (x >= s.minX && x <= s.maxX && z >= s.minZ && z <= s.maxZ) return s.field;
+  }
+  return ptRicartenField();
+}
+
+const _dispatchField: PtField = {
+  groundHeight: (x, z) => staticFieldAt(x, z).groundHeight(x, z),
+  supportHeight: (x, z, r, maxY) => staticFieldAt(x, z).supportHeight(x, z, r, maxY),
+  floorHeight: (x, z, refY) => staticFieldAt(x, z).floorHeight(x, z, refY),
+  wallHit: (sx, sy, sz, ex, ez, destFloorY) =>
+    staticFieldAt(sx, sz).wallHit(sx, sy, sz, ex, ez, destFloorY),
+  spawnY: (x, z) => staticFieldAt(x, z).spawnY(x, z),
+  waterLevel: (x, z) => staticFieldAt(x, z).waterLevel(x, z),
+};
+
 /**
  * The field every PT-band query routes through: the dev-installed map when
  * one is active, otherwise Ricarten. While a standby neighbor is installed
  * this returns the two-slot composite above.
  */
 export function activePtField(): PtField {
-  if (_activeField === null) return ptRicartenField();
+  if (_activeField === null) {
+    return _staticFields.length === 0 ? ptRicartenField() : _dispatchField;
+  }
   return _standbyField === null ? _activeField : _linkedField;
 }
 

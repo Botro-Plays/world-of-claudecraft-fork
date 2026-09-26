@@ -2626,9 +2626,9 @@ export class Sim {
       // newborn row at the same arrival (server/main.ts initialCharacterState).
       //
       // PT characters bypass the Proving Shore tutorial entirely: each tribe
-      // lands in its own starting town instead (Tempskron -> Ricarten; the
-      // other tribes' towns are not implemented yet and fall back to the
-      // shore). Gated on the same compulsoryTutorial flag, which doubles as
+      // lands in its own starting town instead (Tempskron -> Ricarten,
+      // Morion -> Pillai, Atlanteon -> Atlantis Town; pt_start.ts). Gated on
+      // the same compulsoryTutorial flag, which doubles as
       // the "default world, fresh character" signal - editor play-test maps
       // (cfg.world set) never redirect to a PT town.
       const ptStart = this.cfg.compulsoryTutorial ? ptStartPosForClass(this.cfg.playerClass) : null;
