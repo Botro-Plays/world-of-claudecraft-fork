@@ -1,0 +1,810 @@
+{
+  "registry": {
+    "infFiles": 411,
+    "uniqueNames": 378,
+    "collisions": [
+      {
+        "name": "两栖猎手",
+        "canonical": "hy1_156_dey",
+        "alternates": [
+          "vip_hy1_161_dey"
+        ]
+      },
+      {
+        "name": "两栖鱼人",
+        "canonical": "ms3_141_koon",
+        "alternates": [
+          "vip_ms3_141_koon"
+        ]
+      },
+      {
+        "name": "冰艳雷娜",
+        "canonical": "xd4_152_lena",
+        "alternates": [
+          "vip_xd4_152_lena"
+        ]
+      },
+      {
+        "name": "冰霜木乃伊",
+        "canonical": "xd4_151_royalmummy",
+        "alternates": [
+          "vip_xd4_151_royalmummy"
+        ]
+      },
+      {
+        "name": "凯尔维苏",
+        "canonical": "boss_155_kelvezu",
+        "alternates": [
+          "boss_165_kelvezu",
+          "boss_190_kelvezu"
+        ]
+      },
+      {
+        "name": "嗜污水母",
+        "canonical": "hy1_158_faugn",
+        "alternates": [
+          "vip_hy1_163_faugn"
+        ]
+      },
+      {
+        "name": "圣诞精灵",
+        "canonical": "z30_santagoblin-c",
+        "alternates": [
+          "z00_santagoblin-a"
+        ]
+      },
+      {
+        "name": "埃克斯",
+        "canonical": "boss_140_draxos",
+        "alternates": [
+          "boss_170_draxos"
+        ]
+      },
+      {
+        "name": "寒冰骑士",
+        "canonical": "xd4_153_bknight",
+        "alternates": [
+          "vip_xd4_153_bknight"
+        ]
+      },
+      {
+        "name": "巨灵泰坦",
+        "canonical": "boss_150_greedy",
+        "alternates": [
+          "boss_180_greedy"
+        ]
+      },
+      {
+        "name": "恐惧魔王",
+        "canonical": "boss_145_bguardian",
+        "alternates": [
+          "boss_160_bguardian"
+        ]
+      },
+      {
+        "name": "机械凤凰",
+        "canonical": "boss_130_babel3",
+        "alternates": [
+          "boss_140_babel3"
+        ]
+      },
+      {
+        "name": "极地海龙",
+        "canonical": "xd4_154_iceserpent",
+        "alternates": [
+          "vip_xd4_154_iceserpent"
+        ]
+      },
+      {
+        "name": "死亡骑士",
+        "canonical": "boss_135_death_knight",
+        "alternates": [
+          "boss_150_death_knight"
+        ]
+      },
+      {
+        "name": "深海章鱼",
+        "canonical": "hy1_157_gurkob",
+        "alternates": [
+          "vip_hy1_162_gurkob"
+        ]
+      },
+      {
+        "name": "潮汐猎人",
+        "canonical": "hy1_159_yagditha",
+        "alternates": [
+          "vip_hy1_164_yagditha"
+        ]
+      },
+      {
+        "name": "灵魂丧尸",
+        "canonical": "ms3_142_marionette",
+        "alternates": [
+          "vip_ms3_142_marionette"
+        ]
+      },
+      {
+        "name": "熊二",
+        "canonical": "event_100_strawberry_bear",
+        "alternates": [
+          "event_105_jaboti_bear"
+        ]
+      },
+      {
+        "name": "精英假面伯爵",
+        "canonical": "c_175_tulla",
+        "alternates": [
+          "c_188_tulla"
+        ]
+      },
+      {
+        "name": "精英剑圣",
+        "canonical": "c_170_s_kn",
+        "alternates": [
+          "c_180_s_kn"
+        ]
+      },
+      {
+        "name": "精英圣殿武士",
+        "canonical": "c_162_s_fi",
+        "alternates": [
+          "c_164_s_fi"
+        ]
+      },
+      {
+        "name": "精英圣灵法师",
+        "canonical": "c_167_s_pr",
+        "alternates": [
+          "c_174_s_pr"
+        ]
+      },
+      {
+        "name": "精英女武神",
+        "canonical": "c_168_s_atal",
+        "alternates": [
+          "c_178_s_atal"
+        ]
+      },
+      {
+        "name": "精英机甲武士",
+        "canonical": "c_166_s_meca",
+        "alternates": [
+          "c_170_s_meca"
+        ]
+      },
+      {
+        "name": "精英皇家骑士",
+        "canonical": "c_165_s_pa",
+        "alternates": [
+          "c_168_s_pa"
+        ]
+      },
+      {
+        "name": "精英雷蛇巫师",
+        "canonical": "c_178_lizard_elder",
+        "alternates": [
+          "c_194_lizard_elder"
+        ]
+      },
+      {
+        "name": "精英雷蛇斧手",
+        "canonical": "c_180_bigmama",
+        "alternates": [
+          "c_198_bigmama"
+        ]
+      },
+      {
+        "name": "精英雷蛇猎手",
+        "canonical": "c_176_lizard_papa",
+        "alternates": [
+          "c_190_lizard_papa"
+        ]
+      },
+      {
+        "name": "精英黑魔导师",
+        "canonical": "c_172_s_magi",
+        "alternates": [
+          "c_184_s_magi"
+        ]
+      },
+      {
+        "name": "虚空假面",
+        "canonical": "ms3_144_sathla",
+        "alternates": [
+          "vip_ms3_144_sathla"
+        ]
+      },
+      {
+        "name": "蜥蜴战士",
+        "canonical": "ms3_143_lizard_soldier",
+        "alternates": [
+          "vip_ms3_143_lizard_soldier"
+        ]
+      },
+      {
+        "name": "香蕉熊",
+        "canonical": "event_90_banana_bear",
+        "alternates": [
+          "event_90_brazilbear"
+        ]
+      }
+    ]
+  },
+  "totals": {
+    "fields": 70,
+    "populated": 61,
+    "noActors": 2,
+    "noSource": 7,
+    "actors": 331,
+    "bosses": 17,
+    "anchors": 4936,
+    "npcRecords": 153,
+    "unresolvedNames": [
+      "矿山开采者"
+    ]
+  },
+  "fields": {
+    "fore-3": {
+      "status": "populated",
+      "actors": 6,
+      "bosses": 0,
+      "anchors": 53,
+      "npcRecords": 2,
+      "unresolved": []
+    },
+    "fore-2": {
+      "status": "populated",
+      "actors": 7,
+      "bosses": 0,
+      "anchors": 30,
+      "npcRecords": 1,
+      "unresolved": []
+    },
+    "fore-1": {
+      "status": "populated",
+      "actors": 5,
+      "bosses": 0,
+      "anchors": 53,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "ricarten": {
+      "status": "no-actors",
+      "actors": 0,
+      "bosses": 0,
+      "anchors": 0,
+      "npcRecords": 48,
+      "unresolved": []
+    },
+    "ruin-4": {
+      "status": "populated",
+      "actors": 7,
+      "bosses": 0,
+      "anchors": 97,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "ruin-3": {
+      "status": "populated",
+      "actors": 6,
+      "bosses": 0,
+      "anchors": 86,
+      "npcRecords": 1,
+      "unresolved": []
+    },
+    "ruin-2": {
+      "status": "populated",
+      "actors": 6,
+      "bosses": 0,
+      "anchors": 59,
+      "npcRecords": 4,
+      "unresolved": []
+    },
+    "ruin-1": {
+      "status": "populated",
+      "actors": 6,
+      "bosses": 0,
+      "anchors": 91,
+      "npcRecords": 1,
+      "unresolved": []
+    },
+    "de-1": {
+      "status": "populated",
+      "actors": 7,
+      "bosses": 0,
+      "anchors": 125,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "village-1": {
+      "status": "populated",
+      "actors": 8,
+      "bosses": 0,
+      "anchors": 29,
+      "npcRecords": 12,
+      "unresolved": []
+    },
+    "de-2": {
+      "status": "populated",
+      "actors": 6,
+      "bosses": 0,
+      "anchors": 83,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "de-3": {
+      "status": "populated",
+      "actors": 7,
+      "bosses": 0,
+      "anchors": 103,
+      "npcRecords": 1,
+      "unresolved": []
+    },
+    "de-4": {
+      "status": "populated",
+      "actors": 6,
+      "bosses": 0,
+      "anchors": 96,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "dun-1": {
+      "status": "populated",
+      "actors": 6,
+      "bosses": 0,
+      "anchors": 62,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "dun-2": {
+      "status": "populated",
+      "actors": 6,
+      "bosses": 0,
+      "anchors": 69,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "dun-3": {
+      "status": "populated",
+      "actors": 7,
+      "bosses": 0,
+      "anchors": 82,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "office": {
+      "status": "no-source",
+      "actors": 0,
+      "bosses": 0,
+      "anchors": 1,
+      "npcRecords": 12,
+      "unresolved": []
+    },
+    "forever-fall-04": {
+      "status": "populated",
+      "actors": 6,
+      "bosses": 1,
+      "anchors": 124,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "forever-fall-03": {
+      "status": "populated",
+      "actors": 7,
+      "bosses": 1,
+      "anchors": 83,
+      "npcRecords": 2,
+      "unresolved": []
+    },
+    "forever-fall-02": {
+      "status": "populated",
+      "actors": 6,
+      "bosses": 1,
+      "anchors": 131,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "forever-fall-01": {
+      "status": "populated",
+      "actors": 5,
+      "bosses": 1,
+      "anchors": 85,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "pilai": {
+      "status": "no-source",
+      "actors": 0,
+      "bosses": 0,
+      "anchors": 0,
+      "npcRecords": 27,
+      "unresolved": []
+    },
+    "dun-4": {
+      "status": "populated",
+      "actors": 9,
+      "bosses": 0,
+      "anchors": 78,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "dun-5": {
+      "status": "populated",
+      "actors": 8,
+      "bosses": 0,
+      "anchors": 98,
+      "npcRecords": 1,
+      "unresolved": []
+    },
+    "tcave": {
+      "status": "populated",
+      "actors": 8,
+      "bosses": 0,
+      "anchors": 50,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "mcave": {
+      "status": "populated",
+      "actors": 8,
+      "bosses": 0,
+      "anchors": 42,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "dcave": {
+      "status": "populated",
+      "actors": 8,
+      "bosses": 0,
+      "anchors": 45,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "iron-1": {
+      "status": "populated",
+      "actors": 8,
+      "bosses": 0,
+      "anchors": 129,
+      "npcRecords": 1,
+      "unresolved": []
+    },
+    "iron-2": {
+      "status": "populated",
+      "actors": 8,
+      "bosses": 0,
+      "anchors": 162,
+      "npcRecords": 1,
+      "unresolved": []
+    },
+    "ice-ura": {
+      "status": "no-source",
+      "actors": 0,
+      "bosses": 0,
+      "anchors": 0,
+      "npcRecords": 4,
+      "unresolved": []
+    },
+    "sod-1": {
+      "status": "populated",
+      "actors": 1,
+      "bosses": 0,
+      "anchors": 1,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "ice1": {
+      "status": "populated",
+      "actors": 7,
+      "bosses": 0,
+      "anchors": 101,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "quest-iv": {
+      "status": "no-actors",
+      "actors": 0,
+      "bosses": 0,
+      "anchors": 2,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "castle": {
+      "status": "no-source",
+      "actors": 0,
+      "bosses": 0,
+      "anchors": 1,
+      "npcRecords": 7,
+      "unresolved": []
+    },
+    "greedy": {
+      "status": "populated",
+      "actors": 7,
+      "bosses": 0,
+      "anchors": 153,
+      "npcRecords": 1,
+      "unresolved": []
+    },
+    "ice2": {
+      "status": "populated",
+      "actors": 5,
+      "bosses": 0,
+      "anchors": 67,
+      "npcRecords": 1,
+      "unresolved": []
+    },
+    "boss": {
+      "status": "populated",
+      "actors": 5,
+      "bosses": 0,
+      "anchors": 53,
+      "npcRecords": 1,
+      "unresolved": []
+    },
+    "lost": {
+      "status": "populated",
+      "actors": 6,
+      "bosses": 0,
+      "anchors": 91,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "losttemple": {
+      "status": "populated",
+      "actors": 6,
+      "bosses": 0,
+      "anchors": 77,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "fall-game": {
+      "status": "no-source",
+      "actors": 0,
+      "bosses": 0,
+      "anchors": 0,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "dun-7": {
+      "status": "populated",
+      "actors": 6,
+      "bosses": 0,
+      "anchors": 82,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "dun-8": {
+      "status": "populated",
+      "actors": 6,
+      "bosses": 0,
+      "anchors": 64,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "dun-6": {
+      "status": "populated",
+      "actors": 5,
+      "bosses": 0,
+      "anchors": 64,
+      "npcRecords": 1,
+      "unresolved": []
+    },
+    "dun-9": {
+      "status": "populated",
+      "actors": 7,
+      "bosses": 0,
+      "anchors": 115,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "mine-1": {
+      "status": "populated",
+      "actors": 7,
+      "bosses": 0,
+      "anchors": 136,
+      "npcRecords": 1,
+      "unresolved": [
+        "矿山开采者"
+      ]
+    },
+    "slab": {
+      "status": "populated",
+      "actors": 5,
+      "bosses": 0,
+      "anchors": 46,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "ancientw": {
+      "status": "populated",
+      "actors": 5,
+      "bosses": 0,
+      "anchors": 175,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "lost3": {
+      "status": "populated",
+      "actors": 5,
+      "bosses": 0,
+      "anchors": 121,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "fo3": {
+      "status": "populated",
+      "actors": 3,
+      "bosses": 1,
+      "anchors": 48,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "fo2": {
+      "status": "populated",
+      "actors": 3,
+      "bosses": 1,
+      "anchors": 36,
+      "npcRecords": 1,
+      "unresolved": []
+    },
+    "fo1": {
+      "status": "populated",
+      "actors": 4,
+      "bosses": 0,
+      "anchors": 48,
+      "npcRecords": 2,
+      "unresolved": []
+    },
+    "town1": {
+      "status": "no-source",
+      "actors": 0,
+      "bosses": 0,
+      "anchors": 0,
+      "npcRecords": 17,
+      "unresolved": []
+    },
+    "ba1": {
+      "status": "populated",
+      "actors": 3,
+      "bosses": 1,
+      "anchors": 28,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "ba2": {
+      "status": "populated",
+      "actors": 3,
+      "bosses": 1,
+      "anchors": 110,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "ba3": {
+      "status": "populated",
+      "actors": 3,
+      "bosses": 1,
+      "anchors": 107,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "ba4": {
+      "status": "populated",
+      "actors": 3,
+      "bosses": 1,
+      "anchors": 60,
+      "npcRecords": 3,
+      "unresolved": []
+    },
+    "iron3": {
+      "status": "populated",
+      "actors": 3,
+      "bosses": 1,
+      "anchors": 67,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "dc1": {
+      "status": "no-source",
+      "actors": 0,
+      "bosses": 0,
+      "anchors": 0,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "sod-2": {
+      "status": "populated",
+      "actors": 4,
+      "bosses": 1,
+      "anchors": 30,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "ice3": {
+      "status": "populated",
+      "actors": 5,
+      "bosses": 0,
+      "anchors": 188,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "iron4": {
+      "status": "populated",
+      "actors": 5,
+      "bosses": 0,
+      "anchors": 101,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "seaa": {
+      "status": "populated",
+      "actors": 5,
+      "bosses": 0,
+      "anchors": 200,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "heartoffire": {
+      "status": "populated",
+      "actors": 1,
+      "bosses": 0,
+      "anchors": 24,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "ad1": {
+      "status": "populated",
+      "actors": 4,
+      "bosses": 1,
+      "anchors": 90,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "ad2": {
+      "status": "populated",
+      "actors": 4,
+      "bosses": 1,
+      "anchors": 78,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "ad3": {
+      "status": "populated",
+      "actors": 4,
+      "bosses": 1,
+      "anchors": 79,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "sanc1": {
+      "status": "populated",
+      "actors": 3,
+      "bosses": 1,
+      "anchors": 54,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "sanc2": {
+      "status": "populated",
+      "actors": 3,
+      "bosses": 1,
+      "anchors": 58,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "crystalnest": {
+      "status": "populated",
+      "actors": 1,
+      "bosses": 0,
+      "anchors": 16,
+      "npcRecords": 0,
+      "unresolved": []
+    },
+    "landofnurwn": {
+      "status": "populated",
+      "actors": 7,
+      "bosses": 0,
+      "anchors": 19,
+      "npcRecords": 0,
+      "unresolved": []
+    }
+  }
+}

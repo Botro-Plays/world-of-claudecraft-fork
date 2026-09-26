@@ -17,9 +17,16 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { basename, dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { ptClientDir, ptClientPath } from './lib/pt_client.mjs';
+import { ptClientDir, ptClientPath, ptServerPath } from './lib/pt_client.mjs';
 import { loadFieldRegistry } from './lib/field_registry.mjs';
 import { buildMapLinks } from './lib/map_links.mjs';
+import {
+  buildFieldPopulation,
+  buildMonsterRegistry,
+  buildPopulationSummary,
+  emitPopulationModule,
+  emitRegistryModule,
+} from './lib/population.mjs';
 import {
   buildPerFaceUVs,
   buildTextureManifest,
@@ -252,6 +259,44 @@ function compileStageObjects(manifest) {
 }
 
 // ---------------------------------------------------------------------------
+// Population (server-side .spm/.spp/.inf -> population.generated.ts)
+// ---------------------------------------------------------------------------
+
+// The monster registry is global (one GameServer/Monster dir), so it is built
+// once per process and shared across fields. Returns null when the server
+// tree is not checked out - population compile then emits nothing, exactly
+// like a missing terrain SMD.
+let _monsterRegistry = null;
+function monsterRegistry() {
+  if (_monsterRegistry) return _monsterRegistry;
+  const monsterDir = ptServerPath('GameServer/Monster');
+  if (!existsSync(monsterDir)) return null;
+  const convertedDir = join(dirname(fileURLToPath(import.meta.url)), 'converted', 'monster');
+  _monsterRegistry = buildMonsterRegistry(
+    monsterDir,
+    existsSync(convertedDir) ? { convertedDir } : {},
+  );
+  return _monsterRegistry;
+}
+
+// Pure: returns { record, source } for generated/pt-maps/<id>/
+// population.generated.ts, or null when the server tree is absent.
+function compilePopulation(manifest) {
+  const registry = monsterRegistry();
+  if (!registry) return null;
+  const record = buildFieldPopulation(manifest, registry);
+  const src = [
+    record.source.spm,
+    record.source.spp,
+    record.source.spc ? `${record.source.spc} (${record.source.npcRecords} npc)` : null,
+  ].filter(Boolean);
+  return {
+    record,
+    source: emitPopulationModule(record, src.length ? src.join(' | ') : '(no server population files)'),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Audit
 // ---------------------------------------------------------------------------
 
@@ -471,6 +516,21 @@ async function cmdCompile(id, { write = true } = {}) {
       `stage objects: ${stage.objects.length} files -> ${manifest.stageObjects.out}`,
     );
   }
+
+  const pop = compilePopulation(manifest);
+  if (pop) {
+    const popPath = resolve(REPO_ROOT, `generated/pt-maps/${manifest.id}/population.generated.ts`);
+    results.population = { path: popPath, source: pop.source };
+    if (write) {
+      mkdirSync(dirname(popPath), { recursive: true });
+      writeFileSync(popPath, pop.source);
+    }
+    console.log(
+      `population: status=${pop.record.status} actors=${pop.record.actors.length} ` +
+        `bosses=${pop.record.bosses.length} anchors=${pop.record.spawnAnchors.length} -> ` +
+        `generated/pt-maps/${manifest.id}/population.generated.ts`,
+    );
+  }
   return results;
 }
 
@@ -563,6 +623,18 @@ async function cmdCompileAll() {
           }
           row.stageObjects = s1.objects.length;
         }
+        const p1 = compilePopulation(m);
+        if (p1) {
+          const p2 = compilePopulation(m);
+          if (p1.source !== p2.source) {
+            row.errors.push('non-deterministic population output');
+          } else {
+            const popPath = resolve(REPO_ROOT, `generated/pt-maps/${m.id}/population.generated.ts`);
+            mkdirSync(dirname(popPath), { recursive: true });
+            writeFileSync(popPath, p1.source);
+          }
+          row.population = p1.record.status;
+        }
       }
     } catch (e) {
       row.errors.push(`compile exception: ${e.message}`);
@@ -593,6 +665,10 @@ async function cmdCompileAll() {
   // packages so the dev client can glob it beside */manifest.json.
   emitMapLinks(manifests);
 
+  // Monster population artifacts: shared registry + coverage summary. Per-
+  // field population.generated.ts files were already written above.
+  emitPopulationArtifactsShared(manifests);
+
   const pass = rows.filter((r) => r.status === 'PASS').length;
   const warn = rows.filter((r) => r.status === 'WARN').length;
   const error = rows.filter((r) => r.status === 'ERROR').length;
@@ -618,6 +694,62 @@ function emitMapLinks(manifests) {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, JSON.stringify(links, null, 2) + '\n');
   return { path, links };
+}
+
+// Shared population artifacts (registry + coverage summary). Called by
+// compile-all; the per-field modules are written by each field's compile.
+function emitPopulationArtifactsShared(manifests) {
+  const registry = monsterRegistry();
+  if (!registry) return;
+  writeFileSync(
+    resolve(REPO_ROOT, 'generated/pt-maps/monster_registry.generated.ts'),
+    emitRegistryModule(registry),
+  );
+  const records = manifests.map((m) => buildFieldPopulation(m, registry));
+  writeFileSync(
+    resolve(REPO_ROOT, 'generated/pt-maps/population.json'),
+    JSON.stringify(buildPopulationSummary(records, registry), null, 2) + '\n',
+  );
+}
+
+// Population-only regeneration: writes population.generated.ts per field plus
+// the shared registry/coverage files, without touching terrain/stage modules.
+async function cmdPopulationAll() {
+  const manifests = await manifestsForAll();
+  const registry = monsterRegistry();
+  if (!registry) {
+    console.log('population: server tree not found (PT_SERVER_DIR) - nothing emitted');
+    process.exitCode = 1;
+    return;
+  }
+  let actors = 0;
+  let bosses = 0;
+  let anchors = 0;
+  let populated = 0;
+  const unresolved = new Set();
+  for (const m of manifests) {
+    const p1 = compilePopulation(m);
+    const p2 = compilePopulation(m);
+    if (p1.source !== p2.source) {
+      console.log(`  [${m.fieldIndex}] ${m.id}: ERROR non-deterministic population output`);
+      process.exitCode = 1;
+      continue;
+    }
+    const popPath = resolve(REPO_ROOT, `generated/pt-maps/${m.id}/population.generated.ts`);
+    mkdirSync(dirname(popPath), { recursive: true });
+    writeFileSync(popPath, p1.source);
+    actors += p1.record.actors.length;
+    bosses += p1.record.bosses.length;
+    anchors += p1.record.spawnAnchors.length;
+    if (p1.record.status === 'populated') populated++;
+    for (const u of p1.record.unresolved) unresolved.add(u);
+  }
+  emitPopulationArtifactsShared(manifests);
+  console.log(
+    `population: ${manifests.length} fields (${populated} populated) ` +
+      `actors=${actors} bosses=${bosses} anchors=${anchors} ` +
+      `unresolved=${unresolved.size}${unresolved.size ? ` [${[...unresolved].join(', ')}]` : ''}`,
+  );
 }
 
 async function cmdMapLinks() {
@@ -754,6 +886,9 @@ switch (cmd) {
   case 'textures':
     await cmdTextures(arg);
     break;
+  case 'population-all':
+    await cmdPopulationAll();
+    break;
   case 'maplinks':
     await cmdMapLinks();
     break;
@@ -764,6 +899,6 @@ switch (cmd) {
     await cmdTexturesAll();
     break;
   default:
-    console.log('usage: pt_map.mjs catalog | audit|compile|validate|textures <map-id> | maplinks | compile-all | textures-all');
+    console.log('usage: pt_map.mjs catalog | audit|compile|validate|textures <map-id> | maplinks | population-all | compile-all | textures-all');
     process.exitCode = 1;
 }
