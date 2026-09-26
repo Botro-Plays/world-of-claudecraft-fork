@@ -31,10 +31,9 @@
 //    stage 0, frame = (RendStatTime >> Shift_FrameSpeed) & FrameMask,
 //    advanced per frame inside the shared texture cache (no refetch,
 //    no decode, no material churn - see ptTickTextureAnims).
-//  - Authored sDef_Color vertex colors bake once with the field gouraud
-//    shade (SetVertexShade: n.VectLight/Contrast + Bright) into a color
-//    attribute that modulates the texture, matching PT's bCol stream
-//    slot (see pt_vertex_shade.ts).
+//  - sDef_Color vertex colors modulate the texture, matching PT's bCol
+//    stream slot. They arrive post-bake from the ASE->SMD conversion; only
+//    lightmap fields take the gouraud bake here (see pt_vertex_shade.ts).
 //
 // The mesh is placed in the world at the PT band offset (see pt_band.ts).
 
@@ -62,11 +61,11 @@ import {
   ptStageBandMatrixFor,
 } from './pt_stage_objects';
 import { PT_STAGE_OBJECTS } from './pt_stage_objects.generated';
-import { ptBakeVertexShade, ptVertexColorsOnly } from './pt_vertex_shade';
+import { ptBakeVertexShade, ptVertexColorsOnly, ptVertexColorsUnbaked } from './pt_vertex_shade';
 
 export interface PtTerrainView {
   group: THREE.Group;
-  /** Advance animated stage objects to the shared uTime clock. */
+  /** Advance animated stage objects to the PT wall clock. */
   update(): void;
   dispose(): void;
 }
@@ -294,9 +293,22 @@ export function ptMaterialIsAnimated(
 // PT vertex animation (smRend3d.cpp ::CalcRendVertex wind/water scripts)
 // ---------------------------------------------------------------------------
 //
-// PT drives these from RendStatTime = wall-clock milliseconds. We reuse the
-// renderer's shared uTime clock (seconds) and convert. Angles index into
-// PT's 4096-entry sin/cos LUT (ANGLE_360 = 4096, values * 65536 fixed).
+// PT drives every animation clock - these vertex scripts, the texture
+// flipbooks, and the v-ani stage objects - from RendStatTime = wall-clock
+// milliseconds (GetCurrentTime, refreshed inside RenderGeom). The renderer's
+// shared uTime is GAME time: it accumulates the clamped frame dt, so on a
+// slow client it under-runs real time and every authored rate (scroll,
+// flipbook fps, sway) visibly lags. PT uniforms and JS ticks read the wall
+// clock below instead, which also makes prewarm passes inert: they never
+// banked synthetic time into the real clock to begin with.
+const ptWallClock = { value: 0 };
+/** Refresh the PT wall clock and return it in seconds. Called per view tick. */
+export function ptWallTimeSeconds(): number {
+  ptWallClock.value = performance.now() / 1000;
+  return ptWallClock.value;
+}
+// Angles index into PT's 4096-entry sin/cos LUT (ANGLE_360 = 4096, values
+// * 65536 fixed).
 //
 // WIND channels share one triangle wave (smRend3d.cpp AddStageVertex,
 // switch on WindMeshBottom & 0x7FF):
@@ -459,7 +471,7 @@ export function ptApplyShaderHooks(
   uvFx?: PtUvFormBinding,
 ): void {
   material.onBeforeCompile = (shader) => {
-    shader.uniforms.uPtTime = sharedUniforms.uTime;
+    shader.uniforms.uPtTime = ptWallClock;
     shader.uniforms.uWocFillBoost = sharedUniforms.uTerrainFillBoost;
     if (uvFx?.stage1) shader.uniforms.uPtMap1 = { value: uvFx.stage1 };
     let inject = '';
@@ -669,8 +681,9 @@ interface PtFaceEmit {
   uvs: number[];
   // PT world x,z (mod-4 folded) per emitted vertex, for the water script
   ptXZ: number[];
-  // Per-corner RGB vertex colors (authored sDef_Color x gouraud shade),
-  // matching PT's bCol render-stream slot. Empty when the field has none.
+  // Per-corner RGB vertex colors (stored sDef_Color; gouraud bake applied
+  // only for unbaked lightmap fields), matching PT's bCol render-stream
+  // slot. Empty when the field has none.
   colors: number[];
   groups: { material: number; start: number; count: number }[];
 }
@@ -1013,7 +1026,7 @@ function makePtMaterial(
     side: ptMat?.twoSide === false ? THREE.FrontSide : THREE.DoubleSide,
     map: texture ?? null,
     // bCol is the render-stream diffuse slot in PT: texture is modulated by
-    // the per-vertex color (authored sDef_Color x gouraud shade).
+    // the per-vertex color (stored sDef_Color; see pt_vertex_shade.ts).
     vertexColors,
   });
   // MapOpacity -> alpha test at ref 60/255 with alpha blend (PT rear list).
@@ -1132,23 +1145,26 @@ export async function buildPtTerrainView(
   const decoIndices = src.field.PT_DECORATIVE_FACE_INDICES();
   for (let i = 0; i < decoIndices.length; i++) decoSet.add(decoIndices[i]);
 
-  // Authored sDef_Color x the field's gouraud shade (SetVertexShade), baked
-  // once into a per-vertex RGB buffer: PT's render stream writes these as
-  // the vertex diffuse, modulating the texture.
+  // sDef_Color as the runtime vertex diffuse. The gouraud shade was baked
+  // into it at ASE->SMD conversion time, so the stored color is used as-is
+  // for normal fields; only lightmap stages (unbaked authored-white 255s,
+  // pt_vertex_shade.ts) still take the bake - it stands in for the lightmap
+  // texture WoC does not bind.
   let vertRGB: Float32Array | null = null;
   const vertColors = src.field.PT_VERTEX_COLORS?.();
   if (vertColors) {
     const lighting = src.field.PT_FIELD_LIGHTING;
-    vertRGB = lighting
-      ? ptBakeVertexShade({
-          vertices: src.field.PT_VERTICES(),
-          faces: src.field.PT_RENDER_FACES(),
-          colors: vertColors,
-          contrast: lighting.contrast,
-          bright: lighting.bright,
-          vectLight: lighting.vectLight as unknown as readonly [number, number, number],
-        })
-      : ptVertexColorsOnly(vertColors, src.field.PT_N_VERTEX);
+    vertRGB =
+      lighting && ptVertexColorsUnbaked(vertColors, src.field.PT_N_VERTEX)
+        ? ptBakeVertexShade({
+            vertices: src.field.PT_VERTICES(),
+            faces: src.field.PT_RENDER_FACES(),
+            colors: vertColors,
+            contrast: lighting.contrast,
+            bright: lighting.bright,
+            vectLight: lighting.vectLight as unknown as readonly [number, number, number],
+          })
+        : ptVertexColorsOnly(vertColors, src.field.PT_N_VERTEX);
   }
 
   const textureCache: PtTextureCache = new Map();
@@ -1197,6 +1213,7 @@ export async function buildPtTerrainView(
     for (const g of emit.groups) usedMats.add(g.material);
   }
   if (seaMat) usedMats.add(seaMat.index);
+  for (const e of src.sea?.edges ?? []) usedMats.add(e.materialIndex);
   warmPtFieldTextures(src, usedMats, textureCache, bindingCache);
 
   // Stage objects fetch/build in parallel with the terrain meshes: their
@@ -1376,6 +1393,131 @@ export async function buildPtTerrainView(
     allMaterials.push(deepMat);
   }
 
+  // Generalized sea edges (Phase 6G): source-derived sectors where the
+  // field's authored water runs to a bounds edge facing void (maplinks.json
+  // `sea`, see scripts/pt-port/lib/sea_edges.mjs). Each sector gets the
+  // same treatment as Ricarten's ring - a water surface strip at the
+  // sector's authored level textured with its own dominant boundary
+  // material at the authored UV density, the horizon fade, and an opaque
+  // deep backer so the sky dome cannot bleed through. A field-wide blocker
+  // under the lowest geometry additionally kills the pale shoreline rim
+  // where edge water overhangs the bank inside the map. Visual only: no
+  // collision, no gameplay surface. Ricarten keeps its hand-tuned ring
+  // above; this block is for every other field the analysis flags.
+  if (src.sea?.edges?.length) {
+    const b = src.field.PT_BOUNDS;
+    const x0 = src.transform.ptXToWoC(b.maxX);
+    const x1 = src.transform.ptXToWoC(b.minX);
+    const z0 = src.transform.ptZToWoC(b.minZ);
+    const z1 = src.transform.ptZToWoC(b.maxZ);
+    const cx = (x0 + x1) / 2;
+    const cz = (z0 + z1) / 2;
+    const inset = 3;      // yd: tuck under the map-edge water like the ring hole
+    const backerDrop = 0.8; // yd the strip backer sits under the sea surface
+    const deepMat = new THREE.MeshLambertMaterial({
+      color: 0x173f52, // same deep-water shade as the Ricarten blocker
+      fog: true,
+    });
+
+    // Field-footprint blocker a half yard below the lowest geometry.
+    const underY = src.transform.ptYToWoC(b.minY) - 0.5;
+    const rectGeo = new THREE.PlaneGeometry(Math.abs(x1 - x0), Math.abs(z1 - z0));
+    rectGeo.rotateX(-Math.PI / 2);
+    const rectMesh = new THREE.Mesh(rectGeo, deepMat);
+    rectMesh.name = `pt-${src.id}-deepsea`;
+    rectMesh.position.set(cx, underY, cz);
+    rectMesh.matrixAutoUpdate = false;
+    rectMesh.updateMatrix();
+    group.add(rectMesh);
+    meshes.push(rectMesh);
+    allMaterials.push(deepMat);
+
+    for (let si = 0; si < src.sea.edges.length; si++) {
+      const e = src.sea.edges[si];
+      const reachYd = e.reach * PT_SCALE;
+      let sx0 = 0, sx1 = 0, sz0 = 0, sz1 = 0;
+      if (e.edge === 'minX') {
+        // PT minX is the WoC east side (ptXToWoC mirrors X).
+        const wx = src.transform.ptXToWoC(b.minX);
+        sx0 = wx - inset; sx1 = wx + reachYd;
+        sz0 = src.transform.ptZToWoC(e.from); sz1 = src.transform.ptZToWoC(e.to);
+      } else if (e.edge === 'maxX') {
+        const wx = src.transform.ptXToWoC(b.maxX);
+        sx0 = wx - reachYd; sx1 = wx + inset;
+        sz0 = src.transform.ptZToWoC(e.from); sz1 = src.transform.ptZToWoC(e.to);
+      } else if (e.edge === 'minZ') {
+        const wz = src.transform.ptZToWoC(b.minZ);
+        sz0 = wz - reachYd; sz1 = wz + inset;
+        sx0 = src.transform.ptXToWoC(e.to); sx1 = src.transform.ptXToWoC(e.from);
+      } else {
+        const wz = src.transform.ptZToWoC(b.maxZ);
+        sz0 = wz - inset; sz1 = wz + reachYd;
+        sx0 = src.transform.ptXToWoC(e.to); sx1 = src.transform.ptXToWoC(e.from);
+      }
+      const geo = new THREE.PlaneGeometry(sx1 - sx0, sz1 - sz0);
+      geo.rotateX(-Math.PI / 2);
+      const mx = (sx0 + sx1) / 2;
+      const mz = (sz0 + sz1) / 2;
+      // Per-strip height stagger kills co-planar overlap where two exposed
+      // edges meet at a corner (the corner itself stays covered).
+      const surfY = src.transform.ptYToWoC(e.level) - 0.2 - si * 0.03;
+      {
+        const posA = geo.getAttribute('position');
+        const uvA = geo.getAttribute('uv') as THREE.BufferAttribute;
+        for (let i = 0; i < posA.count; i++) {
+          uvA.setXY(
+            i,
+            src.transform.woCToPtX(mx + posA.getX(i)) * e.uScale,
+            src.transform.woCToPtZ(mz + posA.getZ(i)) * e.vScale,
+          );
+        }
+        uvA.needsUpdate = true;
+      }
+      const seaMat = fieldMaterials(src).find((m) => m.index === e.materialIndex);
+      const seaTex =
+        seaMat && typeof document !== 'undefined'
+          ? await loadPtTexture(src, seaMat.index, textureCache)
+          : null;
+      const seaMatMesh = new THREE.MeshLambertMaterial({
+        map: seaTex,
+        color: seaTex ? 0xffffff : 0x2e6b78,
+        transparent: seaMat !== undefined,
+        opacity: seaMat ? Math.min(1, Math.max(0, 1 - seaMat.transparency)) : 1,
+        depthWrite: false, // boundary water is translucent (ZWriteAuto)
+        fog: true,
+      });
+      if (seaTex) {
+        seaTex.generateMipmaps = true;
+        seaTex.minFilter = THREE.LinearMipmapLinearFilter;
+        ptApplyOceanHorizonFade(
+          seaMatMesh,
+          new THREE.Vector2(cx, cz),
+          new THREE.Vector2(Math.abs(x1 - x0) / 2, Math.abs(z1 - z0) / 2),
+        );
+      }
+      const strip = new THREE.Mesh(geo, seaMatMesh);
+      strip.name = `pt-${src.id}-ocean-${e.edge}${si}`;
+      strip.position.set(mx, surfY, mz);
+      strip.matrixAutoUpdate = false;
+      strip.updateMatrix();
+      group.add(strip);
+      meshes.push(strip);
+      allMaterials.push(seaMatMesh);
+
+      // Opaque deep backer under the strip: the see-through that survives
+      // the surface lands on deep water instead of the sky dome.
+      const backerGeo = new THREE.PlaneGeometry(sx1 - sx0, sz1 - sz0);
+      backerGeo.rotateX(-Math.PI / 2);
+      const backer = new THREE.Mesh(backerGeo, deepMat);
+      backer.name = `pt-${src.id}-deepsea-${e.edge}${si}`;
+      backer.position.set(mx, surfY - backerDrop, mz);
+      backer.matrixAutoUpdate = false;
+      backer.updateMatrix();
+      group.add(backer);
+      meshes.push(backer);
+    }
+  }
+
   // Stage objects (v-ani01..14: windmills, carts, fountains on Ricarten).
   // field.cpp registers the map's objects for the field; node transforms
   // carry absolute map positions, so they land in place with no extra
@@ -1387,9 +1529,10 @@ export async function buildPtTerrainView(
   return {
     group,
     update() {
+      const wallMs = ptWallTimeSeconds() * 1000;
       stageView?.update();
       if (anims.length > 0) {
-        ptTickTextureAnims(anims, sharedUniforms.uTime.value * 1000);
+        ptTickTextureAnims(anims, wallMs);
       }
     },
     dispose() {

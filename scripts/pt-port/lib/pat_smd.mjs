@@ -38,6 +38,7 @@ const OFF_MAT_TRANSPARENCY = 144;
 const OFF_MAT_USE_STATE = 164;
 const OFF_MAT_MESH_STATE = 168;
 const OFF_MAT_WIND_MESH_BOTTOM = 172;
+const OFF_MAT_BLEND_TYPE = 116;
 const OFF_MAT_ANIM_TEX_COUNTER = 304;
 const OFF_MAT_FRAME_MASK = 308;
 const OFF_MAT_SHIFT_FRAME_SPEED = 312;
@@ -158,6 +159,7 @@ function parseMaterialGroup(buf, offset, matCounterHeader) {
     const windMeshBottom = buf.readInt32LE(base + OFF_MAT_WIND_MESH_BOTTOM);
     const mapOpacity = buf.readFloatLE(base + OFF_MAT_MAP_OPACITY);
     const textureType = buf.readInt32LE(base + OFF_MAT_TEXTURE_TYPE);
+    const blendType = buf.readUInt32LE(base + OFF_MAT_BLEND_TYPE);
     const frameMask = buf.readUInt32LE(base + OFF_MAT_FRAME_MASK);
     const shiftFrameSpeed = buf.readInt32LE(base + OFF_MAT_SHIFT_FRAME_SPEED);
     const animationFrame = buf.readUInt32LE(base + OFF_MAT_ANIMATION_FRAME);
@@ -187,7 +189,7 @@ function parseMaterialGroup(buf, offset, matCounterHeader) {
     }
     materials.push({
       index: mi, inUse, textureNames, animTextureNames, twoSide, transparency,
-      useState, meshState, windMeshBottom, mapOpacity, textureType,
+      useState, meshState, windMeshBottom, mapOpacity, textureType, blendType,
       animTexCounter, frameMask, shiftFrameSpeed, animationFrame,
     });
   }
@@ -485,6 +487,7 @@ export function emitModule(objects, sourceLabel) {
   lines.push('  windMeshBottom: number;');
   lines.push('  mapOpacity: number;');
   lines.push('  textureType: number;          // SMTEX_TYPE_ANIMATION = 1');
+  lines.push('  blendType: number;            // smMATERIAL::BlendType (SMMAT_BLEND_*)');
   lines.push('  // smAnimTexture flipbook, present only when the material animates.');
   lines.push('  // animTextureNames[0] is frame 0 - distinct from textureNames[0].');
   lines.push('  animTexCounter?: number;');
@@ -584,6 +587,7 @@ export function emitModule(objects, sourceLabel) {
       windMeshBottom: m.windMeshBottom,
       mapOpacity: +m.mapOpacity.toFixed(6),
       textureType: m.textureType,
+      blendType: m.blendType,
       ...(m.animTexCounter > 0
         ? {
             animTexCounter: m.animTexCounter,
@@ -597,6 +601,30 @@ export function emitModule(objects, sourceLabel) {
     lines.push('  },');
   });
   lines.push('];');
+  lines.push('');
+
+  // Stage-object materials live outside the field SMD, so the field's
+  // PT_TEXTURE_MANIFEST never covered them: textures referenced only by a
+  // stage object (e.g. fore-3's pan_r.bmp waterwheel paddles) were never
+  // converted and rendered as untextured white faces. This manifest mirrors
+  // buildTextureManifest() so convert_pt_textures.ts can run the same
+  // resolution/conversion pass over the stage module.
+  const stageTextures = new Map();
+  for (const obj of objects) {
+    for (const mat of obj.materials) {
+      if (!mat.inUse) continue;
+      for (const name of [...mat.textureNames, ...(mat.animTextureNames ?? [])]) {
+        if (!name || stageTextures.has(name)) continue;
+        stageTextures.set(name, {
+          name,
+          format: name.toLowerCase().endsWith('.tga') ? 'tga' : 'bmp',
+        });
+      }
+    }
+  }
+  lines.push(
+    `export const PT_STAGE_TEXTURE_MANIFEST: { name: string; format: string }[] = ${JSON.stringify(Array.from(stageTextures.values()))};`,
+  );
   lines.push('');
   return lines.join('\n');
 }

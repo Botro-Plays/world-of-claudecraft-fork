@@ -1,11 +1,13 @@
-// Full-screen PT field-transition curtain ("YOU ARE ENTERING <FIELD>" plus a
+// Full-viewport PT field-transition curtain ("<FIELD> / Loading..." plus a
 // real progress bar), shown by game/pt_field_transition.ts while the
-// destination field's view is not visually ready. It deliberately owns its
-// own DOM instead of driving #loading-screen: the boot and arrival curtains
-// keep exclusive ownership of that element, so this one sits one z-step
-// beneath it and hands off seamlessly when a boot/arrival curtain lifts onto
-// an already-raised PT transition. Same visual family either way: dark
-// vignette, logo, the game's progress-bar grammar.
+// destination field's view is not visually ready. Phase 6G redesigned it as
+// a FROZEN-FRAME card: the world draw is held (presentation_gate.ts), so the
+// last presented frame of the field being left stays on screen underneath;
+// the overlay itself is a translucent dim with no logo and no opaque black.
+// It deliberately owns its own DOM instead of driving #loading-screen: the
+// boot and arrival curtains keep exclusive ownership of that element, so
+// this one sits one z-step beneath it and hands off seamlessly when a
+// boot/arrival curtain lifts onto an already-raised PT transition.
 //
 // Cold painter: mounts lazily on first show, repaints only when the model
 // changes, and costs nothing while hidden. One element for the whole session
@@ -34,20 +36,14 @@ function mount(): Refs {
   root.id = ROOT_ID;
   root.setAttribute('role', 'presentation');
 
-  const logo = document.createElement('img');
-  logo.className = 'pts-logo';
-  logo.src = '/worldofclaudecraft-logo.png';
-  logo.alt = '';
-
   const center = document.createElement('div');
   center.className = 'pts-center';
 
-  const entering = document.createElement('div');
-  entering.className = 'pts-entering';
-  entering.textContent = t('loading.ptEntering');
-
   const field = document.createElement('div');
   field.className = 'pts-field';
+
+  const status = document.createElement('div');
+  status.className = 'pts-status';
 
   const bar = document.createElement('div');
   bar.className = 'pts-bar';
@@ -60,12 +56,9 @@ function mount(): Refs {
   fill.className = 'pts-fill';
   bar.appendChild(fill);
 
-  const status = document.createElement('div');
-  status.className = 'pts-status';
-
-  center.append(entering, field, bar, status);
+  center.append(field, status, bar);
   markDialogRoot(center, { label: t('loading.ptEntering'), modal: true });
-  root.append(logo, center);
+  root.append(center);
   document.body.appendChild(root);
   return { root, field, status, bar, fill };
 }

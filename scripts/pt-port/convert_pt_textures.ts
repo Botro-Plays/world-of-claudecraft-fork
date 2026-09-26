@@ -31,9 +31,12 @@ const MINIMAP_SRC = process.argv[5];
 // Read the texture manifest from the generated module.
 // We parse it directly from the source to avoid importing the large module.
 const generatedSrc = readFileSync(GENERATED_MODULE, 'utf8');
-const manifestMatch = generatedSrc.match(/export const PT_TEXTURE_MANIFEST = (\[.*?\]);/s);
+// Field modules export PT_TEXTURE_MANIFEST (field SMD materials); stage
+// object modules export PT_STAGE_TEXTURE_MANIFEST (their own material
+// tables). Either is a valid conversion source.
+const manifestMatch = generatedSrc.match(/export const PT_(?:STAGE_)?TEXTURE_MANIFEST(?::[^=]+)?\s*=\s*(\[.*?\]);/s);
 if (!manifestMatch) throw new Error('Could not find PT_TEXTURE_MANIFEST in generated module');
-const manifest = JSON.parse(manifestMatch[1]) as { name: string; format: string; materialIndices: number[] }[];
+const manifest = JSON.parse(manifestMatch[1]) as { name: string; format: string; materialIndices?: number[] }[];
 
 console.log(`Texture manifest: ${manifest.length} unique textures`);
 

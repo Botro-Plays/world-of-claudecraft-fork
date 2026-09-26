@@ -44,10 +44,10 @@ import {
   PT_SCALE,
 } from '../sim/pt_band';
 import type { PtFieldTransform } from '../sim/pt_field';
-import { sharedUniforms } from './gfx';
 import {
   PT_ALPHA_TEST_REF,
   PT_ANIM_AUTO,
+  PT_BLEND_LAMP,
   loadPtTextureUrl,
   ptApplyShaderHooks,
   ptMaterialHasOpacityMap,
@@ -56,12 +56,13 @@ import {
   ptMaterialIsUndrawn,
   ptTickTextureAnims,
   ptVertexScriptFor,
+  ptWallTimeSeconds,
   type PtTextureAnim,
 } from './pt_terrain';
 
 export interface PtStageObjectsView {
   group: THREE.Group;
-  /** Advance animated nodes to the current shared uTime clock. */
+  /** Advance animated nodes to the PT wall clock (source RendStatTime). */
   update(): void;
   dispose(): void;
 }
@@ -380,6 +381,14 @@ function makeStageMaterial(
     m.opacity = Math.min(1, Math.max(0, 1 - transparency));
     m.depthWrite = transparency <= 0.2;
   }
+  // SMMAT_BLEND_LAMP: the same additive SRCALPHA*src + 1*dst the terrain
+  // path applies (ptMaterialBlendingFor) - stage glow faces (floating-stone
+  // cores, torch flames) read as opaque white patches without it. ZWrite
+  // keeps the shared Transparency>0.2 rule, matching smRend3d.cpp.
+  if ((mat?.blendType ?? 0) === PT_BLEND_LAMP) {
+    m.blending = THREE.AdditiveBlending;
+    m.transparent = true;
+  }
   ptApplyShaderHooks(m, ptVertexScriptFor(mat?.windMeshBottom ?? 0));
   return m;
 }
@@ -547,7 +556,9 @@ export async function buildPtStageObjectsView(
   }
 
   function update(): void {
-    const timeMs = sharedUniforms.uTime.value * 1000;
+    // Wall-clock ms: the source runs v-ani node tracks and flipbooks off
+    // GetCurrentTime(), never the dilated game-time uTime (pt_terrain.ts).
+    const timeMs = ptWallTimeSeconds() * 1000;
     if (anims.length > 0) ptTickTextureAnims(anims, timeMs);
     const ticks = Math.floor(timeMs) * PT_TICKS_PER_MS;
     for (const entry of objectEntries) {

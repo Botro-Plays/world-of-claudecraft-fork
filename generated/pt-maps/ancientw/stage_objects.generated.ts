@@ -23,6 +23,7 @@ export interface PtStageObjectMaterial {
   windMeshBottom: number;
   mapOpacity: number;
   textureType: number;          // SMTEX_TYPE_ANIMATION = 1
+  blendType: number;            // smMATERIAL::BlendType (SMMAT_BLEND_*)
   // smAnimTexture flipbook, present only when the material animates.
   // animTextureNames[0] is frame 0 - distinct from textureNames[0].
   animTexCounter?: number;
@@ -4663,7 +4664,7 @@ export const PT_STAGE_OBJECTS: PtStageObject[] = [
         animated: true,
       },
     ],
-    materials: [{"index":0,"textureNames":["field\\ancientW\\electric_bottom06.bmp"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0}],
+    materials: [{"index":0,"textureNames":["field\\ancientW\\electric_bottom06.bmp"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0,"blendType":1}],
   },
   {
     name: "RotObj02.smd",
@@ -4765,7 +4766,7 @@ export const PT_STAGE_OBJECTS: PtStageObject[] = [
         animated: true,
       },
     ],
-    materials: [{"index":0,"textureNames":["field\\ancientW\\electric_bottom06.bmp"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0}],
+    materials: [{"index":0,"textureNames":["field\\ancientW\\electric_bottom06.bmp"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0,"blendType":1}],
   },
   {
     name: "RotObj03.smd",
@@ -4867,7 +4868,7 @@ export const PT_STAGE_OBJECTS: PtStageObject[] = [
         animated: true,
       },
     ],
-    materials: [{"index":0,"textureNames":["field\\ancientW\\electric_bottom06.bmp"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0}],
+    materials: [{"index":0,"textureNames":["field\\ancientW\\electric_bottom06.bmp"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0,"blendType":1}],
   },
   {
     name: "RotObj04.smd",
@@ -4969,7 +4970,7 @@ export const PT_STAGE_OBJECTS: PtStageObject[] = [
         animated: true,
       },
     ],
-    materials: [{"index":0,"textureNames":["field\\ancientW\\electric_bottom06.bmp"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0}],
+    materials: [{"index":0,"textureNames":["field\\ancientW\\electric_bottom06.bmp"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0,"blendType":1}],
   },
   {
     name: "RotObj05.smd",
@@ -5071,7 +5072,7 @@ export const PT_STAGE_OBJECTS: PtStageObject[] = [
         animated: true,
       },
     ],
-    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0}],
+    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0,"blendType":1},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0,"blendType":1}],
   },
   {
     name: "RotObj06.smd",
@@ -5173,7 +5174,7 @@ export const PT_STAGE_OBJECTS: PtStageObject[] = [
         animated: true,
       },
     ],
-    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0}],
+    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0,"blendType":1},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0,"blendType":1}],
   },
   {
     name: "RotObj07.smd",
@@ -5275,7 +5276,7 @@ export const PT_STAGE_OBJECTS: PtStageObject[] = [
         animated: true,
       },
     ],
-    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0}],
+    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0,"blendType":1},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0,"blendType":1}],
   },
   {
     name: "RotObj08.smd",
@@ -5377,7 +5378,7 @@ export const PT_STAGE_OBJECTS: PtStageObject[] = [
         animated: true,
       },
     ],
-    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0}],
+    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0,"blendType":1},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0,"blendType":1}],
   },
   {
     name: "RotObj09.smd",
@@ -5479,7 +5480,7 @@ export const PT_STAGE_OBJECTS: PtStageObject[] = [
         animated: true,
       },
     ],
-    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0}],
+    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0,"blendType":1},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0,"blendType":1}],
   },
   {
     name: "RotObj10.smd",
@@ -5581,6 +5582,8 @@ export const PT_STAGE_OBJECTS: PtStageObject[] = [
         animated: true,
       },
     ],
-    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0}],
+    materials: [{"index":0,"textureNames":["field\\ancientW\\gitgti.tga"],"twoSide":true,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0,"blendType":1},{"index":1,"textureNames":["field\\ancientW\\control station_ob03.bmp"],"twoSide":false,"transparency":0,"useState":0,"meshState":1,"windMeshBottom":0,"mapOpacity":0,"textureType":0,"blendType":1}],
   },
 ];
+
+export const PT_STAGE_TEXTURE_MANIFEST: { name: string; format: string }[] = [{"name":"field\\ancientW\\electric_bottom06.bmp","format":"bmp"},{"name":"field\\ancientW\\gitgti.tga","format":"tga"},{"name":"field\\ancientW\\control station_ob03.bmp","format":"bmp"}];

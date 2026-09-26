@@ -19,7 +19,6 @@ import {
   ptRowMatToThree,
 } from '../src/render/pt_stage_objects';
 import { ptXToWoC, ptYToWoC, ptZToWoC } from '../src/sim/pt_band';
-import { sharedUniforms } from '../src/render/gfx';
 
 const WINDMILL_HUBS: [number, number][] = [
   // (PT x, PT z) of the six windmill blade hubs, from v-ani03/04 node Tms.
@@ -277,9 +276,8 @@ describe('view build smoke test', () => {
       }
     }
     // Animation update must not throw or produce NaN transforms. The view
-    // reads the shared uTime clock (seconds).
+    // reads the PT wall clock (source RendStatTime = wall ms).
     for (let i = 0; i < 40; i++) {
-      sharedUniforms.uTime.value = i * 0.4;
       view.update();
       for (const mesh of meshes) {
         for (let k = 0; k < 16; k++) {

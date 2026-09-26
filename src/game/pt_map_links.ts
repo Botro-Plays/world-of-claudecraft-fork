@@ -21,6 +21,20 @@ export interface PtLinkField {
   posWarpOut: { x: number; y: number; z: number } | null;
   component: number;
   reachability: 'foot' | 'warp' | 'ui-item' | 'server' | 'isolated';
+  /** Phase 6G sea-edge spec (scripts/pt-port/lib/sea_edges.mjs): null when
+   *  no void-facing bounds edge carries water. Shape mirrors PtSeaSpec. */
+  sea?: {
+    edges: {
+      edge: 'minX' | 'maxX' | 'minZ' | 'maxZ';
+      from: number;
+      to: number;
+      reach: number;
+      level: number;
+      materialIndex: number;
+      uScale: number;
+      vScale: number;
+    }[];
+  } | null;
 }
 
 export interface PtFieldGateEdge {

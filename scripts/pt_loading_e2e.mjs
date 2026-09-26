@@ -267,6 +267,10 @@ const fieldZoneLabel = (id) => FIELD_LABELS[id] ?? id;
 // All waits are scoped to the cmd mark so revisits measure THIS install.
 async function installMap(id, tag) {
   const pre = await state();
+  // Phase 6G: a pre-entry card may already be up when the command runs - it
+  // still covers the install, so accept its show edge (recorded before the
+  // cmd mark) as the covering transition.
+  const curtainUpAtCmd = await page.evaluate(() => window.__ptload.curtainState().on);
   const cmdT = await mark(`cmd:${tag}`);
   await page.keyboard.press('Enter');
   await page.keyboard.type(`/ptmap ${id}`);
@@ -282,8 +286,14 @@ async function installMap(id, tag) {
   // lifted only after real readiness + the minimum presentation.
   await waitEventAfter('curtain:hide', cmdT, 60000);
   const ce = await curtainEvents(cmdT);
-  const tShow = ce.find((e) => e.name === 'curtain:show')?.t ?? null;
-  const tHide = ce.find((e) => e.name === 'curtain:hide')?.t ?? null;
+  let tShow = ce.find((e) => e.name === 'curtain:show')?.t ?? null;
+  if (tShow === null && curtainUpAtCmd) tShow = await evLast('curtain:show');
+  // Pair the show with the NEXT hide after it: a stale card still falling
+  // from the previous leg hides inside this window and must not be paired.
+  const tHide =
+    tShow !== null
+      ? await atAfter('curtain:hide', tShow)
+      : (ce.find((e) => e.name === 'curtain:hide')?.t ?? null);
   const names = ce.filter((e) => e.name.startsWith('curtain-name:')).map((e) => e.name.slice(13));
   const wanted = fieldLabel(id);
   check(`${tag} transition curtain raised`, tShow !== null);
@@ -299,7 +309,7 @@ async function installMap(id, tag) {
   );
   check(
     `${tag} curtain did not repeat or fail`,
-    ce.filter((e) => e.name === 'curtain:show').length === 1 &&
+    ce.filter((e) => e.name === 'curtain:show').length + (curtainUpAtCmd ? 1 : 0) === 1 &&
       !ce.some((e) => e.name === 'curtain:fail'),
   );
   const post = await page.evaluate((i) => {
@@ -499,7 +509,10 @@ async function walkLeg(fromId, toId) {
     const t0 = Date.now();
     await page.keyboard.down('w');
     try {
-      while (Date.now() - t0 < 45000) {
+      // 90s: the Phase 6G pre-entry card freezes the walker at the gate mouth
+      // until the standby view is ready, and a cold standby build under
+      // SwiftShader can run ~40s on its own before the walk resumes.
+      while (Date.now() - t0 < 90000) {
         await page.evaluate((h) => window.__ptload.setFacing(h), line.heading);
         await sleep(150);
         const st = await state();
@@ -523,21 +536,28 @@ async function walkLeg(fromId, toId) {
   check(`ownership flipped to ${toId}`, crossed, `active=${s2.active}`);
   if (!crossed) return false;
   const tCross = await evLast(`active:${toId}`);
-  // Phase 6B: the promotion raises the transition curtain; it must lift only
-  // after the minimum presentation and never leave a blank viewport.
-  await waitEventAfter('curtain:hide', tCross, 30000);
+  // Phase 6G: the card engages at the gate approach margin BEFORE the
+  // crossing (pre-entry mode) and may lift before the player steps through -
+  // the crossing stays covered because the armed expectation suppresses the
+  // flip card. Anchor the hide wait to the leg's show, not the cross.
+  const preShows = (await curtainEvents(tApproach)).filter((e) => e.name === 'curtain:show');
+  await waitEventAfter('curtain:hide', preShows.at(-1)?.t ?? tCross, 30000);
   const legCurtain = await curtainEvents(tApproach);
   const legShow = legCurtain.filter((e) => e.name === 'curtain:show');
-  const legHide = legCurtain.find((e) => e.name === 'curtain:hide')?.t ?? null;
+  const tShow = legShow.at(-1)?.t ?? null;
+  // Pair the show with the NEXT hide after it, not the first hide in the
+  // window - a card still falling from the previous leg must not pair here.
+  const legHide =
+    legCurtain.find((e) => e.name === 'curtain:hide' && (tShow === null || e.t >= tShow))?.t ??
+    null;
   const legNames = legCurtain
     .filter((e) => e.name.startsWith('curtain-name:'))
     .map((e) => e.name.slice(13));
-  const tShow = legShow.at(-1)?.t ?? null;
-  check(`${toId} transition curtain raised on promotion`, tShow !== null);
+  check(`${toId} transition curtain raised for the crossing`, tShow !== null);
   if (tShow !== null && tCross !== null) {
     check(
       `${toId} curtain tied to the crossing`,
-      tShow >= tCross - 500 && tShow <= tCross + 3000,
+      tShow <= tCross + 3000,
       `show ${fmtDelta(tShow, tCross)} vs cross`,
     );
   }
@@ -609,10 +629,19 @@ async function walkLeg(fromId, toId) {
         `cross +${(tCross - tApproach).toFixed(0)}ms | headroom ${headroom.toFixed(0)}ms | ` +
         `curtain ${fmtDelta(tShow, tCross)}..${fmtDelta(legHide, tCross)} rel cross`,
     );
-    check(`${toId} visible before crossing (headroom)`, headroom > 0, `${headroom.toFixed(0)}ms`);
+    // Phase 6G invariant: the player never sees an undressed destination.
+    // Either the view was already visible before the crossing (the 6A
+    // headroom case), or the curtain still spanned the crossing - a cold
+    // standby that lands mid-walk is covered by the card, not a blank.
+    const covered = legHide !== null && legHide >= tCross;
+    check(
+      `${toId} visible before crossing or curtain-covered`,
+      headroom > 0 || covered,
+      `headroom=${headroom.toFixed(0)}ms hide=${fmtDelta(legHide, tCross)}`,
+    );
   } else {
     check(
-      `${toId} visible before crossing (headroom)`,
+      `${toId} visible before crossing or curtain-covered`,
       false,
       `visible=${tVisible} cross=${tCross}`,
     );

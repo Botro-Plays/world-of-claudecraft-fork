@@ -1043,6 +1043,15 @@ const CAMERA_BASE_FOV = 60;
 // Hemisphere fill by post chain: outdoor_light_rig_core.ts (the terrain reads it too).
 const hemiOutdoorIntensity = (): number => hemiOutdoorIntensityFor(GFX);
 
+// PT band positions fall outside every authored WoC zone, so zoneAt()'s
+// fallback can alias a PT field onto an unrelated biome's light/fog grade
+// (the far-east strip resolves vale/marsh/night/ember by z). Pin the
+// neutral 'vale' grade - the same convention weather_field_core.ts uses
+// for PT weather - so every PT field reads under one ambient rig.
+function ambientBiomeAt(x: number, z: number): BiomeId {
+  return isPtPos(x) ? 'vale' : zoneBiomeAt(x, z);
+}
+
 const SUN_INTENSITY = 3.5;
 const ENV_INTENSITY = 0.37;
 // raw HDRI PMREMs integrate the real sun the dome shader clamps away,
@@ -2278,7 +2287,7 @@ export class Renderer {
     // low keeps the legacy canvas-gradient dome.
     const initialX = this.sim.player.pos.x;
     const initialZ = this.sim.player.pos.z;
-    const initialBiome = zoneBiomeAt(initialX, initialZ);
+    const initialBiome = ambientBiomeAt(initialX, initialZ);
     this.skyView = buildSky(LOW_GFX, SUN_ANCHOR, initialX, initialZ);
     this.sky = this.skyView.dome;
     setRenderCategory(this.sky, 'sky');
@@ -4940,7 +4949,11 @@ export class Renderer {
 
   private prewarmWorldFrame(dt: number): void {
     const p = this.sim.player;
-    this.time += dt;
+    // Prewarm passes never reach the presentation clock: every pass used to
+    // bank its synthetic dt into this.time, so a streaming burst (entry
+    // settle, zone/PT standby prewarms, budget-variant warm) visibly jumped
+    // uTime-driven animation - PT water scroll, stage objects, flipbooks -
+    // ahead of real time. The clock only advances on presented frames.
     sharedUniforms.uTime.value = this.time;
     // the paint-free carpet ring the terrain splat reads (see terrain.ts)
     sharedUniforms.uCarpetRing.value.set(p.pos.x, p.pos.z, GFX.bladeCarpetRadius);
@@ -8384,6 +8397,18 @@ export class Renderer {
     return view.group.visible ? 'ready' : 'compiling';
   }
 
+  // Standby-gate twin of ptFieldViewState (Phase 6G): the pre-entry card
+  // watches the neighbor's build while the player is still short of the
+  // boundary, so the curtain can rise BEFORE the crossing instead of only
+  // covering the frame after it.
+  ptStandbyFieldViewState(mapId: string): 'none' | 'building' | 'compiling' | 'ready' | 'failed' {
+    const gate = this.ptStandbyTerrainGate;
+    if (gate.source?.id !== mapId) return 'none';
+    const view = gate.current;
+    if (view === null) return gate.busy ? 'building' : 'failed';
+    return view.group.visible ? 'ready' : 'compiling';
+  }
+
   // Shared core for every compile gate below: link `target`'s programs off the
   // main thread (KHR_parallel_shader_compile via compileAsync) against the live
   // scene's exact lights + environment. The same priority arbiter owns live
@@ -9070,7 +9095,7 @@ export class Renderer {
 
   private outdoorFogPreset(): { color: number; near: number; far: number } {
     if (this.lowGfx) return Renderer.LOW_FOG;
-    return Renderer.BIOME_FOG[zoneBiomeAt(this.sim.player.pos.x, this.sim.player.pos.z)];
+    return Renderer.BIOME_FOG[ambientBiomeAt(this.sim.player.pos.x, this.sim.player.pos.z)];
   }
 
   /** Settle the light rig for a fog state (interior_light_rig.ts owns the
@@ -9193,7 +9218,7 @@ export class Renderer {
     // transition when the player later walks outside).
     const settleVistaEntry = this.vistaEntrySettlePending;
     this.vistaEntrySettlePending = false;
-    const biome = zoneBiomeAt(this.sim.player.pos.x, pz);
+    const biome = ambientBiomeAt(this.sim.player.pos.x, pz);
     // Per-biome god-ray strength, eased over about half a second so a border
     // crossing fades the shafts with the rest of the ambience.
     const shaftTarget = Renderer.BIOME_GOD_RAYS[biome] ?? 1;
@@ -12643,7 +12668,7 @@ export class Renderer {
       const fl = Math.hypot(fx, fy, fz) || 1;
       sink.setListener(cpx, cpy, cpz, fx / fl, fy / fl, fz / fl);
       const inDungeon = px > DUNGEON_X_THRESHOLD;
-      const biome = zoneBiomeAt(px, pz);
+      const biome = ambientBiomeAt(px, pz);
       const precip =
         !this.weatherOn || inDungeon
           ? null

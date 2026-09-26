@@ -19,7 +19,11 @@ vi.mock('../src/render/assets/loader', () => ({
   }),
 }));
 
-import { buildPtTerrainView, ptApplyShaderHooks } from '../src/render/pt_terrain';
+import {
+  buildPtTerrainView,
+  ptApplyShaderHooks,
+  ptWallTimeSeconds,
+} from '../src/render/pt_terrain';
 import { sharedUniforms } from '../src/render/gfx';
 import { loadPtDevMap } from '../src/game/pt_dev_maps';
 import {
@@ -105,7 +109,11 @@ describe('ptApplyShaderHooks', () => {
     const sh = compileWith(mat);
     expect(mat.customProgramCacheKey()).toBe('pt-windz1');
     expect(sh.vertexShader).toContain('ptWindShift');
-    expect(sh.uniforms.uPtTime).toBe(sharedUniforms.uTime);
+    // The PT anim clock is wall time (source RendStatTime), not the
+    // game-time uTime that dilates under a clamped frame dt.
+    expect(sh.uniforms.uPtTime).not.toBe(sharedUniforms.uTime);
+    const wallS = ptWallTimeSeconds();
+    expect(sh.uniforms.uPtTime.value).toBe(wallS);
     expect(sh.uniforms.uWocFillBoost).toBe(sharedUniforms.uTerrainFillBoost);
     expect(sh.fragmentShader).toContain('irradiance *= uWocFillBoost;');
   });

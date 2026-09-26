@@ -230,6 +230,8 @@ export interface PtStageObjectMaterialLike {
   windMeshBottom: number;
   mapOpacity: number;
   textureType: number;
+  /** smMATERIAL::BlendType (SMMAT_BLEND_*) emitted by the stage converter. */
+  blendType: number;
   animTexCounter?: number;
   animTextureNames?: string[];
   frameMask?: number;
@@ -340,6 +342,32 @@ export interface PtWarpGateLink {
 }
 
 /**
+ * One exposed-edge sea sector (generated/pt-maps/maplinks.json `sea.edges`,
+ * emitted by scripts/pt-port/lib/sea_edges.mjs). A bounds-edge run that no
+ * non-dead FieldGate neighbor's authored footprint covers AND that carries
+ * water to the edge - the water genuinely runs into void there, which is
+ * the condition Ricarten's ocean ring addresses with a hand flag.
+ * Coordinates are PT world units in the field's authored frame.
+ */
+export interface PtSeaEdge {
+  /** Which bounds edge this sector sits on, in PT space. */
+  edge: 'minX' | 'maxX' | 'minZ' | 'maxZ';
+  /** Sector span along the edge's other axis (z for X edges, x for Z). */
+  from: number;
+  to: number;
+  /** Outward strip depth in PT units, corridor-capped before any neighbor
+   *  footprint so a strip can never overlay a co-rendered field. */
+  reach: number;
+  /** Sea surface PT-Y (median boundary-water vertex height). */
+  level: number;
+  /** Dominant boundary-water material index (into field.PT_MATERIALS). */
+  materialIndex: number;
+  /** Authored UV density (uv per PT unit) of that material's sector faces. */
+  uScale: number;
+  vScale: number;
+}
+
+/**
  * One loaded PT map package: the generated field module, its band
  * transform, its texture URL root, and the optional stage-object module.
  * Everything collision and rendering need, nothing more.
@@ -348,6 +376,11 @@ export interface PtWarpGateLink {
  * horizon ring + deep-sea blocker keyed to that map's authored sea level
  * and harbor material). Dev-harness maps leave it off: faking a sea level
  * for a map that does not declare one would misreport the conversion.
+ *
+ * `sea` is the generalized form (Phase 6G): source-derived per-edge ocean
+ * sectors for any field whose water runs to a void-facing boundary. When
+ * present it drives the same horizon-strip + blocker treatment instead of
+ * the Ricarten one-off flag.
  *
  * `fieldGates` carries the field's authored AddGate records verbatim
  * (including source anomalies like the ff-01 -> pilai dead coordinate and
@@ -369,6 +402,7 @@ export interface PtMapDescriptor {
   textureBase: string;
   stageObjects: PtStageObjectsModule | null;
   oceanRing: boolean;
+  sea?: { edges: readonly PtSeaEdge[] } | null;
   fieldGates?: readonly PtFieldGateLink[];
   warpGates?: readonly PtWarpGateLink[];
   posWarpOut?: { x: number; y: number; z: number } | null;

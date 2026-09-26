@@ -30,7 +30,11 @@ import {
   ptVertexScriptFor,
   type PtTextureAnim,
 } from '../src/render/pt_terrain';
-import { ptBakeVertexShade, ptVertexColorsOnly } from '../src/render/pt_vertex_shade';
+import {
+  ptBakeVertexShade,
+  ptVertexColorsOnly,
+  ptVertexColorsUnbaked,
+} from '../src/render/pt_vertex_shade';
 import { sharedUniforms } from '../src/render/gfx';
 import { loadPtDevMap } from '../src/game/pt_dev_maps';
 import {
@@ -268,18 +272,24 @@ describe('ruin-1 animated sea material', () => {
     const first = animMat!.map;
     expect(first).not.toBeNull();
     expect(first!.name).toContain('flame_0.png'); // frame 0, not the base slot
-    const seen = new Set<string>();
-    for (let t = 0; t < 8 * 64; t += 64) {
-      sharedUniforms.uTime.value = t / 1000;
+    // The tick reads the PT wall clock (source RendStatTime = wall ms), not
+    // the game-time uTime: fake wall time to step the frames deterministically.
+    const perfSpy = vi.spyOn(performance, 'now');
+    try {
+      const seen = new Set<string>();
+      for (let t = 0; t < 8 * 64; t += 64) {
+        perfSpy.mockReturnValue(t);
+        view.update();
+        seen.add(animMat!.map!.name);
+      }
+      expect(seen.size).toBe(8); // all 8 flame frames bound over one loop
+      perfSpy.mockReturnValue(8 * 64);
       view.update();
-      seen.add(animMat!.map!.name);
+      expect(animMat!.map!.name).toContain('flame_0.png'); // wrapped
+    } finally {
+      perfSpy.mockRestore();
+      view.dispose();
     }
-    expect(seen.size).toBe(8); // all 8 flame frames bound over one loop
-    sharedUniforms.uTime.value = (8 * 64) / 1000;
-    view.update();
-    expect(animMat!.map!.name).toContain('flame_0.png'); // wrapped
-    sharedUniforms.uTime.value = 0;
-    view.dispose();
   });
 
   it('fetches each animation frame URL at most once', async () => {
@@ -351,6 +361,68 @@ describe('ptBakeVertexShade', () => {
     // Deterministic decode.
     const rgb2 = ptVertexColorsOnly(PT_VERTEX_COLORS(), PT_N_VERTEX);
     expect(Array.from(rgb!)).toEqual(Array.from(rgb2!));
+  });
+});
+
+// Phase 6G: shipped .smd colors are already shade-baked at ASE conversion
+// (smSTAGE3D_ReadASE -> SetVertexShade mutates sDef_Color before SaveFile),
+// and the binary LoadFile never re-bakes. Re-baking them at runtime would
+// double-darken every ordinary field. Only lightmap fields - which skipped
+// the bake and keep authored-white 255 vertices - take the runtime gouraud.
+describe('ptVertexColorsUnbaked', () => {
+  it('flags the authored-white lightmap-stage color set', () => {
+    const allWhite = new Int16Array(8).fill(255);
+    expect(ptVertexColorsUnbaked(allWhite, 2)).toBe(true);
+  });
+
+  it('rejects post-bake colors (any channel below 255)', () => {
+    const baked = new Int16Array([255, 255, 255, 255, 200, 180, 160, 255]);
+    expect(ptVertexColorsUnbaked(baked, 2)).toBe(false);
+    // Alpha stays authored; only RGB counts.
+    const rgbOnly = new Int16Array([255, 255, 255, 0, 255, 255, 255, 0]);
+    expect(ptVertexColorsUnbaked(rgbOnly, 2)).toBe(true);
+  });
+
+  it('rejects empty/truncated buffers', () => {
+    expect(ptVertexColorsUnbaked(new Int16Array(0), 0)).toBe(false);
+    expect(ptVertexColorsUnbaked(new Int16Array(4), 4)).toBe(false);
+  });
+
+  it('the shipped Ricarten field is post-bake, not authored-white', async () => {
+    // Pin the data-level fact the runtime branch keys on: ricarten's stored
+    // sDef_Color varies (a real bake), so it must take the pass-through path.
+    const { descriptor } = await loadPtDevMap('ricarten');
+    const colors = descriptor.field.PT_VERTEX_COLORS?.() ?? null;
+    expect(colors).not.toBeNull();
+    expect(ptVertexColorsUnbaked(colors!, descriptor.field.PT_N_VERTEX)).toBe(false);
+  });
+
+  it('the shipped dun-1 lightmap field stays authored-white', async () => {
+    // dun-1 references lightmap textures: conversion skipped the bake, so
+    // its stored colors are the authored 255s the runtime must gouraud.
+    const { descriptor } = await loadPtDevMap('dun-1');
+    const colors = descriptor.field.PT_VERTEX_COLORS?.() ?? null;
+    expect(colors).not.toBeNull();
+    expect(ptVertexColorsUnbaked(colors!, descriptor.field.PT_N_VERTEX)).toBe(true);
+  });
+});
+
+// Phase 6G sea edges: the source-derived analyzer (scripts/pt-port/lib/
+// sea_edges.mjs) emits void-facing water sectors into maplinks.json, which
+// loadPtDevMap maps onto the descriptor for the terrain strip builder.
+describe('PtMapDescriptor.sea', () => {
+  it('fore-3 carries its authored north-lake sea edge', async () => {
+    const { descriptor } = await loadPtDevMap('fore-3');
+    expect(descriptor.sea?.edges.length).toBeGreaterThan(0);
+    const edge = descriptor.sea!.edges.find((e) => e.edge === 'maxZ');
+    expect(edge).toBeDefined();
+    expect(edge!.level).toBeCloseTo(0, 0);
+    expect(edge!.reach).toBeGreaterThan(0);
+  });
+
+  it('a landlocked field carries no sea', async () => {
+    const { descriptor } = await loadPtDevMap('sod-1');
+    expect(descriptor.sea == null || descriptor.sea.edges.length === 0).toBe(true);
   });
 });
 

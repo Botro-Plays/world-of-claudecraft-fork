@@ -202,6 +202,12 @@ export class Input {
   // locomotion system stay in sync with the Input's toggle state.
   onGaitModeChange?: (mode: 'run' | 'walk') => void;
   suspendMovement = false;
+  // World-freeze hold (e.g. the PT field-transition card): movement reads are
+  // suppressed like suspendMovement, but the held-key set is NOT wiped - a
+  // key still physically down resumes moving the player the frame the hold
+  // lifts. Nothing goes stale behind this freeze (there is no focus-taking
+  // UI), so the modal suspend's stale-input clear must not run.
+  worldFreezeHold = false;
   // click-to-move (#95): a world destination the player clicked; the frame loop
   // walks toward it until arrival or until the player takes manual control.
   // null when inactive. clickMoveTarget is the current waypoint; clickMoveGoal
@@ -1613,7 +1619,7 @@ export class Input {
   }
 
   readMoveInput(): MoveInput {
-    if (this.suspendMovement) {
+    if (this.suspendMovement || this.worldFreezeHold) {
       // A game menu / modal is open (or chat is focused). Suppress held keys and
       // pointer/touch/gamepad movement so menu keystrokes never leak into the
       // world, but keep the latched autorun running: in a classic MMO the world
@@ -1621,7 +1627,7 @@ export class Input {
       // you change a setting. The latch itself is untouched, and the next manual
       // forward/back key press still clears it.
       return {
-        forward: this.autorun,
+        forward: this.autorun && !this.worldFreezeHold,
         back: false,
         turnLeft: false,
         turnRight: false,

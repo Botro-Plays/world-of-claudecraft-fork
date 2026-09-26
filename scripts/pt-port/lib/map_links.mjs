@@ -47,6 +47,7 @@ import { join } from 'node:path';
 import { ptClientPath, ptSourceDir } from './pt_client.mjs';
 import { loadFieldRegistry } from './field_registry.mjs';
 import { parseSmd } from './stage_smd.mjs';
+import { analyzeFieldSea } from './sea_edges.mjs';
 
 // ---------------------------------------------------------------------------
 // Source readers (field.cpp is GBK-era; TextDecoder('gbk') for the name
@@ -297,28 +298,28 @@ function parseServerFieldDefines() {
   return out;
 }
 
-// Terrain bounds for dead-edge detection, read in PT coordinates straight
-// from the source .smd (the same parse auditMap reports). Best-effort - a
-// field whose terrain file is missing simply contributes no bound and edges
-// touching it stay unflagged.
-function makeFieldBounds(manifests) {
+// Terrain data for dead-edge detection and the Phase 6G sea-edge analysis,
+// read in PT coordinates straight from the source .smd (the same parse
+// auditMap reports). Best-effort - a field whose terrain file is missing
+// simply contributes no bound/sea data and edges touching it stay
+// unflagged. One lazy parse per field serves both consumers.
+function makeFieldData(manifests) {
   const byIndex = new Map();
   if (manifests) for (const m of manifests) byIndex.set(m.fieldIndex, m);
   const cache = new Map();
   return (fieldIndex) => {
     if (cache.has(fieldIndex)) return cache.get(fieldIndex);
-    let bounds = null;
+    let data = null;
     const m = byIndex.get(fieldIndex);
     if (m && existsSync(ptClientPath(m.smdPath))) {
       try {
-        const b = parseSmd(readFileSync(ptClientPath(m.smdPath))).bounds;
-        bounds = { minX: b.minX, maxX: b.maxX, minZ: b.minZ, maxZ: b.maxZ };
+        data = { smd: parseSmd(readFileSync(ptClientPath(m.smdPath))), manifest: m };
       } catch {
-        bounds = null;
+        data = null;
       }
     }
-    cache.set(fieldIndex, bounds);
-    return bounds;
+    cache.set(fieldIndex, data);
+    return data;
   };
 }
 
@@ -356,6 +357,9 @@ export function buildMapLinks(manifests = null) {
 
   const idOf = (i) => byIndex.get(i) ?? null;
 
+  const fieldData = makeFieldData(manifests);
+  const fieldBounds = (fi) => fieldData(fi)?.smd.bounds ?? null;
+
   const fields = registry.map((f) => ({
     fieldIndex: f.fieldIndex,
     id: idOf(f.fieldIndex),
@@ -369,10 +373,12 @@ export function buildMapLinks(manifests = null) {
     posWarpOut: f.posWarpOut,
   }));
 
+  // Phase 6G sea-edge detection lives below the fieldGates block: coverage
+  // and corridor checks need the non-dead gate neighbors per field.
+
   // FieldGate: every authored AddGate(A,B,...) is a bidirectional boundary
   // (AddGate also writes the reverse record into B via AddGate2). Emit one
   // undirected edge per authored record, endpoints resolved to package ids.
-  const fieldBounds = makeFieldBounds(manifests);
   const fieldGates = [];
   for (const f of registry) {
     for (const g of f.gates) {
@@ -394,6 +400,29 @@ export function buildMapLinks(manifests = null) {
       }
       fieldGates.push(rec);
     }
+  }
+
+  // Phase 6G: per-field sea-edge detection. A bounds edge sector that is
+  // not covered by a non-dead FieldGate neighbor's authored footprint AND
+  // carries water to the edge gets a `sea` record; the renderer turns each
+  // sector into the same ocean-strip/deep-sea treatment Ricarten has, sized
+  // to the sector and capped before any neighbor footprint. Gate neighbors
+  // are the only fields that can ever render adjacent (active+standby come
+  // exclusively from the gate scan), so covered seams and boundary rivers
+  // that continue into a neighbor emit nothing.
+  for (const rec of fields) {
+    const d = fieldData(rec.fieldIndex);
+    const b = d?.smd.bounds;
+    if (!d || !b) continue;
+    const others = [];
+    for (const g of fieldGates) {
+      if (g.dead) continue;
+      const nb = g.from === rec.fieldIndex ? g.to : g.to === rec.fieldIndex ? g.from : null;
+      if (nb === null || nb === rec.fieldIndex) continue;
+      const nbBounds = fieldBounds(nb);
+      if (nbBounds) others.push(nbBounds);
+    }
+    rec.sea = analyzeFieldSea(d.smd, d.manifest.water, b, others);
   }
 
   // WarpGate triggers verbatim (exits resolved to ids).

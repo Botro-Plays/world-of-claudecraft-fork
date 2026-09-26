@@ -2573,6 +2573,9 @@ const UI_DOM_MODULES = [
   // (fetch + decode), owned here so the corner minimap and the enlarged
   // M-key PT map share one fetch per URL instead of holding a cache each.
   'src/ui/pt_map_images.ts',
+  // The PT field-transition curtain owns its lazily mounted overlay DOM
+  // (document.createElement / body appendChild).
+  'src/ui/pt_transition_screen.ts',
   'src/ui/reconnect_overlay.ts',
   // reliquary_window.ts joined the ledger with the HUD-tracker pin store: the
   // pinned page set persists per character in localStorage (the deeds_window

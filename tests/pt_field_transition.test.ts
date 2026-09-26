@@ -57,10 +57,21 @@ function makeOverlay(): Recorder {
 interface Rig {
   rec: Recorder;
   inputHeld(): boolean;
+  drawHeld(): boolean;
+  raises: number;
   setBand(v: boolean): void;
   /** Bind a field. fresh=true swaps in a NEW binding object for the same id
    *  (a same-id /ptmap reinstall: a re-entry, not the same binding). */
   setActive(id: string | null, fresh?: boolean): void;
+  /** Install (or clear) the preloaded FieldGate-neighbor binding. fresh
+   *  swaps in a NEW binding object for the same id (a rebuilt descriptor). */
+  setStandby(id: string | null, fresh?: boolean): void;
+  /** Mark which standby id is within the pre-entry margin (null = none). */
+  setNear(id: string | null): void;
+  /** Mark which standby id the player is closing on (null = none/idle). */
+  setApproach(id: string | null): void;
+  /** Standby-gate view states, keyed by id (the active gate uses setState). */
+  setStandbyState(id: string, s: PtFieldViewState): void;
   setState(id: string, s: PtFieldViewState): void;
   advance(ms: number): void;
   tick(): void;
@@ -79,12 +90,24 @@ function makeRig(overrides: Partial<PtFieldTransitionDeps> = {}): Rig {
     return b;
   };
   let active: { id: string } | null = bindingFor('ricarten');
+  let standby: { id: string } | null = null;
+  let nearId: string | null = null;
+  let approachId: string | null = null;
   let now = 0;
+  let raises = 0;
   const states = new Map<string, PtFieldViewState>();
+  const standbyStates = new Map<string, PtFieldViewState>();
   const deps: PtFieldTransitionDeps = {
     inPtBand: () => band,
     activeMap: () => active,
+    standbyMap: () => standby,
     viewState: (id) => states.get(id) ?? 'none',
+    standbyViewState: (id) => standbyStates.get(id) ?? 'none',
+    nearGateTo: (id) => nearId === id,
+    approachingGateTo: (id) => approachId === id,
+    onRaise: () => {
+      raises++;
+    },
     fieldName: (id) => id.toUpperCase(),
     overlay: rec.overlay,
     nowMs: () => now,
@@ -93,12 +116,28 @@ function makeRig(overrides: Partial<PtFieldTransitionDeps> = {}): Rig {
   const t = createPtFieldTransition(deps);
   return {
     rec,
+    get raises() {
+      return raises;
+    },
     inputHeld: () => t.inputHeld,
+    drawHeld: () => t.drawHeld,
     setBand: (v) => {
       band = v;
     },
     setActive: (id, fresh = false) => {
       active = id === null ? null : fresh ? { id } : bindingFor(id);
+    },
+    setStandby: (id, fresh = false) => {
+      standby = id === null ? null : fresh ? { id } : bindingFor(id);
+    },
+    setNear: (id) => {
+      nearId = id;
+    },
+    setApproach: (id) => {
+      approachId = id;
+    },
+    setStandbyState: (id, s) => {
+      standbyStates.set(id, s);
     },
     setState: (id, s) => {
       states.set(id, s);
@@ -327,6 +366,208 @@ describe('pt_field_transition orchestrator', () => {
     r.setState('ricarten', 'ready');
     r.tick();
     expect(r.rec.progress.at(-1)).toBe(100);
+  });
+
+  it('raises the pre-entry card for a near gate while the standby builds', () => {
+    const r = makeRig();
+    reveal(r, 'ricarten');
+    r.setStandby('fore-1');
+    r.setNear('fore-1');
+    r.setApproach('fore-1');
+    r.setStandbyState('fore-1', 'building');
+    r.tick();
+    // The card presents the DESTINATION field and freezes input+draw before
+    // the boundary is crossed.
+    expect(r.rec.shows).toEqual(['RICARTEN', 'FORE-1']);
+    expect(r.inputHeld()).toBe(true);
+    expect(r.drawHeld()).toBe(true);
+    expect(r.raises).toBe(2);
+    // The standby build finishing + the minimum lifts the card while the
+    // binding has not changed - the player is still pre-crossing.
+    r.setStandbyState('fore-1', 'ready');
+    r.advance(PT_TRANSITION_MIN_MS);
+    r.tick();
+    expect(r.rec.hides).toBe(2);
+    expect(r.inputHeld()).toBe(false);
+    expect(r.drawHeld()).toBe(false);
+  });
+
+  it('suppresses the flip card for the promotion a lifted pre-entry card armed', () => {
+    const r = makeRig();
+    reveal(r, 'ricarten');
+    r.setStandby('fore-1');
+    r.setNear('fore-1');
+    r.setApproach('fore-1');
+    r.setStandbyState('fore-1', 'ready');
+    r.tick();
+    r.advance(PT_TRANSITION_MIN_MS);
+    r.tick();
+    expect(r.rec.hides).toBe(2);
+    // The player walks through: the same binding object promotes to active
+    // (promoteStandbyField swaps the slots, so ricarten becomes standby).
+    r.setActive('fore-1');
+    r.setStandby('ricarten');
+    r.setState('fore-1', 'ready');
+    r.tick();
+    r.advance(PT_TRANSITION_MIN_MS + 100);
+    r.tick();
+    expect(r.rec.shows).toEqual(['RICARTEN', 'FORE-1']);
+    expect(r.rec.hides).toBe(2);
+    // And the new revealed binding is stable.
+    for (let i = 0; i < 5; i++) r.tick();
+    expect(r.rec.shows).toHaveLength(2);
+  });
+
+  it('does not re-raise the pre-entry card while the armed crossing is pending', () => {
+    const r = makeRig();
+    reveal(r, 'ricarten');
+    r.setStandby('fore-1');
+    r.setNear('fore-1');
+    r.setApproach('fore-1');
+    r.setStandbyState('fore-1', 'ready');
+    r.tick();
+    r.advance(PT_TRANSITION_MIN_MS);
+    r.tick();
+    expect(r.rec.hides).toBe(2);
+    // The card lifted and armed the pending crossing. The player is still
+    // inside the gate mouth (the walk-through takes a moment), so the mouth
+    // probes stay true - but the armed expectation means this crossing was
+    // already presented, and must not re-raise every minimum interval.
+    for (let i = 0; i < 10; i++) {
+      r.tick();
+      r.advance(PT_TRANSITION_MIN_MS);
+    }
+    expect(r.rec.shows).toEqual(['RICARTEN', 'FORE-1']);
+    expect(r.rec.hides).toBe(2);
+    expect(r.inputHeld()).toBe(false);
+  });
+
+  it('does not arm the pre-entry card for an idle player inside the margin', () => {
+    const r = makeRig();
+    reveal(r, 'ricarten');
+    r.setStandby('fore-1');
+    // Near the gate but not closing on it (stopped just past a crossing,
+    // or simply standing at the mouth): proximity alone arms nothing.
+    r.setNear('fore-1');
+    r.setStandbyState('fore-1', 'ready');
+    for (let i = 0; i < 5; i++) r.tick();
+    expect(r.rec.shows).toEqual(['RICARTEN']);
+    expect(r.inputHeld()).toBe(false);
+  });
+
+  it('re-arms a fresh standby binding even when its id matches the lifted card', () => {
+    const r = makeRig();
+    reveal(r, 'ricarten');
+    r.setStandby('fore-1');
+    r.setNear('fore-1');
+    r.setApproach('fore-1');
+    r.setStandbyState('fore-1', 'ready');
+    r.tick();
+    r.advance(PT_TRANSITION_MIN_MS);
+    r.tick();
+    expect(r.rec.hides).toBe(2);
+    // The gate scan swapped the standby binding for a fresh descriptor of
+    // the same field: the armed expectation keyed on the OLD binding no
+    // longer describes this approach, so the card may raise again.
+    r.setStandby('fore-1', true);
+    r.tick();
+    expect(r.rec.shows).toEqual(['RICARTEN', 'FORE-1', 'FORE-1']);
+    expect(r.inputHeld()).toBe(true);
+  });
+
+  it('keeps the expectation armed only while the crossing is still pending', () => {
+    const r = makeRig();
+    reveal(r, 'ricarten');
+    r.setStandby('fore-1');
+    r.setNear('fore-1');
+    r.setApproach('fore-1');
+    r.setStandbyState('fore-1', 'ready');
+    r.tick();
+    r.advance(PT_TRANSITION_MIN_MS);
+    r.tick();
+    expect(r.rec.hides).toBe(2);
+    // The player turns around instead of crossing: the slot rotates away
+    // and the gate approach lapses, so a LATER entry to fore-1 gets a
+    // fresh card.
+    r.setStandby(null);
+    r.setNear(null);
+    r.setApproach(null);
+    r.tick();
+    r.setActive('fore-1');
+    r.setState('fore-1', 'ready');
+    r.tick();
+    expect(r.rec.shows).toEqual(['RICARTEN', 'FORE-1', 'FORE-1']);
+  });
+
+  it('drops the pre-entry card when the standby slot rotates without a crossing', () => {
+    const r = makeRig();
+    reveal(r, 'ricarten');
+    r.setStandby('fore-1');
+    r.setNear('fore-1');
+    r.setApproach('fore-1');
+    r.setStandbyState('fore-1', 'building');
+    r.tick();
+    expect(r.inputHeld()).toBe(true);
+    // The gate scan retargeted the slot to a different neighbor, and the
+    // player is not near that gate: the approach ended.
+    r.setStandby('fore-2');
+    r.setNear(null);
+    r.tick();
+    expect(r.rec.hides).toBe(2);
+    expect(r.inputHeld()).toBe(false);
+  });
+
+  it('retargets the pre-entry card when another gate is armed', () => {
+    const r = makeRig();
+    reveal(r, 'ricarten');
+    r.setStandby('fore-1');
+    r.setNear('fore-1');
+    r.setApproach('fore-1');
+    r.setStandbyState('fore-1', 'building');
+    r.tick();
+    // The slot rotated to a neighbor whose gate the player is also near.
+    r.setStandby('fore-2');
+    r.setNear('fore-2');
+    r.setStandbyState('fore-2', 'building');
+    r.tick();
+    expect(r.rec.shows).toEqual(['RICARTEN', 'FORE-1', 'FORE-2']);
+    expect(r.rec.hides).toBe(1);
+    expect(r.inputHeld()).toBe(true);
+  });
+
+  it('finishes as a flip transition when promotion runs under the open card', () => {
+    const r = makeRig();
+    reveal(r, 'ricarten');
+    r.setStandby('fore-1');
+    r.setNear('fore-1');
+    r.setApproach('fore-1');
+    r.setStandbyState('fore-1', 'building');
+    r.tick();
+    // Promotion raced the arm: the same binding is now active.
+    r.setActive('fore-1');
+    r.setStandby('ricarten');
+    r.setState('fore-1', 'ready');
+    r.tick();
+    // Still the same card, now reading the active-gate probe.
+    expect(r.rec.shows).toEqual(['RICARTEN', 'FORE-1']);
+    r.advance(PT_TRANSITION_MIN_MS);
+    r.tick();
+    expect(r.rec.hides).toBe(2);
+    for (let i = 0; i < 5; i++) r.tick();
+    expect(r.rec.shows).toHaveLength(2);
+  });
+
+  it('reports drawHeld alongside inputHeld through the whole card', () => {
+    const r = makeRig();
+    r.setState('ricarten', 'building');
+    r.tick();
+    expect(r.inputHeld()).toBe(true);
+    expect(r.drawHeld()).toBe(true);
+    r.setState('ricarten', 'ready');
+    r.advance(PT_TRANSITION_MIN_MS);
+    r.tick();
+    expect(r.inputHeld()).toBe(false);
+    expect(r.drawHeld()).toBe(false);
   });
 });
 

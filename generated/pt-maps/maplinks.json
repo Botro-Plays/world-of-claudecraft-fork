@@ -51,6 +51,20 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": {
+        "edges": [
+          {
+            "edge": "maxZ",
+            "from": -19846.1,
+            "to": -8375.3,
+            "reach": 111600,
+            "level": 0,
+            "materialIndex": 119,
+            "uScale": 0.001489,
+            "vScale": 0.001489
+          }
+        ]
+      },
       "component": 0,
       "reachability": "foot"
     },
@@ -80,6 +94,20 @@
         "x": -3265,
         "y": 214,
         "z": -12583
+      },
+      "sea": {
+        "edges": [
+          {
+            "edge": "minZ",
+            "from": -8175,
+            "to": -156.8,
+            "reach": 111600,
+            "level": 477.1,
+            "materialIndex": 122,
+            "uScale": 0.002794,
+            "vScale": 0.002187
+          }
+        ]
       },
       "component": 0,
       "reachability": "foot"
@@ -111,6 +139,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 0,
       "reachability": "foot"
     },
@@ -141,6 +170,30 @@
         "y": 254,
         "z": -19956
       },
+      "sea": {
+        "edges": [
+          {
+            "edge": "minX",
+            "from": -22373.3,
+            "to": -13194.4,
+            "reach": 111600,
+            "level": 101.8,
+            "materialIndex": 107,
+            "uScale": 0.000411,
+            "vScale": 0.001809
+          },
+          {
+            "edge": "minZ",
+            "from": -3498.3,
+            "to": 5584.7,
+            "reach": 111600,
+            "level": 101.8,
+            "materialIndex": 107,
+            "uScale": 0.00174,
+            "vScale": 0.000594
+          }
+        ]
+      },
       "component": 0,
       "reachability": "foot"
     },
@@ -167,6 +220,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 0,
       "reachability": "foot"
     },
@@ -193,6 +247,20 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": {
+        "edges": [
+          {
+            "edge": "minX",
+            "from": 5759.4,
+            "to": 16882.1,
+            "reach": 111600,
+            "level": 386.4,
+            "materialIndex": 389,
+            "uScale": 0.002408,
+            "vScale": 0.002408
+          }
+        ]
+      },
       "component": 0,
       "reachability": "foot"
     },
@@ -227,6 +295,7 @@
         "y": 817,
         "z": 22616
       },
+      "sea": null,
       "component": 0,
       "reachability": "foot"
     },
@@ -253,6 +322,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 0,
       "reachability": "foot"
     },
@@ -279,6 +349,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 0,
       "reachability": "foot"
     },
@@ -305,6 +376,7 @@
         "y": 825,
         "z": -1712
       },
+      "sea": null,
       "component": 0,
       "reachability": "foot"
     },
@@ -331,6 +403,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 0,
       "reachability": "foot"
     },
@@ -357,6 +430,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 0,
       "reachability": "foot"
     },
@@ -387,6 +461,7 @@
         "y": 940,
         "z": 6214
       },
+      "sea": null,
       "component": 0,
       "reachability": "foot"
     },
@@ -404,6 +479,7 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": null,
       "component": 1,
       "reachability": "warp"
     },
@@ -421,6 +497,7 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": null,
       "component": 2,
       "reachability": "warp"
     },
@@ -438,6 +515,7 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": null,
       "component": 3,
       "reachability": "warp"
     },
@@ -455,6 +533,7 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": null,
       "component": 4,
       "reachability": "isolated"
     },
@@ -481,6 +560,20 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": {
+        "edges": [
+          {
+            "edge": "maxX",
+            "from": 27942.3,
+            "to": 41169.4,
+            "reach": 111600,
+            "level": 481.1,
+            "materialIndex": 267,
+            "uScale": 0.003002,
+            "vScale": 0.001884
+          }
+        ]
+      },
       "component": 0,
       "reachability": "foot"
     },
@@ -511,6 +604,7 @@
         "y": 1146,
         "z": 48002
       },
+      "sea": null,
       "component": 0,
       "reachability": "foot"
     },
@@ -541,6 +635,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 0,
       "reachability": "foot"
     },
@@ -567,6 +662,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 0,
       "reachability": "foot"
     },
@@ -597,6 +693,7 @@
         "y": 754,
         "z": 78041
       },
+      "sea": null,
       "component": 5,
       "reachability": "foot"
     },
@@ -614,6 +711,7 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": null,
       "component": 6,
       "reachability": "warp"
     },
@@ -631,6 +729,50 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": {
+        "edges": [
+          {
+            "edge": "minX",
+            "from": -44600.9,
+            "to": -34441.6,
+            "reach": 111600,
+            "level": 820.4,
+            "materialIndex": 123,
+            "uScale": 0.019992,
+            "vScale": 0.020012
+          },
+          {
+            "edge": "maxX",
+            "from": -44600.9,
+            "to": -34441.6,
+            "reach": 111600,
+            "level": 820.4,
+            "materialIndex": 123,
+            "uScale": 0.019992,
+            "vScale": 0.020012
+          },
+          {
+            "edge": "minZ",
+            "from": -7946.9,
+            "to": 616.5,
+            "reach": 111600,
+            "level": 578.6,
+            "materialIndex": 123,
+            "uScale": 0.019993,
+            "vScale": 0.020013
+          },
+          {
+            "edge": "maxZ",
+            "from": -7946.9,
+            "to": 616.5,
+            "reach": 111600,
+            "level": 1209.1,
+            "materialIndex": 123,
+            "uScale": 0.006127,
+            "vScale": 0.006133
+          }
+        ]
+      },
       "component": 7,
       "reachability": "warp"
     },
@@ -657,6 +799,50 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": {
+        "edges": [
+          {
+            "edge": "minX",
+            "from": 21375.2,
+            "to": 27314.9,
+            "reach": 111600,
+            "level": 589.8,
+            "materialIndex": 97,
+            "uScale": 0.005072,
+            "vScale": 0.014623
+          },
+          {
+            "edge": "maxX",
+            "from": 21375.2,
+            "to": 27314.9,
+            "reach": 111600,
+            "level": 592.1,
+            "materialIndex": 103,
+            "uScale": 0.004214,
+            "vScale": 0.003517
+          },
+          {
+            "edge": "minZ",
+            "from": 118601.3,
+            "to": 126576.6,
+            "reach": 111600,
+            "level": 654.4,
+            "materialIndex": 108,
+            "uScale": 0.004675,
+            "vScale": 0.00499
+          },
+          {
+            "edge": "maxZ",
+            "from": 118601.3,
+            "to": 126576.6,
+            "reach": 111600,
+            "level": 524.3,
+            "materialIndex": 29,
+            "uScale": 0.018591,
+            "vScale": 0.018591
+          }
+        ]
+      },
       "component": 8,
       "reachability": "warp"
     },
@@ -683,6 +869,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 9,
       "reachability": "warp"
     },
@@ -700,6 +887,50 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": {
+        "edges": [
+          {
+            "edge": "minX",
+            "from": 16639.3,
+            "to": 22734.8,
+            "reach": 111600,
+            "level": 427,
+            "materialIndex": 64,
+            "uScale": 0.007808,
+            "vScale": 0.016892
+          },
+          {
+            "edge": "maxX",
+            "from": 16639.3,
+            "to": 22734.8,
+            "reach": 111600,
+            "level": 757.8,
+            "materialIndex": 64,
+            "uScale": 0.016187,
+            "vScale": 0.032988
+          },
+          {
+            "edge": "minZ",
+            "from": 157686.2,
+            "to": 165501,
+            "reach": 111600,
+            "level": 694.1,
+            "materialIndex": 69,
+            "uScale": 0.002921,
+            "vScale": 0.000661
+          },
+          {
+            "edge": "maxZ",
+            "from": 157686.2,
+            "to": 165501,
+            "reach": 111600,
+            "level": 692.9,
+            "materialIndex": 69,
+            "uScale": 0.002921,
+            "vScale": 0.000661
+          }
+        ]
+      },
       "component": 10,
       "reachability": "warp"
     },
@@ -730,6 +961,30 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": {
+        "edges": [
+          {
+            "edge": "maxX",
+            "from": 11191.7,
+            "to": 22560.6,
+            "reach": 111600,
+            "level": 961.5,
+            "materialIndex": 19,
+            "uScale": 0.004255,
+            "vScale": 0.005294
+          },
+          {
+            "edge": "minZ",
+            "from": 45185.6,
+            "to": 51828.5,
+            "reach": 111600,
+            "level": 967.9,
+            "materialIndex": 83,
+            "uScale": 0.00683,
+            "vScale": 0.006851
+          }
+        ]
+      },
       "component": 0,
       "reachability": "foot"
     },
@@ -756,6 +1011,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 0,
       "reachability": "foot"
     },
@@ -777,6 +1033,7 @@
         "y": 1304,
         "z": 22164
       },
+      "sea": null,
       "component": 0,
       "reachability": "foot"
     },
@@ -794,6 +1051,7 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": null,
       "component": 0,
       "reachability": "foot"
     },
@@ -811,6 +1069,7 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": null,
       "component": 0,
       "reachability": "foot"
     },
@@ -828,6 +1087,7 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": null,
       "component": 11,
       "reachability": "server"
     },
@@ -862,6 +1122,7 @@
         "y": 711,
         "z": -30474
       },
+      "sea": null,
       "component": 12,
       "reachability": "ui-item"
     },
@@ -879,6 +1140,40 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": {
+        "edges": [
+          {
+            "edge": "maxX",
+            "from": 17322.9,
+            "to": 30287.5,
+            "reach": 111600,
+            "level": 847,
+            "materialIndex": 235,
+            "uScale": 0.000371,
+            "vScale": 0.000371
+          },
+          {
+            "edge": "minZ",
+            "from": 13306.3,
+            "to": 23889.1,
+            "reach": 111600,
+            "level": 847,
+            "materialIndex": 235,
+            "uScale": 0.000371,
+            "vScale": 0.000371
+          },
+          {
+            "edge": "maxZ",
+            "from": 12706.3,
+            "to": 23889.1,
+            "reach": 111600,
+            "level": 847,
+            "materialIndex": 235,
+            "uScale": 0.000371,
+            "vScale": 0.000371
+          }
+        ]
+      },
       "component": 0,
       "reachability": "foot"
     },
@@ -896,6 +1191,7 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": null,
       "component": 0,
       "reachability": "foot"
     },
@@ -913,6 +1209,30 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": {
+        "edges": [
+          {
+            "edge": "minZ",
+            "from": 31827.9,
+            "to": 34226.7,
+            "reach": 111600,
+            "level": 1526,
+            "materialIndex": 18,
+            "uScale": 0.009674,
+            "vScale": 0.009674
+          },
+          {
+            "edge": "maxZ",
+            "from": 31827.9,
+            "to": 34226.7,
+            "reach": 111600,
+            "level": 1443.5,
+            "materialIndex": 18,
+            "uScale": 0.006695,
+            "vScale": 0.02072
+          }
+        ]
+      },
       "component": 13,
       "reachability": "warp"
     },
@@ -934,6 +1254,40 @@
         "y": 668,
         "z": -1113
       },
+      "sea": {
+        "edges": [
+          {
+            "edge": "minX",
+            "from": -5516.1,
+            "to": 7734.1,
+            "reach": 111600,
+            "level": 171.8,
+            "materialIndex": 88,
+            "uScale": 0.00386,
+            "vScale": 0.004017
+          },
+          {
+            "edge": "maxX",
+            "from": -5516.1,
+            "to": 7683.9,
+            "reach": 111600,
+            "level": 171.8,
+            "materialIndex": 88,
+            "uScale": 0.004142,
+            "vScale": 0.003794
+          },
+          {
+            "edge": "minZ",
+            "from": -19066.9,
+            "to": -6866.9,
+            "reach": 111600,
+            "level": 171.8,
+            "materialIndex": 88,
+            "uScale": 0.003982,
+            "vScale": 0.003707
+          }
+        ]
+      },
       "component": 14,
       "reachability": "ui-item"
     },
@@ -951,6 +1305,40 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": {
+        "edges": [
+          {
+            "edge": "minX",
+            "from": 7885.8,
+            "to": 16554.9,
+            "reach": 111600,
+            "level": 170.5,
+            "materialIndex": 202,
+            "uScale": 0.004203,
+            "vScale": 0.003816
+          },
+          {
+            "edge": "maxX",
+            "from": 7885.8,
+            "to": 16554.9,
+            "reach": 111600,
+            "level": 170.5,
+            "materialIndex": 202,
+            "uScale": 0.003819,
+            "vScale": 0.003863
+          },
+          {
+            "edge": "maxZ",
+            "from": -17807.4,
+            "to": -6864.9,
+            "reach": 111600,
+            "level": 170.5,
+            "materialIndex": 202,
+            "uScale": 0.004037,
+            "vScale": 0.004024
+          }
+        ]
+      },
       "component": 14,
       "reachability": "ui-item"
     },
@@ -968,6 +1356,7 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": null,
       "component": 15,
       "reachability": "ui-item"
     },
@@ -985,6 +1374,30 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": {
+        "edges": [
+          {
+            "edge": "minX",
+            "from": -44338,
+            "to": -36838,
+            "reach": 111600,
+            "level": 353.2,
+            "materialIndex": 148,
+            "uScale": 0.008694,
+            "vScale": 0.012788
+          },
+          {
+            "edge": "maxX",
+            "from": -44338,
+            "to": -36838,
+            "reach": 111600,
+            "level": 373.4,
+            "materialIndex": 400,
+            "uScale": 0.008832,
+            "vScale": 0.013012
+          }
+        ]
+      },
       "component": 16,
       "reachability": "ui-item"
     },
@@ -1002,6 +1415,50 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": {
+        "edges": [
+          {
+            "edge": "minX",
+            "from": -42168.8,
+            "to": -35871.7,
+            "reach": 111600,
+            "level": 161,
+            "materialIndex": 19,
+            "uScale": 0.01594,
+            "vScale": 0.015956
+          },
+          {
+            "edge": "maxX",
+            "from": -42168.8,
+            "to": -35871.7,
+            "reach": 111600,
+            "level": 161,
+            "materialIndex": 19,
+            "uScale": 0.015938,
+            "vScale": 0.015954
+          },
+          {
+            "edge": "minZ",
+            "from": 1561.8,
+            "to": 8958.5,
+            "reach": 111600,
+            "level": 115.9,
+            "materialIndex": 19,
+            "uScale": 0.015844,
+            "vScale": 0.01586
+          },
+          {
+            "edge": "maxZ",
+            "from": 1561.8,
+            "to": 8958.5,
+            "reach": 111600,
+            "level": 88.8,
+            "materialIndex": 19,
+            "uScale": 0.015854,
+            "vScale": 0.01587
+          }
+        ]
+      },
       "component": 17,
       "reachability": "ui-item"
     },
@@ -1019,6 +1476,50 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": {
+        "edges": [
+          {
+            "edge": "minX",
+            "from": -50818.2,
+            "to": -44271.1,
+            "reach": 111600,
+            "level": 426.7,
+            "materialIndex": 10,
+            "uScale": 0.019613,
+            "vScale": 0.019632
+          },
+          {
+            "edge": "maxX",
+            "from": -50818.2,
+            "to": -44271.1,
+            "reach": 111600,
+            "level": 316.9,
+            "materialIndex": 10,
+            "uScale": 0.019613,
+            "vScale": 0.019633
+          },
+          {
+            "edge": "minZ",
+            "from": -6125.6,
+            "to": 32.1,
+            "reach": 111600,
+            "level": 83.4,
+            "materialIndex": 10,
+            "uScale": 0.019614,
+            "vScale": 0.019634
+          },
+          {
+            "edge": "maxZ",
+            "from": -6125.6,
+            "to": 32.1,
+            "reach": 111600,
+            "level": 257.6,
+            "materialIndex": 10,
+            "uScale": 0.019613,
+            "vScale": 0.019633
+          }
+        ]
+      },
       "component": 18,
       "reachability": "warp"
     },
@@ -1045,6 +1546,30 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": {
+        "edges": [
+          {
+            "edge": "minX",
+            "from": -49397.4,
+            "to": -41885.2,
+            "reach": 111600,
+            "level": 446.9,
+            "materialIndex": 8,
+            "uScale": 0.022049,
+            "vScale": 0.022071
+          },
+          {
+            "edge": "maxZ",
+            "from": 504,
+            "to": 9932.3,
+            "reach": 111600,
+            "level": 275.2,
+            "materialIndex": 8,
+            "uScale": 0.019735,
+            "vScale": 0.022808
+          }
+        ]
+      },
       "component": 19,
       "reachability": "ui-item"
     },
@@ -1062,6 +1587,7 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": null,
       "component": 20,
       "reachability": "warp"
     },
@@ -1084,6 +1610,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 21,
       "reachability": "warp"
     },
@@ -1110,6 +1637,7 @@
         "y": 510,
         "z": -62387
       },
+      "sea": null,
       "component": 22,
       "reachability": "warp"
     },
@@ -1132,6 +1660,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 23,
       "reachability": "ui-item"
     },
@@ -1158,6 +1687,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 24,
       "reachability": "ui-item"
     },
@@ -1184,6 +1714,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 24,
       "reachability": "ui-item"
     },
@@ -1210,6 +1741,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 24,
       "reachability": "ui-item"
     },
@@ -1236,6 +1768,30 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": {
+        "edges": [
+          {
+            "edge": "minX",
+            "from": -21865.4,
+            "to": -14778.4,
+            "reach": 111600,
+            "level": 1139.2,
+            "materialIndex": 2,
+            "uScale": 0.001864,
+            "vScale": 0.002089
+          },
+          {
+            "edge": "minZ",
+            "from": -41377.4,
+            "to": -32877.5,
+            "reach": 111600,
+            "level": 1157.5,
+            "materialIndex": 2,
+            "uScale": 0.0002,
+            "vScale": 0.002793
+          }
+        ]
+      },
       "component": 24,
       "reachability": "ui-item"
     },
@@ -1258,6 +1814,20 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": {
+        "edges": [
+          {
+            "edge": "minZ",
+            "from": -26978.9,
+            "to": -18589.4,
+            "reach": 111600,
+            "level": 995.6,
+            "materialIndex": 4,
+            "uScale": 0.002431,
+            "vScale": 0.004073
+          }
+        ]
+      },
       "component": 24,
       "reachability": "ui-item"
     },
@@ -1280,6 +1850,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 24,
       "reachability": "ui-item"
     },
@@ -1306,6 +1877,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 24,
       "reachability": "ui-item"
     },
@@ -1328,6 +1900,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 24,
       "reachability": "ui-item"
     },
@@ -1350,6 +1923,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 24,
       "reachability": "ui-item"
     },
@@ -1372,6 +1946,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 25,
       "reachability": "warp"
     },
@@ -1394,6 +1969,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 26,
       "reachability": "server"
     },
@@ -1416,6 +1992,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 27,
       "reachability": "ui-item"
     },
@@ -1438,6 +2015,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 0,
       "reachability": "foot"
     },
@@ -1460,6 +2038,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 28,
       "reachability": "ui-item"
     },
@@ -1482,6 +2061,7 @@
         ]
       ],
       "posWarpOut": null,
+      "sea": null,
       "component": 29,
       "reachability": "ui-item"
     },
@@ -1499,6 +2079,7 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": null,
       "component": 30,
       "reachability": "ui-item"
     },
@@ -1516,6 +2097,7 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": null,
       "component": 31,
       "reachability": "ui-item"
     },
@@ -1533,6 +2115,7 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": null,
       "component": 32,
       "reachability": "ui-item"
     },
@@ -1550,6 +2133,50 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": {
+        "edges": [
+          {
+            "edge": "minX",
+            "from": -44554.1,
+            "to": -37920.4,
+            "reach": 111600,
+            "level": 471.8,
+            "materialIndex": 132,
+            "uScale": 0.019801,
+            "vScale": 0.019819
+          },
+          {
+            "edge": "maxX",
+            "from": -44554.1,
+            "to": -37920.4,
+            "reach": 111600,
+            "level": 430.9,
+            "materialIndex": 132,
+            "uScale": 0.019543,
+            "vScale": 0.019561
+          },
+          {
+            "edge": "minZ",
+            "from": 23042.4,
+            "to": 27767.9,
+            "reach": 111600,
+            "level": 478,
+            "materialIndex": 132,
+            "uScale": 0.019982,
+            "vScale": 0.02
+          },
+          {
+            "edge": "maxZ",
+            "from": 23042.4,
+            "to": 27767.9,
+            "reach": 111600,
+            "level": 426.8,
+            "materialIndex": 132,
+            "uScale": 0.019584,
+            "vScale": 0.019602
+          }
+        ]
+      },
       "component": 33,
       "reachability": "ui-item"
     },
@@ -1567,6 +2194,50 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": {
+        "edges": [
+          {
+            "edge": "minX",
+            "from": -44895.6,
+            "to": -36112.8,
+            "reach": 111600,
+            "level": 867.2,
+            "materialIndex": 129,
+            "uScale": 0.019583,
+            "vScale": 0.019601
+          },
+          {
+            "edge": "maxX",
+            "from": -44895.6,
+            "to": -36112.8,
+            "reach": 111600,
+            "level": 665.8,
+            "materialIndex": 129,
+            "uScale": 0.019584,
+            "vScale": 0.019601
+          },
+          {
+            "edge": "minZ",
+            "from": 30785.4,
+            "to": 36904,
+            "reach": 111600,
+            "level": 235.6,
+            "materialIndex": 129,
+            "uScale": 0.019584,
+            "vScale": 0.019601
+          },
+          {
+            "edge": "maxZ",
+            "from": 30785.4,
+            "to": 36904,
+            "reach": 111600,
+            "level": 757.7,
+            "materialIndex": 129,
+            "uScale": 0.019586,
+            "vScale": 0.019604
+          }
+        ]
+      },
       "component": 34,
       "reachability": "ui-item"
     },
@@ -1584,6 +2255,7 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": null,
       "component": 35,
       "reachability": "ui-item"
     },
@@ -1601,6 +2273,7 @@
       ],
       "startPoints": [],
       "posWarpOut": null,
+      "sea": null,
       "component": 36,
       "reachability": "ui-item"
     }

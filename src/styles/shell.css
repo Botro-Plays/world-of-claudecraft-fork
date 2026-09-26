@@ -2201,48 +2201,33 @@
   /* ---------- PT field-transition curtain ---------- */
   /* One z-step below #loading-screen (150): a boot/arrival curtain raised over
      an open PT transition wins the handoff, while the transition still covers
-     the whole viewport (and the incomplete destination world) underneath. */
+     the whole viewport (and the incomplete destination world) underneath.
+     Phase 6G: a translucent dim over the FROZEN last frame (the world draw is
+     held while this is up), not an opaque screen - the field the player is
+     leaving stays visible behind the card. */
   #pt-transition-screen {
     position: fixed;
     inset: 0;
     z-index: 149;
     display: none;
-    background-color: #0a0d14;
+    background: rgba(4, 7, 14, 0.62);
     background-image:
-      linear-gradient(180deg, #02040bbd 0%, #02040b26 34%, #02040b1a 58%, #02040bd9 100%),
-      var(--loading-backdrop-image, none);
-    background-position: center;
-    background-size: cover;
-    background-repeat: no-repeat;
+      radial-gradient(ellipse at center, #02040b00 0%, #02040b59 78%, #02040ba8 100%);
     flex-direction: column;
     align-items: center;
-    justify-content: space-between;
-    padding: 6vh 0 7vh;
+    justify-content: center;
     opacity: 1;
-    transition: opacity calc(0.35s * var(--motion-scale)) ease;
+    transition: opacity calc(0.25s * var(--motion-scale)) ease;
   }
   #pt-transition-screen.visible {
     display: flex;
-  }
-  #pt-transition-screen .pts-logo {
-    width: min(380px, 64vw);
-    height: auto;
-    filter: drop-shadow(0 0 24px #000c) drop-shadow(2px 2px 5px #000);
   }
   #pt-transition-screen .pts-center {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 9px;
+    gap: 10px;
     outline: none;
-  }
-  #pt-transition-screen .pts-entering {
-    color: var(--color-text-muted);
-    font-family: var(--font-heading);
-    font-size: 14px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    text-shadow: 1px 1px 2px #000;
   }
   #pt-transition-screen .pts-field {
     color: var(--color-text-light);

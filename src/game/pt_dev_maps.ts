@@ -334,6 +334,10 @@ export async function loadPtDevMap(id: string): Promise<PtDevLoadedMap> {
     textureBase: textureBaseFor(m, id),
     stageObjects,
     oceanRing: false,
+    // Source-derived sea edges from the maplinks graph (void-facing bounds
+    // sectors carrying boundary water); drives the generalized Ricarten
+    // ocean treatment in pt_terrain.ts.
+    sea: ptMapLinksForField(id)?.field.sea ?? null,
     fieldGates: (m.manifest?.gates ?? []).map((g) => ({
       targetIndex: g.targetIndex,
       targetId: g.targetId ?? null,

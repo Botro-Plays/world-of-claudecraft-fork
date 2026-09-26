@@ -62,7 +62,11 @@ import { desktopPresentationHidden } from './game/desktop_presentation';
 import { initDesktopShellIntegration } from './game/desktop_shell_integration';
 import { applyDesktopShellSetting, syncDesktopShellSettings } from './game/desktop_shell_settings';
 import { tryDevChatHooks } from './game/dev_chat_hooks';
-import { createPtFieldTransition, ptFieldLabel } from './game/pt_field_transition';
+import {
+  createPtFieldTransition,
+  ptFieldLabel,
+  ptGatePointTo,
+} from './game/pt_field_transition';
 import { tickPtMapDev } from './game/pt_map_dev_command';
 import {
   activePtField,
@@ -3801,10 +3805,60 @@ async function startGame(
   // presentation beat. DOM-free orchestrator (game/pt_field_transition) over
   // the own-DOM overlay (ui/pt_transition_screen); it does not drive the
   // load - the Phase 6A preload/gate machinery owns that unchanged.
+  // Nearest authored gate point on the boundary shared with `fieldId`, in
+  // WoC yards, while the player is inside its approach margin: the active
+  // field's outbound record, or - when the neighbor authored the crossing
+  // (e.g. fore-1's AddGate2 onto gate-less Ricarten) - the standby field's
+  // reverse record, which lands on the same world-space boundary point.
+  const ptGatePointFor = (fieldId: string): { x: number; z: number } | null => {
+    const active = activePtMapDescriptor();
+    if (active === null) return null;
+    const p = world.player.pos;
+    let best = ptGatePointTo(active, fieldId, p.x, p.z);
+    const standby = standbyPtMapDescriptor();
+    if (standby !== null && standby.id === fieldId) {
+      const back = ptGatePointTo(standby, active.id, p.x, p.z);
+      if (
+        back !== null &&
+        (best === null ||
+          (back.x - p.x) ** 2 + (back.z - p.z) ** 2 < (best.x - p.x) ** 2 + (best.z - p.z) ** 2)
+      ) {
+        best = back;
+      }
+    }
+    return best;
+  };
   const ptTransition = createPtFieldTransition({
     inPtBand: () => isPtPos(world.player.pos.x),
     activeMap: () => activePtMapDescriptor(),
+    standbyMap: () => standbyPtMapDescriptor(),
     viewState: (mapId) => renderer.ptFieldViewState(mapId),
+    standbyViewState: (mapId) => renderer.ptStandbyFieldViewState(mapId),
+    // Pre-entry trigger (Phase 6G): the card engages at the authored gate
+    // point's approach margin while the destination is still the standby,
+    // so the freeze happens BEFORE the boundary, not after it. The gate
+    // point is read from EITHER side's authored records - the active
+    // field's outbound gate or, when the neighbor authored the crossing
+    // (e.g. fore-1's AddGate2 onto gate-less Ricarten), the standby's
+    // reverse record, which lands on the same world-space boundary point.
+    nearGateTo: (fieldId) => ptGatePointFor(fieldId) !== null,
+    approachingGateTo: (fieldId) => {
+      const g = ptGatePointFor(fieldId);
+      if (g === null) return false;
+      const p = world.player.pos;
+      const prev = world.player.prevPos;
+      const mx = p.x - prev.x;
+      const mz = p.z - prev.z;
+      return (g.x - p.x) * mx + (g.z - p.z) * mz > 0;
+    },
+    // The modal suspend keeps latched autorun alive on purpose (the MMO
+    // Esc-menu rule), but a field transition is a real freeze: drop autorun
+    // and click-to-move so nobody slides under the card.
+    onRaise: () => {
+      input.setAutorun(false);
+      input.clearClickMove();
+      mobileControls.syncAutorun(false);
+    },
     fieldName: ptFieldLabel,
     overlay: {
       show: showPtTransition,
@@ -3814,6 +3868,10 @@ async function startGame(
     },
     nowMs: () => performance.now(),
   });
+  // The blocking-arrival warmup writes its own hold at chain boundaries; the
+  // PT transition's hold is per-frame. Track the arrival side separately so
+  // neither stomps the other.
+  let arrivalDrawHeld = false;
 
   // Rift exits block and stream widely because their arrival ring may be evicted.
   const warmTracker = createZoneWarmTracker(isRiftPos);
@@ -3928,7 +3986,9 @@ async function startGame(
     gameInputReady = false;
     zoneWarmup = runBlockingArrivalWarmup({
       renderer,
-      holdWorldDraw: gateInput.holdWorldDraw,
+      holdWorldDraw: (held: boolean) => {
+        arrivalDrawHeld = held;
+      },
       ui: {
         showLoadingScreen,
         setLoadingProgressRange,
@@ -4414,9 +4474,17 @@ async function startGame(
     // Raise/advance/dismiss the PT transition curtain before the suspend read
     // so its inputHeld flag applies to this same frame's movement.
     ptTransition.tick();
+    // While the card is up, hold the world GL submit too: the renderer keeps
+    // running (culls, gate builds, compile lanes) but nothing presents, so
+    // the frame under the translucent overlay stays the field the player is
+    // leaving until the destination is actually dressed.
+    gateInput.holdWorldDraw(arrivalDrawHeld || ptTransition.drawHeld);
+    // The transition card freezes the world, not the input device: held keys
+    // stay registered so a key still physically down resumes the walk the
+    // frame the card lifts (the modal suspend would wipe them as "stale").
+    input.worldFreezeHold = ptTransition.inputHeld;
     input.setSuspendMovement(
       !gameInputReady ||
-        ptTransition.inputHeld ||
         hud.isModalOpen() ||
         cameraPromptOpen() ||
         intro !== null ||

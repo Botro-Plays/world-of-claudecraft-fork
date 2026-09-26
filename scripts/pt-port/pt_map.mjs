@@ -653,6 +653,21 @@ async function cmdTexturesAll() {
       [tsxCli, script, genPath, texDir, resolve(REPO_ROOT, m.textureOutDir), minimapSrc],
       { encoding: 'utf8' },
     );
+    // Stage-object materials live outside the field SMD, so their textures
+    // are a second pass over the stage module's PT_STAGE_TEXTURE_MANIFEST
+    // (absent in modules generated before the manifest existed).
+    const stageOut = m.stageObjects?.out ? resolve(REPO_ROOT, m.stageObjects.out) : null;
+    if (
+      stageOut &&
+      existsSync(stageOut) &&
+      /PT_STAGE_TEXTURE_MANIFEST/.test(readFileSync(stageOut, 'utf8'))
+    ) {
+      spawnSync(
+        process.execPath,
+        [tsxCli, script, stageOut, ptClientPath(m.stageObjects.dir), resolve(REPO_ROOT, m.textureOutDir), ''],
+        { encoding: 'utf8' },
+      );
+    }
     const out = r.stdout ?? '';
     const conv = /Converted: (\d+)/.exec(out)?.[1];
     const fail = /Failed: (\d+)/.exec(out)?.[1];
@@ -693,6 +708,26 @@ async function cmdTextures(id) {
     ],
     { stdio: 'inherit' },
   );
+  // Second pass for stage-object-only textures (see cmdTexturesAll).
+  const stageOut = manifest.stageObjects?.out
+    ? resolve(REPO_ROOT, manifest.stageObjects.out)
+    : null;
+  if (
+    stageOut &&
+    existsSync(stageOut) &&
+    /PT_STAGE_TEXTURE_MANIFEST/.test(readFileSync(stageOut, 'utf8'))
+  ) {
+    spawnSync(
+      process.execPath,
+      [
+        tsxCli, script, stageOut,
+        ptClientPath(manifest.stageObjects.dir),
+        resolve(REPO_ROOT, manifest.textureOutDir),
+        '',
+      ],
+      { stdio: 'inherit' },
+    );
+  }
   process.exitCode = r.status ?? 1;
 }
 

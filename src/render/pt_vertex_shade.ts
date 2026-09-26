@@ -1,18 +1,21 @@
 // PT terrain vertex shading (smStage3d.cpp smSTAGE3D::SetVertexShade).
 //
-// The SMD binary stores each vertex's authored sDef_Color (RGBA int16).
-// At load, PT multiplies the RGB channels by a per-vertex gouraud shade:
+// The SMD binary stores each vertex's sDef_Color (RGBA int16). The gouraud
+// bake is applied once during ASE->SMD conversion (smRead3d.cpp
+// smSTAGE3D_ReadASE calls SetVertexShade, which mutates sDef_Color before
+// SaveFile writes it):
 //
 //   normal[v]  = average of adjacent face normals (fixed point, |n| = 256)
 //   gShade     = ((n . VectLight) >> 8) / Contrast + Bright   (integer math)
 //   rgb[v]    *= gShade >> 8, alpha forced to 255
 //
-// Phase 5A emits PT_VERTEX_COLORS (the authored colors) and
-// PT_FIELD_LIGHTING (VectLight/Contrast/Bright). This module bakes the
-// load-time shade once per field build, so the color attribute carries the
-// same per-vertex diffuse PT writes into its render stream. The material
-// transparency -> vertex alpha rule is handled separately by material
-// opacity in pt_terrain.ts.
+// The binary LoadFile path (smReadStage) reads the colors verbatim and
+// never re-bakes, so for a normal field the stored color IS the runtime
+// color. Lightmap stages skipped the bake at conversion (authored-white
+// vertices shaded by the lightmap texture instead); WoC has no lightmap
+// channel, so ptBakeVertexShade applies the gouraud term for exactly those
+// fields - detected by ptVertexColorsUnbaked - while ptVertexColorsOnly
+// keeps the stored color for everything else.
 //
 // All math mirrors the source's integer/fixed-point arithmetic so the
 // output is deterministic and testable without a DOM or GPU.
@@ -98,6 +101,26 @@ export function ptBakeVertexShade(input: PtShadeInput): Float32Array | null {
     out[vi * 3 + 2] = ((b * gShade) >> 8) / PT_FONE;
   }
   return out;
+}
+
+/**
+ * True when the stored colors are the authored (unbaked) set and still need
+ * the gouraud bake.
+ *
+ * SetVertexShade runs inside smSTAGE3D_ReadASE - the ASE->SMD conversion
+ * path - and mutates sDef_Color in place, so the shipped .smd's colors are
+ * already baked and the binary LoadFile never re-bakes. The exception is
+ * lightmap stages (s_bLightMapStage -> isSetLight=FALSE): the bake was
+ * skipped there and every vertex keeps the authored white 255, since PT
+ * shades them with the lightmap texture instead. WoC binds no lightmap, so
+ * the gouraud term stands in for it on those fields only.
+ */
+export function ptVertexColorsUnbaked(colors: Int16Array, nVertex: number): boolean {
+  if (nVertex <= 0 || colors.length < nVertex * 4) return false;
+  for (let i = 0; i < nVertex * 4; i += 4) {
+    if (colors[i] !== 255 || colors[i + 1] !== 255 || colors[i + 2] !== 255) return false;
+  }
+  return true;
 }
 
 /**

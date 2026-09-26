@@ -85,7 +85,7 @@ const check = (name, cond, extra = '') => {
 // (startOffline path in main.ts), skipping the tribe/3D-stage select flow.
 await page.goto(URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
 const booted = await page
-  .waitForFunction(() => window.__game?.sim?.player, { timeout: 45000 })
+  .waitForFunction(() => window.__game?.sim?.player, { timeout: 120000 })
   .then(() => true)
   .catch(() => false);
 if (!booted) {
@@ -112,6 +112,11 @@ await page.evaluate(() => {
       return {
         active: g()?.ptActiveMap?.()?.id ?? null,
         standby: g()?.ptStandbyMap?.()?.id ?? null,
+        // Phase 6G: the transition card freezes movement while it dresses
+        // the destination - a held player is not a stalled corridor.
+        curtain:
+          document.getElementById('pt-transition-screen')?.classList.contains('visible') ===
+          true,
         x: p?.pos.x ?? 0,
         y: p?.pos.y ?? 0,
         z: p?.pos.z ?? 0,
@@ -249,7 +254,10 @@ async function walkLeg(fromId, toId) {
     let stalled = false;
     await page.keyboard.down('w');
     try {
-      while (Date.now() - t0 < 45000) {
+      // 90s: the Phase 6G pre-entry card freezes the walk at the gate mouth
+      // while the standby view dresses; a cold build under SwiftShader can
+      // hold the player there ~40s before the walk resumes.
+      while (Date.now() - t0 < 90000) {
         await page.evaluate((h) => window.__pt.setFacing(h), line.heading);
         await new Promise((r) => setTimeout(r, 120));
         const s = await ptState();
@@ -259,18 +267,30 @@ async function walkLeg(fromId, toId) {
         if (s.active === toId) {
           switched = true;
           switchInfo = { ...s, dGate };
-          // Walk a little further into the destination to prove continued movement.
-          const keepUntil = Date.now() + 3000;
-          while (Date.now() < keepUntil) {
+          // Walk a little further into the destination to prove continued
+          // movement. A post-cross transition card may still be up dressing
+          // the view (the pre-entry arm only fires when the destination
+          // sits in the standby slot) - held time doesn't count toward the
+          // 3s window, bounded at 60s overall.
+          const keepDeadline = Date.now() + 60000;
+          let freeMs = 0;
+          let prevT = null;
+          while (Date.now() < keepDeadline && freeMs < 3000) {
             await page.evaluate((h) => window.__pt.setFacing(h), line.heading);
             await new Promise((r) => setTimeout(r, 150));
-            trail.push({ t: Date.now() - t0, ...(await ptState()), dGate: -1 });
+            const s2 = await ptState();
+            trail.push({ t: Date.now() - t0, ...s2, dGate: -1 });
+            const now = Date.now();
+            if (prevT != null && !s2.curtain) freeMs += now - prevT;
+            prevT = now;
           }
           break;
         }
-        // Stall guard: no progress for ~4s means this corridor is blocked.
-        const recent = trail.slice(-30);
-        if (recent.length >= 30) {
+        // Stall guard: no progress for ~4s of UNHELD movement means this
+        // corridor is blocked. Samples taken under the transition card are
+        // excluded - that freeze is the intended Phase 6G behavior.
+        const recent = trail.filter((t) => !t.curtain).slice(-30);
+        if (recent.length >= 30 && !s.curtain) {
           const d = Math.hypot(recent[0].x - s.x, recent[0].z - s.z);
           if (d < 0.5) {
             console.log(`  route ${ri} STALL at (${s.x.toFixed(1)}, ${s.z.toFixed(1)}) dGate=${dGate.toFixed(1)}`);
