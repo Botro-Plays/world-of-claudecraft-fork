@@ -41,7 +41,9 @@ const MAPS_DIR = resolve(REPO_ROOT, 'scripts/pt-port/maps');
 const hasPtClient = existsSync(ptClientPath('Field/Ricarten/village-2.smd'));
 
 const FORE3_SMD = 'Field/forest/fore-3.smd';
+const FORE2_SMD = 'Field/forest/fore-2.smd';
 const FORE1_SMD = 'Field/forest/fore-1.smd';
+const DCAVE_SMD = 'Field/cave/Dcave.smd';
 const RUIN1_SMD = 'Field/Ruin/ruin-1.smd';
 const SOD1_DIR = 'Field/Sod';
 const RICARTEN_SMD = 'Field/Ricarten/village-2.smd';
@@ -213,8 +215,61 @@ describe('pt field data foundation (Phase 5A)', () => {
     expect(dd001).toBeDefined();
   });
 
+  it.skipIf(!hasPtClient)('emits TextureFormState UV-scroll codes sliced to the used stages (fore-2)', () => {
+    // Phase 6D source facts (smType.h smTEXSTATE_FS_*; verified against the
+    // binary): the Bamboo Forest river is two-stage MULTIMIX scrolling both
+    // stages, and the waterfall foam is a single-stage scroll.
+    //   mat 122 ex_w002 x ex_w002           [SCROLL3, SCROLL5]
+    //   mat 123 fl_wate-fa + fl_wate-fa-01  [SCROLL3, SCROLL5]
+    //   mat 501 w_r_3 (LAMP additive)       [SCROLL5]
+    const smd = parseSmd(readFileSync(ptClientPath(FORE2_SMD)));
+    const m122 = smd.materials[122];
+    const m123 = smd.materials[123];
+    const m501 = smd.materials[501];
+    expect(m122.textureFormState.slice(0, m122.textureCounter)).toEqual([7, 9]);
+    expect(m123.textureFormState.slice(0, m123.textureCounter)).toEqual([7, 9]);
+    expect(m501.textureFormState.slice(0, m501.textureCounter)).toEqual([9]);
+    expect(m501.blendType).toBe(4); // SMMAT_BLEND_LAMP
+
+    interface Mat {
+      index: number;
+      textureNames: string[];
+      textureFormState?: number[];
+      textureStageState?: number[];
+      blendType: number;
+    }
+    const mats = parseGenerated<Mat[]>(compileFieldSource(FORE2_SMD), 'PT_MATERIALS');
+    expect(mats.find((m) => m.index === 122)!.textureFormState).toEqual([7, 9]);
+    expect(mats.find((m) => m.index === 123)!.textureFormState).toEqual([7, 9]);
+    const e501 = mats.find((m) => m.index === 501)!;
+    expect(e501.textureFormState).toEqual([9]);
+    expect(e501.blendType).toBe(4);
+    // A material with no scroll/stage ops emits neither channel.
+    const e0 = mats.find((m) => m.index === 0)!;
+    expect(e0.textureFormState).toBeUndefined();
+    expect(e0.textureStageState).toBeUndefined();
+  });
+
+  it.skipIf(!hasPtClient)('emits TextureStageState only when a used slot is non-modulate (dcave)', () => {
+    // dcave mat 64 (lee_04 + lee_06): stage 1 runs the additive
+    // NATIVE_TEXTURE_OP_ADD (7) and scrolls (SCROLL2); the zero stage-0
+    // slot still emits inside the sliced array.
+    const smd = parseSmd(readFileSync(ptClientPath(DCAVE_SMD)));
+    const m64 = smd.materials[64];
+    expect(m64.textureStageState.slice(0, m64.textureCounter)).toEqual([0, 7]);
+    expect(m64.textureFormState.slice(0, m64.textureCounter)).toEqual([0, 6]);
+
+    interface Mat { index: number; textureStageState?: number[]; textureFormState?: number[] }
+    const mats = parseGenerated<Mat[]>(compileFieldSource(DCAVE_SMD), 'PT_MATERIALS');
+    expect(mats.find((m) => m.index === 64)!.textureStageState).toEqual([0, 7]);
+    // All-modulate materials omit the channel entirely (fore-2 has none).
+    const fore2Mats = parseGenerated<Mat[]>(compileFieldSource(FORE2_SMD), 'PT_MATERIALS');
+    expect(fore2Mats.every((m) => m.textureStageState === undefined)).toBe(true);
+  });
+
   it.skipIf(!hasPtClient)('emission is deterministic', () => {
     expect(compileFieldSource(FORE3_SMD)).toBe(compileFieldSource(FORE3_SMD));
+    expect(compileFieldSource(FORE2_SMD)).toBe(compileFieldSource(FORE2_SMD));
   });
 });
 

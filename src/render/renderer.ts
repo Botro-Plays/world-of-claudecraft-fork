@@ -815,7 +815,11 @@ import {
 import { createWeaponVfxPrewarmSkinStage, weaponVfxPrewarmUnits } from './weapon_vfx_prewarm';
 import { weaponVfxShedScale } from './weapon_vfx_shed_core';
 import { Weather } from './weather';
-import { precipForBiome } from './weather_field_core';
+import {
+  precipForBiome,
+  weatherPlayerBiome,
+  weatherScanBiomeAt,
+} from './weather_field_core';
 import { createRendererWebGL, type WebGLPowerPreference } from './webgl_context_fallback';
 import { buildWorldAmbientSources, footstepSurfaceAt } from './world_audio';
 import { surfaceDetailPrewarmTextures } from './worn_stone';
@@ -12054,8 +12058,8 @@ export class Renderer {
     this.weather.update(
       this.camera.position,
       dt,
-      this.fogState === 'outdoor' ? zoneBiomeAt(p.pos.x, p.pos.z) : null,
-      zoneBiomeAt,
+      this.fogState === 'outdoor' ? weatherPlayerBiome(p.pos.x, p.pos.z) : null,
+      weatherScanBiomeAt,
     );
     worldStart = this.markRendererWorldPhase(worldPhaseMs, 'sky', worldStart);
     this.updateCelestialSprites();

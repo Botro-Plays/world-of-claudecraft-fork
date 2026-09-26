@@ -14,6 +14,12 @@ export interface PtMaterial {
   isWalkable: boolean;
   mapOpacity: number;
   textureType: number;
+  /** smMATERIAL::TextureStageState[8] - per-stage D3D color op
+   *  (0 = MODULATE, 7 = NATIVE_TEXTURE_OP_ADD). */
+  textureStageState: number[];
+  /** smMATERIAL::TextureFormState[8] - per-stage UV form
+   *  (smTEXSTATE_FS_*; the SCROLL family scrolls u by a time ramp). */
+  textureFormState: number[];
   animTexCounter: number;
   frameMask: number;
   shiftFrameSpeed: number;

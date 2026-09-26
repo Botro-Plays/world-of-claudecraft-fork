@@ -128,6 +128,14 @@ export interface PtMaterialLike {
   /** Base texture slots (smTexture[]). NOT animation frame 0 - animated
    *  materials keep a distinct smAnimTexture[] list (see animTextureNames). */
   textureNames: string[];
+  /** smMATERIAL::TextureStageState sliced to the used texture slots
+   *  (0 = modulate, 7 = additive stage op). Emitted only when any used
+   *  slot is nonzero, so a plain two-stage modulate material omits it. */
+  textureStageState?: number[];
+  /** smMATERIAL::TextureFormState sliced to the used texture slots
+   *  (smTEXSTATE_FS_*; the SCROLL family scrolls u by a time ramp). Emitted
+   *  only when any used slot is nonzero. */
+  textureFormState?: number[];
   /** smAnimTexture flipbook, present only when the material animates. */
   animTexCounter?: number;
   animTextureNames?: string[];

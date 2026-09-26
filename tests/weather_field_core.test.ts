@@ -12,9 +12,12 @@ import {
   precipForBiome,
   precipSpawnXZ,
   remotePrecipPlan,
+  weatherPlayerBiome,
+  weatherScanBiomeAt,
 } from '../src/render/weather_field_core';
 import type { BiomeId } from '../src/sim/types';
 import { zoneBiomeAt } from '../src/sim/world';
+import { PT_BAND_X_MIN, PT_BAND_X_MAX, isPtPos } from '../src/sim/pt_band';
 
 // A synthetic border world: frost (snow) fills x >= 0, amber (clear) x < 0.
 const borderWorld = (x: number): BiomeId => (x >= 0 ? 'frost' : 'amber');
@@ -116,5 +119,65 @@ describe('precipSpawnXZ', () => {
     const a = precipSpawnXZ(rng(42), -30, 0, 70, 70, 'snow', borderWorld);
     const b = precipSpawnXZ(rng(42), -30, 0, 70, 70, 'snow', borderWorld);
     expect(a).toEqual(b);
+  });
+});
+
+describe('the PT connected-world boundary (Phase 6D)', () => {
+  // Source facts (MagicPT-Chinese audit): PT precipitation is a server-event
+  // overlay (smCOMMAND_PLAY_WEATHER) gated to FIELD_STATE_FOREST, never a
+  // biome ambient; snow precipitation is not authored at all. This build
+  // runs no PT weather events, so WoC ambient weather must not leak onto PT
+  // fields - the zoneAt() southmost fallback maps PT-band coordinates onto
+  // unrelated WoC biomes (marsh rain, frost snow) without the boundary.
+  const PT_X = PT_BAND_X_MIN + 1;
+
+  it('suppresses the player biome inside the PT band', () => {
+    expect(isPtPos(PT_X)).toBe(true);
+    expect(weatherPlayerBiome(PT_X, 0)).toBeNull();
+    // Any z: PT dungeon, desert, ruin, and forest fields all suppress the
+    // same way - there is no per-map list.
+    for (const z of [-40_000, -20_000, 0, 5_000]) {
+      expect(weatherPlayerBiome(PT_X, z)).toBeNull();
+    }
+  });
+
+  it('returns the real zone biome outside the PT band', () => {
+    // The Frostveil vantage from the remote-weather tests is ordinary WoC
+    // land: unchanged behaviour.
+    expect(weatherPlayerBiome(100, 1650)).toBe(zoneBiomeAt(100, 1650));
+    expect(precipForBiome(weatherPlayerBiome(100, 1650)!)).toBe('snow');
+    // Just west of the band edge is WoC land again.
+    expect(weatherPlayerBiome(PT_BAND_X_MIN - 1, 0)).toBe(zoneBiomeAt(PT_BAND_X_MIN - 1, 0));
+  });
+
+  it('reports a clear biome for PT cells in the remote scan', () => {
+    // A camera box straddling the band edge must not plan WoC precipitation
+    // off a PT cell, whatever biome the zone fallback would have invented.
+    expect(weatherScanBiomeAt(PT_X, 0)).toBe('vale');
+    expect(precipForBiome(weatherScanBiomeAt(PT_X, -30_000))).toBeNull();
+    // WoC cells resolve normally everywhere in the box.
+    expect(weatherScanBiomeAt(100, 1650)).toBe(zoneBiomeAt(100, 1650));
+  });
+
+  it('never plans precipitation off PT-band cells', () => {
+    // Camera at the band centre, a huge box: every sampled cell is PT land.
+    const plan = remotePrecipPlan(PT_BAND_X_MIN + 1_000, 0, 500, 500, weatherScanBiomeAt);
+    expect(plan).toEqual({ mode: null, local: false });
+  });
+
+  it('still plans WoC weather right up to the band edge', () => {
+    // Frost world ending at the band: a WoC camera just west of it keeps the
+    // border effect; the PT cells themselves never qualify for spawn masking.
+    const frostToBand = (x: number, z: number): BiomeId =>
+      isPtPos(x) ? 'vale' : 'frost';
+    const camX = PT_BAND_X_MIN - 50;
+    const plan = remotePrecipPlan(camX, 0, 70, 70, frostToBand);
+    expect(plan.mode).toBe('snow'); // the WoC side still snows
+    const rand = rng(99);
+    for (let i = 0; i < 200; i++) {
+      const s = precipSpawnXZ(rand, camX, 0, 70, 70, 'snow', frostToBand);
+      if (s === null) continue;
+      expect(isPtPos(s.x)).toBe(false); // never masked onto PT land
+    }
   });
 });

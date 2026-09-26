@@ -46,6 +46,9 @@ const OFF_STAGE3D_STAGE_MAP_RECT = OFF_STAGE3D_W_AREA_SIZE + 4;
 const OFF_MAT_IN_USE = 0;
 const OFF_MAT_TEXTURE_COUNTER = 4;
 // smMATERIAL (smType.h), 320 bytes serialized:
+//   40 TextureStageState[8] (per-stage D3D color op; 0 = MODULATE,
+//   7 = NATIVE_TEXTURE_OP_ADD), 72 TextureFormState[8] (per-stage UV form;
+//   smTEXSTATE_FS_*: SCROLL family adds a time ramp to u),
 //   104 ReformTexture, 108 MapOpacity (float), 112 TextureType
 //   (SMTEX_TYPE_ANIMATION = 1), 116 BlendType, 120 Shade, 124 TwoSide,
 //   128 SerialNum, 132 Diffuse (smRGB, 12), 144 Transparency (float),
@@ -54,6 +57,8 @@ const OFF_MAT_TEXTURE_COUNTER = 4;
 //   176..303 smAnimTexture[32] (pointer slots), 304 AnimTexCounter,
 //   308 FrameMask, 312 Shift_FrameSpeed, 316 AnimationFrame
 //   (SMTEX_AUTOANIMATION = 0x100 when the flipbook self-plays).
+const OFF_MAT_TEXTURE_STAGE_STATE = 40;
+const OFF_MAT_TEXTURE_FORM_STATE = 72;
 const OFF_MAT_MAP_OPACITY = 108;
 const OFF_MAT_TEXTURE_TYPE = 112;
 const OFF_MAT_BLEND_TYPE = 116;
@@ -187,6 +192,14 @@ export function parseSmd(buf) {
     const windMeshBottom = buf.readInt32LE(matBase + OFF_MAT_WIND_MESH_BOTTOM);
     const mapOpacity = buf.readFloatLE(matBase + OFF_MAT_MAP_OPACITY);
     const textureType = buf.readInt32LE(matBase + OFF_MAT_TEXTURE_TYPE);
+    // Per-stage render metadata (smRend3d.cpp SetD3DRendState): the stage
+    // blend op and the UV form/scroll code for each of the 8 texture slots.
+    const textureStageState = [];
+    const textureFormState = [];
+    for (let ti = 0; ti < 8; ti++) {
+      textureStageState.push(buf.readUInt32LE(matBase + OFF_MAT_TEXTURE_STAGE_STATE + ti * 4));
+      textureFormState.push(buf.readUInt32LE(matBase + OFF_MAT_TEXTURE_FORM_STATE + ti * 4));
+    }
     const animTexCounter = buf.readUInt32LE(matBase + OFF_MAT_ANIM_TEX_COUNTER);
     const frameMask = buf.readUInt32LE(matBase + OFF_MAT_FRAME_MASK);
     const shiftFrameSpeed = buf.readInt32LE(matBase + OFF_MAT_SHIFT_FRAME_SPEED);
@@ -248,6 +261,8 @@ export function parseSmd(buf) {
       isWalkable,
       mapOpacity,
       textureType,
+      textureStageState,
+      textureFormState,
       animTexCounter,
       frameMask,
       shiftFrameSpeed,
@@ -631,7 +646,10 @@ export function emitModule(smd, built, uvs, textureManifest, sourceLabel, opts =
   // the smAnimTexture flipbook fields emit only when the material carries
   // an animation set (animTexCounter > 0 keeps PT_MATERIALS compact and
   // matches the source rule that FrameMask/Shift_FrameSpeed/AnimationFrame
-  // are meaningful only alongside smAnimTexture[]).
+  // are meaningful only alongside smAnimTexture[]). The per-stage metadata
+  // emits the same way: TextureStageState/TextureFormState are sliced to the
+  // authored texture slots and dropped entirely when every slot is 0
+  // (modulate + plain UV), the overwhelmingly common material shape.
   const matData = smd.materials.filter(m => m.inUse).map(m => ({
     index: m.index,
     isWalkable: m.isWalkable,
@@ -645,6 +663,12 @@ export function emitModule(smd, built, uvs, textureManifest, sourceLabel, opts =
     mapOpacity: +m.mapOpacity.toFixed(6),
     textureType: m.textureType,
     textureNames: m.textureNames,
+    ...(m.textureStageState.slice(0, m.textureCounter).some((s) => s !== 0)
+      ? { textureStageState: m.textureStageState.slice(0, m.textureCounter) }
+      : {}),
+    ...(m.textureFormState.slice(0, m.textureCounter).some((s) => s !== 0)
+      ? { textureFormState: m.textureFormState.slice(0, m.textureCounter) }
+      : {}),
     ...(m.animTexCounter > 0
       ? {
           animTexCounter: m.animTexCounter,

@@ -319,7 +319,9 @@ describe('PT material fidelity (P2-A)', () => {
     for (const m of mats) {
       const idx = Number(m.name.replace('pt-mat-', ''));
       const ptMat = PT_MATERIALS.find(x => x.index === idx)!;
-      const scripted = m.customProgramCacheKey() === 'pt-windz1';
+      // The cache key now appends the live-stage plan (-s<scroll>o<ops>)
+      // for scrolling materials; the script prefix still identifies it.
+      const scripted = m.customProgramCacheKey().startsWith('pt-windz1');
       expect(scripted).toBe(ptVertexScriptFor(ptMat.windMeshBottom) === 'windz1');
       if (scripted) {
         windCount++;
@@ -335,7 +337,9 @@ describe('PT material fidelity (P2-A)', () => {
     const water = view.group.getObjectByName('pt-ricarten-water') as THREE.Mesh;
     const mats = water.material as THREE.MeshLambertMaterial[];
     // Mats 107 + 232 carry sMATS_SCRIPT_WATER; mat 140 is translucent only.
-    const scripted = new Set(mats.filter(m => m.customProgramCacheKey() === 'pt-water').map(m => m.name));
+    // The cache key appends the live-stage plan for scrolling materials, so
+    // match the script prefix.
+    const scripted = new Set(mats.filter(m => m.customProgramCacheKey().startsWith('pt-water')).map(m => m.name));
     expect(scripted).toEqual(new Set(['pt-mat-107', 'pt-mat-232']));
     // Real textures, real opacity (1 - transparency), no z-write.
     const m107 = mats.find(m => m.name === 'pt-mat-107')!;

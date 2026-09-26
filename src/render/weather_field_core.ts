@@ -26,8 +26,43 @@
 // veil in biome_haze_field_core.ts) and the tests all share one table.
 
 import type { BiomeId } from '../sim/types';
+import { isPtPos } from '../sim/pt_band';
+import { zoneBiomeAt } from '../sim/world';
 
 export type PrecipMode = 'snow' | 'rain';
+
+// ---------------------------------------------------------------------------
+// PT connected world boundary
+// ---------------------------------------------------------------------------
+//
+// The WoC ambient-biome weather model does not apply to the PT band: those
+// coordinates fall outside every authored zone, and zoneAt()'s southmost
+// fallback maps PT positions onto unrelated WoC biomes - a PT z-band can
+// resolve to marsh or frost and rain/snow over fields the PT client never
+// weathers. Source PT precipitation is a server-event overlay
+// (smCOMMAND_PLAY_WEATHER) gated to FIELD_STATE_FOREST fields, not a
+// biome ambient, and this build runs no weather events, so standalone PT
+// stands clear. weather.ts treats a null player biome as its
+// full-suppression channel (it drops the remote plan and fades intensity
+// to zero), so null is the boundary answer.
+//
+// Extension point: a future PT event-weather channel would override the
+// mode selection here on forest-state fields instead of suppressing; it
+// must not relax the suppression for the other field states.
+
+/** Player-biome for ambient precipitation: null inside the PT connected
+ *  world (WoC weather suppressed), the real zone biome elsewhere. */
+export function weatherPlayerBiome(x: number, z: number): BiomeId | null {
+  return isPtPos(x) ? null : zoneBiomeAt(x, z);
+}
+
+/** biomeAt for remote-weather scans: PT band cells report a clear biome
+ *  ('vale', which precipForBiome leaves clear), so a border vantage point
+ *  can neither plan WoC precipitation from PT coordinates nor mask spawn
+ *  particles onto PT land. WoC cells resolve normally. */
+export function weatherScanBiomeAt(x: number, z: number): BiomeId {
+  return isPtPos(x) ? 'vale' : zoneBiomeAt(x, z);
+}
 
 /** Which precipitation a biome carries. The one authoritative table: peaks
  *  and frost snow, marsh and haunt rain, everything else stays clear. */

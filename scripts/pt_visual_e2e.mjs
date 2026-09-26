@@ -181,10 +181,10 @@ console.log('\n=== ricarten: vertex colors + textureless skip + windz1 ===');
     solid.every((m) => m.vertexColors && m.hasColorAttr));
   check('textureless material 2 not rendered',
     !solid.some((m) => m.mat === 'pt-mat-2'));
-  const wind = solid.filter((m) => m.cacheKey === 'pt-windz1');
+  const wind = solid.filter((m) => String(m.cacheKey).startsWith('pt-windz1'));
   check('windz1 foliage materials scripted', wind.length === 13, `${wind.length}`);
   check('no wind scripts on non-wind materials',
-    solid.every((m) => m.cacheKey === 'pt-windz1' || m.cacheKey === null ||
+    solid.every((m) => String(m.cacheKey).startsWith('pt-windz1') || m.cacheKey === null ||
       !String(m.cacheKey).startsWith('pt-wind')));
   // Visual: foliage sway must move pixels (windz1 cosine, +-8 PT units).
   const diff = await canvasShotDiff('ricarten');
@@ -197,9 +197,9 @@ console.log('\n=== fore-3: WINDX2 foliage + wa_0..7 anim ===');
   check('/ptmap fore-3 installed', ok);
   await sleep(2500);
   const mats = await page.evaluate(() => window.__ptvis.materials('fore-3'));
-  const windx2 = mats.filter((m) => m.cacheKey === 'pt-windx2');
+  const windx2 = mats.filter((m) => String(m.cacheKey).startsWith('pt-windx2'));
   check('windx2 materials scripted (0x100 exact)', windx2.length >= 1, `${windx2.length}`);
-  const windz1 = mats.filter((m) => m.cacheKey === 'pt-windz1');
+  const windz1 = mats.filter((m) => String(m.cacheKey).startsWith('pt-windz1'));
   check('windz1 still scripted', windz1.length >= 1, `${windz1.length}`);
   // mat 119: wa_0..7, shift 7 -> 128ms/frame; 1.6s covers a full loop.
   const ids = await distinctMapsOver('pt-mat-119', 1600);
@@ -215,7 +215,7 @@ console.log('\n=== forever-fall-04: WINDX1 ===');
   check('/ptmap forever-fall-04 installed', ok);
   await sleep(2500);
   const mats = await page.evaluate(() => window.__ptvis.materials('forever-fall-04'));
-  const windx1 = mats.filter((m) => m.cacheKey === 'pt-windx1');
+  const windx1 = mats.filter((m) => String(m.cacheKey).startsWith('pt-windx1'));
   check('windx1 materials scripted (0x80 exact)', windx1.length >= 1, `${windx1.length}`);
   // ff-04's animated materials are Phase 5A preserved data with zero faces
   // in the render stream - correctly unbound (no material, no fetch).
@@ -229,7 +229,7 @@ console.log('\n=== tcave: WINDZ2 ===');
   check('/ptmap tcave installed', ok);
   await sleep(2500);
   const mats = await page.evaluate(() => window.__ptvis.materials('tcave'));
-  const windz2 = mats.filter((m) => m.cacheKey === 'pt-windz2');
+  const windz2 = mats.filter((m) => String(m.cacheKey).startsWith('pt-windz2'));
   check('windz2 materials scripted (0x40 exact)', windz2.length >= 1, `${windz2.length}`);
 }
 
@@ -243,7 +243,7 @@ console.log('\n=== ba1: composite 0x9 rigid + fwood/flame anims ===');
   if (composite.length) {
     check('ba1 mat-147 (WindMeshBottom 0x9) stays rigid',
       composite.every((m) => !String(m.cacheKey).startsWith('pt-wind') &&
-        m.cacheKey !== 'pt-water'),
+        !String(m.cacheKey).startsWith('pt-water')),
       `cacheKey=${composite[0].cacheKey}`);
   } else {
     console.log('  (mat-147 has no faces in ba1 render stream; skipping)');

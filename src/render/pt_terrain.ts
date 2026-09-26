@@ -199,16 +199,36 @@ export const PT_ANIM_AUTO = 0x100;
 // useState sMATS_SCRIPT_NOTVIEW (0x400): "wall:" materials are collision
 // only and are never drawn by the PT renderer.
 export const PT_SCRIPT_NOTVIEW = 0x400;
+// smMATERIAL::BlendType SMMAT_BLEND_LAMP (0x04): SRCBLEND=SRCALPHA /
+// DESTBLEND=ONE additive glow (smRend3d.cpp SetD3DRendStateBlend). PT
+// stores SMMAT_BLEND_ALPHA (1) as the default on every field material.
+export const PT_BLEND_LAMP = 0x04;
+// smTEXSTATE_FS_* TextureFormState codes (smType.h) the stage renderer
+// honours. NONE/FORMX/FORMY/FORMZ emit plain u,v; REFLEX is an env-map
+// projection no converted field uses; the SCROLL family adds a time ramp
+// to u (v never scrolls). SCROLL2..10 multiply the ramp by (state-4);
+// SCROLLSLOW1..4 restretch it over a 16-bit mask period.
+export const PT_FORM_SCROLL = 4;
+export const PT_FORM_SCROLL2_MIN = 6;
+export const PT_FORM_SCROLL10_MAX = 14;
+export const PT_FORM_SCROLLSLOW_MIN = 15;
+export const PT_FORM_SCROLLSLOW_MAX = 18;
+// TextureStageState ops that reach the renderer: 0/absent = MODULATE
+// (tex_n x current), 7 = NATIVE_TEXTURE_OP_ADD (tex_n + current).
+export const PT_STAGE_OP_ADD = 7;
 
 interface PtMaterialInfo {
   index: number;
   transparency: number;
+  blendType?: number;
   twoSide: boolean;
   useState: number;
   meshState: number;
   windMeshBottom: number;
   textureType?: number;
   textureNames: string[];
+  textureStageState?: number[];
+  textureFormState?: number[];
   animTexCounter?: number;
   animTextureNames?: string[];
   frameMask?: number;
@@ -319,6 +339,96 @@ export function ptVertexScriptFor(script: number): PtVertexScript | null {
   }
 }
 
+// ---------------------------------------------------------------------------
+// PT texture-form UV scroll (smRend3d.cpp ::SetD3DRendBuff, TextureFormState)
+// ---------------------------------------------------------------------------
+//
+// Per texture stage the source adds a sawtooth ramp to u before sampling
+// (v never scrolls), with RendStatTime = wall-clock milliseconds:
+//   wtime  = (RendStatTime >> 6) & 0xFF
+//   fwtime = wtime / 256                          (~16.4 s period)
+//   SCROLL          (4):     u += fwtime
+//   SCROLL2..10     (6..14): u += fwtime * (state - 4)
+//   SCROLLSLOW1..4  (15..18): mask = 0xFFFF >> (22 - state);
+//                             u += ((RendStatTime>>6) & mask) / mask
+// Each stage samples through its own offset, so a two-stage MULTIMIX with
+// [SCROLL3, SCROLL5] (fore-2's river) produces the differential
+// interference PT authored. Every converted field's chained texlink pairs
+// share identical per-stage UVs (verified), so one uv attribute plus
+// per-stage offsets reproduces the motion with no extra vertex data.
+
+/** Pure scroll rule: the u offset a TextureFormState code produces at
+ *  `timeMs` (wall-clock ms, matching RendStatTime). Exported for tests. */
+export function ptFormScrollU(formState: number, timeMs: number): number {
+  const t = Math.floor(timeMs) >> 6;
+  if (formState === PT_FORM_SCROLL) return (t & 0xff) / 256;
+  if (formState >= PT_FORM_SCROLL2_MIN && formState <= PT_FORM_SCROLL10_MAX) {
+    return ((t & 0xff) / 256) * (formState - PT_FORM_SCROLL);
+  }
+  if (formState >= PT_FORM_SCROLLSLOW_MIN && formState <= PT_FORM_SCROLLSLOW_MAX) {
+    const mask = 0xffff >>> (PT_FORM_SCROLLSLOW_MAX + 4 - formState);
+    return (t & mask) / mask;
+  }
+  return 0;
+}
+
+// The GLSL twin of ptFormScrollU with the per-material form code baked in.
+// uPtTime is the shared seconds clock; (ms >> 6) = floor(uPtTime * 15.625).
+function ptScrollUOffsetGlsl(formState: number): string {
+  const ramp = 'mod(floor(uPtTime * 15.625), 256.0)';
+  if (formState === PT_FORM_SCROLL) return `((${ramp}) * 0.00390625)`;
+  if (formState >= PT_FORM_SCROLL2_MIN && formState <= PT_FORM_SCROLL10_MAX) {
+    return `((${ramp}) * ${(formState - PT_FORM_SCROLL) / 256})`;
+  }
+  if (formState >= PT_FORM_SCROLLSLOW_MIN && formState <= PT_FORM_SCROLLSLOW_MAX) {
+    const mask = 0xffff >>> (PT_FORM_SCROLLSLOW_MAX + 4 - formState);
+    return `(mod(floor(uPtTime * 15.625), ${mask + 1}.0) * ${1 / mask})`;
+  }
+  return '0.0';
+}
+
+/**
+ * The texture-stage split a material's shader carries. `map` is the first
+ * (or only) stage contribution; `stage1` binds to the uPtMap1 sampler when
+ * a second contribution must sample independently (a live scroll/op stage,
+ * or the baked product of the static stages around one). Ops follow the
+ * PT stage ops: 0 = modulate (tex x current), PT_STAGE_OP_ADD = add.
+ */
+export interface PtUvFormBinding {
+  stage1: THREE.Texture | null;
+  scroll0: number;
+  op0: number;
+  scroll1: number;
+  op1: number;
+}
+
+// A stage is "live" when its contribution cannot bake into the static
+// multimix product: a nonzero TextureFormState (scroll) or a nonzero
+// TextureStageState (non-modulate mix op). Returns the live stage indices
+// in order, [] for fully static materials, and null when the two-sampler
+// runtime path cannot express the set (a live stage at index >= 2, more
+// than two live stages, or two live stages plus static stages left over -
+// none of which any converted field authors).
+export function ptLiveStages(
+  mat:
+    | { textureNames: string[]; textureStageState?: number[]; textureFormState?: number[] }
+    | undefined,
+): number[] | null {
+  const n = mat?.textureNames.length ?? 0;
+  const live: number[] = [];
+  for (let i = 0; i < n; i++) {
+    if ((mat?.textureFormState?.[i] ?? 0) !== 0 || (mat?.textureStageState?.[i] ?? 0) !== 0) {
+      live.push(i);
+    }
+  }
+  if (live.length === 0) return [];
+  const statics = n - live.length;
+  if (live.length > 2 || live[live.length - 1] > 1 || (live.length === 2 && statics > 0)) {
+    return null;
+  }
+  return live;
+}
+
 // The shared wind triangle wave: ttCnt (ms>>2)&0xFF counts up then down on
 // the (ms>>10)&1 toggle. Injected once per wind material.
 const PT_WIND_TRIANGLE_GLSL = `
@@ -346,10 +456,12 @@ const PT_WIND_TRIANGLE_GLSL = `
 export function ptApplyShaderHooks(
   material: THREE.Material,
   script: PtVertexScript | null,
+  uvFx?: PtUvFormBinding,
 ): void {
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uPtTime = sharedUniforms.uTime;
     shader.uniforms.uWocFillBoost = sharedUniforms.uTerrainFillBoost;
+    if (uvFx?.stage1) shader.uniforms.uPtMap1 = { value: uvFx.stage1 };
     let inject = '';
     if (script === 'water') {
       inject = `
@@ -377,7 +489,14 @@ export function ptApplyShaderHooks(
       )
       .replace('#include <begin_vertex>', `#include <begin_vertex>${inject ? `\n${inject}` : ''}`);
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', `#include <common>\nuniform float uWocFillBoost;`)
+      .replace(
+        '#include <common>',
+        `#include <common>\nuniform float uWocFillBoost;${
+          uvFx
+            ? `\nuniform float uPtTime;${uvFx.stage1 ? '\nuniform sampler2D uPtMap1;' : ''}`
+            : ''
+        }`,
+      )
       .replace(
         '#include <lights_fragment_begin>',
         `#include <lights_fragment_begin>
@@ -385,8 +504,33 @@ export function ptApplyShaderHooks(
         irradiance *= uWocFillBoost;
         #endif`,
       );
+    if (uvFx) {
+      // Live texture stages sample through their own u-offset; the second
+      // contribution binds uPtMap1. Modulate multiplies rgb+a; ADD adds
+      // rgb while alpha still modulates (the source ALPHAOP stays
+      // MODULATE for every stage).
+      const stageOp = (t: string, code: number) =>
+        code === PT_STAGE_OP_ADD
+          ? `diffuseColor.rgb += ${t}.rgb; diffuseColor.a *= ${t}.a;`
+          : `diffuseColor *= ${t};`;
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <map_fragment>',
+        `#ifdef USE_MAP
+vec4 ptTex0 = texture2D( map, vMapUv + vec2(${ptScrollUOffsetGlsl(uvFx.scroll0)}, 0.0) );
+${stageOp('ptTex0', uvFx.op0)}${
+          uvFx.stage1
+            ? `vec4 ptTex1 = texture2D( uPtMap1, vMapUv + vec2(${ptScrollUOffsetGlsl(uvFx.scroll1)}, 0.0) );
+${stageOp('ptTex1', uvFx.op1)}`
+            : ''
+        }
+#endif`,
+      );
+    }
   };
-  material.customProgramCacheKey = () => `pt-${script ?? 'flat'}`;
+  material.customProgramCacheKey = () =>
+    `pt-${script ?? 'flat'}${
+      uvFx ? `-s${uvFx.scroll0}.${uvFx.scroll1}o${uvFx.op0}.${uvFx.op1}${uvFx.stage1 ? 'x' : ''}` : ''
+    }`;
 }
 
 // ---------------------------------------------------------------------------
@@ -741,6 +885,91 @@ async function loadPtTexture(
   });
 }
 
+/** A material's resolved texture binding: the `map` slot, the optional
+ *  uPtMap1 stage texture, and the uvFx the shader hook carries. */
+interface PtStageBinding {
+  map: THREE.Texture | null;
+  stage1: THREE.Texture | null;
+  uvFx: PtUvFormBinding | null;
+}
+
+// Per-view binding cache: the warm pass and the mesh build join the same
+// promise per material, so a scrolling material's texture URLs are
+// fetched exactly once per view. This mirrors the static path's
+// ptFetchTexture dedup - ptTexInFlight evicts settled entries, so without
+// this latch a live material would issue a second loadTexture call when
+// the mesh build re-resolves it after the textures settled.
+type PtBindingCache = Map<number, Promise<PtStageBinding>>;
+
+function loadPtStageBinding(
+  src: PtMapDescriptor,
+  matIdx: number,
+  textureCache: PtTextureCache,
+  bindingCache: PtBindingCache,
+): Promise<PtStageBinding> {
+  // Keyed by material index: two materials may share a texture list with
+  // different form/op state, so the URL list is not a safe key.
+  let p = bindingCache.get(matIdx);
+  if (p === undefined) {
+    p = resolvePtStageBinding(src, matIdx, textureCache);
+    bindingCache.set(matIdx, p);
+  }
+  return p;
+}
+
+// Resolve which texture feeds each shader slot. Fully static materials
+// keep the established single-map path (multimix bakes once into a
+// canvas). A material with live stages (scroll or non-modulate op)
+// cannot bake - the product is not constant - so its live stage(s)
+// sample through per-slot offsets in the fragment shader while the
+// remaining static stages still bake into the other slot.
+async function resolvePtStageBinding(
+  src: PtMapDescriptor,
+  matIdx: number,
+  textureCache: PtTextureCache,
+): Promise<PtStageBinding> {
+  const mat = fieldMaterials(src).find((m) => m.index === matIdx);
+  const urls = textureUrlsForSource(src, matIdx);
+  const live = ptLiveStages(mat);
+  if (urls.length === 0 || live === null || live.length === 0) {
+    // live === null: a stage set the two-sampler path cannot express -
+    // fall back to the static bake so the material still renders.
+    return {
+      map: await loadPtTexture(src, matIdx, textureCache),
+      stage1: null,
+      uvFx: null,
+    };
+  }
+  const form = (i: number) => mat?.textureFormState?.[i] ?? 0;
+  const op = (i: number) => mat?.textureStageState?.[i] ?? 0;
+  const statics = urls.map((_, i) => i).filter((i) => !live.includes(i));
+  const textures = await Promise.all(urls.map(loadPtTextureUrl));
+  // The product of the given static stages: the single texture itself,
+  // or a cached multimix bake when more than one contributes.
+  const staticProduct = async (slots: number[]): Promise<THREE.Texture | null> => {
+    if (slots.length === 0) return null;
+    if (slots.length === 1) return textures[slots[0]] ?? null;
+    return ptFetchTexture(textureCache, `mix|${slots.join('.')}|${urls.join('|')}`, async () =>
+      bakeMultiTexture(slots.map((i) => textures[i])),
+    );
+  };
+  const stage0Live = live.includes(0);
+  const map = stage0Live ? textures[0] ?? null : await staticProduct(statics);
+  const stage1 = live.includes(1)
+    ? textures[1] ?? null
+    : stage0Live
+      ? await staticProduct(statics)
+      : null;
+  const uvFx: PtUvFormBinding = {
+    stage1,
+    scroll0: stage0Live ? form(0) : 0,
+    op0: stage0Live ? op(0) : 0,
+    scroll1: live.includes(1) ? form(1) : 0,
+    op1: live.includes(1) ? op(1) : 0,
+  };
+  return { map, stage1, uvFx };
+}
+
 // Load every converted animation frame for an SMTEX_TYPE_ANIMATION
 // material. Frames are deduped per URL through the shared cache, so each
 // frame is fetched and decoded at most once per field build. A missing
@@ -759,12 +988,24 @@ async function loadPtAnimFrames(
   );
 }
 
+// SMMAT_BLEND_LAMP materials render SRCALPHA x src + 1 x dst (additive
+// glow) instead of the default alpha blend; every other authored blend
+// type in the converted fields keeps the normal blend path.
+export function ptMaterialBlendingFor(
+  ptMat: { blendType?: number } | undefined,
+): THREE.Blending {
+  return (ptMat?.blendType ?? 0) === PT_BLEND_LAMP
+    ? THREE.AdditiveBlending
+    : THREE.NormalBlending;
+}
+
 // Build the Three.js material for a PT material group following the PT
 // runtime rules documented in the header.
 function makePtMaterial(
   ptMat: PtMaterialInfo | undefined,
   texture: THREE.Texture | null,
   vertexColors: boolean,
+  uvFx?: PtUvFormBinding,
 ): THREE.MeshLambertMaterial {
   const transparency = ptMat?.transparency ?? 0;
   const opacityMap = ptMaterialHasOpacityMap(ptMat);
@@ -783,7 +1024,16 @@ function makePtMaterial(
     mat.opacity = Math.min(1, Math.max(0, 1 - transparency));
     mat.depthWrite = transparency <= 0.2;
   }
-  ptApplyShaderHooks(mat, ptVertexScriptFor(ptMat?.windMeshBottom ?? 0));
+  // SMMAT_BLEND_LAMP: SRCALPHA x src + 1 x dst additive glow (the waterfall
+  // foam sheets and other lamp materials). The source enables alpha
+  // blending for the lamp path unconditionally, so transparent must be on
+  // even at Transparency == 0.
+  const blending = ptMaterialBlendingFor(ptMat);
+  if (blending !== THREE.NormalBlending) {
+    mat.blending = blending;
+    mat.transparent = true;
+  }
+  ptApplyShaderHooks(mat, ptVertexScriptFor(ptMat?.windMeshBottom ?? 0), uvFx);
   return mat;
 }
 
@@ -793,6 +1043,7 @@ async function buildGroupedMesh(
   name: string,
   emit: PtFaceEmit,
   textureCache: PtTextureCache,
+  bindingCache: PtBindingCache,
   outMaterials: THREE.Material[],
   outAnims: PtTextureAnim[],
   needsPtXZ: boolean,
@@ -810,7 +1061,9 @@ async function buildGroupedMesh(
   const matByIdx = new Map(fieldMaterials(src).map((m) => [m.index, m]));
   for (const g of emit.groups) {
     const ptMat = matByIdx.get(g.material);
-    const base = await loadPtTexture(src, g.material, textureCache);
+    const binding = await loadPtStageBinding(src, g.material, textureCache, bindingCache);
+    const base = binding.map;
+    const uvFx = binding.uvFx ?? undefined;
     let texture = base;
     if (ptMaterialIsAnimated(ptMat)) {
       // SMTEX_TYPE_ANIMATION: stage-0 binds the animation frame list
@@ -818,7 +1071,7 @@ async function buildGroupedMesh(
       // only fills frames that failed to convert.
       const frames = await loadPtAnimFrames(src, g.material, textureCache);
       texture = frames[0] ?? base;
-      const m = makePtMaterial(ptMat, texture, hasColors);
+      const m = makePtMaterial(ptMat, texture, hasColors, uvFx);
       m.name = `pt-mat-${g.material}`;
       materials.push(m);
       outAnims.push({
@@ -830,7 +1083,7 @@ async function buildGroupedMesh(
         fallback: base,
       });
     } else {
-      const m = makePtMaterial(ptMat, texture, hasColors);
+      const m = makePtMaterial(ptMat, texture, hasColors, uvFx);
       m.name = `pt-mat-${g.material}`;
       materials.push(m);
     }
@@ -852,12 +1105,13 @@ function warmPtFieldTextures(
   src: PtMapDescriptor,
   materialIndices: Iterable<number>,
   textureCache: PtTextureCache,
+  bindingCache: PtBindingCache,
 ): void {
   const matByIdx = new Map(fieldMaterials(src).map((m) => [m.index, m]));
   for (const mi of materialIndices) {
     const ptMat = matByIdx.get(mi);
     if (ptMaterialIsHidden(ptMat) || ptMaterialIsUndrawn(ptMat)) continue;
-    void loadPtTexture(src, mi, textureCache);
+    void loadPtStageBinding(src, mi, textureCache, bindingCache);
     if (ptMaterialIsAnimated(ptMat)) {
       void loadPtAnimFrames(src, mi, textureCache);
     }
@@ -898,6 +1152,7 @@ export async function buildPtTerrainView(
   }
 
   const textureCache: PtTextureCache = new Map();
+  const bindingCache: PtBindingCache = new Map();
   const allMaterials: THREE.Material[] = [];
   const anims: PtTextureAnim[] = [];
   const meshes: THREE.Mesh[] = [];
@@ -942,7 +1197,7 @@ export async function buildPtTerrainView(
     for (const g of emit.groups) usedMats.add(g.material);
   }
   if (seaMat) usedMats.add(seaMat.index);
-  warmPtFieldTextures(src, usedMats, textureCache);
+  warmPtFieldTextures(src, usedMats, textureCache, bindingCache);
 
   // Stage objects fetch/build in parallel with the terrain meshes: their
   // own warm pass fires before the node loop for the same reason.
@@ -963,6 +1218,7 @@ export async function buildPtTerrainView(
       `pt-${src.id}-solid`,
       solidEmit,
       textureCache,
+      bindingCache,
       allMaterials,
       anims,
       false,
@@ -972,6 +1228,7 @@ export async function buildPtTerrainView(
       `pt-${src.id}-water`,
       waterEmit,
       textureCache,
+      bindingCache,
       allMaterials,
       anims,
       true,
@@ -981,6 +1238,7 @@ export async function buildPtTerrainView(
       `pt-${src.id}-decorative`,
       decoEmit,
       textureCache,
+      bindingCache,
       allMaterials,
       anims,
       false,
