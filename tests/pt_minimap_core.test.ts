@@ -7,16 +7,19 @@
 
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import {
+  buildPtFieldMapView,
   PT_MINIMAP_MAX_X,
   PT_MINIMAP_MAX_Z,
   PT_MINIMAP_MIN_X,
   PT_MINIMAP_MIN_Z,
+  PT_MINIMAP_TEXTURE_URL,
   ptMinimapLayers,
   ptMinimapScreenDelta,
   ptMinimapUV,
   ptRasterDestRect,
   ptRasterWorldRect,
   ptRicartenMapDestRect,
+  type PtMinimapLayer,
 } from '../src/ui/pt_minimap_core';
 import {
   PT_BAND_X_MIN,
@@ -42,6 +45,8 @@ import {
 } from '../src/sim/pt_field_active';
 import { makePtContinentTransform, type PtMapDescriptor } from '../src/sim/pt_field';
 import { loadPtDevMap } from '../src/game/pt_dev_maps';
+import { ptMapRasterCacheReset } from '../src/ui/pt_map_images';
+import { PtMapPainter } from '../src/ui/pt_map_painter';
 import type { IWorld } from '../src/world_api';
 
 // -- Authoritative PT coordinates (field.cpp field 3, "village-2") -----------
@@ -59,6 +64,7 @@ const RECT_H_PT = PT_RICARTEN_MAX_Z - PT_RICARTEN_MIN_Z; // 9179 PT units
 afterEach(() => {
   vi.unstubAllGlobals();
   setActivePtMap(null); // never leave a bound field across suites
+  ptMapRasterCacheReset(); // the shared raster cache is module-lifed too
 });
 
 describe('pt_minimap_core: bounds come from the authored StageMapRect', () => {
@@ -216,8 +222,13 @@ interface BlitCall {
   h: number;
 }
 
-function recordingCtx(): { ctx: CanvasRenderingContext2D; blits: BlitCall[] } {
+function recordingCtx(): {
+  ctx: CanvasRenderingContext2D;
+  blits: BlitCall[];
+  translates: Array<{ x: number; y: number }>;
+} {
   const blits: BlitCall[] = [];
+  const translates: Array<{ x: number; y: number }> = [];
   const ctx = {
     drawImage(image: unknown, ...rest: number[]): void {
       if (rest.length === 4) blits.push({ image, x: rest[0], y: rest[1], w: rest[2], h: rest[3] });
@@ -235,12 +246,14 @@ function recordingCtx(): { ctx: CanvasRenderingContext2D; blits: BlitCall[] } {
     stroke(): void {},
     fillRect(): void {},
     strokeRect(): void {},
-    translate(): void {},
+    translate(x: number, y: number): void {
+      translates.push({ x, y });
+    },
     rotate(): void {},
     fillText(): void {},
     strokeText(): void {},
   };
-  return { ctx: ctx as unknown as CanvasRenderingContext2D, blits };
+  return { ctx: ctx as unknown as CanvasRenderingContext2D, blits, translates };
 }
 
 function ptWorld(x: number, z: number): IWorld {
@@ -289,10 +302,24 @@ class FakeImage {
 }
 
 // paintOverworld resolves the --color-minimap-* tokens through
-// getComputedStyle once per call (same stub as minimap_painter.test.ts).
+// getComputedStyle once per call (same stub as minimap_painter.test.ts). The
+// document stub carries createElement('canvas') for the painters' text-sprite
+// cache: a fake canvas + fake 2d context with just the calls rasterize makes.
 function stubDomGlobals(): void {
   vi.stubGlobal('Image', FakeImage);
-  vi.stubGlobal('document', { documentElement: {} });
+  vi.stubGlobal('document', {
+    documentElement: {},
+    createElement: () => ({
+      width: 0,
+      height: 0,
+      getContext: () => ({
+        measureText: () => ({ width: 24 }),
+        setTransform(): void {},
+        strokeText(): void {},
+        fillText(): void {},
+      }),
+    }),
+  });
   vi.stubGlobal('getComputedStyle', () => ({
     getPropertyValue: (token: string) => `paint:${token}`,
   }));
@@ -475,5 +502,176 @@ describe('paintOverworld: connected-field compositing', () => {
       painter.paintOverworld(ctx, world, {} as HTMLElement, {} as HTMLCanvasElement, 1),
     ).not.toThrow();
     expect(blits).toHaveLength(0); // failed raster skipped, void fill shown
+  });
+});
+
+// -- Phase 6F: the enlarged M-key field map ---------------------------------
+// The view model reframes the SAME rasters (same world rects, same
+// ptMinimapScreenDelta convention) over the composited union instead of the
+// player-centered window. These tests pin that the enlargement changes the
+// framing and nothing else.
+
+const MAP_S = 560; // index.html's #map-canvas backing size
+
+function ricartenLayer(): PtMinimapLayer {
+  return {
+    id: 'ricarten',
+    png: PT_MINIMAP_TEXTURE_URL,
+    rect: {
+      minX: PT_MINIMAP_MIN_X,
+      maxX: PT_MINIMAP_MAX_X,
+      minZ: PT_MINIMAP_MIN_Z,
+      maxZ: PT_MINIMAP_MAX_Z,
+    },
+  };
+}
+
+describe('buildPtFieldMapView: the enlarged framing', () => {
+  it('fits the raster union to the canvas on its longer axis, centred', () => {
+    const p = { x: ptXToWoC(CENTER.x), z: ptZToWoC(CENTER.z) };
+    const view = buildPtFieldMapView([ricartenLayer()], p.x, p.z, 0, MAP_S);
+    expect(view.layers).toHaveLength(1);
+    const d = view.layers[0].dest;
+    // A single field IS the union: centred, with the longer axis full-bleed.
+    expect(Math.max(d.w, d.h)).toBeCloseTo(MAP_S, 6);
+    expect(d.x + d.w / 2).toBeCloseTo(MAP_S / 2, 6);
+    expect(d.y + d.h / 2).toBeCloseTo(MAP_S / 2, 6);
+    // One scale on both axes: the raster is never stretched non-uniformly.
+    expect(d.w / (PT_MINIMAP_MAX_X - PT_MINIMAP_MIN_X)).toBeCloseTo(
+      d.h / (PT_MINIMAP_MAX_Z - PT_MINIMAP_MIN_Z),
+      6,
+    );
+  });
+
+  it('projects the marker through the same convention, anchored at the union centre', () => {
+    const unionCx = (PT_MINIMAP_MIN_X + PT_MINIMAP_MAX_X) / 2;
+    const unionCz = (PT_MINIMAP_MIN_Z + PT_MINIMAP_MAX_Z) / 2;
+    const view = buildPtFieldMapView([ricartenLayer()], unionCx, unionCz, 0.3, MAP_S);
+    expect(view.player.mx).toBeCloseTo(MAP_S / 2, 6);
+    expect(view.player.my).toBeCloseTo(MAP_S / 2, 6);
+    expect(view.player.angle).toBe(-0.3); // -facing, the minimap convention
+
+    // The minimap's blit/marker invariant holds under the new anchor: a
+    // landmark's pixel inside the dest rect equals the delta projection.
+    const d = view.layers[0].dest;
+    const scale = d.w / (PT_MINIMAP_MAX_X - PT_MINIMAP_MIN_X);
+    for (const lm of [SPAWN1, SPAWN2, SW_WARP, NE_WINDMILL]) {
+      const { u, v } = ptMinimapUV(lm.x, lm.z);
+      const delta = ptMinimapScreenDelta(ptXToWoC(lm.x), ptZToWoC(lm.z), unionCx, unionCz, scale);
+      expect(d.x + u * d.w).toBeCloseTo(MAP_S / 2 + delta.dx, 4);
+      expect(d.y + v * d.h).toBeCloseTo(MAP_S / 2 + delta.dy, 4);
+    }
+  });
+
+  it('frames the standby + active union exactly where ptRasterDestRect puts it', async () => {
+    const f1 = await loadPtDevMap('fore-1');
+    const ric = await loadPtDevMap('ricarten');
+    const layers = ptMinimapLayers(f1.descriptor, ric.descriptor);
+    const g = f1.descriptor.fieldGates!.find((e) => e.targetId === 'ricarten')!;
+    const px = f1.descriptor.transform.ptXToWoC(g.x);
+    const pz = f1.descriptor.transform.ptZToWoC(g.z);
+    const facing = Math.PI / 4;
+
+    const view = buildPtFieldMapView(layers, px, pz, facing, MAP_S);
+    expect(view.layers.map((l) => l.id)).toEqual(['ricarten', 'fore-1']);
+
+    const union = layers.reduce(
+      (acc, l) => ({
+        minX: Math.min(acc.minX, l.rect.minX),
+        maxX: Math.max(acc.maxX, l.rect.maxX),
+        minZ: Math.min(acc.minZ, l.rect.minZ),
+        maxZ: Math.max(acc.maxZ, l.rect.maxZ),
+      }),
+      { minX: Infinity, maxX: -Infinity, minZ: Infinity, maxZ: -Infinity },
+    );
+    const scale = MAP_S / Math.max(union.maxX - union.minX, union.maxZ - union.minZ);
+    const cx = (union.minX + union.maxX) / 2;
+    const cz = (union.minZ + union.maxZ) / 2;
+    for (const [i, layer] of layers.entries()) {
+      const r = ptRasterDestRect(layer.rect, cx, cz, MAP_S, scale);
+      expect(view.layers[i].dest.x).toBeCloseTo(r.x, 6);
+      expect(view.layers[i].dest.y).toBeCloseTo(r.y, 6);
+      expect(view.layers[i].dest.w).toBeCloseTo(r.w, 6);
+      expect(view.layers[i].dest.h).toBeCloseTo(r.h, 6);
+    }
+    const delta = ptMinimapScreenDelta(px, pz, cx, cz, scale);
+    expect(view.player.mx).toBeCloseTo(MAP_S / 2 + delta.dx, 6);
+    expect(view.player.my).toBeCloseTo(MAP_S / 2 + delta.dy, 6);
+    expect(view.player.angle).toBeCloseTo(-facing, 6);
+    // The marker stays inside the canvas near the gate seam.
+    expect(view.player.mx).toBeGreaterThan(0);
+    expect(view.player.mx).toBeLessThan(MAP_S);
+    expect(view.player.my).toBeGreaterThan(0);
+    expect(view.player.my).toBeLessThan(MAP_S);
+  });
+
+  it('stays finite with no raster layers: void fill, marker centred', () => {
+    const view = buildPtFieldMapView([], 123, 456, 0.7, MAP_S);
+    expect(view.layers).toEqual([]);
+    expect(view.player).toEqual({ mx: MAP_S / 2, my: MAP_S / 2, angle: -0.7 });
+  });
+});
+
+describe('PtMapPainter: the M-key surface shares the minimap raster cache', () => {
+  it('blits the same decoded images the corner minimap already fetched', async () => {
+    stubDomGlobals();
+    const labels: string[] = [];
+    const minimap = makePainter(labels);
+    const small = recordingCtx();
+    const f1 = await loadPtDevMap('fore-1');
+    const ric = await loadPtDevMap('ricarten');
+    setActivePtMap(f1.descriptor);
+    setStandbyPtMap(ric.descriptor);
+    const g = f1.descriptor.fieldGates!.find((e) => e.targetId === 'ricarten')!;
+    const x = f1.descriptor.transform.ptXToWoC(g.x);
+    const z = f1.descriptor.transform.ptZToWoC(g.z);
+    const world = ptWorld(x, z);
+
+    // Prime through the minimap path; the shared cache now owns both images.
+    minimap.paintOverworld(small.ctx, world, {} as HTMLElement, {} as HTMLCanvasElement, 1);
+    minimap.paintOverworld(small.ctx, world, {} as HTMLElement, {} as HTMLCanvasElement, 1);
+    expect(FakeImage.constructed).toBe(2);
+    expect(small.blits).toHaveLength(2);
+
+    // The enlarged map draws both rasters without a single new Image (the
+    // cache-sharing proof) and returns the active field's display name.
+    const mapPainter = new PtMapPainter(() => 'Ricarten');
+    const big = recordingCtx();
+    const result = mapPainter.paint(big.ctx, world, MAP_S);
+    expect(FakeImage.constructed).toBe(2);
+    expect(result.name).toBe('Garden of Freedom');
+    expect(big.blits).toHaveLength(2); // text sprite blits 2-arg, unrecorded
+
+    const view = buildPtFieldMapView(
+      ptMinimapLayers(f1.descriptor, ric.descriptor),
+      x,
+      z,
+      world.player.facing,
+      MAP_S,
+    );
+    for (const [i, l] of view.layers.entries()) {
+      expect(big.blits[i].x).toBeCloseTo(l.dest.x, 6);
+      expect(big.blits[i].y).toBeCloseTo(l.dest.y, 6);
+      expect(big.blits[i].w).toBeCloseTo(l.dest.w, 6);
+      expect(big.blits[i].h).toBeCloseTo(l.dest.h, 6);
+    }
+    // The arrow anchor is the view's projected marker.
+    expect(big.translates[big.translates.length - 1]).toEqual({
+      x: view.player.mx,
+      y: view.player.my,
+    });
+  });
+
+  it('paints Ricarten through the descriptor-less fallback layer', () => {
+    stubDomGlobals();
+    const mapPainter = new PtMapPainter(() => 'Ricarten');
+    const big = recordingCtx();
+    const world = ptWorld(ptXToWoC(SPAWN1.x), ptZToWoC(SPAWN1.z));
+
+    mapPainter.paint(big.ctx, world, MAP_S); // primes the ricarten raster
+    const result = mapPainter.paint(big.ctx, world, MAP_S);
+    expect(FakeImage.constructed).toBe(1);
+    expect(result.name).toBe('Ricarten');
+    expect(big.blits).toHaveLength(1);
   });
 });

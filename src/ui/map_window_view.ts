@@ -29,6 +29,7 @@ import {
 import { KIT_BUILDINGS } from '../sim/kit_buildings';
 import { NODE_HARVEST_TABLE } from '../sim/professions/gathering';
 import { canGatherTier } from '../sim/professions/tools';
+import { isPtPos } from '../sim/pt_band';
 import {
   type MapQuestMarkerKind,
   type QuestObjectiveRef,
@@ -91,9 +92,17 @@ const CAMPFIRE_RADIUS_PPU = 0.5;
 /** Which world-map surface a given world renders: the delve schematic (owned by
  *  delve_map_painter), the Thornhollow Fields battleground band (routed to the plain
  *  overworld surface: the band sits past WORLD_MAX_X, so the player/ally
- *  markers self-suppress; the minimap owns the in-band field raster), or the
+ *  markers self-suppress; the minimap owns the in-band field raster), the PT
+ *  connected world's enlarged field map (owned by pt_map_painter), or the
  *  overworld map (this core). */
-export type MapWindowMode = 'rift' | 'delve' | 'battleground' | 'dungeon' | 'castle' | 'overworld';
+export type MapWindowMode =
+  | 'rift'
+  | 'delve'
+  | 'battleground'
+  | 'dungeon'
+  | 'castle'
+  | 'pt'
+  | 'overworld';
 
 /** A map region in world coords, used with two meanings for spanX/spanZ. The
  *  internal `full` rect carries the current-zone square (its full spans). The
@@ -818,6 +827,10 @@ export function mapWindowMode(world: IWorld): MapWindowMode {
   if (isBgPos(world.player.pos.x)) return 'battleground';
   if (dungeonMapActive(world)) return 'dungeon';
   if (lastKeepMapActive(world) || dawnholdMapActive(world)) return 'castle';
+  // The PT band sits past every other instance band, so a position here is
+  // always the connected world; the M-key surface enlarges the same rasters
+  // the corner minimap composites (pt_map_painter.ts).
+  if (isPtPos(world.player.pos.x)) return 'pt';
   return isDelvePos(world.player.pos.x) && world.delveRun ? 'delve' : 'overworld';
 }
 

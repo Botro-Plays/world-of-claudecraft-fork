@@ -177,3 +177,72 @@ export function ptMinimapLayers(
   }
   return layers;
 }
+
+// ---------------------------------------------------------------------------
+// Enlarged map window (Phase 6F)
+// ---------------------------------------------------------------------------
+
+/** One layer resolved to its destination rect on the enlarged map canvas. */
+export interface PtFieldMapLayerDraw {
+  id: string;
+  png: string;
+  dest: { x: number; y: number; w: number; h: number };
+}
+
+/** The enlarged PT map's whole draw model: layer blits plus the projected
+ *  player marker. Same projection authority as the corner minimap (+X
+ *  map-left, +Z map-up); the only difference is the view framing. */
+export interface PtFieldMapView {
+  layers: PtFieldMapLayerDraw[];
+  player: { mx: number; my: number; angle: number };
+}
+
+/**
+ * Frame the enlarged PT map: the union of the composited field rasters fitted
+ * to the square canvas (the corner minimap's player-centered window widened
+ * to the whole connected set, exactly like the source's full map view of the
+ * current field). The view stays square so world scale is preserved on both
+ * axes; a rectangular union letterboxes into the void fill on its shorter
+ * axis rather than stretching.
+ *
+ * Player position is projected through the same mapping as the minimap
+ * (ptMinimapScreenDelta), with the raster-union centre as the anchor instead
+ * of the player. Facing keeps the minimap convention: the arrow points up
+ * (+Z) under a rotation of -facing.
+ */
+export function buildPtFieldMapView(
+  layers: readonly PtMinimapLayer[],
+  playerX: number,
+  playerZ: number,
+  facing: number,
+  S: number,
+): PtFieldMapView {
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minZ = Infinity;
+  let maxZ = -Infinity;
+  for (const layer of layers) {
+    minX = Math.min(minX, layer.rect.minX);
+    maxX = Math.max(maxX, layer.rect.maxX);
+    minZ = Math.min(minZ, layer.rect.minZ);
+    maxZ = Math.max(maxZ, layer.rect.maxZ);
+  }
+  const hasLayers = layers.length > 0;
+  const cx = hasLayers ? (minX + maxX) / 2 : playerX;
+  const cz = hasLayers ? (minZ + maxZ) / 2 : playerZ;
+  // The px-per-yard for a layer-less (all-void) map is display-neutral: the
+  // fill covers the canvas either way, so a unit span keeps the numbers
+  // finite without inventing a field extent.
+  const span = hasLayers ? Math.max(maxX - minX, maxZ - minZ) : 1;
+  const pxPerYard = S / span;
+  const half = S / 2;
+  const p = ptMinimapScreenDelta(playerX, playerZ, cx, cz, pxPerYard);
+  return {
+    layers: layers.map((layer) => ({
+      id: layer.id,
+      png: layer.png,
+      dest: ptRasterDestRect(layer.rect, cx, cz, S, pxPerYard),
+    })),
+    player: { mx: half + p.dx, my: half + p.dy, angle: -facing },
+  };
+}

@@ -55,6 +55,7 @@ import {
   type MinimapObjectSemantic,
 } from './minimap_markers';
 import type { PainterHostWriters } from './painter_host';
+import { ptMapRasterImage } from './pt_map_images';
 import { getPtFieldDisplayName } from '../sim/content/pt_field_names';
 import { isPtPos } from '../sim/pt_band';
 import { activePtMapDescriptor, standbyPtMapDescriptor } from '../sim/pt_field_active';
@@ -1064,13 +1065,9 @@ export class MinimapPainter {
   // The Thornhollow Fields cache, relief plus wall plan (same lifecycle as mazeBg:
   // the authored field never changes, so one raster serves the session).
   private battlegroundBg: HTMLCanvasElement | null = null;
-  // The authentic PT Ricarten minimap texture (field/map/village-2.tga as PNG).
-  // 'loading' / 'missing' latch the async state so the ~10Hz redraw never
-  // re-kicks the fetch; the map simply waits a frame or two on first entry.
-  // Per-field minimap rasters, keyed by PNG URL. Each entry loads once and
-  // is reused every frame; 'missing' marks a failed fetch so the retry
-  // cadence does not hammer a 404. Bounded by the fields visited.
-  private ptMapBgs = new Map<string, HTMLImageElement | 'loading' | 'missing'>();
+  // The authentic PT field rasters (Field/map/<id>.tga as PNG) are shared
+  // with the enlarged M-key map through pt_map_images.ts: one fetch + decode
+  // per URL per session, whichever surface asks first.
   constructor(
     private readonly writers: PainterHostWriters,
     private readonly classColor: (cls: string) => string,
@@ -1442,25 +1439,11 @@ export class MinimapPainter {
 
   // Kick (or join) the one-time texture load for one field raster. Returns
   // the image only once the browser has decoded it; the redraw cadence
-  // retries naturally. A 404 lands on 'missing' and is skipped thereafter.
+  // retries naturally. The cache is shared with the enlarged PT map window
+  // (pt_map_images.ts), so a raster the minimap already decoded never
+  // fetches twice.
   private ensurePtBg(url: string): HTMLImageElement | null {
-    const cur = this.ptMapBgs.get(url);
-    if (cur === 'loading' || cur === 'missing') return null;
-    if (cur) return cur;
-    if (typeof Image === 'undefined') {
-      this.ptMapBgs.set(url, 'missing');
-      return null;
-    }
-    this.ptMapBgs.set(url, 'loading');
-    const img = new Image();
-    img.onload = () => {
-      this.ptMapBgs.set(url, img);
-    };
-    img.onerror = () => {
-      this.ptMapBgs.set(url, 'missing');
-    };
-    img.src = url;
-    return null;
+    return ptMapRasterImage(url);
   }
 
   private drawMarkers(

@@ -31,6 +31,7 @@ import {
 } from '../src/sim/data';
 import { EASTBROOK_LAYOUT } from '../src/sim/eastbrook_layout';
 import { KIT_BUILDINGS } from '../src/sim/kit_buildings';
+import { PT_BAND_X_MIN } from '../src/sim/pt_band';
 import type { QuestObjectiveRef } from '../src/sim/quest_targets';
 import {
   emptyZoneProps,
@@ -279,6 +280,14 @@ describe('mapWindowMode (delve vs overworld discriminator)', () => {
     const world = makeDelveWorld('client') as unknown as { delveRun: unknown };
     world.delveRun = null;
     expect(mapWindowMode(world as unknown as IWorld)).toBe('overworld');
+  });
+
+  it('classifies the PT connected-world band as pt, never overworld (both shapes)', () => {
+    for (const shape of ['sim', 'client'] as const) {
+      const world = makeOverworldWorld(shape);
+      world.player.pos.x = PT_BAND_X_MIN + 1;
+      expect(mapWindowMode(world)).toBe('pt');
+    }
   });
 });
 

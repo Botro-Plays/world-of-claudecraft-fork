@@ -2569,6 +2569,10 @@ const UI_DOM_MODULES = [
   // in store_purchase_intent.ts: that ledger is a pure core whose determinism
   // scan is what lets a caller inject a minter and test it deterministically.
   'src/ui/purchase_intent_key.ts',
+  // The shared PT field-raster image cache: `new Image()` is browser state
+  // (fetch + decode), owned here so the corner minimap and the enlarged
+  // M-key PT map share one fetch per URL instead of holding a cache each.
+  'src/ui/pt_map_images.ts',
   'src/ui/reconnect_overlay.ts',
   // reliquary_window.ts joined the ledger with the HUD-tracker pin store: the
   // pinned page set persists per character in localStorage (the deeds_window

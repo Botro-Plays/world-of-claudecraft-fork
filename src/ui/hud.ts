@@ -779,6 +779,7 @@ import {
   procOverlayState,
 } from './proc_overlay_view';
 import { maskProfanity } from './profanity';
+import { PtMapPainter } from './pt_map_painter';
 import {
   QUEST_ITEM_TOOLTIP_COLOR,
   type QuestItemTooltipModel,
@@ -5166,6 +5167,9 @@ export class Hud {
     this.mapMarkerArt,
     this.mapMarkerProfile,
   );
+  // The enlarged M-key PT field map (Phase 6F): same rasters, rect projection,
+  // and image cache as the corner minimap, framed to the window canvas.
+  private readonly ptMapPainter = new PtMapPainter(() => t('hudChrome.pt.title'));
   private readonly presentationBag: PainterHostPresentation = {
     openMaterialSources: openMaterialSourcesDialog,
     itemIcon: (item, quality) => this.itemIcon(item, quality),
@@ -10822,6 +10826,7 @@ export class Hud {
   // always reachable; outside, zone <-> continent plus the party's dungeon plan.
   private toggleMapLevel(): void {
     const mode = mapWindowMode(this.sim);
+    if (mode === 'pt') return; // the PT field map has one fixed surface
     this.setMapLevel(nextMapLevel(mode, this.mapLevel, remoteInstanceAnchor(this.sim) !== null));
   }
 
@@ -10870,6 +10875,7 @@ export class Hud {
   // scroll-wheel / button zoom for the world map (clamped to [1, MAP_MAX_ZOOM])
   private zoomMap(factor: number): void {
     if (this.mapLevel !== 'zone' && this.mapLevel !== 'continent') return;
+    if (mapWindowMode(this.sim) === 'pt') return; // the PT field map fits a fixed frame
     // One more zoom-out at the zone map's full extent leaves the zone and opens
     // the continent overview (the level toggle's other half), instead of clamping
     // at the minimum and doing nothing. A delve has no overview to go to.
@@ -10938,7 +10944,27 @@ export class Hud {
     this.mapLevel = resolveMapSurface(mapMode, this.mapLevel, remote !== null);
     const schematic = this.mapLevel === 'instance';
     this.setText($('#map-level-toggle'), t(mapLevelToggleKey(mapMode, this.mapLevel, !!remote)));
-    this.setDisplay($('#map-zoom'), this.mapLevel === 'zone' ? 'flex' : 'none');
+    const ptMode = mapMode === 'pt';
+    // The PT surface has one fixed framing, so the zone/continent toggle and
+    // the zoom controls are hidden while the band is active (toggleMapLevel /
+    // zoomMap are no-ops there too). An empty display string restores the
+    // stylesheet default for every non-PT surface.
+    this.setDisplay($('#map-level-toggle'), ptMode ? 'none' : '');
+    this.setDisplay($('#map-zoom'), this.mapLevel === 'zone' && !ptMode ? 'flex' : 'none');
+    if (ptMode) {
+      // The enlarged PT field map: the corner minimap's rasters + projection
+      // fitted to the window canvas (pt_map_painter.ts). This intercepts
+      // before every WoC surface so the window can never fall back to the
+      // overworld map while the player stands inside the connected world.
+      this.clearMapHitState(canvas);
+      const result = this.ptMapPainter.paint(ctx, this.sim, S);
+      this.setText(summaryEl, t('hud.core.mapSummary', { zone: result.name }));
+      this.setText(
+        markerSummaryEl,
+        this.mapMarkerInteraction.semantics.updateSimple(result.name, S),
+      );
+      return;
+    }
     if (schematic && mapMode === 'rift') {
       this.clearMapHitState(canvas);
       const model = this.riftPainter.paintWorldMap(ctx, this.sim, S);

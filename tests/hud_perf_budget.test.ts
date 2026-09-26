@@ -799,6 +799,9 @@ const CANVAS_PAINTERS: ReadonlyArray<ScannedPainter> = [
   { file: 'lastkeep_map_painter.ts', allow: {}, reflowAllow: { getComputedStyle: 1 } },
   { file: 'map_window_painter.ts', allow: {}, reflowAllow: { getComputedStyle: 1 } },
   { file: 'minimap_painter.ts', allow: {}, reflowAllow: { getComputedStyle: 1 } },
+  // the enlarged M-key PT field map: same one-shot --color-* resolve the
+  // minimap and map-window painters hold, then pure canvas draws
+  { file: 'pt_map_painter.ts', allow: {}, reflowAllow: { getComputedStyle: 1 } },
   { file: 'perf_graph_painter.ts', allow: {}, reflowAllow: {} },
   { file: 'unit_portrait_painter.ts', allow: { '.dataset': 4 }, reflowAllow: {} },
 ];

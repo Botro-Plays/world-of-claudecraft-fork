@@ -6625,6 +6625,10 @@ describe('Guide wiki completeness corrections (Phase 20, 2026-09-03)', () => {
     // Every non-overworld map mode is named; MapWindowMode is exhaustive here.
     const modeWords: Record<MapWindowMode, string | null> = {
       overworld: null,
+      // The PT band's enlarged field map reuses the corner minimap's own
+      // rasters, so the WoC map prose does not describe it (same null arm as
+      // overworld, which the prose frames rather than names as a mode).
+      pt: null,
       castle: 'a castle keep',
       delve: 'a delve',
       dungeon: 'a dungeon',
