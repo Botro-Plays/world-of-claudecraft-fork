@@ -52,6 +52,8 @@
 //   farming.ts          IWorldFarming        the static garden-bed geography + the caller's own
 //                                            plot rows (reads only in the patches-and-plots phase)
 //   reliquary.ts        IWorldReliquary      sparse firstFind / marks / recent + pure completion
+//   traversal.ts        IWorldTraversal      PT field identity read + the data-free
+//                                            transition nudge (FieldGate / WarpGate)
 //
 // THREE GATES pin this seam (run before any facet edit; the literal counts are
 // pinned THERE and re-stale here, so this prose stays count-free):
@@ -97,6 +99,7 @@ import type { IWorldTalents } from './world_api/talents';
 import type { IWorldTargeting } from './world_api/targeting';
 import type { IWorldTelemetry } from './world_api/telemetry';
 import type { IWorldTrade } from './world_api/trade';
+import type { IWorldTraversal } from './world_api/traversal';
 
 // --- pass-through sim re-exports: downstream imports these FROM world_api ---
 // Account flair is defined in the host-agnostic sim core (src/sim/account_flair.ts)
@@ -426,7 +429,8 @@ export interface IWorld
     IWorldDeeds,
     IWorldReliquary,
     IWorldMounts,
-    IWorldFarming {}
+    IWorldFarming,
+    IWorldTraversal {}
 
 // ---------------------------------------------------------------------------
 // Command schema (W0b): the shared wire-token vocabulary.
@@ -831,6 +835,12 @@ export const COMMAND_NAMES = [
   'swap_perfecting_ranks',
   // Wear or take off an owned account mount skin on this character.
   'change_mount_skin',
+  // PT connected-world traversal nudge (online phase O2): a DATA-FREE
+  // request - no field id, gate id, or coordinates - asking the server to
+  // resolve a FieldGate ownership flip or a WarpGate trigger at the
+  // authoritative position right now instead of its next tick. Appended at
+  // the END because wire tokens are never reordered.
+  'pt_transition',
 ] as const;
 
 // The union both the send path (`online.ts`) and the dispatch switch
@@ -919,7 +929,8 @@ export type WorldFacet =
   | 'IWorldDeeds'
   | 'IWorldReliquary'
   | 'IWorldMounts'
-  | 'IWorldFarming';
+  | 'IWorldFarming'
+  | 'IWorldTraversal';
 
 export const COMMAND_FACETS = {
   // IWorldCombat: ability casts, auto-attack, spirit release.
@@ -1183,4 +1194,7 @@ export const COMMAND_FACETS = {
   convert_husks: 'IWorldFarming',
   place_feast: 'IWorldFarming',
   consume_feast: 'IWorldFarming',
+  // IWorldTraversal: the PT transition nudge. The `ptField` member is a
+  // snapshot read (the `ptf` self-delta), not a command - untagged.
+  pt_transition: 'IWorldTraversal',
 } as const satisfies Partial<Record<ClientCommand, WorldFacet>>;

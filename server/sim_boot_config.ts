@@ -10,9 +10,11 @@ import {
   type VaultConsumptionAdmission,
 } from '../src/sim/types';
 import { WORLD_SEED } from '../src/sim/world_seed';
-// Side effect: registers the Pillai/Atlantis field modules as PT fallback
-// fields so PT-band floor queries resolve for Morion/Atlanteon characters.
-import './pt_start_fields';
+// Side effect: registers the PT static field closure + shared map graph for
+// the realm (server/pt_fields.ts -> pt_start_fields + pt_map_links). PT-band
+// floor queries and authoritative FieldGate/WarpGate transitions resolve
+// through those registrations.
+import './pt_fields';
 import { nextRaidResetMs, nextWeeklyRaidResetMs } from './raid_reset';
 import { REALM_RESET_TIME_ZONE } from './realm';
 import { STORAGE_PRICES } from './storage_prices';

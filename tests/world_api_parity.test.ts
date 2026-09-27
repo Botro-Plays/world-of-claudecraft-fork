@@ -78,6 +78,7 @@ import type { IWorldTalents } from '../src/world_api/talents';
 import type { IWorldTargeting } from '../src/world_api/targeting';
 import type { IWorldTelemetry } from '../src/world_api/telemetry';
 import type { IWorldTrade } from '../src/world_api/trade';
+import type { IWorldTraversal } from '../src/world_api/traversal';
 import { expectScansOnlyThroughSharedWalkers } from './helpers/scan_guard_self_audit';
 import { tsFilesUnder } from './helpers/ts_files_under';
 
@@ -532,6 +533,11 @@ export const IWORLD_MEMBERS = [
   // data member exists for it.
   { name: 'placeFeast', kind: 'method' },
   { name: 'consumeFeast', kind: 'method' },
+  // IWorldTraversal (PT O2): the authoritative PT field id read plus the
+  // data-free transition nudge (the server re-derives everything, so the
+  // request deliberately carries no destination or coordinates).
+  { name: 'ptField', kind: 'data' },
+  { name: 'requestPtFieldTransition', kind: 'method' },
 ] as const satisfies readonly IWorldMember[];
 
 const DATA_MEMBERS = IWORLD_MEMBERS.filter((m) => m.kind === 'data');
@@ -855,9 +861,9 @@ describe('IWORLD_MEMBERS is the pinned IWorld contract (anti-loosening)', () => 
     // tests/world_api_parity.test.ts` before merge lands to confirm the
     // facet-file exhaustiveness checks (AssertNever) also pass on the fully
     // resolved production tree.
-    expect(IWORLD_MEMBERS.length).toBe(371);
-    expect(DATA_MEMBERS.length).toBe(103);
-    expect(METHOD_MEMBERS.length).toBe(268);
+    expect(IWORLD_MEMBERS.length).toBe(373);
+    expect(DATA_MEMBERS.length).toBe(104);
+    expect(METHOD_MEMBERS.length).toBe(269);
   });
   it('has no duplicate member names', () => {
     const names = IWORLD_MEMBERS.map((m) => m.name);
@@ -1129,6 +1135,7 @@ describe('IWORLD_MEMBERS is the pinned IWorld contract (anti-loosening)', () => 
       'prestige',
       'prestigeRank',
       'professionsState',
+      'ptField',
       'questLog',
       'questState',
       'questsDone',
@@ -1152,6 +1159,7 @@ describe('IWORLD_MEMBERS is the pinned IWorld contract (anti-loosening)', () => 
       'renamePet',
       'renown',
       'reportTelemetry',
+      'requestPtFieldTransition',
       'resolvedAbility',
       'respec',
       'respondToResurrection',
@@ -1322,6 +1330,7 @@ describe('IWORLD_MEMBERS is the pinned IWorld contract (anti-loosening)', () => 
       'playtimeSeconds',
       'prestigeRank',
       'professionsState',
+      'ptField',
       'questLog',
       'questsDone',
       'realm',
@@ -1549,6 +1558,7 @@ describe('IWORLD_MEMBERS is the pinned IWorld contract (anti-loosening)', () => 
       'reliquaryRarity',
       'renamePet',
       'reportTelemetry',
+      'requestPtFieldTransition',
       'resolvedAbility',
       'respec',
       'respondToResurrection',
@@ -2233,6 +2243,14 @@ const FACET_FARMING = [
 type _ExhaustFarming = AssertNever<Exclude<keyof IWorldFarming, (typeof FACET_FARMING)[number]>>;
 
 // The facet partition, keyed by facet for legible failure messages.
+const FACET_TRAVERSAL = [
+  'ptField',
+  'requestPtFieldTransition',
+] as const satisfies readonly (keyof IWorldTraversal)[];
+type _ExhaustTraversal = AssertNever<
+  Exclude<keyof IWorldTraversal, (typeof FACET_TRAVERSAL)[number]>
+>;
+
 const FACET_MEMBER_ARRAYS: Readonly<Record<string, readonly string[]>> = {
   entityRoster: FACET_ENTITY_ROSTER,
   combat: FACET_COMBAT,
@@ -2267,6 +2285,7 @@ const FACET_MEMBER_ARRAYS: Readonly<Record<string, readonly string[]>> = {
   reliquary: FACET_RELIQUARY,
   actionBar: FACET_ACTION_BAR,
   farming: FACET_FARMING,
+  traversal: FACET_TRAVERSAL,
 };
 
 describe('W1: aggregate IWorld member set equals the disjoint union of the facets', () => {
@@ -2278,8 +2297,9 @@ describe('W1: aggregate IWorld member set equals the disjoint union of the facet
     // own count: +1 Reliquary facet, 33 total; -1 for the New Eastbrook
     // program's Vale Cup retirement, 32 total. The v0.41.0 sync carries both
     // arms (farming in, vale_cup out): 33 total, measured as the facet files
-    // on disk minus appearance.ts (the sweep below).
-    expect(Object.keys(FACET_MEMBER_ARRAYS).length).toBe(33);
+    // on disk minus appearance.ts (the sweep below). +1 for the PT O2
+    // traversal facet (src/world_api/traversal.ts): 34 total.
+    expect(Object.keys(FACET_MEMBER_ARRAYS).length).toBe(34);
   });
 
   it('every facet FILE on disk is a FACET_MEMBER_ARRAYS key (none can go silently unpartitioned)', () => {
@@ -2304,8 +2324,9 @@ describe('W1: aggregate IWorld member set equals the disjoint union of the facet
       .sort();
     expect(keys).toEqual(facetFiles);
     // Floor: the sweep walked a real directory, not an empty one. (34 until
-    // the Vale Cup facet retired with release/v0.41.0.)
-    expect(facetFiles.length).toBeGreaterThanOrEqual(33);
+    // the Vale Cup facet retired with release/v0.41.0; the PT O2 traversal
+    // facet restores that count.)
+    expect(facetFiles.length).toBeGreaterThanOrEqual(34);
   });
 
   it('scans only through the shared walkers (self-audit)', () => {
@@ -2367,8 +2388,8 @@ describe('W1: aggregate IWorld member set equals the disjoint union of the facet
     // tests/world_api_parity.test.ts` before merge lands to confirm the
     // facet arrays actually reconstruct IWORLD_MEMBERS with no gaps or
     // collisions; this pin and the one above must always agree.
-    expect(union.length, 'union size before dedup (catches a duplicated member)').toBe(371);
-    expect(new Set(union).size, 'union size after dedup (catches a duplicated member)').toBe(371);
+    expect(union.length, 'union size before dedup (catches a duplicated member)').toBe(373);
+    expect(new Set(union).size, 'union size after dedup (catches a duplicated member)').toBe(373);
     const sortedUnion = [...union].sort();
     const pinned = IWORLD_MEMBERS.map((m) => m.name).sort();
     expect(sortedUnion).toEqual(pinned);

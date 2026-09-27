@@ -852,6 +852,9 @@ const JAILED_BLOCKED_COMMANDS = new Set<string>([
   'duel_accept',
   'unstuck',
   'card_queue_join',
+  // A transition request could resolve a warp out of the cage; a jailed
+  // session can never legitimately stand inside a PT trigger anyway.
+  'pt_transition',
 ]);
 // How often to re-broadcast online players' $WOC holder-tier flair. Each wallet
 // read is served from the woc_balance.ts cache (CACHE_TTL_MS), which is the real
@@ -6901,6 +6904,13 @@ export class GameServer {
       case 'unstuck':
         sim.unstuck(pid);
         break;
+      case 'pt_transition':
+        // PT connected-world nudge (O2): a data-free request - the sim
+        // re-derives any FieldGate flip / WarpGate trigger from the
+        // authoritative position itself (src/sim/pt_transitions.ts), so
+        // there is no destination or gate payload to validate or trust.
+        this.sendCommandOutcome(session, msg, sim.requestPtTransition(pid).ok);
+        break;
       case 'resurrect_corpse':
         sim.resurrectAtCorpse(pid);
         break;
@@ -8567,6 +8577,11 @@ export class GameServer {
     // Delta-guarded: ships on death-release and clears on resurrect. The client
     // draws the corpse marker and gates the resurrect-at-corpse button on it.
     maybe('corpse', p.corpsePos);
+    // The authoritative PT field id ('ricarten', 'fore-1', ...), or null
+    // outside the PT band. Delta-guarded: ships on the first snapshot and on
+    // every FieldGate ownership flip / WarpGate landing; the client binds
+    // the matching field package when it disagrees with the bound one.
+    maybe('ptf', p.ptField ?? null);
     if (stableTimerWire) {
       maybeSerialized('auras', this.stableAuraWireFor(p).json);
       maybeSerialized(

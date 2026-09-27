@@ -69,6 +69,10 @@ import {
 } from './game/pt_field_transition';
 import { tickPtMapDev } from './game/pt_map_dev_command';
 import {
+  handlePtTransitionEvent,
+  tickPtOnlineTransitions,
+} from './game/pt_online_transitions';
+import {
   activePtField,
   activePtMapDescriptor,
   standbyPtMapDescriptor,
@@ -4816,6 +4820,16 @@ async function startGame(
         drainedEventsLength,
       );
       perf.finishTime('events', eventsStart);
+    }
+    // PT connected-world online pass (phase O2): the authoritative
+    // pt_transition events bind the realm-resolved field package (the
+    // curtain raises off the binding change itself), then the per-frame
+    // tick runs the FieldGate preload watch, the WarpGate presence probe,
+    // and the `ptf` reconcile. All of it is no-op outside the PT band, and
+    // nothing here moves the player - the realm owns transitions.
+    if (net.spectating === null) {
+      for (const ev of drainedEvents) handlePtTransitionEvent(ev, net.playerId);
+      tickPtOnlineTransitions(net, net.player);
     }
     if (net.consumeProfanityChanged()) {
       const profanityWordsLength = net.profanityWords.length;

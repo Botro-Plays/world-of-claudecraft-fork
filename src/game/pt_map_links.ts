@@ -7,6 +7,14 @@
 //
 // Coordinates are PT engine units (the same frame the manifest gates and
 // WarpGate triggers use; PtMapDescriptor.transform converts to world space).
+//
+// The same artifact feeds the SHARED host-agnostic resolver in
+// src/sim/pt_map_graph.ts: this module registers it on the client at load
+// (the realm injects it via server/pt_map_links.ts instead), so online
+// field-identity and transition checks resolve on one dataset.
+
+import type { PtBounds } from '../sim/pt_field';
+import { registerPtMapGraph, type PtMapGraphData } from '../sim/pt_map_graph';
 
 export interface PtLinkField {
   fieldIndex: number;
@@ -19,6 +27,8 @@ export interface PtLinkField {
   centerPos: [number, number] | null;
   startPoints: [number, number][];
   posWarpOut: { x: number; y: number; z: number } | null;
+  /** Authored SMD footprint, PT units (emitted by map_links.mjs). */
+  bounds: PtBounds | null;
   component: number;
   reachability: 'foot' | 'warp' | 'ui-item' | 'server' | 'isolated';
   /** Phase 6G sea-edge spec (scripts/pt-port/lib/sea_edges.mjs): null when
@@ -144,6 +154,11 @@ function graph(): PtMapLinks | null {
   const g = LINKS['../../generated/pt-maps/maplinks.json'];
   return g ?? null;
 }
+
+// Register the generated artifact with the shared sim-side resolver. The
+// record shapes are structurally identical to PtMapGraphData (same
+// generator, same JSON), so the host swap is a pure cast.
+registerPtMapGraph(graph() as PtMapGraphData | null);
 
 /** The full source-derived graph, or null when the artifact is absent. */
 export function ptMapLinksGraph(): PtMapLinks | null {

@@ -3045,6 +3045,11 @@ export class ClientWorld extends ReconWireState implements IWorld {
       // corpse position while a ghost (null once resurrected). Delta-guarded: kept
       // unchanged when the server omits it; drives the corpse marker + resurrect button.
       if (s.corpse !== undefined) e.corpsePos = s.corpse ?? null;
+      // The authoritative PT field id ('ricarten', 'fore-1', ...); null when
+      // the player is outside the PT band. Delta-guarded like `corpse`; the
+      // online PT transition module (src/game/pt_online_transitions.ts)
+      // reconciles the bound field package against it.
+      if (s.ptf !== undefined) e.ptField = typeof s.ptf === 'string' ? s.ptf : undefined;
       if (timerWire.mode === 'stable' && timerWire.time !== null && s.cds !== undefined) {
         if (this.stableCooldownSchedules === undefined) this.stableCooldownSchedules = new Map();
         this.stableCooldownSchedules.clear();
@@ -3597,6 +3602,18 @@ export class ClientWorld extends ReconWireState implements IWorld {
   }
   respondToResurrection(accept: boolean): void {
     this.cmd({ cmd: 'resurrect_respond', accept });
+  }
+
+  // --- IWorldTraversal: the authoritative PT field id (the `ptf` self-delta,
+  // decoded onto the player entity in applySnapshot) + the data-free
+  // transition nudge. ---
+  get ptField(): string | null {
+    return this.player?.ptField ?? null;
+  }
+  requestPtFieldTransition(): Promise<boolean> {
+    // No payload: the server re-derives the FieldGate flip / WarpGate
+    // trigger from the authoritative position itself (phase O2).
+    return this.cmdWithOutcome({ cmd: 'pt_transition' });
   }
 
   // The single write path for the LOCAL player's mirrored targetId from server

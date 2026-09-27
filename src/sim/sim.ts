@@ -630,6 +630,11 @@ import { prestige as prestigeImpl, updateRested } from './progression/xp';
 import { advancePendingProjectiles, type PendingProjectile } from './projectile_travel';
 import { isPtPos } from './pt_band';
 import { ptFieldIdAt } from './pt_field_active';
+import {
+  requestPtTransition,
+  updatePtTransitions,
+  type PtTransitionOutcome,
+} from './pt_transitions';
 import { ptPopulationTick } from './pt_population';
 import { ptStartPosForClass } from './pt_start';
 import * as honorMod from './pvp';
@@ -2893,6 +2898,17 @@ export class Sim {
       draws: savedState?.arena2v2Draws ?? 0,
     };
     const player = createPlayer(this.nextId++, cls, startPos, name);
+    // Live PT field identity (O2): a persisted ptField names the field the
+    // save was written in, which a bounds scan alone cannot always prove
+    // (overlapping seam footprints, warp-only islands); a fresh or pre-O1
+    // PT save falls back to bounds resolution. The per-tick tracker repairs
+    // a stale seed the first tick the position disagrees.
+    if (isPtPos(startPos.x)) {
+      player.ptField =
+        typeof savedState?.ptField === 'string'
+          ? savedState.ptField
+          : (ptFieldIdAt(startPos.x, startPos.z) ?? undefined);
+    }
     if (opts?.appearance) player.modularAppearance = opts.appearance;
     this.addEntity(player);
     const classDef = CLASSES[cls];
@@ -4074,10 +4090,14 @@ export class Sim {
     // still drains only on the tick path.
     const foldedProficiency = foldPendingGatherGrants(meta);
     // PT-band saves also record WHICH field owns the position (identity,
-    // not geometry - collision is re-resolved from pos on load). Omitted
-    // for non-PT positions and PT positions inside no known field, so
-    // untouched saves stay byte-equal.
-    const ptField = isPtPos(e.pos.x) ? ptFieldIdAt(e.pos.x, e.pos.z) : null;
+    // not geometry - collision is re-resolved from pos on load). The live
+    // ptField is preferred (the O2 tracker keeps it current through gate
+    // crossings); a pre-tracker or descriptor-host entity re-resolves from
+    // bounds. Omitted for non-PT positions and PT positions inside no known
+    // field, so untouched saves stay byte-equal.
+    const ptField = isPtPos(e.pos.x)
+      ? (e.ptField ?? ptFieldIdAt(e.pos.x, e.pos.z))
+      : null;
     const state: CharacterState = {
       contentRevision: CURRENT_CHARACTER_CONTENT_REVISION,
       level: restore ? restore.level : e.level,
@@ -5041,6 +5061,16 @@ export class Sim {
     mix(camp.count);
     mix(index);
     return new Rng(h >>> 0);
+  }
+
+  // PT transition exit picks draw on a private stream (seeded once from the
+  // world seed, `pt` tag-mixed) so a warp can never perturb the shared
+  // world/combat stream the way a shared-stream draw would. Lazily created:
+  // a sim that never resolves a PT warp never allocates it.
+  private ptTransitionRng: Rng | null = null;
+  private ptTransitionDraw(): number {
+    this.ptTransitionRng ??= new Rng(((this.cfg.seed >>> 0) ^ 0x70746e67) >>> 0);
+    return this.ptTransitionRng.next();
   }
 
   // Deterministic outward spiral to the nearest spot that is on dry-enough
@@ -6224,6 +6254,13 @@ export class Sim {
       // Show-jumping race driver: per-player, server-authoritative, rng-free
       // (runs after movement so prevPos -> pos is this tick's ridden segment).
       this.ctx.tickMountRace(meta);
+      // PT field transitions (O2): armed-warp release, presence-triggered
+      // WarpGate scan, sticky FieldGate identity. Post-movement for both the
+      // alive and ghost movement branches, and runs for dead players too -
+      // releasePendingWarp is what drops a mid-arm death's stale pending
+      // state. Inert on descriptor hosts (offline/dev own traversal) and on
+      // the realm for non-PT positions (a handful of null checks).
+      updatePtTransitions(this.ctx, p, () => this.ptTransitionDraw());
       updateTimers(p);
       updateComboExpiry(this.ctx, p);
       updateAuras(this.ctx, p);
@@ -9374,6 +9411,27 @@ export class Sim {
   // Settings wire action enter through the same authoritative system.
   unstuck(pid?: number): boolean {
     return unstuckMod.requestUnstuck(this.ctx, pid);
+  }
+
+  // IWorldTraversal -------------------------------------------------------
+  // The authoritative PT field id for the local player ('ricarten',
+  // 'fore-1', ...), or null outside the PT band / before the tracker seeds.
+  get ptField(): string | null {
+    return this.entities.get(this.playerId)?.ptField ?? null;
+  }
+
+  // The data-free transition nudge. Returns the structured outcome for the
+  // server dispatch (which collapses it to a commandOutcome boolean); the
+  // request carries no destination because the resolver re-derives
+  // everything from authoritative state (src/sim/pt_transitions.ts).
+  requestPtTransition(pid?: number): PtTransitionOutcome {
+    const p = this.entities.get(pid ?? this.playerId);
+    if (!p) return { ok: false, reason: 'not_pt' };
+    return requestPtTransition(this.ctx, p, () => this.ptTransitionDraw());
+  }
+
+  requestPtFieldTransition(): boolean {
+    return this.requestPtTransition().ok;
   }
 
   cancelUnstuckForDisconnect(

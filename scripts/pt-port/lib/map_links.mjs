@@ -371,6 +371,11 @@ export function buildMapLinks(manifests = null) {
     centerPos: f.centerPos,
     startPoints: f.startPoints,
     posWarpOut: f.posWarpOut,
+    // SMD footprint in PT units. Online field identity + transitions need it
+    // on the server, which cannot load the per-map geometry packages just to
+    // name a bounds box; the parse is already lazy-cached above for the
+    // dead-edge and sea passes, so this costs nothing here.
+    bounds: fieldBounds(f.fieldIndex),
   }));
 
   // Phase 6G sea-edge detection lives below the fieldGates block: coverage

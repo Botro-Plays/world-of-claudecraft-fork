@@ -16,6 +16,7 @@ import {
   woCToPtY,
   woCToPtZ,
 } from './pt_band';
+import { ptMapGraph, ptGraphWocBounds } from './pt_map_graph';
 import {
   createPtField,
   makePtBandTransform,
@@ -200,6 +201,13 @@ const _staticModules = new Set<PtFieldModule>();
  */
 export function registerPtStaticField(field: PtFieldModule, id?: string): void {
   if (_staticModules.has(field)) return;
+  // Positional dispatch cannot host a non-continent field: the per-map band
+  // transform anchors every such field at the SAME band origin, so its WoC
+  // footprint overlaps the continent fields' (tcave's footprint is Ricarten's,
+  // almost exactly). A bounds claim here would steal floor/identity answers
+  // for positions that belong to another field. Band islands join online only
+  // with identity-scoped dispatch (a later phase); refuse the registration.
+  if (!ptFieldFitsContinent(field.PT_BOUNDS)) return;
   _staticModules.add(field);
   const transform = ptFieldFitsContinent(field.PT_BOUNDS)
     ? makePtContinentTransform()
@@ -248,8 +256,10 @@ const RICARTEN_WOC = {
  *   1. the bound descriptor (client hosts: the active PT map IS the
  *      player's field);
  *   2. id-tagged static registrations (server/headless hosts);
- *   3. Ricarten's committed bounds (the built-in field);
- *   4. null.
+ *   3. the shared map graph's field bounds (every generated field -
+ *      identities a field whose geometry is not registered on this host);
+ *   4. Ricarten's committed bounds (the built-in field);
+ *   5. null.
  */
 export function ptFieldIdAt(x: number, z: number): string | null {
   // The bound descriptor IS the player's field on a descriptor host - but
@@ -260,10 +270,38 @@ export function ptFieldIdAt(x: number, z: number): string | null {
       return s.id;
     }
   }
+  // A band-island footprint self-anchors at the band origin and overlaps
+  // continent fields in WoC space, so a bare bounds claim is ambiguous.
+  // Continent claimants win; an island's claim is only honored when NO
+  // continent field covers the position (genuine island territory).
+  let island: string | null = null;
+  const g = ptMapGraph();
+  if (g !== null && isPtPos(x)) {
+    for (const f of g.fields) {
+      if (f.id === null || f.bounds === null) continue;
+      const wb = ptGraphWocBounds(f.id);
+      if (wb === null || x < wb.minX || x > wb.maxX || z < wb.minZ || z > wb.maxZ) {
+        continue;
+      }
+      if (ptFieldFitsContinent(f.bounds)) return f.id;
+      island ??= f.id;
+    }
+  }
   if (x >= RICARTEN_WOC.minX && x <= RICARTEN_WOC.maxX && z >= RICARTEN_WOC.minZ && z <= RICARTEN_WOC.maxZ) {
     return 'ricarten';
   }
-  return null;
+  return island;
+}
+
+/**
+ * Whether a field's collision geometry is live on this host (an id-tagged
+ * static registration, or the built-in Ricarten fallback). The realm uses
+ * this to refuse transitions INTO a field it cannot simulate floors in -
+ * identity may resolve from graph bounds while geometry stays unavailable.
+ */
+export function ptStaticFieldRegistered(id: string): boolean {
+  if (id === 'ricarten') return true;
+  return _staticFields.some((s) => s.id === id);
 }
 
 const _dispatchField: PtField = {

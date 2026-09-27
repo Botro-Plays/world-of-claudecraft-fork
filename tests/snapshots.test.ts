@@ -5173,6 +5173,7 @@ const ALL_DELTA_KEYS = [
   'party',
   'prk',
   'prof',
+  'ptf',
   'ptime',
   'qdone',
   'qlog',
@@ -5289,6 +5290,7 @@ const TERSE_TO_IWORLD: Record<string, string> = {
   party: 'partyInfo',
   prk: 'prestigeRank',
   prof: 'professionsState',
+  ptf: 'ptField',
   ptime: 'playtimeSeconds',
   qdone: 'questsDone',
   qlog: 'questLog',
@@ -5356,6 +5358,11 @@ function dirtyEveryDeltaField(): {
   // `cbt`: the authoritative in-combat bit; a fresh character is out of combat,
   // so the fixture flags it the way the sim's engaged pass would.
   p.inCombat = true;
+  // `ptf`: the authoritative PT field id. This harness player is a WoC class
+  // inside a delve, so the sim never names one; poke the Entity field the
+  // bcastSelf maybe() reads (a non-null id is distinguishable AND survives the
+  // band check that only guards the WRITER, the transition tracker).
+  p.ptField = 'fore-1';
 
   // Poke the encoder's exact sources for the mutually-exclusive cases.
   const run = sim.delveRunForPlayer(lp) as any;
@@ -5819,6 +5826,7 @@ describe('full self-state snapshot delta fixture', () => {
     }); // stats (inline s.X ?? e.X, legacy-safe object replacement)
     expect(client.player.weapon).toMatchObject({ min: 999 }); // weapon (inline s.X ?? e.X)
     expect(client.player.inCombat).toBe(true); // cbt -> e.inCombat (combat_scalar_wire.ts)
+    expect(client.player.ptField).toBe('fore-1'); // ptf -> e.ptField (the O2 authoritative field id)
     expect(client.player.resource).toBe(42); // res -> resource
     expect(client.player.maxResource).toBe(150); // mres -> maxResource
     expect(client.player.resourceType).toBe('rage'); // rtype -> resourceType
@@ -6401,7 +6409,7 @@ describe('gather node cooldown wire round trip (ncd)', () => {
 });
 
 describe('delta-key contract pins (anti-drift)', () => {
-  it('ALL_DELTA_KEYS contains exactly 94 unique keys in sorted order', () => {
+  it('ALL_DELTA_KEYS contains exactly 95 unique keys in sorted order', () => {
     // +1: guildBank (Guild Bank Phase 2), +1: the battleground bg key, +1: the
     // commission order board's corder key (issue #1298), +1: the character
     // sheet's lifetime played-time key ptime, for 67, then +16: the static
@@ -6443,9 +6451,11 @@ describe('delta-key contract pins (anti-drift)', () => {
     // hpref (a gathering-adjacent self scalar, sibling of gprof/tfocus/tslot),
     // for 92. Intentional Gathering PR4 adds the owner-only tracked-goal
     // full-view key ggoal (its own leaf, gathering_goal_wire.ts, not folded
-    // into the gprof/tfocus/tslot/hpref cluster), for 94.
-    expect(ALL_DELTA_KEYS).toHaveLength(94);
-    expect(new Set(ALL_DELTA_KEYS).size).toBe(94);
+    // into the gprof/tfocus/tslot/hpref cluster), for 94. O2's authoritative
+    // PT field identity then adds the self scalar ptf (delta-guarded, null
+    // outside the PT band), for 95.
+    expect(ALL_DELTA_KEYS).toHaveLength(95);
+    expect(new Set(ALL_DELTA_KEYS).size).toBe(95);
     expect([...ALL_DELTA_KEYS]).toEqual([...ALL_DELTA_KEYS].sort());
   });
 
@@ -6607,7 +6617,9 @@ describe('delta-key contract pins (anti-drift)', () => {
     // Gathering PR4's ggoal (emitted from the new gathering_goal_wire.ts
     // sibling, likewise inside the recursive scrape) makes 93.
     // The candidate self in-combat key cbt brings the combined inventory to 94.
-    expect(scraped.size).toBe(94);
+    // The authoritative PT field-identity key ptf (emitted from bcastSelf on
+    // every FieldGate flip / WarpGate landing, null outside the band) makes 95.
+    expect(scraped.size).toBe(95);
     expect([...scraped].sort()).toEqual([...ALL_DELTA_KEYS].sort());
   });
 

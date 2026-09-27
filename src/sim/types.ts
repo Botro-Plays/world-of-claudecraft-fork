@@ -4939,6 +4939,26 @@ export interface Entity extends ClientMirroredEntityFields {
   // Monotonic, transient generation for successful dungeon entries. Online
   // clients acknowledge this exact value before their facing regains authority.
   dungeonEntrySeq?: number;
+  // Live PT field identity (package id like 'ricarten'/'fore-1'). The realm
+  // maintains it per tick (sticky bounds resolution over the shared map
+  // graph, sim/pt_transitions.ts) and stamps it on warp transitions;
+  // CharacterState.ptField persists it. Unset outside the PT band and on
+  // offline entities, which derive identity from position instead.
+  ptField?: string;
+  // Online PT warp bookkeeping (sim seconds): the global re-warp lockout
+  // after a successful warp (dwWarpDelayTime + 3000ms equivalent).
+  ptWarpLockUntil?: number;
+  // An armed delayed WarpGate (SpecialEffect 1): the realm releases it at
+  // `releaseAt` by resolving the gate's own exits - the player supplies no
+  // destination. `gate` carries the authored trigger center in PT units so
+  // the release pass re-finds the record and re-pins the held position.
+  ptWarpPending?: {
+    fieldId: string;
+    gateX: number;
+    gateY: number;
+    gateZ: number;
+    releaseAt: number;
+  };
   // online clients only: when this entity's last wire update landed and the
   // measured update cadence - distant entities are sent below snapshot rate,
   // so each interpolates on its own clock (see ClientWorld.applySnapshot)
@@ -8006,6 +8026,19 @@ export type SimEvent = { pid?: number } & (
   // snapshot), so this exists only to drive the placer's cue and toast.
   // `feastId` is the spawned entity id.
   | { type: 'farmFeastPlaced'; pid: number; feastId: number }
+  // Authoritative PT field transition (src/sim/pt_transitions.ts): the realm
+  // resolved this player's PT field change - a seamless FieldGate crossing
+  // ('field': position continuous, only ownership moved) or a WarpGate
+  // teleport ('warp': position already displaced to the authored exit).
+  // Personal (pid-scoped): the recipient binds the destination field's
+  // packages and runs the existing PT transition curtain; nobody else needs
+  // it because interest scoping already hides cross-field entities.
+  | {
+      type: 'pt_transition';
+      pid: number;
+      kind: 'field' | 'warp';
+      field: string;
+    }
 );
 
 export interface MoveInput {

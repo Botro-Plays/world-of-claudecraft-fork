@@ -170,9 +170,13 @@ export function hasAuthoritativeSelfPositionDiscontinuity(
 ): boolean {
   return events.some(
     (event) =>
-      event.type === 'unstuck' &&
-      event.phase === 'completed' &&
-      (event.pid === undefined || event.pid === playerId),
+      (event.type === 'unstuck' &&
+        event.phase === 'completed' &&
+        (event.pid === undefined || event.pid === playerId)) ||
+      // A resolved PT WarpGate is an authoritative jump: the realm already
+      // placed the position verbatim, so the fallback pose must not smooth
+      // across fields.
+      (event.type === 'pt_transition' && event.kind === 'warp' && event.pid === playerId),
   );
 }
 
