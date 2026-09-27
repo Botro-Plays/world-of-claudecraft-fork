@@ -368,6 +368,28 @@ export interface PtSeaEdge {
 }
 
 /**
+ * Resolved high-altitude cloud-sea presentation for a floating field
+ * (pilai/forever-fall): which field materials are the authored
+ * field-spanning cloud sheets, and how the below-field extension apron is
+ * placed and textured. Resolved by src/sim/pt_cloud_sea.ts at descriptor
+ * load from the generated field data; absent/null = no cloud sea (the
+ * field is not a floating-town-above-clouds map).
+ */
+export interface PtCloudSeaSpec {
+  /** Field-material indices of the authored cloud sheets (sorted). */
+  materialIndices: readonly number[];
+  /** Dominant cloud-sheet material - its texture tiles the apron. */
+  apronMaterialIndex: number;
+  /** Apron surface PT-Y, below the lowest authored cloud vertex. */
+  apronPtY: number;
+  /** Authored UV density (uv per PT unit) of the apron sheet's faces. */
+  uScale: number;
+  vScale: number;
+  /** The apron material's authored TextureFormState (scroll drift). */
+  scrollForm: number;
+}
+
+/**
  * One loaded PT map package: the generated field module, its band
  * transform, its texture URL root, and the optional stage-object module.
  * Everything collision and rendering need, nothing more.
@@ -381,6 +403,12 @@ export interface PtSeaEdge {
  * sectors for any field whose water runs to a void-facing boundary. When
  * present it drives the same horizon-strip + blocker treatment instead of
  * the Ricarten one-off flag.
+ *
+ * `cloudSea` is the high-altitude counterpart (Pillai): the field's
+ * authored full-field cloud sheets get cloud presentation - brightness
+ * lift, horizon melt, and a far apron under the footprint - instead of
+ * rendering as an opaque water-coloured plate. It is NOT part of the sea
+ * system: no strips, patches, curtains, or deep-sea geometry.
  *
  * `fieldGates` carries the field's authored AddGate records verbatim
  * (including source anomalies like the ff-01 -> pilai dead coordinate and
@@ -403,6 +431,7 @@ export interface PtMapDescriptor {
   stageObjects: PtStageObjectsModule | null;
   oceanRing: boolean;
   sea?: { edges: readonly PtSeaEdge[] } | null;
+  cloudSea?: PtCloudSeaSpec | null;
   fieldGates?: readonly PtFieldGateLink[];
   warpGates?: readonly PtWarpGateLink[];
   posWarpOut?: { x: number; y: number; z: number } | null;

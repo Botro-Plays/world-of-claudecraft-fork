@@ -450,6 +450,34 @@ const PT_WIND_TRIANGLE_GLSL = `
         ptTc = mix(255.0 - ptTc, ptTc, step(0.5, ptTf));
         float ptWindShift = cos((ptTc + 256.0) * ${PT_ANGLE_SCALE});`;
 
+// ---------------------------------------------------------------------------
+// High-altitude cloud sea (Pillai) material presentation
+// ---------------------------------------------------------------------------
+//
+// The authored cloud sheets are opaque full-field layers textured with
+// cloud bitmaps; rendered verbatim they read as a flat blue water plate.
+// The cloud treatment lifts the sampled texel toward sunlit-cloud white
+// (the authored diffuse is bright enough that the puffy texture survives
+// as modulation rather than washing out) and melts the sheet into the
+// scene fog colour with box-distance beyond the field rectangle, so the
+// layer dissolves into haze at the horizon instead of ending on a hard
+// edge. Same band constants as the ocean horizon fade: textured inside
+// the map, converged well inside the ~700 yd fog far plane.
+
+const PT_CLOUD_LIFT = 0.32;        // whiteness lift on the cloud sheets
+const PT_CLOUD_FADE_START_YD = 60; // yd past the map edge: melt begins
+const PT_CLOUD_FADE_END_YD = 420;  // fully melted inside the fog far plane
+const PT_CLOUD_FADE_MAX = 0.9;     // residual modulation under the fog
+// Sunlit cloud-top tone: bright, faintly warm so it sits inside Pillai's
+// sunset lighting rather than reading as snow or water.
+const PT_CLOUD_TONE = 'vec3(0.96, 0.94, 0.95)';
+
+/** Field-rect anchor for the cloud-horizon melt (WoC XZ). */
+export interface PtCloudSeaFade {
+  center: THREE.Vector2;
+  half: THREE.Vector2;
+}
+
 // Installs the shared PT Lambert shader patch: the optional vertex
 // displacement script plus the hemisphere fill lift. Every PT material is a
 // MeshLambertMaterial, which never samples the scene IBL, so under the
@@ -466,15 +494,21 @@ const PT_WIND_TRIANGLE_GLSL = `
 // field installs.
 // `aPtXZ` (PT world x,z, mod-4 folded for fp32 precision) is only
 // required by the water script; declare it only when present.
+// `cloud` opts the material into the cloud-sea presentation above.
 export function ptApplyShaderHooks(
   material: THREE.Material,
   script: PtVertexScript | null,
   uvFx?: PtUvFormBinding,
+  cloud?: PtCloudSeaFade,
 ): void {
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uPtTime = ptWallClock;
     shader.uniforms.uWocFillBoost = sharedUniforms.uTerrainFillBoost;
     if (uvFx?.stage1) shader.uniforms.uPtMap1 = { value: uvFx.stage1 };
+    if (cloud) {
+      shader.uniforms.uPtCloudFadeCenter = { value: cloud.center };
+      shader.uniforms.uPtCloudFadeHalf = { value: cloud.half };
+    }
     let inject = '';
     if (script === 'water') {
       inject = `
@@ -498,15 +532,27 @@ export function ptApplyShaderHooks(
     shader.vertexShader = shader.vertexShader
       .replace(
         '#include <common>',
-        `#include <common>\nuniform float uPtTime;${script === 'water' ? '\nattribute vec2 aPtXZ;' : ''}`,
+        `#include <common>\nuniform float uPtTime;${script === 'water' ? '\nattribute vec2 aPtXZ;' : ''}${
+          cloud ? '\nvarying vec2 vPtCloudXZ;' : ''
+        }`,
       )
       .replace('#include <begin_vertex>', `#include <begin_vertex>${inject ? `\n${inject}` : ''}`);
+    if (cloud) {
+      shader.vertexShader = shader.vertexShader.replace(
+        '#include <project_vertex>',
+        '#include <project_vertex>\nvPtCloudXZ = (modelMatrix * vec4(position, 1.0)).xz;',
+      );
+    }
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
         `#include <common>\nuniform float uWocFillBoost;${
           uvFx
             ? `\nuniform float uPtTime;${uvFx.stage1 ? '\nuniform sampler2D uPtMap1;' : ''}`
+            : ''
+        }${
+          cloud
+            ? `\nvarying vec2 vPtCloudXZ;\nuniform vec2 uPtCloudFadeCenter;\nuniform vec2 uPtCloudFadeHalf;`
             : ''
         }`,
       )
@@ -539,11 +585,30 @@ ${stageOp('ptTex1', uvFx.op1)}`
 #endif`,
       );
     }
+    if (cloud) {
+      // After color_fragment so the authored vertex shading modulates the
+      // texture first and the cloud lift acts on the composite. The melt
+      // tracks the scene's own fog colour when fog is bound so the layer
+      // dissolves into the same haze as the rest of the horizon.
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>
+diffuseColor.rgb = mix(diffuseColor.rgb, ${PT_CLOUD_TONE}, ${PT_CLOUD_LIFT.toFixed(2)});
+vec2 ptCd = abs(vPtCloudXZ - uPtCloudFadeCenter) - uPtCloudFadeHalf;
+float ptCf = smoothstep(${PT_CLOUD_FADE_START_YD.toFixed(1)}, ${PT_CLOUD_FADE_END_YD.toFixed(1)}, length(max(ptCd, 0.0))) * ${PT_CLOUD_FADE_MAX.toFixed(2)};
+#ifdef USE_FOG
+	vec3 ptCloudHorizon = fogColor;
+#else
+	vec3 ptCloudHorizon = ${PT_CLOUD_TONE};
+#endif
+diffuseColor.rgb = mix(diffuseColor.rgb, ptCloudHorizon, ptCf);`,
+      );
+    }
   };
   material.customProgramCacheKey = () =>
     `pt-${script ?? 'flat'}${
       uvFx ? `-s${uvFx.scroll0}.${uvFx.scroll1}o${uvFx.op0}.${uvFx.op1}${uvFx.stage1 ? 'x' : ''}` : ''
-    }`;
+    }${cloud ? '-cloud' : ''}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -1014,12 +1079,14 @@ export function ptMaterialBlendingFor(
 }
 
 // Build the Three.js material for a PT material group following the PT
-// runtime rules documented in the header.
+// runtime rules documented in the header. `cloud` opts the material into
+// the cloud-sea presentation (Pillai's field-spanning sheets).
 function makePtMaterial(
   ptMat: PtMaterialInfo | undefined,
   texture: THREE.Texture | null,
   vertexColors: boolean,
   uvFx?: PtUvFormBinding,
+  cloud?: PtCloudSeaFade,
 ): THREE.MeshLambertMaterial {
   const transparency = ptMat?.transparency ?? 0;
   const opacityMap = ptMaterialHasOpacityMap(ptMat);
@@ -1047,11 +1114,13 @@ function makePtMaterial(
     mat.blending = blending;
     mat.transparent = true;
   }
-  ptApplyShaderHooks(mat, ptVertexScriptFor(ptMat?.windMeshBottom ?? 0), uvFx);
+  ptApplyShaderHooks(mat, ptVertexScriptFor(ptMat?.windMeshBottom ?? 0), uvFx, cloud);
   return mat;
 }
 
 // Build one mesh from grouped faces: one geometry, per-material groups.
+// `cloudSea` carries the resolved Pillai cloud-sheet set plus the fade
+// anchor; groups on those materials get the cloud presentation.
 async function buildGroupedMesh(
   src: PtMapDescriptor,
   name: string,
@@ -1061,6 +1130,7 @@ async function buildGroupedMesh(
   outMaterials: THREE.Material[],
   outAnims: PtTextureAnim[],
   needsPtXZ: boolean,
+  cloudSea?: PtCloudSeaFade & { mats: ReadonlySet<number> },
 ): Promise<THREE.Mesh | null> {
   if (emit.positions.length === 0) return null;
   const geo = new THREE.BufferGeometry();
@@ -1073,6 +1143,8 @@ async function buildGroupedMesh(
 
   const materials: THREE.Material[] = [];
   const matByIdx = new Map(fieldMaterials(src).map((m) => [m.index, m]));
+  const cloudFor = (matIdx: number): PtCloudSeaFade | undefined =>
+    cloudSea?.mats.has(matIdx) ? cloudSea : undefined;
   for (const g of emit.groups) {
     const ptMat = matByIdx.get(g.material);
     const binding = await loadPtStageBinding(src, g.material, textureCache, bindingCache);
@@ -1085,7 +1157,7 @@ async function buildGroupedMesh(
       // only fills frames that failed to convert.
       const frames = await loadPtAnimFrames(src, g.material, textureCache);
       texture = frames[0] ?? base;
-      const m = makePtMaterial(ptMat, texture, hasColors, uvFx);
+      const m = makePtMaterial(ptMat, texture, hasColors, uvFx, cloudFor(g.material));
       m.name = `pt-mat-${g.material}`;
       materials.push(m);
       outAnims.push({
@@ -1097,7 +1169,7 @@ async function buildGroupedMesh(
         fallback: base,
       });
     } else {
-      const m = makePtMaterial(ptMat, texture, hasColors, uvFx);
+      const m = makePtMaterial(ptMat, texture, hasColors, uvFx, cloudFor(g.material));
       m.name = `pt-mat-${g.material}`;
       materials.push(m);
     }
@@ -1174,6 +1246,24 @@ export async function buildPtTerrainView(
   const anims: PtTextureAnim[] = [];
   const meshes: THREE.Mesh[] = [];
 
+  // High-altitude cloud sea (Pillai): the resolved field-material set of
+  // the authored cloud sheets plus the field-rect anchor the horizon melt
+  // measures from. Null for every non-floating field.
+  const cloud = src.cloudSea ?? null;
+  let cloudSea: (PtCloudSeaFade & { mats: ReadonlySet<number> }) | undefined;
+  if (cloud) {
+    const cb = src.field.PT_BOUNDS;
+    const cx0 = src.transform.ptXToWoC(cb.maxX);
+    const cx1 = src.transform.ptXToWoC(cb.minX);
+    const cz0 = src.transform.ptZToWoC(cb.minZ);
+    const cz1 = src.transform.ptZToWoC(cb.maxZ);
+    cloudSea = {
+      center: new THREE.Vector2((cx0 + cx1) / 2, (cz0 + cz1) / 2),
+      half: new THREE.Vector2(Math.abs(cx1 - cx0) / 2, Math.abs(cz1 - cz0) / 2),
+      mats: new Set(cloud.materialIndices),
+    };
+  }
+
   // All three face emits are synchronous, so compute them up front. That
   // lets every texture the field references start fetching immediately -
   // the per-material awaits inside buildGroupedMesh then join in-flight
@@ -1215,6 +1305,7 @@ export async function buildPtTerrainView(
   }
   if (seaMat) usedMats.add(seaMat.index);
   for (const e of src.sea?.edges ?? []) usedMats.add(e.materialIndex);
+  if (cloud) usedMats.add(cloud.apronMaterialIndex);
   warmPtFieldTextures(src, usedMats, textureCache, bindingCache);
 
   // Stage objects fetch/build in parallel with the terrain meshes: their
@@ -1240,6 +1331,7 @@ export async function buildPtTerrainView(
       allMaterials,
       anims,
       false,
+      cloudSea,
     ),
     buildGroupedMesh(
       src,
@@ -1250,6 +1342,7 @@ export async function buildPtTerrainView(
       allMaterials,
       anims,
       true,
+      cloudSea,
     ),
     buildGroupedMesh(
       src,
@@ -1260,6 +1353,7 @@ export async function buildPtTerrainView(
       allMaterials,
       anims,
       false,
+      cloudSea,
     ),
   ]);
   for (const m of [solidMesh, waterMesh, decoMesh]) {
@@ -1701,6 +1795,63 @@ export async function buildPtTerrainView(
         meshes.push(curtain);
       }
     }
+  }
+
+  // High-altitude cloud sea (Pillai): one apron plane under the whole
+  // footprint continues the authored cloud sheets past the field edge out
+  // to beyond every camera far plane, textured with the dominant sheet's
+  // own cloud bitmap at its authored texel density and drifting at its
+  // authored scroll rate. It sits just below the lowest cloud vertex, so
+  // gaps between the sheet bumps land on more cloud rather than the sky
+  // dome, and the shared melt fades it into the fog colour at the
+  // horizon. NOT sea geometry: no strips, patches, curtains, deep-sea
+  // blocker, or ocean fade - and it is visual only (no collision, no
+  // gameplay surface), like the authored sheets it underlies.
+  if (cloud && cloudSea) {
+    const cloudHalf = 4000; // yd from map center; past every camera far plane
+    const cx = cloudSea.center.x;
+    const cz = cloudSea.center.y;
+    const apronGeo = new THREE.PlaneGeometry(cloudHalf * 2, cloudHalf * 2);
+    apronGeo.rotateX(-Math.PI / 2);
+    {
+      const posA = apronGeo.getAttribute('position');
+      const uvA = apronGeo.getAttribute('uv') as THREE.BufferAttribute;
+      for (let i = 0; i < posA.count; i++) {
+        uvA.setXY(
+          i,
+          src.transform.woCToPtX(cx + posA.getX(i)) * cloud.uScale,
+          src.transform.woCToPtZ(cz + posA.getZ(i)) * cloud.vScale,
+        );
+      }
+      uvA.needsUpdate = true;
+    }
+    const cloudTex =
+      typeof document !== 'undefined'
+        ? await loadPtTexture(src, cloud.apronMaterialIndex, textureCache)
+        : null;
+    const apronMat = new THREE.MeshLambertMaterial({
+      map: cloudTex,
+      color: cloudTex ? 0xffffff : 0xcdd6de, // pale cloud grey fallback
+      fog: true,
+    });
+    // The apron scrolls at the dominant sheet's authored form state so the
+    // extension drifts with the cloud sea instead of freezing beside it.
+    ptApplyShaderHooks(
+      apronMat,
+      null,
+      cloud.scrollForm !== 0
+        ? { stage1: null, scroll0: cloud.scrollForm, op0: 0, scroll1: 0, op1: 0 }
+        : undefined,
+      cloudSea,
+    );
+    const apron = new THREE.Mesh(apronGeo, apronMat);
+    apron.name = `pt-${src.id}-cloudsea`;
+    apron.position.set(cx, src.transform.ptYToWoC(cloud.apronPtY), cz);
+    apron.matrixAutoUpdate = false;
+    apron.updateMatrix();
+    group.add(apron);
+    meshes.push(apron);
+    allMaterials.push(apronMat);
   }
 
   // Stage objects (v-ani01..14: windmills, carts, fountains on Ricarten).

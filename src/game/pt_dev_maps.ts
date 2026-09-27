@@ -34,6 +34,7 @@ import {
   type PtWarpGateLink,
 } from '../sim/pt_field';
 import { activePtMapDescriptor, setActivePtMap } from '../sim/pt_field_active';
+import { ptResolveCloudSea } from '../sim/pt_cloud_sea';
 import { ptRicartenSpawnY } from '../sim/pt_ricarten_field';
 import type { Entity } from '../sim/types';
 import { ptMapLinksForField, ptMapLinksGraph } from './pt_map_links';
@@ -338,6 +339,11 @@ export async function loadPtDevMap(id: string): Promise<PtDevLoadedMap> {
     // sectors carrying boundary water); drives the generalized Ricarten
     // ocean treatment in pt_terrain.ts.
     sea: ptMapLinksForField(id)?.field.sea ?? null,
+    // High-altitude cloud sea (Pillai): resolved from the field's own
+    // authored cloud-sheet materials, never from maplinks - a cloud sea is
+    // face/material data, not a boundary-water sector. Only fields with
+    // field-spanning cloud sheets qualify; today that is pilai alone.
+    cloudSea: ptResolveCloudSea(field),
     fieldGates: (m.manifest?.gates ?? []).map((g) => ({
       targetIndex: g.targetIndex,
       targetId: g.targetId ?? null,
