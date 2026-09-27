@@ -54,6 +54,7 @@ import type {
   PtWarpGateLink,
 } from '../sim/pt_field';
 import { setDefaultPtMap } from '../sim/pt_field_active';
+import { ptSeaCorners } from '../sim/pt_sea_corners';
 import { loadTexture } from './assets/loader';
 import { sharedUniforms } from './gfx';
 import {
@@ -1418,6 +1419,18 @@ export async function buildPtTerrainView(
       color: 0x173f52, // same deep-water shade as the Ricarten blocker
       fog: true,
     });
+    // Seam curtains hang vertically, so they need both faces lit.
+    const curtainMat = new THREE.MeshLambertMaterial({
+      color: 0x173f52,
+      fog: true,
+      side: THREE.DoubleSide,
+    });
+    allMaterials.push(curtainMat);
+    // Curtain bottoms reach under the field's lowest sea surface so no
+    // sightline can slip beneath them into the void.
+    const curtainFloorY =
+      src.transform.ptYToWoC(Math.min(...src.sea.edges.map((e) => e.level))) -
+      backerDrop - 6;
 
     // Field-footprint blocker a half yard below the lowest geometry.
     const underY = src.transform.ptYToWoC(b.minY) - 0.5;
@@ -1431,6 +1444,61 @@ export async function buildPtTerrainView(
     group.add(rectMesh);
     meshes.push(rectMesh);
     allMaterials.push(deepMat);
+
+    // Deep tray (Phase 6H-4): one opaque plane under ALL sea geometry,
+    // reaching out to the strips' and corner patches' outer extent with
+    // the field rectangle cut out. Sightlines that slip under a surface -
+    // under the map's edge lip at grazing angles, beneath the corner
+    // quadrant, through a level-gap seam - land on deep water instead of
+    // the sky dome (the pale bands that used to ring boxed sea edges).
+    // The hole keeps the tray out of the field so it can never float over
+    // low interior ground; the small rect above backstops inside the
+    // bounds. Under-everything depth (curtainFloorY) is also the bottom of
+    // the seam curtains below.
+    {
+      // A side with no sea edge still gets a small ledge so the hole never
+      // touches the outer rect (degenerate triangulation); it backstops
+      // under-lip rays on land edges the same way.
+      const ledge = inset + 1;
+      const padX0 = Math.max(
+        ledge,
+        ...src.sea.edges.filter((e) => e.edge === 'maxX').map((e) => e.reach * PT_SCALE),
+      );
+      const padX1 = Math.max(
+        ledge,
+        ...src.sea.edges.filter((e) => e.edge === 'minX').map((e) => e.reach * PT_SCALE),
+      );
+      const padZ0 = Math.max(
+        ledge,
+        ...src.sea.edges.filter((e) => e.edge === 'minZ').map((e) => e.reach * PT_SCALE),
+      );
+      const padZ1 = Math.max(
+        ledge,
+        ...src.sea.edges.filter((e) => e.edge === 'maxZ').map((e) => e.reach * PT_SCALE),
+      );
+      const trayShape = new THREE.Shape();
+      trayShape.moveTo(x0 - padX0 - cx, z0 - padZ0 - cz);
+      trayShape.lineTo(x1 + padX1 - cx, z0 - padZ0 - cz);
+      trayShape.lineTo(x1 + padX1 - cx, z1 + padZ1 - cz);
+      trayShape.lineTo(x0 - padX0 - cx, z1 + padZ1 - cz);
+      trayShape.closePath();
+      const hole = new THREE.Path();
+      hole.moveTo(x0 - cx, z0 - cz);
+      hole.lineTo(x1 - cx, z0 - cz);
+      hole.lineTo(x1 - cx, z1 - cz);
+      hole.lineTo(x0 - cx, z1 - cz);
+      hole.closePath();
+      trayShape.holes.push(hole);
+      const trayGeo = new THREE.ShapeGeometry(trayShape);
+      trayGeo.rotateX(-Math.PI / 2);
+      const tray = new THREE.Mesh(trayGeo, deepMat);
+      tray.name = `pt-${src.id}-deepsea-tray`;
+      tray.position.set(cx, curtainFloorY, cz);
+      tray.matrixAutoUpdate = false;
+      tray.updateMatrix();
+      group.add(tray);
+      meshes.push(tray);
+    }
 
     for (let si = 0; si < src.sea.edges.length; si++) {
       const e = src.sea.edges[si];
@@ -1515,6 +1583,123 @@ export async function buildPtTerrainView(
       backer.updateMatrix();
       group.add(backer);
       meshes.push(backer);
+    }
+
+    // Sea corners (Phase 6H-4): where two adjacent exposed edges both
+    // carry sea to their shared corner, the diagonal quadrant beyond it
+    // is covered by neither strip - sky dome showed through as a boxed
+    // corner. ptSeaCorners emits one patch per qualified corner at the
+    // LOWER adjacent sector's level/texture, so the fill reads as deep
+    // water under the strips and can never tower over them.
+    const corners = ptSeaCorners(b, src.sea.edges);
+    for (let ci = 0; ci < corners.length; ci++) {
+      const c = corners[ci];
+      const reachYd = c.reach * PT_SCALE;
+      const cwx = src.transform.ptXToWoC(b[c.xEdge]);
+      const cwz = src.transform.ptZToWoC(b[c.zEdge]);
+      // Same outward convention as the strips: PT minX is the WoC east
+      // side (mirrored transform), minZ reaches toward -z.
+      const px0 = c.xEdge === 'minX' ? cwx - inset : cwx - reachYd;
+      const px1 = c.xEdge === 'minX' ? cwx + reachYd : cwx + inset;
+      const pz0 = c.zEdge === 'minZ' ? cwz - reachYd : cwz - inset;
+      const pz1 = c.zEdge === 'minZ' ? cwz + inset : cwz + reachYd;
+      const geo = new THREE.PlaneGeometry(px1 - px0, pz1 - pz0);
+      geo.rotateX(-Math.PI / 2);
+      const mx = (px0 + px1) / 2;
+      const mz = (pz0 + pz1) / 2;
+      // Continue the per-surface height stagger after the strips so
+      // overlapping translucent layers never sit coplanar.
+      const surfY =
+        src.transform.ptYToWoC(c.level) - 0.2 - (src.sea.edges.length + ci) * 0.03;
+      {
+        const posA = geo.getAttribute('position');
+        const uvA = geo.getAttribute('uv') as THREE.BufferAttribute;
+        for (let i = 0; i < posA.count; i++) {
+          uvA.setXY(
+            i,
+            src.transform.woCToPtX(mx + posA.getX(i)) * c.uScale,
+            src.transform.woCToPtZ(mz + posA.getZ(i)) * c.vScale,
+          );
+        }
+        uvA.needsUpdate = true;
+      }
+      const seaMat = fieldMaterials(src).find((m) => m.index === c.materialIndex);
+      const seaTex =
+        seaMat && typeof document !== 'undefined'
+          ? await loadPtTexture(src, seaMat.index, textureCache)
+          : null;
+      const cornerMat = new THREE.MeshLambertMaterial({
+        map: seaTex,
+        color: seaTex ? 0xffffff : 0x2e6b78,
+        transparent: seaMat !== undefined,
+        opacity: seaMat ? Math.min(1, Math.max(0, 1 - seaMat.transparency)) : 1,
+        depthWrite: false, // boundary water is translucent (ZWriteAuto)
+        fog: true,
+      });
+      if (seaTex) {
+        seaTex.generateMipmaps = true;
+        seaTex.minFilter = THREE.LinearMipmapLinearFilter;
+        ptApplyOceanHorizonFade(
+          cornerMat,
+          new THREE.Vector2(cx, cz),
+          new THREE.Vector2(Math.abs(x1 - x0) / 2, Math.abs(z1 - z0) / 2),
+        );
+      }
+      const patch = new THREE.Mesh(geo, cornerMat);
+      patch.name = `pt-${src.id}-ocean-${c.xEdge}+${c.zEdge}`;
+      patch.position.set(mx, surfY, mz);
+      patch.matrixAutoUpdate = false;
+      patch.updateMatrix();
+      group.add(patch);
+      meshes.push(patch);
+      allMaterials.push(cornerMat);
+
+      // Opaque deep backer under the patch, same as the strips.
+      const backerGeo = new THREE.PlaneGeometry(px1 - px0, pz1 - pz0);
+      backerGeo.rotateX(-Math.PI / 2);
+      const backer = new THREE.Mesh(backerGeo, deepMat);
+      backer.name = `pt-${src.id}-deepsea-${c.xEdge}+${c.zEdge}`;
+      backer.position.set(mx, surfY - backerDrop, mz);
+      backer.matrixAutoUpdate = false;
+      backer.updateMatrix();
+      group.add(backer);
+      meshes.push(backer);
+
+      // Seam curtains: where an adjacent corner strip sits ABOVE the patch
+      // level, its strip-end leaves a vertical void slit along the seam -
+      // the sky dome showed through it as a pale wedge at the corner
+      // (dun-6's minX sea is ~12yd above its minZ sea). An opaque deep-
+      // water curtain hangs from the higher sector's surface down past
+      // every sea level in the field, closing the slit from both sides.
+      for (let ki = 0; ki < c.curtains.length; ki++) {
+        const cur = c.curtains[ki];
+        const topY = src.transform.ptYToWoC(cur.level);
+        const cReachYd = cur.reach * PT_SCALE;
+        let w0: number, w1: number, cx2: number, cz2: number, rotY = 0;
+        if (cur.seam === 'xEdge') {
+          // Higher x-edge strip: slit runs along the z-edge boundary.
+          w0 = c.xEdge === 'minX' ? cwx - inset : cwx - cReachYd;
+          w1 = c.xEdge === 'minX' ? cwx + cReachYd : cwx + inset;
+          cx2 = (w0 + w1) / 2;
+          cz2 = cwz + (c.zEdge === 'minZ' ? 0.1 : -0.1);
+        } else {
+          // Higher z-edge strip: slit runs along the x-edge boundary.
+          w0 = c.zEdge === 'minZ' ? cwz - cReachYd : cwz - inset;
+          w1 = c.zEdge === 'minZ' ? cwz + inset : cwz + cReachYd;
+          cx2 = cwx + (c.xEdge === 'minX' ? -0.1 : 0.1);
+          cz2 = (w0 + w1) / 2;
+          rotY = Math.PI / 2;
+        }
+        const cGeo = new THREE.PlaneGeometry(w1 - w0, topY - curtainFloorY);
+        cGeo.rotateY(rotY);
+        const curtain = new THREE.Mesh(cGeo, curtainMat);
+        curtain.name = `pt-${src.id}-deepsea-${c.xEdge}+${c.zEdge}-curtain${ki}`;
+        curtain.position.set(cx2, (topY + curtainFloorY) / 2, cz2);
+        curtain.matrixAutoUpdate = false;
+        curtain.updateMatrix();
+        group.add(curtain);
+        meshes.push(curtain);
+      }
     }
   }
 
