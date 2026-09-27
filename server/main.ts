@@ -644,9 +644,14 @@ function initialCharacterState(
   // Ricarten (the PT band, pt_start.ts). Y is not stamped here - addPlayer
   // re-resolves it through groundPos on join, which routes the PT band to
   // ptRicartenGroundHeight.
-  const arrival = ptStartPosForClass(cls) ?? PROVING_SHORE_ARRIVAL;
+  const ptStart = ptStartPosForClass(cls);
+  const arrival = ptStart ?? PROVING_SHORE_ARRIVAL;
   character.pos = { x: arrival.x, z: arrival.z };
   character.facing = arrival.facing;
+  // The newborn's field id is known verbatim here (pt_start.ts); stamp it so
+  // the first persisted row already names the owning field rather than
+  // waiting for a live-save derivation.
+  if (ptStart) character.ptField = ptStart.fieldId;
   return character;
 }
 

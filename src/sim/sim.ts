@@ -629,6 +629,7 @@ import {
 import { prestige as prestigeImpl, updateRested } from './progression/xp';
 import { advancePendingProjectiles, type PendingProjectile } from './projectile_travel';
 import { isPtPos } from './pt_band';
+import { ptFieldIdAt } from './pt_field_active';
 import { ptPopulationTick } from './pt_population';
 import { ptStartPosForClass } from './pt_start';
 import * as honorMod from './pvp';
@@ -4072,6 +4073,11 @@ export class Sim {
     // drains it cannot lose the grant. The live meta is untouched; the queue
     // still drains only on the tick path.
     const foldedProficiency = foldPendingGatherGrants(meta);
+    // PT-band saves also record WHICH field owns the position (identity,
+    // not geometry - collision is re-resolved from pos on load). Omitted
+    // for non-PT positions and PT positions inside no known field, so
+    // untouched saves stay byte-equal.
+    const ptField = isPtPos(e.pos.x) ? ptFieldIdAt(e.pos.x, e.pos.z) : null;
     const state: CharacterState = {
       contentRevision: CURRENT_CHARACTER_CONTENT_REVISION,
       level: restore ? restore.level : e.level,
@@ -4139,6 +4145,7 @@ export class Sim {
         e.savedMana,
       ),
       pos: { x: e.pos.x, z: e.pos.z },
+      ...(ptField !== null ? { ptField } : {}),
       facing: e.facing,
       // Death state: a released spirit resumes its corpse run on relog, and a
       // dead-but-unreleased corpse auto-releases on load (see addPlayer).

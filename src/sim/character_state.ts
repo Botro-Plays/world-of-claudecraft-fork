@@ -73,6 +73,14 @@ export interface CharacterState {
   resource: number;
   pos: { x: number; z: number };
   facing: number;
+  // The PT field the character was saved inside (JSONB; optional and
+  // written only while `pos` is in the PT band AND inside a known field,
+  // so non-PT and pre-PT saves stay byte-equal). Derived from pos through
+  // src/sim/pt_field_active's ptFieldIdAt - identity, not geometry: the
+  // realm resolves floor collision from the position itself. Informational
+  // today (reconnect, field-aware tooling, the coming authoritative
+  // transitions); nothing reads it on load yet.
+  ptField?: string;
   equipment: PlayerEquipment;
   // Per-slot ItemInstancePayload for whichever equipped piece carries one (an
   // enchanted item's rolled.stats or a rift-forged upgrade's payload).

@@ -10,11 +10,16 @@
 //
 // Generated modules are pure data (no imports, host-agnostic atob decode),
 // so bundling them into the server is safe. Ricarten needs no registration:
-// its committed module is already the ultimate fallback.
+// its committed module is already the ultimate fallback (and ptFieldIdAt
+// names it from its committed bounds).
+//
+// The second arg tags each registration with its package id so the realm
+// can name a saved position's field (ptFieldIdAt -> CharacterState.ptField),
+// not just resolve its floor.
 
 import * as PILAI_FIELD from '../generated/pt-maps/pilai/field.generated';
 import * as TOWN1_FIELD from '../generated/pt-maps/town1/field.generated';
 import { registerPtStaticField } from '../src/sim/pt_field_active';
 
-registerPtStaticField(PILAI_FIELD);
-registerPtStaticField(TOWN1_FIELD);
+registerPtStaticField(PILAI_FIELD, 'pilai');
+registerPtStaticField(TOWN1_FIELD, 'town1');

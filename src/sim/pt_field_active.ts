@@ -7,7 +7,15 @@
 // PT-band collision/water query routes to that map's data instead. Clearing
 // the descriptor restores Ricarten with no state carried over.
 
-import { ptXToWoC, ptYToWoC, ptZToWoC, woCToPtX, woCToPtY, woCToPtZ } from './pt_band';
+import {
+  isPtPos,
+  ptXToWoC,
+  ptYToWoC,
+  ptZToWoC,
+  woCToPtX,
+  woCToPtY,
+  woCToPtZ,
+} from './pt_band';
 import {
   createPtField,
   makePtBandTransform,
@@ -169,6 +177,7 @@ function promoteStandbyField(): void {
 
 interface PtStaticFieldEntry {
   field: PtField;
+  id: string | null;
   minX: number;
   maxX: number;
   minZ: number;
@@ -183,8 +192,13 @@ const _staticModules = new Set<PtFieldModule>();
  * transform follows the same rule the package loader uses (continent when
  * the bounds fit the band, per-map band otherwise) so WoC positions agree
  * with the descriptor-bound client. Idempotent per module.
+ *
+ * `id` is the generated/pt-maps package id ('pilai', 'town1', ...). Hosts
+ * that also want field IDENTITY (the server naming which field a saved
+ * position belongs to, ptFieldIdAt) pass it; floor dispatch works without
+ * it, so pre-registration callers compile unchanged.
  */
-export function registerPtStaticField(field: PtFieldModule): void {
+export function registerPtStaticField(field: PtFieldModule, id?: string): void {
   if (_staticModules.has(field)) return;
   _staticModules.add(field);
   const transform = ptFieldFitsContinent(field.PT_BOUNDS)
@@ -193,6 +207,7 @@ export function registerPtStaticField(field: PtFieldModule): void {
   const b = field.PT_BOUNDS;
   _staticFields.push({
     field: createPtField(field, transform),
+    id: id ?? null,
     // X mirrors under the transform, so the WoC X range runs maxX -> minX.
     minX: transform.ptXToWoC(b.maxX),
     maxX: transform.ptXToWoC(b.minX),
@@ -208,6 +223,47 @@ function staticFieldAt(x: number, z: number): PtField {
     if (x >= s.minX && x <= s.maxX && z >= s.minZ && z <= s.maxZ) return s.field;
   }
   return ptRicartenField();
+}
+
+// Ricarten's WoC footprint for identity resolution. Ricarten is the
+// built-in fallback field - never in _staticFields - so it gets its own
+// bounds check rather than a registration (which would duplicate its
+// field index in the dispatch list and allocate a second PtField).
+const RICARTEN_WOC = {
+  minX: RICARTEN_TRANSFORM.ptXToWoC(RICARTEN_MODULE.PT_BOUNDS.maxX),
+  maxX: RICARTEN_TRANSFORM.ptXToWoC(RICARTEN_MODULE.PT_BOUNDS.minX),
+  minZ: RICARTEN_TRANSFORM.ptZToWoC(RICARTEN_MODULE.PT_BOUNDS.minZ),
+  maxZ: RICARTEN_TRANSFORM.ptZToWoC(RICARTEN_MODULE.PT_BOUNDS.maxZ),
+};
+
+/**
+ * The PT field id covering WoC (x, z), or null outside every known field.
+ *
+ * Identity, NOT floor dispatch: staticFieldAt falls back to Ricarten
+ * geometry for any unclaimed position (a floor answer is always needed),
+ * but this resolver never invents an id - an unregistered field's bounds
+ * return null rather than claiming 'ricarten'.
+ *
+ * Resolution order:
+ *   1. the bound descriptor (client hosts: the active PT map IS the
+ *      player's field);
+ *   2. id-tagged static registrations (server/headless hosts);
+ *   3. Ricarten's committed bounds (the built-in field);
+ *   4. null.
+ */
+export function ptFieldIdAt(x: number, z: number): string | null {
+  // The bound descriptor IS the player's field on a descriptor host - but
+  // only inside the band; a binding can never name a WoC-world position.
+  if (_activeDescriptor !== null && isPtPos(x)) return _activeDescriptor.id;
+  for (const s of _staticFields) {
+    if (s.id !== null && x >= s.minX && x <= s.maxX && z >= s.minZ && z <= s.maxZ) {
+      return s.id;
+    }
+  }
+  if (x >= RICARTEN_WOC.minX && x <= RICARTEN_WOC.maxX && z >= RICARTEN_WOC.minZ && z <= RICARTEN_WOC.maxZ) {
+    return 'ricarten';
+  }
+  return null;
 }
 
 const _dispatchField: PtField = {
