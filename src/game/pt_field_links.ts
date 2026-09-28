@@ -173,8 +173,8 @@ export function tickPtFieldGates(wocX: number, wocZ: number): void {
   // Neighbor package warm: the first scan after a field activates starts
   // the dynamic import + descriptor assembly of every authored gate
   // neighbor. The generated field chunks are multi-MB, and measured standby
-  // latency was dominated by this fetch/eval (order 25s under a cold
-  // browser vs ~2s for the actual view build). Warming at activation -
+  // latency was dominated by this fetch/eval - on the order of 25s under
+  // a cold browser vs ~2s for the actual view build. Warming at activation -
   // rather than at the ~39yd gate scan - lets installCandidate resolve
   // against an already-settled module, so the standby slot reaches
   // visual-ready early in the approach walk. This installs NOTHING: the
