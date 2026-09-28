@@ -7092,6 +7092,13 @@ export type SimEvent = { pid?: number } & (
       // of the generic per-school impact; unset for every other spellfxAt
       // caller, which keeps the existing generic sound unchanged.
       sfxKey?: string;
+      // PT field scope (O3): stamped by the field-session emit seam
+      // (src/sim/pt_field_sessions.ts emitPtFieldEvent) so the realm's event
+      // router delivers this world-coordinate event only to viewers whose
+      // authoritative field matches. Coordinate anchors alone cannot
+      // distinguish a band island from the continent field overlapping it.
+      // Unset = unscoped (pre-O3 behavior).
+      ptf?: string;
     }
   // entityId (when set) anchors the log to that entity so the server only
   // delivers it to nearby players; anchorless logs broadcast server-wide

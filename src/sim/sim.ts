@@ -630,6 +630,7 @@ import { prestige as prestigeImpl, updateRested } from './progression/xp';
 import { advancePendingProjectiles, type PendingProjectile } from './projectile_travel';
 import { isPtPos } from './pt_band';
 import { ptFieldIdAt, withPtFieldScope } from './pt_field_active';
+import { assignPtField, tickPtFieldSessions } from './pt_field_sessions';
 import {
   requestPtTransition,
   updatePtTransitions,
@@ -2910,7 +2911,13 @@ export class Sim {
     // PT save falls back to bounds resolution. The per-tick tracker repairs
     // a stale seed the first tick the position disagrees.
     if (isPtPos(startPos.x)) {
-      player.ptField = savedPtField ?? (ptFieldIdAt(startPos.x, startPos.z) ?? undefined);
+      // Pre-insert write: assignPtField sets the identity but skips session
+      // indexing until the roster insert (addEntity below) runs its hook.
+      assignPtField(
+        this.ctx,
+        player,
+        savedPtField ?? (ptFieldIdAt(startPos.x, startPos.z) ?? undefined),
+      );
     }
     if (opts?.appearance) player.modularAppearance = opts.appearance;
     this.addEntity(player);
@@ -6182,6 +6189,10 @@ export class Sim {
 
     runDespawnDecay(this.ctx);
     lap?.('despawnDecay');
+    // PT field sessions (O3): drain sweep over the live field-session map.
+    // Bookkeeping only - draws no rng, emits no events, costs O(fields with
+    // members).
+    tickPtFieldSessions(this.ctx);
     // PT connected-field monster population: active-field-only, player-near,
     // anchor-capped (pt_population.ts). No-ops where no population module is
     // registered or the sim field is not a PT field.

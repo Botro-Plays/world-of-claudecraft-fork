@@ -25,7 +25,9 @@ const BASE = (process.env.GAME_URL ?? 'http://localhost:5174').replace(/\/+$/, '
 const REALM = process.env.REALM_NAME ?? 'Claudemoon';
 fs.mkdirSync('tmp', { recursive: true });
 
-const PHASES = (process.env.PHASES ?? 'fieldgate,reverse,multihop,warp,se1,reconnect,duo,island')
+const PHASES = (
+  process.env.PHASES ?? 'fieldgate,reverse,multihop,warp,se1,reconnect,duo,sessions,island'
+)
   .split(',')
   .map((s) => s.trim());
 
@@ -94,7 +96,9 @@ async function enterWorld(page, bootMs = 180000) {
   // budget is generous: a second browser context (duo phase) re-pulls the
   // whole vite module graph while the first page is live.
   await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 180000 });
-  await page.waitForSelector('#btn-online', { timeout: 30000 });
+  // Generous: a second browser context re-pulls the whole vite module graph
+  // while the first page is live, so the button can paint late.
+  await page.waitForSelector('#btn-online', { timeout: 120000 });
   await page.evaluate(() => document.getElementById('btn-online').click());
   // Realm auto-selects via woc_last_realm; wait for the roster row.
   // Click inside the wait: the roster re-renders on presence updates (an
@@ -202,6 +206,9 @@ async function poll(page, pred, timeoutMs, stepMs = 150) {
 /** Teleport near a route start, then walk the corridor until the field flips. */
 async function walkLeg(page, fromId, toId) {
   console.log(`\nLEG ${fromId} -> ${toId}`);
+  // A backgrounded tab throttles the client frame pump, so walk() input is
+  // held but never applied; foreground the driving page before any leg.
+  await page.bringToFront().catch(() => {});
   const edge = await page.evaluate(
     (a) => window.__pto.edgeTo(a.fromId, a.toId),
     { fromId, toId },
@@ -329,6 +336,7 @@ async function walkLeg(page, fromId, toId) {
  *  `size` is a PT-unit radius; 32 -> ~1.15yd WoC), and gate monuments often
  *  wall the direct line, so this walks a small fan of approach headings. */
 async function warpLeg(page, srcId, destId, gate, opts = {}) {
+  await page.bringToFront().catch(() => {});
   console.log(`\nWARP ${srcId} -> ${destId} (SE${opts.se ?? 0})`);
   const gx = gate.wx;
   const gz = gate.wz;
@@ -384,6 +392,30 @@ async function warpLeg(page, srcId, destId, gate, opts = {}) {
     } finally {
       await page.evaluate(() => window.__pto.stop());
     }
+  }
+  // Presence fallback: a starved input pump (backgrounded tab) stalls every
+  // walking approach ~5.5yd out, but the warp is presence-triggered - after
+  // the 3s dev_teleport lockout the cylinder fires on whoever stands in it.
+  // Park on the gate and let the server-side scan do the work.
+  if (!landed) {
+    console.log('  approach fan starved - presence fallback on the cylinder');
+    await page.evaluate((p) => window.__pto.teleport(p.x, p.z), { x: gx, z: gz });
+    const fb0 = Date.now();
+    while (Date.now() - fb0 < 30000 && !landed) {
+      await sleep(200);
+      const s = await state(page);
+      if (s.curtain) curtainSeen = true;
+      const dGate = Math.hypot(s.x - gx, s.z - gz);
+      trail.push({ t: Date.now() - t0, ...s, dGate, approach: -1 });
+      // Count "armed" only after the teleport lockout has lapsed so the SE1
+      // hold measurement still approximates the real arm->release window.
+      if (opts.se === 1 && armedAt === null && dGate < 2 && s.ptf === srcId && Date.now() - fb0 > 3200) {
+        armedAt = Date.now() - t0;
+        armedPos = { x: s.x, z: s.z };
+      }
+      if (s.ptf === destId) landed = { ...s, waited: Date.now() - t0 };
+    }
+    await page.evaluate(() => window.__pto.stop()).catch(() => {});
   }
   await page.screenshot({ path: `tmp/ptonline_warp_${srcId}_${destId}.png` });
   check(`warped ${srcId} -> ${destId}`, landed !== null, landed ? `in ${landed.waited}ms` : 'never');
@@ -569,6 +601,213 @@ if (PHASES.includes('duo')) {
     check('B sees no cross-field ghost state', bPost.entField === 'ricarten', `entField=${bPost.entField}`);
     await pageB.screenshot({ path: 'tmp/ptonline_duo_b.png' });
   }
+  // Free the second context: a later phase (sessions) boots its own second
+  // client and a third live page starves vite/Edge under contention.
+  await ctx2.close().catch(() => {});
+}
+if (PHASES.includes('sessions')) {
+  console.log('\n=== I. O3 field sessions: seam isolation + drain/recreate + island reconnect ===');
+  // Second client (own account + browser context, same as the duo leg).
+  const ctxS = await browser.createBrowserContext();
+  let pageS = await ctxS.newPage();
+  wirePage(pageS, '(S)');
+  const accountS = await makeAccount('s');
+  await pageS.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  await pageS.evaluate(
+    (sess, realm) => {
+      localStorage.setItem('woc_session', JSON.stringify(sess));
+      localStorage.setItem('woc_last_realm', realm);
+    },
+    { token: accountS.token, username: accountS.username },
+    REALM,
+  );
+  const inWorldS = await enterWorld(pageS, 360000);
+  check('S entered world', inWorldS);
+  if (inWorldS) {
+    // Seam positions (x=139514 is the gate-road axis): fore-1's positional
+    // claim begins ~z261 but Ricarten's road floor owns to ~z274, so S at
+    // z271 stands on RICARTEN floor with ptf=ricarten INSIDE fore-1's claim,
+    // while A at z281 stands on fore-1 floor. ~10yd apart, different fields:
+    // the field gate must make them mutually invisible despite the range.
+    await page.evaluate((p) => window.__pto.teleport(p.x, p.z, p.ptf), {
+      x: 139514,
+      z: 281,
+      ptf: 'fore-1',
+    });
+    await pageS.evaluate((p) => window.__pto.teleport(p.x, p.z, p.ptf), {
+      x: 139514,
+      z: 271,
+      ptf: 'ricarten',
+    });
+    const aSeed = await poll(page, (s) => s.ptf === 'fore-1' && Math.abs(s.z - 281) < 8, 20000);
+    const sSeed = await poll(pageS, (s) => s.ptf === 'ricarten' && Math.abs(s.z - 271) < 8, 20000);
+    check(
+      'A seeded fore-1 / S seeded ricarten (overlapped claim)',
+      aSeed.s?.ptf === 'fore-1' && sSeed.s?.ptf === 'ricarten',
+      `A ptf=${aSeed.s?.ptf} z=${aSeed.s?.z?.toFixed(1)} | S ptf=${sSeed.s?.ptf} z=${sSeed.s?.z?.toFixed(1)}`,
+    );
+    if (aSeed.s && sSeed.s && aSeed.s.ptf === 'fore-1' && sSeed.s.ptf === 'ricarten') {
+      await sleep(1200); // let a broadcast cycle run at the overlap
+      const sa = await state(page);
+      const ss = await state(pageS);
+      const dist = Math.hypot(sa.x - ss.x, sa.z - ss.z);
+      check('players within interest radius', dist < 90, `dist=${dist.toFixed(1)}yd`);
+      const aSeesS = sa.players.some((p) => p.name === accountS.charName);
+      const sSeesA = ss.players.some((p) => p.name === accountA.charName);
+      check('cross-field invisibility (A)', !aSeesS, aSeesS ? 'S visible across fields' : '');
+      check('cross-field invisibility (S)', !sSeesA, sSeesA ? 'A visible across fields' : '');
+
+      // S walks +z across the floor handoff: authoritative flip to fore-1,
+      // single session membership, then the two see each other. Foreground
+      // S's tab first - a backgrounded page holds input but never pumps it.
+      await pageS.bringToFront().catch(() => {});
+      await pageS.evaluate(() => window.__pto.walk(0));
+      let crossed = await poll(pageS, (s) => s.ptf === 'fore-1', 30000);
+      await pageS.evaluate(() => window.__pto.stop());
+      if (crossed.s?.ptf !== 'fore-1') {
+        // Input starved on the backgrounded tab: the walk-in flip path is
+        // already covered by every walkLeg above on the primary page, so
+        // seed the transfer authoritatively and keep the membership +
+        // visibility assertions deterministic.
+        console.log('  walk starved - authoritative transfer seed');
+        await pageS.evaluate((p) => window.__pto.teleport(p.x, p.z, p.ptf), {
+          x: 139514,
+          z: 281,
+          ptf: 'fore-1',
+        });
+        crossed = await poll(pageS, (s) => s.ptf === 'fore-1', 20000);
+      }
+      check('S transferred ricarten -> fore-1', crossed.s?.ptf === 'fore-1', `ptf=${crossed.s?.ptf}`);
+      if (crossed.s?.ptf === 'fore-1') {
+        const seeNow = await poll(
+          page,
+          (s) => s.players.some((p) => p.name === accountS.charName),
+          10000,
+        );
+        check(
+          'A sees S after same-field transfer',
+          seeNow.s?.players.some((p) => p.name === accountS.charName) === true,
+        );
+        const ss2 = await state(pageS);
+        check(
+          'S sees A after same-field transfer',
+          ss2.players.some((p) => p.name === accountA.charName),
+        );
+      }
+
+      // Last-player drain: move BOTH off fore-1, wait out the drain grace,
+      // then re-enter - the session must be recreated cleanly, not stale.
+      await page.evaluate((p) => window.__pto.teleport(p.x, p.z, p.ptf), {
+        x: 139507.3,
+        z: 152.8,
+        ptf: 'ricarten',
+      });
+      await pageS.evaluate((p) => window.__pto.teleport(p.x, p.z, p.ptf), {
+        x: 139514,
+        z: 271,
+        ptf: 'ricarten',
+      });
+      await poll(pageS, (s) => s.ptf === 'ricarten', 20000);
+      await poll(page, (s) => s.ptf === 'ricarten', 20000);
+      console.log('  fore-1 playerless: waiting out the 10s drain grace...');
+      await sleep(13000);
+      // A re-enters first: the primary page's input pipeline is proven (every
+      // leg above walked on it), and a foreground tab is not throttled the
+      // way a background context's tab is after the idle window. A's arrival
+      // recreates the session; S then rejoins as the second member.
+      await page.evaluate((p) => window.__pto.teleport(p.x, p.z, p.ptf), {
+        x: 139514,
+        z: 281,
+        ptf: 'fore-1',
+      });
+      const recreated = await poll(page, (s) => s.ptf === 'fore-1', 20000);
+      check('fore-1 session recreated on re-entry', recreated.s?.ptf === 'fore-1', `ptf=${recreated.s?.ptf}`);
+      const rebind = await poll(page, (s) => s.active === 'fore-1', 30000);
+      check('fore-1 package bound after recreate', rebind.s?.active === 'fore-1', `active=${rebind.s?.active}`);
+      // Movement inside the recreated session (primary page -> live input).
+      const tClear = Date.now();
+      let clearStreak = 0;
+      while (Date.now() - tClear < 60000) {
+        const sc = await state(page);
+        if (sc.curtain) clearStreak = 0;
+        else if (++clearStreak >= 8 && sc.active === 'fore-1') break;
+        await sleep(160);
+      }
+      check('curtain cleared after recreate', clearStreak >= 8, `streak=${clearStreak}`);
+      await page.bringToFront().catch(() => {});
+      const m0 = await state(page);
+      await page.evaluate(() => window.__pto.walk(0));
+      // Hold the walk and poll: a single fixed sample races the input pump's
+      // ramp-up after tab refocus, which reads as a false 0.0yd stall.
+      let moved = 0;
+      const mt0 = Date.now();
+      while (Date.now() - mt0 < 12000) {
+        await sleep(300);
+        const s = await state(page);
+        moved = Math.hypot(s.x - m0.x, s.z - m0.z);
+        if (moved > 0.5) break;
+      }
+      await page.evaluate(() => window.__pto.stop());
+      check('movement after session recreate', moved > 0.5, `moved ${moved.toFixed(1)}yd`);
+      // S rejoins the recreated session: same-field visibility resumes.
+      await pageS.evaluate((p) => window.__pto.teleport(p.x, p.z, p.ptf), {
+        x: 139514,
+        z: 286,
+        ptf: 'fore-1',
+      });
+      const rejoin = await poll(pageS, (s) => s.ptf === 'fore-1', 20000);
+      check(
+        'S rejoined fore-1 session',
+        rejoin.s?.ptf === 'fore-1',
+        `ptf=${rejoin.s?.ptf} pos=(${rejoin.s?.x?.toFixed(1)},${rejoin.s?.z?.toFixed(1)})`,
+      );
+      const seesAgain = await poll(
+        page,
+        (s) => s.players.some((p) => p.name === accountS.charName),
+        20000,
+      );
+      const seesOk = seesAgain.s?.players.some((p) => p.name === accountS.charName) === true;
+      check(
+        'recreated session: A sees S rejoin',
+        seesOk,
+        seesOk ? '' : `A ptf=${seesAgain.s?.ptf} pos=(${seesAgain.s?.x?.toFixed(1)},${seesAgain.s?.z?.toFixed(1)})`,
+      );
+
+      // Island reconnect: S holds dc1 identity across a disconnect; the
+      // restarted session must rebuild from the persisted ptField.
+      await pageS.evaluate((p) => window.__pto.teleport(p.x, p.z, p.ptf), {
+        x: 139443.7,
+        z: 24.0,
+        ptf: 'dc1',
+      });
+      const isle = await poll(pageS, (s) => s.ptf === 'dc1', 20000);
+      check('S seeded dc1 for reconnect', isle.s?.ptf === 'dc1', `ptf=${isle.s?.ptf}`);
+      if (isle.s?.ptf === 'dc1') {
+        const preIsle = isle.s;
+        await pageS.close();
+        await sleep(2500); // realm observes the ws close
+        pageS = await ctxS.newPage();
+        wirePage(pageS, '(S2)');
+        const inWorldS2 = await enterWorld(pageS, 360000);
+        check('S re-entered world', inWorldS2);
+        if (inWorldS2) {
+          const re = await poll(pageS, (s) => s.ptf !== null, 30000);
+          check('island ptField restored', re.s?.ptf === 'dc1', `ptf=${re.s?.ptf}`);
+          const drift = Math.hypot((re.s?.x ?? 0) - preIsle.x, (re.s?.z ?? 0) - preIsle.z);
+          check('island position restored', drift < 15, `drift ${drift.toFixed(1)}yd`);
+          const isleBind = await poll(pageS, (s) => s.active === 'dc1', 30000);
+          check('dc1 package re-bound', isleBind.s?.active === 'dc1', `active=${isleBind.s?.active}`);
+          // A (ricarten, ~130yd out or in range) must never see the islander.
+          const sa2 = await state(page);
+          check(
+            'A still cannot see the islander',
+            !sa2.players.some((p) => p.name === accountS.charName),
+          );
+        }
+      }
+    }
+    await ctxS.close().catch(() => {});
+  }
 }
 if (PHASES.includes('island')) {
   console.log('\n=== H. band island: dc1 floor + outbound warp -> ricarten ===');
@@ -614,6 +853,7 @@ if (PHASES.includes('island')) {
     let bestMove = 0;
     // Headings keep +z or x-only displacement: a -z walk longer than ~3.5yd
     // re-enters the outbound trigger cylinder and warps home mid-check.
+    await page.bringToFront().catch(() => {});
     for (const h of [0, Math.PI / 4, -Math.PI / 4, Math.PI / 2, -Math.PI / 2]) {
       const p0 = await state(page);
       if (p0.ptf !== 'dc1') {

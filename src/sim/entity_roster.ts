@@ -31,6 +31,10 @@ import { DELVES, DUNGEON_X_THRESHOLD, dungeonAt, zoneAt } from './data';
 import { clearDrownedLitanyBellsAndMarks } from './delves/drowned_litany_boss';
 import { recalcPlayerStats } from './entity';
 import { cancelCorpseHarvestForCorpse } from './professions/corpse_harvest_session';
+import {
+  ptFieldSessionEntityDropped,
+  ptFieldSessionEntityJoined,
+} from './pt_field_sessions';
 import { aurasSurvivingDeath } from './resurrection';
 import type { SimContext } from './sim_context';
 import type { Entity, SimEvent, Vec3 } from './types';
@@ -156,6 +160,10 @@ export function addEntityToRoster(ctx: SimContext, e: Entity): void {
   if (e.kind === 'player') ctx.playerGrid.insert(e);
   if (e.templateId === 'dungeon_door' && ctx.dungeonDoorIds) ctx.dungeonDoorIds.push(e.id);
   if (e.templateId === 'rift_portal' && ctx.riftPortalIds) ctx.riftPortalIds.push(e.id);
+  // O3: an entity stamped with a PT field identity joins that field's
+  // session (players' restored ptField and pt_population's mob stamp are
+  // both pre-insert writes indexed here).
+  ptFieldSessionEntityJoined(ctx, e);
 }
 
 export function dropEntityFromRoster(ctx: SimContext, id: number): void {
@@ -187,6 +195,8 @@ export function dropEntityFromRoster(ctx: SimContext, id: number): void {
   }
   ctx.grid.remove(e);
   if (e.kind === 'player') ctx.playerGrid.remove(e);
+  // O3: leave the field session while the entity still carries its identity.
+  ptFieldSessionEntityDropped(ctx, e);
   // Mirror addEntityToRoster's trigger registries: natural rift portals expire
   // and reopen for the world's whole lifetime, so an unspliced id would leak
   // (and cost the walk-in scan) forever. Doors are never dropped today, but the

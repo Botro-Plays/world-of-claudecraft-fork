@@ -61,6 +61,11 @@ import { cancelProfessionSessionOnDisplacement } from '../src/sim/professions/se
 import { restoreToolEffectSlotAction } from '../src/sim/professions/tool_effect_actions';
 import type { ToolEffectConfirmMode } from '../src/sim/professions/tools';
 import { ptStaticFieldRegistered, withPtFieldScope } from '../src/sim/pt_field_active';
+import { assignPtField, ptFieldSessions } from '../src/sim/pt_field_sessions';
+import {
+  ptFieldSessionLogLines,
+  type PtFieldSessionMarks,
+} from './pt_field_session_log';
 import { PT_WARP_DELAY_S } from '../src/sim/pt_transitions';
 import {
   catalogCharacterCompletion,
@@ -316,6 +321,7 @@ import {
   interestLimitSq,
   isStealthed,
   NPC_DROP_RADIUS,
+  ptFieldEventVisible,
 } from './interest_policy';
 import { IpBlockList } from './ip_block';
 import { loadActiveBlockedIps } from './ip_block_db';
@@ -1796,6 +1802,9 @@ export class GameServer {
   // the four capture-window accumulators frozen into a PerfCaptureResult.
   private readonly mobScanTickStats = createMobScanTickStats();
   private readonly movementTimelineTickStats = new MovementInputTimelineTickStats();
+  // PT field-session lifecycle observability (O3): the differ's remembered
+  // marks; lines print once per lifecycle edge via ptFieldSessionLogLines.
+  private readonly ptFieldSessionMarks: PtFieldSessionMarks = new Map();
   // Ops kill-switch: SELF_SNAPSHOT_FULL=1 re-diffs every heavy self field every
   // tick (pre-optimization behavior), for A/B benchmarking or rollback.
   private readonly heavySelfGate = process.env.SELF_SNAPSHOT_FULL !== '1';
@@ -2678,6 +2687,14 @@ export class GameServer {
             this.parseCapture.observe(events);
             this.routeEvents(events);
             this.detectActivity(events);
+            // PT field-session lifecycle edges (join/drain/unload), one line
+            // each, in the join/leave log's style. O(live sessions).
+            for (const line of ptFieldSessionLogLines(
+              this.ptFieldSessionMarks,
+              ptFieldSessions(this.sim.ctx),
+            )) {
+              console.log(line);
+            }
             void observeQueuePops(events, queuedPidsOf(this.sim.ctx), this.queuePopDeps);
             lap('events');
             this.runAntibotTick();
@@ -7883,7 +7900,7 @@ export class GameServer {
               msg.ptf.length > 0 &&
               ptStaticFieldRegistered(msg.ptf)
             ) {
-              e.ptField = msg.ptf;
+              assignPtField(sim.ctx, e, msg.ptf);
             }
             // PT band entity scope: the teleport lands on the field the
             // entity's ptField names, so a band-island resident teleports
@@ -9480,9 +9497,15 @@ export class GameServer {
             }
             return;
           }
-          // world events: only those near this player
+          // world events: only those near this player, and only those whose
+          // PT field scope the viewer shares (server/interest_policy.ts) -
+          // a band-island event at continent-overlapping coordinates must not
+          // reach the continent's players. The viewer entity is the anchor
+          // (the spectated target while spectating), not the session's own.
           const anchor = eventAnchor(ev, this.sim.entities);
           if (anchor === null || dist2d(anchorPos, anchor) <= EVENT_RADIUS) {
+            const viewerEnt = anchorPid === p.id ? p : this.sim.entities.get(anchorPid);
+            if (viewerEnt && !ptFieldEventVisible(ev, viewerEnt, this.sim.entities)) return;
             mine.push(fragments[i]);
             if (ev.type === 'spellfxAt' && ev.ability === VARKHUL_FORGE_PORTAL_ABILITY_ID) {
               session.needsVarkhulPortalReplay = false;

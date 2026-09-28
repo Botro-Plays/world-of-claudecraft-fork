@@ -8,7 +8,12 @@
 import { bgOriginAt, isBgPos } from '../src/sim/data';
 import { isPtPos } from '../src/sim/pt_band';
 import { ptFieldIdAt } from '../src/sim/pt_field_active';
-import { type Entity, PLAYER_INTEREST_DROP_RADIUS, PLAYER_INTEREST_RADIUS } from '../src/sim/types';
+import {
+  type Entity,
+  PLAYER_INTEREST_DROP_RADIUS,
+  PLAYER_INTEREST_RADIUS,
+  type SimEvent,
+} from '../src/sim/types';
 
 // Interest management: new entities enter interest at the shared sim edge
 // (PLAYER_INTEREST_RADIUS; the rationale lives on the sim constant: the client
@@ -78,6 +83,56 @@ function effectivePtField(e: Entity): string | undefined {
 
 export function inSamePtField(a: Entity, b: Entity): boolean {
   return effectivePtField(a) === effectivePtField(b);
+}
+
+// ---------------------------------------------------------------------------
+// Field-scoped event delivery (O3)
+// ---------------------------------------------------------------------------
+//
+// World events interest-scope by distance from their anchor, but distance
+// alone leaks across PT fields whose WoC footprints overlap: a band-island
+// event lands inside the continent's bounds, so continent viewers inside the
+// radius would receive island events they cannot act on. The scope rule
+// mirrors entity visibility:
+//
+//   - entity-anchored events (targetId/entityId resolve to a live entity)
+//     share the anchor entity's field verdict, same as the entity itself;
+//   - events carrying an explicit `ptf` scope stamp (emitted through a field
+//     session, src/sim/pt_field_sessions.ts emitPtFieldEvent) reach only
+//     viewers whose effective field is the stamp - the ONLY way an island
+//     event scopes correctly, since islands never win positional claims;
+//   - an unstamped coordinate event inside the band scopes to the
+//     positional claimant: continent events reach continent viewers and not
+//     island residents at the same coordinates;
+//   - everything else is unscoped (broadcast events, out-of-band events),
+//     matching pre-O3 behavior for the world that never names a field.
+//
+// Delivery ordering: pid-scoped events never reach this predicate (they
+// route to their pid first); this gate runs inside the world-event distance
+// check in routeEvents.
+export function ptFieldEventVisible(
+  ev: SimEvent,
+  viewer: Entity,
+  entities: ReadonlyMap<number, Entity>,
+): boolean {
+  let id: number | undefined;
+  if ('targetId' in ev && typeof ev.targetId === 'number') id = ev.targetId;
+  else if ('entityId' in ev && typeof ev.entityId === 'number') id = ev.entityId;
+  if (id !== undefined) {
+    const anchor = entities.get(id);
+    if (anchor !== undefined) return inSamePtField(viewer, anchor);
+    // The anchor entity is gone this tick (despawned between emit and
+    // delivery): fall through to the stamp check, matching eventAnchor's
+    // own null-anchor broadcast behavior when nothing scoped the event.
+  }
+  if ('ptf' in ev && typeof ev.ptf === 'string') {
+    return effectivePtField(viewer) === ev.ptf;
+  }
+  if ('x' in ev && 'z' in ev && typeof ev.x === 'number' && isPtPos(ev.x)) {
+    const field = ptFieldIdAt(ev.x, ev.z);
+    if (field !== null) return effectivePtField(viewer) === field;
+  }
+  return true;
 }
 
 // Both endpoints inside the SAME battleground slot: the necessary condition for

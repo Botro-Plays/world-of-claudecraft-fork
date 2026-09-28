@@ -51,6 +51,7 @@ import {
   type PtGraphWarpGate,
 } from './pt_map_graph';
 import { cancelProfessionSessionOnDisplacement } from './professions/session_teardown';
+import { assignPtField } from './pt_field_sessions';
 import type { SimContext } from './sim_context';
 import { settleTeleportArrival } from './teleport_arrival';
 import type { Entity } from './types';
@@ -117,7 +118,7 @@ function execWarp(
   const xf = ptGraphFieldTransform(exit.toId);
   if (xf === null) return { ok: false, reason: 'field_unavailable' };
   warpLand(ctx, p, xf.ptXToWoC(exit.x), xf.ptYToWoC(exit.y), xf.ptZToWoC(exit.z));
-  p.ptField = exit.toId;
+  assignPtField(ctx, p, exit.toId);
   p.ptWarpLockUntil = ctx.time + PT_WARP_DELAY_S;
   p.ptWarpPending = undefined;
   ctx.emit({ type: 'pt_transition', pid: p.id, kind: 'warp', field: exit.toId });
@@ -255,7 +256,7 @@ export function requestPtTransition(
     const sticky = ptStickyFieldAt(current, p.pos.x, p.pos.z);
     if (sticky !== null && sticky !== current && ptGateEdgeBetween(current, sticky) !== null) {
       if (!ptStaticFieldRegistered(sticky)) return { ok: false, reason: 'field_unavailable' };
-      p.ptField = sticky;
+      assignPtField(ctx, p, sticky);
       ctx.emit({ type: 'pt_transition', pid: p.id, kind: 'field', field: sticky });
       return { ok: true, kind: 'field', field: sticky };
     }
@@ -271,7 +272,7 @@ export function requestPtTransition(
   if (owner === null && ptFieldClaimsWocPos(current, p.pos.x, p.pos.z)) {
     return { ok: false, reason: 'no_transition' };
   }
-  p.ptField = dest;
+  assignPtField(ctx, p, dest);
   ctx.emit({ type: 'pt_transition', pid: p.id, kind: 'field', field: dest });
   return { ok: true, kind: 'field', field: dest };
 }
@@ -353,13 +354,13 @@ function scanWarpTrigger(ctx: SimContext, p: Entity, rand: () => number): void {
  */
 function trackPtField(ctx: SimContext, p: Entity): void {
   if (!isPtPos(p.pos.x)) {
-    if (p.ptField !== undefined) p.ptField = undefined;
+    if (p.ptField !== undefined) assignPtField(ctx, p, undefined);
     return;
   }
   const current = p.ptField ?? null;
   if (current === null) {
     const seed = ptFieldIdAt(p.pos.x, p.pos.z);
-    if (seed !== null) p.ptField = seed;
+    if (seed !== null) assignPtField(ctx, p, seed);
     return;
   }
   const next = ptStickyFieldAt(current, p.pos.x, p.pos.z);
@@ -373,7 +374,7 @@ function trackPtField(ctx: SimContext, p: Entity): void {
     // edges, so claimNeighbors finds no standby to promote.
     const owner = ptFloorOwnerAt(current, p.pos.x, p.pos.z, p.pos.y);
     if (owner !== null && owner !== current && ptStaticFieldRegistered(owner)) {
-      p.ptField = owner;
+      assignPtField(ctx, p, owner);
       ctx.emit({ type: 'pt_transition', pid: p.id, kind: 'field', field: owner });
     }
     return;
@@ -383,7 +384,7 @@ function trackPtField(ctx: SimContext, p: Entity): void {
   if (ptFieldClaimsWocPos(current, p.pos.x, p.pos.z) && ptGateEdgeBetween(current, next) === null) {
     return;
   }
-  p.ptField = next;
+  assignPtField(ctx, p, next);
   ctx.emit({ type: 'pt_transition', pid: p.id, kind: 'field', field: next });
 }
 
