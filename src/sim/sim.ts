@@ -6193,9 +6193,10 @@ export class Sim {
     // Bookkeeping only - draws no rng, emits no events, costs O(fields with
     // members).
     tickPtFieldSessions(this.ctx);
-    // PT connected-field monster population: active-field-only, player-near,
+    // PT connected-field monster population: one scheduler run per ACTIVE
+    // field session (O4) plus the bound dev-map descriptor, player-near,
     // anchor-capped (pt_population.ts). No-ops where no population module is
-    // registered or the sim field is not a PT field.
+    // registered or no session owns the field.
     ptPopulationTick(this.ctx, MOBS);
     lap?.('ptPopulation');
     // Step in-flight projectiles toward their live targets before this tick's casts and

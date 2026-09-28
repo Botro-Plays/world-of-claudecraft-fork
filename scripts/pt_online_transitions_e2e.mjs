@@ -26,7 +26,8 @@ const REALM = process.env.REALM_NAME ?? 'Claudemoon';
 fs.mkdirSync('tmp', { recursive: true });
 
 const PHASES = (
-  process.env.PHASES ?? 'fieldgate,reverse,multihop,warp,se1,reconnect,duo,sessions,island'
+  process.env.PHASES ??
+  'fieldgate,reverse,multihop,warp,se1,reconnect,duo,sessions,island,population'
 )
   .split(',')
   .map((s) => s.trim());
@@ -151,10 +152,27 @@ async function enterWorld(page, bootMs = 180000) {
           players: [...(w?.entities?.values() ?? [])]
             .filter((e) => e.kind === 'player')
             .map((e) => ({ id: e.id, name: e.name, x: e.pos.x, z: e.pos.z, f: e.ptField ?? null })),
+          // Server-spawned mobs that made it through interest scoping into
+          // this client's world (the population phase's evidence surface).
+          mobs: [...(w?.entities?.values() ?? [])]
+            .filter((e) => e.kind === 'mob')
+            .map((e) => ({
+              id: e.id,
+              t: e.templateId,
+              name: e.name,
+              lv: e.level,
+              x: e.pos.x,
+              y: e.pos.y,
+              z: e.pos.z,
+              dead: e.dead === true,
+            })),
         };
       },
       teleport(x, z, ptf) {
         g().world.devCmd({ cmd: 'dev_teleport', x, z, ...(ptf ? { ptf } : {}) });
+      },
+      god() {
+        g().world.devCmd({ cmd: 'dev_profiler_invulnerable' });
       },
       setLevel(level) {
         g().world.devCmd({ cmd: 'dev_level', level });
@@ -877,6 +895,177 @@ if (PHASES.includes('island')) {
     // (PT 198284,1517,240295 -> WoC 139443.6, 10.2), limitLevel 0.
     await warpLeg(page, 'dc1', 'ricarten', { wx: 139443.6, wz: 10.2 }, { se: 0 });
   }
+}
+if (PHASES.includes('population')) {
+  console.log('\n=== J. O4 server-authoritative population ===');
+  // Spawn anchors are parsed from the pinned generated modules (the same
+  // data the server scheduler consumes - never client-invented numbers).
+  const popAnchors = (fieldId) => {
+    const src = fs.readFileSync(`generated/pt-maps/${fieldId}/population.generated.ts`, 'utf8');
+    const sec = src.slice(src.indexOf('spawnAnchors'));
+    return [...sec.matchAll(/\{\s*index:\s*(\d+),\s*x:\s*(-?[\d.]+),\s*z:\s*(-?[\d.]+)/gs)].map(
+      (m) => ({ i: +m[1], x: +m[2], z: +m[3] }),
+    );
+  };
+  const fieldBounds = (fieldId) =>
+    JSON.parse(
+      fs
+        .readFileSync(`generated/pt-maps/${fieldId}/field.generated.ts`, 'utf8')
+        .match(/PT_BOUNDS\s*=\s*(\{[^}]+\})/)[1],
+    );
+  // Band-island transform (mirrors src/sim/pt_field.ts makePtBandTransform):
+  // the island's own bounds anchor it in the WoC band.
+  const bandXf = (b) => ({
+    ptXToWoC: (x) => ANCHOR_X + (b.maxX - x) * PT_SCALE,
+    ptZToWoC: (z) => (z - b.minZ) * PT_SCALE,
+  });
+  const ptMobs = (s) => (s?.mobs ?? []).filter((m) => m.t?.startsWith('pt_') && !m.dead);
+
+  // Spawned mobs aggro the observer; the population checks must not race a
+  // respawn-back-at-town death.
+  await page.evaluate(() => window.__pto.god());
+
+  // A) fore-1: stand on an authored anchor until the realm's scheduler
+  //    produces PT mobs there (openInterval ~1.8s; generous per-anchor poll).
+  const f1Anchors = popAnchors('fore-1');
+  let f1 = null;
+  for (const a of f1Anchors.slice(0, 8)) {
+    await page.evaluate(
+      (p) => window.__pto.teleport(p.x, p.z, 'fore-1'),
+      { x: ptXToWoC(a.x), z: ptZToWoC(a.z) },
+    );
+    const r = await poll(page, (s) => s.ptf === 'fore-1' && ptMobs(s).length > 0, 25000);
+    if (ptMobs(r.s).length > 0) {
+      f1 = { anchor: a, mobs: ptMobs(r.s) };
+      break;
+    }
+    console.log(`  fore-1 anchor ${a.i}: no mobs after 25s, trying next`);
+  }
+  check('fore-1 realm spawns PT mobs', !!f1, f1 ? `anchor ${f1.anchor.i}, ${f1.mobs.length} mobs` : 'no anchor produced mobs');
+  if (f1) {
+    check(
+      'spawned mobs are PT templates with finite floor',
+      f1.mobs.every((m) => m.t.startsWith('pt_') && Number.isFinite(m.y) && m.name?.length > 0 && m.lv > 0),
+      f1.mobs.map((m) => `${m.t}#${m.id}@${m.y.toFixed(1)}`).join(' ').slice(0, 200),
+    );
+    await page.screenshot({ path: 'tmp/ptonline_pop_fore1.png' });
+
+    // B) second viewer: in ricarten sees NONE of the fore-1 population;
+    //    once moved into fore-1 sees the SAME authoritative ids.
+    const ctxP = await browser.createBrowserContext();
+    const pageP = await ctxP.newPage();
+    wirePage(pageP, '(P)');
+    const accountP = await makeAccount('p');
+    await pageP.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+    await pageP.evaluate(
+      (sess, realm) => {
+        localStorage.setItem('woc_session', JSON.stringify(sess));
+        localStorage.setItem('woc_last_realm', realm);
+      },
+      { token: accountP.token, username: accountP.username },
+      REALM,
+    );
+    const inP = await enterWorld(pageP, 360000);
+    check('P entered world', inP);
+    if (inP) {
+      await pageP.evaluate(() => window.__pto.god());
+      const pRic = await poll(pageP, (s) => s.ptf === 'ricarten', 30000);
+      check(
+        'cross-field isolation: ricarten viewer sees no fore-1 mobs',
+        ptMobs(pRic.s).length === 0,
+        `ptMobs=${ptMobs(pRic.s).length}`,
+      );
+      const f1Ids = new Set(f1.mobs.map((m) => m.id));
+      await pageP.evaluate(
+        (p) => window.__pto.teleport(p.x, p.z, 'fore-1'),
+        { x: ptXToWoC(f1.anchor.x), z: ptZToWoC(f1.anchor.z) },
+      );
+      const pF1 = await poll(
+        pageP,
+        (s) => s.ptf === 'fore-1' && s.mobs.some((m) => f1Ids.has(m.id)),
+        30000,
+      );
+      const shared = ptMobs(pF1.s).filter((m) => f1Ids.has(m.id));
+      check(
+        'same-field viewer receives the same authoritative mob ids',
+        shared.length === f1Ids.size,
+        `shared ${shared.length}/${f1Ids.size}`,
+      );
+      await pageP.screenshot({ path: 'tmp/ptonline_pop_fore1_b.png' });
+
+      // C) drain/release + recreate: EVERY player must leave fore-1 before
+      //    the drain leg - a closed-but-linkdead entity keeps its ptField
+      //    and legitimately holds the session (and its population) alive.
+      //    P fields out explicitly first, THEN A.
+      await pageP.evaluate(
+        (p) => window.__pto.teleport(p.x, p.z, 'ricarten'),
+        { x: spawn?.s?.x ?? 0, z: spawn?.s?.z ?? 0 },
+      );
+      await poll(pageP, (s) => s.ptf === 'ricarten', 20000);
+    }
+    await ctxP.close().catch(() => {});
+
+    const oldIds = new Set(f1.mobs.map((m) => m.id));
+    await page.evaluate(
+      (p) => window.__pto.teleport(p.x, p.z, 'ricarten'),
+      { x: spawn?.s?.x ?? 0, z: spawn?.s?.z ?? 0 },
+    );
+    await poll(page, (s) => s.ptf === 'ricarten', 20000);
+    await sleep(6000); // drain starts on the next tick; release is immediate
+    await page.evaluate(
+      (p) => window.__pto.teleport(p.x, p.z, 'fore-1'),
+      { x: ptXToWoC(f1.anchor.x), z: ptZToWoC(f1.anchor.z) },
+    );
+    const reIn = await poll(page, (s) => s.ptf === 'fore-1', 20000);
+    const seenEmpty = ptMobs(reIn.s).length === 0;
+    const rePop = await poll(page, (s) => ptMobs(s).length > 0, 30000);
+    const newIds = ptMobs(rePop.s).map((m) => m.id);
+    check(
+      'drain released the old population',
+      seenEmpty || newIds.every((id) => !oldIds.has(id)),
+      `firstRead=${ptMobs(reIn.s).length} newIds=${newIds.length} shared=${newIds.filter((id) => oldIds.has(id)).length}`,
+    );
+    check(
+      'recreated session repopulates on fresh entity ids',
+      newIds.length > 0 && newIds.every((id) => !oldIds.has(id)),
+      `new=${newIds.length} shared=${newIds.filter((id) => oldIds.has(id)).length}`,
+    );
+  }
+
+  // D) mine-1 (band island): unresolved 矿山开采者 stays suppressed while the
+  //    resolved xd3_* actors spawn on the island's own floor.
+  const m1Bounds = fieldBounds('mine-1');
+  const m1xf = bandXf(m1Bounds);
+  const m1Anchors = popAnchors('mine-1');
+  let m1 = null;
+  for (const a of m1Anchors.slice(0, 6)) {
+    await page.evaluate(
+      (p) => window.__pto.teleport(p.x, p.z, 'mine-1'),
+      { x: m1xf.ptXToWoC(a.x), z: m1xf.ptZToWoC(a.z) },
+    );
+    const r = await poll(page, (s) => s.ptf === 'mine-1' && ptMobs(s).length > 0, 25000);
+    if (ptMobs(r.s).length > 0) {
+      m1 = { anchor: a, mobs: ptMobs(r.s) };
+      break;
+    }
+    console.log(`  mine-1 anchor ${a.i}: no mobs after 25s, trying next`);
+  }
+  check('mine-1 realm spawns resolved actors', !!m1, m1 ? `anchor ${m1.anchor.i}: ${m1.mobs.map((m) => m.t).join(',')}` : 'none');
+  if (m1) {
+    check(
+      'mine-1 mobs stand on authored floor',
+      m1.mobs.every((m) => Number.isFinite(m.y)),
+      m1.mobs.map((m) => `${m.t}@${m.y.toFixed(1)}`).join(' ').slice(0, 160),
+    );
+    await page.screenshot({ path: 'tmp/ptonline_pop_mine1.png' });
+  }
+  // Back to town for a clean exit.
+  await page
+    .evaluate(
+      (p) => window.__pto.teleport(p.x, p.z, 'ricarten'),
+      { x: spawn?.s?.x ?? 0, z: spawn?.s?.z ?? 0 },
+    )
+    .catch(() => {});
 }
 
 console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} FAILURES`}`);

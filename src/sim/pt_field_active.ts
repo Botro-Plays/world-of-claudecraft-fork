@@ -218,6 +218,17 @@ function fieldModuleFor(id: string | null | undefined): PtField | null {
 }
 
 /**
+ * The PtField a field id names on this host, or null: the built-in Ricarten,
+ * an id-tagged static registration, or an identity-scoped island. The field
+ * module an O3 session owns (src/sim/pt_population.ts resolves each active
+ * session's floor geometry here); a bound dev-map descriptor answers through
+ * activeOwnedPtField() instead.
+ */
+export function ptFieldById(id: string | null | undefined): PtField | null {
+  return fieldModuleFor(id);
+}
+
+/**
  * Register a generated field module as a static fallback field. The
  * transform follows the same rule the package loader uses (continent when
  * the bounds fit the band, per-map band otherwise) so WoC positions agree

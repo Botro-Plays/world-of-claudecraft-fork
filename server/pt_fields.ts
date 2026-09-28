@@ -56,6 +56,7 @@ import * as ICE3_FIELD from '../generated/pt-maps/ice3/field.generated';
 import * as AD1_FIELD from '../generated/pt-maps/ad1/field.generated';
 import * as AD2_FIELD from '../generated/pt-maps/ad2/field.generated';
 import * as AD3_FIELD from '../generated/pt-maps/ad3/field.generated';
+import * as MINE1_FIELD from '../generated/pt-maps/mine-1/field.generated';
 import { registerPtStaticField } from '../src/sim/pt_field_active';
 
 // Side effects, order-pinned: the graph first (identity/bounds resolution),
@@ -82,3 +83,11 @@ registerPtStaticField(ICE3_FIELD, 'ice3');
 registerPtStaticField(AD1_FIELD, 'ad1');
 registerPtStaticField(AD2_FIELD, 'ad2');
 registerPtStaticField(AD3_FIELD, 'ad3');
+// mine-1 (O4): a band island like dc1 - identity-scoped only, never a
+// positional claimant. Registered so its authored population module can run
+// its floor probes and a dev-seeded ptField can verify the live path.
+registerPtStaticField(MINE1_FIELD, 'mine-1');
+
+// Field-population modules for the same closure (O4): the scheduler runs
+// per active field session inside the sim (src/sim/pt_population.ts).
+import './pt_populations';

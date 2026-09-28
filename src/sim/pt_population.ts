@@ -8,11 +8,20 @@
 // src/sim/content/pt_mobs.ts. Legacy .spm/.spp/.inf files are never read at
 // runtime.
 //
-// Ownership model: only the ACTIVE sim field (activePtMapDescriptor) owns a
-// population. A standby field preloaded for the visual FieldGate transition
-// never spawns. When the active field changes, the previous field's owned
-// entities are dropped at once; the source unloads a stage's monsters when
-// its slot is released.
+// Ownership model (O4): a field's population is owned by its ACTIVE O3
+// field session (src/sim/pt_field_sessions.ts), so every online field with
+// players populates concurrently while fields nobody occupies stay empty.
+// When a session leaves 'active' - the last player left and the session is
+// draining, or it has already unloaded - the field's owned entities are
+// dropped at once (the source unloads a stage's monsters when its slot is
+// released) and its population state resets, so re-entry rebuilds
+// deterministically instead of trusting stale state.
+//
+// A bound dev-map descriptor (activePtMapDescriptor) counts as a second,
+// descriptor-scoped owner so the offline/dev host keeps its historical
+// single-field behavior even where no session exists yet (e.g. harnesses
+// that bind a map without a rostered PT player). A standby field preloaded
+// for the visual FieldGate transition never spawns on either host.
 //
 // Source constants (verbatim where they matter):
 //   - spawn cadence: the field Counter++ runs inside STG_AREA::Main() at the
@@ -49,15 +58,23 @@
 //     the corpse decays via the normal corpseTimer and is dropped once
 //     decayed. The field scheduler refills the slot.
 //
-// Server note: the PT connected world currently installs field descriptors
-// only on the client (src/game/pt_field_transition.ts via
-// pt_population_data.ts); server and headless Sims see an empty table and
-// this module no-ops there. That matches the existing client-only PT field
-// architecture; server-authoritative PT population is a later phase.
+// Server note (O4): the realm registers its geometry closure's population
+// modules (server/pt_populations.ts) and runs this same scheduler against
+// the O3 session set - the sim owns spawn/membership decisions on every
+// host, so an online client only ever renders server-created mobs. The
+// near-play gate reads the SESSION's players, never the whole roster: a
+// player's WoC position transformed through another field's transform is a
+// meaningless coordinate, and must never arm a foreign field's anchors.
 
 import { createMob } from './entity';
-import type { PtField, PtMapDescriptor } from './pt_field';
-import { activeOwnedPtField, activePtMapDescriptor } from './pt_field_active';
+import type { PtField, PtFieldTransform } from './pt_field';
+import {
+  activeOwnedPtField,
+  activePtMapDescriptor,
+  ptFieldById,
+} from './pt_field_active';
+import { ptFieldSessions, type PtFieldSession } from './pt_field_sessions';
+import { ptGraphFieldTransform } from './pt_map_graph';
 import { corpseHasDecayed } from './respawn_policy';
 import { Rng } from './rng';
 import type { SimContext } from './sim_context';
@@ -288,64 +305,99 @@ function spawnRng(ctx: SimContext, fieldId: string, spawnSeq: number): Rng {
 // ---------------------------------------------------------------------------
 
 /**
- * One population step, called once per sim tick (see sim.ts). Despawns
- * populations on inactive fields, applies absence despawn, then runs the
- * source-cadence spawn scheduler for the active field.
+ * One population step, called once per sim tick (see sim.ts). Releases every
+ * field whose owner went inactive (a draining session's last player left,
+ * or the session unloaded), then runs the source-cadence spawn scheduler for
+ * each live field: active field sessions plus, on descriptor hosts, the
+ * bound dev map.
  */
 export function ptPopulationTick(ctx: SimContext, mobs: Record<string, MobTemplate>): void {
   const states = statesFor(ctx);
   const diag = diagnosticsFor(ctx);
+
+  // Live owners: O3 sessions that still have a member player, and the bound
+  // dev descriptor (descriptor hosts may legitimately hold no session, e.g.
+  // a harness that binds a map without a rostered PT player). A DRAINING
+  // session is deliberately absent: the last player left, so the field's
+  // owned entities release now rather than at unload.
+  const live = new Map<string, { session: PtFieldSession | null }>();
+  for (const s of ptFieldSessions(ctx)) {
+    if (s.state === 'active') live.set(s.fieldId, { session: s });
+  }
   const desc = activePtMapDescriptor();
-  const fieldId = desc?.id ?? null;
+  if (desc !== null && !live.has(desc.id)) live.set(desc.id, { session: null });
 
-  // A field that is no longer the active sim field owns nothing: drop every
-  // entity it spawned (the source unloads the stage's monster table when the
-  // slot is released).
   for (const [fid, st] of states) {
-    if (fid !== fieldId) {
-      for (const anchor of st.anchors.values()) {
-        for (const id of anchor.ids) {
-          if (ctx.entities.has(id)) {
-            ctx.dropEntity(id);
-            diag.despawnedFieldChange++;
-          }
+    if (live.has(fid)) continue;
+    for (const anchor of st.anchors.values()) {
+      for (const id of anchor.ids) {
+        if (ctx.entities.has(id)) {
+          ctx.dropEntity(id);
+          diag.despawnedFieldChange++;
         }
-        anchor.ids.clear();
       }
-      states.delete(fid);
+      anchor.ids.clear();
     }
-  }
-  if (fieldId === null || !desc) return;
-
-  const mod = ptPopulationModule(fieldId);
-  // The BARE active field, not the active/standby composite: floor probes
-  // here must never trigger the composite's promote-standby side effect,
-  // and a standby field's geometry must never satisfy an active field's
-  // spawn check.
-  const field = activeOwnedPtField();
-  if (!mod || mod.status !== 'populated' || mod.actors.length === 0 || !field) {
-    // An unpopulated field owns no entities; clear any stale state.
-    const stale = states.get(fieldId);
-    if (stale) {
-      for (const anchor of stale.anchors.values()) {
-        for (const id of anchor.ids) ctx.dropEntity(id);
-        anchor.ids.clear();
-      }
-      states.delete(fieldId);
-    }
-    return;
+    states.delete(fid);
   }
 
+  for (const [fieldId, owner] of live) {
+    const isDesc = desc !== null && fieldId === desc.id;
+    // The BARE field for this id, never a composite: on descriptor hosts the
+    // bound field answers floor probes (no standby geometry may satisfy an
+    // active field's spawn check); everywhere else the session's own
+    // registered module answers.
+    const field = isDesc ? activeOwnedPtField() : ptFieldById(fieldId);
+    const xf = isDesc ? desc.transform : ptGraphFieldTransform(fieldId);
+    const mod = ptPopulationModule(fieldId);
+    if (!mod || mod.status !== 'populated' || mod.actors.length === 0 || !field || !xf) {
+      // An unpopulated or unsimulatable field owns no entities; clear any
+      // stale state so a later registration starts clean.
+      const stale = states.get(fieldId);
+      if (stale) {
+        for (const anchor of stale.anchors.values()) {
+          for (const id of anchor.ids) ctx.dropEntity(id);
+          anchor.ids.clear();
+        }
+        states.delete(fieldId);
+      }
+      continue;
+    }
+    runFieldPopulation(ctx, mobs, mod, field, xf, owner.session, diag);
+  }
+}
+
+/** The source-cadence scheduler for ONE live field (STG_AREA::Main arm). */
+function runFieldPopulation(
+  ctx: SimContext,
+  mobs: Record<string, MobTemplate>,
+  mod: PtPopulationModule,
+  field: PtField,
+  xf: PtFieldTransform,
+  session: PtFieldSession | null,
+  diag: PtPopulationDiagnostics,
+): void {
+  const states = statesFor(ctx);
+  const fieldId = mod.fieldId;
   const st = fieldStateFor(states, mod);
-  const xf = desc.transform;
   const now = ctx.time;
 
-  // Near-play refresh: every anchor sees the live player set each tick.
+  // Near-play refresh: session fields see their OWN players (identity, not
+  // position - a foreign field's WoC coords transformed here are noise);
+  // the descriptor path sees the sim's players as before.
   const playersPt: { x: number; z: number }[] = [];
-  for (const meta of ctx.players.values()) {
-    const p = ctx.entities.get(meta.entityId);
-    if (!p || p.dead) continue;
-    playersPt.push({ x: xf.woCToPtX(p.pos.x), z: xf.woCToPtZ(p.pos.z) });
+  if (session !== null) {
+    for (const id of session.players) {
+      const p = ctx.entities.get(id);
+      if (!p || p.dead) continue;
+      playersPt.push({ x: xf.woCToPtX(p.pos.x), z: xf.woCToPtZ(p.pos.z) });
+    }
+  } else {
+    for (const meta of ctx.players.values()) {
+      const p = ctx.entities.get(meta.entityId);
+      if (!p || p.dead) continue;
+      playersPt.push({ x: xf.woCToPtX(p.pos.x), z: xf.woCToPtZ(p.pos.z) });
+    }
   }
 
   let fieldAlive = 0;
@@ -413,7 +465,7 @@ export function ptPopulationTick(ctx: SimContext, mobs: Record<string, MobTempla
     st.counter++;
     if ((st.counter & mask) !== 0) continue;
     if (fieldAlive >= limitMax) continue;
-    fieldAlive += attemptSpawn(ctx, mod, st, desc, field, mobs, diag, now, {
+    fieldAlive += attemptSpawn(ctx, mod, st, xf, field, mobs, diag, now, {
       openLimit,
       limitMax,
       lockoutSec,
@@ -430,7 +482,7 @@ function attemptSpawn(
   ctx: SimContext,
   mod: PtPopulationModule,
   st: PtFieldState,
-  desc: PtMapDescriptor,
+  xf: PtFieldTransform,
   field: PtField,
   mobs: Record<string, MobTemplate>,
   diag: PtPopulationDiagnostics,
@@ -496,7 +548,6 @@ function attemptSpawn(
   }
   if (group <= 0) group = 1;
 
-  const xf = desc.transform;
   const wx = xf.ptXToWoC(chosen.x);
   const wz = xf.ptZToWoC(chosen.z);
 
