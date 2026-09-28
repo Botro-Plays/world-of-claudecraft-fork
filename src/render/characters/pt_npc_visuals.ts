@@ -19,6 +19,15 @@ import type { ClipMap, VisualDef } from './manifest';
 // but this module is a pure data table like pt_mob_visuals.ts.
 const PT_YD = 0.036;
 
+// Every .npc def in MagicPT-Chinese carries *模型尺寸 1.2, parsed into
+// smCharInfo.wPlayClass[1] (fileread.cpp smCharDecode) and drawn as
+// smRender.ObjectVertexScale - a render-only vertex scale of 1.2x the
+// authored model units. Uniform across all 123 NPC defs, so it stays a
+// constant here rather than catalog data. Players carry no such directive
+// and render at 1.0x; this asymmetry is part of the source's intended
+// player-vs-NPC proportion (a TN-002 guard is meant to loom).
+const PT_NPC_MODEL_SCALE = 1.2;
+
 export const PT_NPC_VISUALS: Record<string, VisualDef> = {};
 export const PT_NPC_KEYS: Record<string, string> = {};
 
@@ -37,9 +46,9 @@ for (const [defKey, rec] of Object.entries(PT_NPC_DEFS)) {
     url: rec.glb,
     clips,
     lazyPreload: true,
-    // measured bind-pose Y extent in PT units -> WoC yards; NPCs have no
-    // authored world height in the source, so the GLB bounds ARE the truth.
-    height: (rec.height ?? 50) * PT_YD,
+    // measured bind-pose Y extent in PT units -> WoC yards, times the
+    // source's uniform 1.2x NPC render scale; the GLB bounds ARE the truth.
+    height: (rec.height ?? 50) * PT_YD * PT_NPC_MODEL_SCALE,
     rawHeight: rec.height ?? undefined,
   };
   PT_NPC_VISUALS[visualKey] = def;

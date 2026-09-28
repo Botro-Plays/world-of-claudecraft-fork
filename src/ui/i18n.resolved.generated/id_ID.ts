@@ -24083,577 +24083,577 @@ export const id_ID: EnTranslations = {
         "greeting": "Boneka di belakangku itu tak pernah membalas pukulan dan tak pernah tumbang, {className}. Yang penting adalah hitungannya: Meter Kerusakanmu menghitung setiap hantaman yang mendarat padanya. Jadikan ia sasaran dan buka meternya, lalu akan kujelaskan sisanya."
       },
       "pt_npc_1": {
-        "name": "装备开孔小妹",
+        "name": "Socket Puncher Skadi",
         "title": "Villager",
         "greeting": "想让装备变的更强大吗?\n我可以给你的武器上开启镶嵌孔，你需要准备四个开孔石哦"
       },
       "pt_npc_2": {
-        "name": "装备镶嵌大姐",
+        "name": "Gem Inlayer Jin",
         "title": "Villager",
         "greeting": "我可以让你的装备上镶嵌宝石,让武器变的更加强大"
       },
       "pt_npc_3": {
-        "name": "理查杂货店",
+        "name": "Ricarten General Store",
         "title": "Villager",
         "greeting": "姐卖的不是药水，卖的是寂寞~~！"
       },
       "pt_npc_4": {
-        "name": "理查杂货店",
+        "name": "Ricarten General Store",
         "title": "Villager",
         "greeting": "姐卖的不是药水，卖的是寂寞~~！"
       },
       "pt_npc_acasia-store": {
-        "name": "杂货店",
+        "name": "General Store",
         "title": "Merchant",
         "greeting": "蘑菇洞穴在小树林的西部."
       },
       "pt_npc_at1": {
-        "name": "锻造工匠",
+        "name": "Forge Craftsman",
         "title": "Villager",
         "greeting": "是的,当时就是那样的"
       },
       "pt_npc_at10": {
-        "name": "高级坦普族商店",
+        "name": "Premium Tempskron Store",
         "title": "Merchant",
         "greeting": "长的真有创意，活的挺有勇气"
       },
       "pt_npc_at11": {
-        "name": "高级防具商店",
+        "name": "Premium Armor Store",
         "title": "Merchant",
         "greeting": "长的真有创意，活的挺有勇气"
       },
       "pt_npc_at12": {
-        "name": "装备深造大师",
+        "name": "Equipment Study Master",
         "title": "Villager",
         "greeting": "衣服护手鞋子盾可以深造防御吸收跟生命石头\n武器可以深造攻击命中跟生命石头，臂环可以深造命中跟生命石头"
       },
       "pt_npc_at13": {
-        "name": "道具组合工匠",
+        "name": "Item Synthesis Craftsman",
         "title": "Villager",
         "greeting": "收集好材料我可以帮你组合出道具"
       },
       "pt_npc_at2": {
-        "name": "合成工匠",
+        "name": "Synthesis Craftsman",
         "title": "Villager",
         "greeting": "是的,当时就是那样的"
       },
       "pt_npc_at3": {
-        "name": "力量导师",
+        "name": "Strength Trainer",
         "title": "Merchant",
         "greeting": "是的,当时就是那样的"
       },
       "pt_npc_at4": {
-        "name": "杂货店",
+        "name": "General Store",
         "title": "Merchant",
         "greeting": "城管不让摆滩卖药水,我只能撤柜了"
       },
       "pt_npc_at5": {
-        "name": "武器店老板",
+        "name": "Weapon Merchant",
         "title": "Merchant",
         "greeting": "是的,当时就是那样的"
       },
       "pt_npc_at6": {
-        "name": "仓库管理员",
+        "name": "Warehouse Keeper",
         "title": "Warehouse Keeper",
         "greeting": "是的,当时就是那样的"
       },
       "pt_npc_at7": {
-        "name": "魔法店老板娘",
+        "name": "Magic Shopkeeper",
         "title": "Merchant",
         "greeting": "是的,当时就是那样的"
       },
       "pt_npc_at8": {
-        "name": "大牢守卫",
+        "name": "Prison Guard",
         "title": "Villager",
         "greeting": "长的真有创意，活的挺有勇气"
       },
       "pt_npc_at9": {
-        "name": "高级魔灵族商店",
+        "name": "Premium Morion Store",
         "title": "Merchant",
         "greeting": "长的真有创意，活的挺有勇气"
       },
       "pt_npc_babelquest": {
-        "name": "装备恢复大师",
+        "name": "Item Restoration Master",
         "title": "Villager",
         "greeting": "合成好的东西可以直接来我这恢复成白的\n需要购买商城的恢复石"
       },
       "pt_npc_bastone": {
-        "name": "神秘商店",
+        "name": "Mysterious Store",
         "title": "Merchant",
         "greeting": "不求最好但求最贵\n这里的商品经常更新哦"
       },
       "pt_npc_bcn01": {
-        "name": "杂货店",
+        "name": "General Store",
         "title": "Merchant",
         "greeting": "您好!需要些什么?"
       },
       "pt_npc_bcn02": {
-        "name": "杂货店",
+        "name": "General Store",
         "title": "Merchant",
         "greeting": "您好!需要些什么?"
       },
       "pt_npc_bcn03": {
-        "name": "杂货店",
+        "name": "General Store",
         "title": "Merchant",
         "greeting": "您好!需要些什么?"
       },
       "pt_npc_bcn04": {
-        "name": "杂货店",
+        "name": "General Store",
         "title": "Merchant",
         "greeting": "您好!需要些什么?"
       },
       "pt_npc_bcn05": {
-        "name": "艾德斯",
+        "name": "Aides",
         "title": "Villager",
         "greeting": "嘿~"
       },
       "pt_npc_bcn06": {
-        "name": "沃克",
+        "name": "Walker",
         "title": "Warehouse Keeper",
         "greeting": "想要什么吗?"
       },
       "pt_npc_blesscatle-guard": {
-        "name": "祝福城守卫",
+        "name": "Bless Castle Guard",
         "title": "Villager",
         "greeting": "很多勇士为赢得胜利来到这里对抗，祝你们好运!\n祝你好运!"
       },
       "pt_npc_bridge-guard": {
-        "name": "大桥守卫",
+        "name": "Bridge Guard",
         "title": "Villager",
         "greeting": "待在这儿, 桥的对面很危险."
       },
       "pt_npc_bronzwolverin": {
-        "name": "铜狼",
+        "name": "Copper Wolf",
         "title": "Villager",
         "greeting": "...........\n哇呜呜"
       },
       "pt_npc_coward": {
-        "name": "流浪商人",
+        "name": "Wandering Merchant",
         "title": "Merchant",
         "greeting": "买了东西赶快走\n别让怪物发现我"
       },
       "pt_npc_crystal": {
-        "name": "收集怪物水晶任务",
+        "name": "Monster Crystal Collector",
         "title": "Event Guide",
         "greeting": "你收集到怪物水晶了吗?\n7种水晶分别是独角兽,魔兽兵,浮灵,刀斧手,魔剑士,火灵王,独角兽王"
       },
       "pt_npc_derik": {
-        "name": "二级爵士德克",
+        "name": "Knight Derik",
         "title": "Villager",
         "greeting": "我只是一个平凡的战士，不要太敬佩我."
       },
       "pt_npc_desert-guard": {
-        "name": "沙漠守卫",
+        "name": "Desert Guard",
         "title": "Villager",
         "greeting": "只有55级以上的战士才能通过."
       },
       "pt_npc_donation-box": {
-        "name": "特殊物品商店",
+        "name": "Special Item Store",
         "title": "Merchant",
         "greeting": "老天都感动得哭了.\n是的，当时就是这样."
       },
       "pt_npc_dungeon-keeper": {
-        "name": "地牢守卫",
+        "name": "Dungeon Guard",
         "title": "Merchant",
         "greeting": "独角兽王破坏了地牢的墙, 它躲在某个屋里, 它有什么打算?"
       },
       "pt_npc_eventgirl": {
-        "name": "祝福岛传送员",
+        "name": "Bless Island Teleporter",
         "title": "Teleporter",
         "greeting": "哈哈哈,我就是达蒙\n只有我能把你传送到祝福岛"
       },
       "pt_npc_flypitcher-store": {
-        "name": "杂货店",
+        "name": "General Store",
         "title": "Merchant",
         "greeting": "没人能进入树林西部的蜜蜂洞穴."
       },
       "pt_npc_fo-keeper01": {
-        "name": "远古森林守卫",
+        "name": "Ancient Forest Guard",
         "title": "Villager",
         "greeting": "前面是远古森林, 只有100级以上的战士才能进入, 里面有危险的怪物."
       },
       "pt_npc_fo-keeper02": {
-        "name": "远古废墟守卫",
+        "name": "Ancient Ruins Guard",
         "title": "Villager",
         "greeting": "前面是热沙栈道, 只有125级以上的战士才能进入, 据说很多战士都是有去无回的"
       },
       "pt_npc_fo-keeper03": {
-        "name": "远古平原守卫",
+        "name": "Ancient Plains Guard",
         "title": "Villager",
         "greeting": "前面是远古草地, 只有115级以上的战士才能进入, 怕死的赶快离开."
       },
       "pt_npc_fo-keeper04": {
-        "name": "地精实验室守卫",
+        "name": "Goblin Lab Guard",
         "title": "Villager",
         "greeting": "里面是地精实验室, 只有130级以上的战士才能进入, 怕死的赶快离开."
       },
       "pt_npc_fo-keeper05": {
-        "name": "矿洞研究所守卫",
+        "name": "Mine Research Lab Guard",
         "title": "Villager",
         "greeting": "里面是矿洞研究所, 只有135级以上的战士才能进入, 怕死的赶快离开."
       },
       "pt_npc_fo-keeper06": {
-        "name": "庞贝遗迹守卫",
+        "name": "Pompeii Ruins Guard",
         "title": "Villager",
         "greeting": "穿过这条狭长的通道就是130级精英地图庞贝遗迹."
       },
       "pt_npc_force-master": {
-        "name": "力量大师",
+        "name": "Force Master",
         "title": "Villager",
         "greeting": "今天起开始罢工,想要石头自己去鬼城或者龙洞去打"
       },
       "pt_npc_fury": {
-        "name": "狮面魔王",
+        "name": "Lion-Faced Demon King",
         "title": "Merchant",
         "greeting": "小子，我不喜欢你\n想要什么赶紧买,3分钟后比赛就开始了\n没人能击败我,哇哈哈"
       },
       "pt_npc_goldenwolverin": {
-        "name": "金狼",
+        "name": "Golden Wolf",
         "title": "Villager",
         "greeting": "咕噜噜\n........."
       },
       "pt_npc_hair": {
-        "name": "石头商店",
+        "name": "Stone Store",
         "title": "Merchant",
         "greeting": "各类石头出售,价格公道!"
       },
       "pt_npc_hair1": {
-        "name": "人鱼染发师",
+        "name": "Mermaid Stylist Marina",
         "title": "Merchant",
         "greeting": "出售各类精美发型!"
       },
       "pt_npc_hosean": {
-        "name": "豪森安",
+        "name": "Hosean",
         "title": "Villager",
         "greeting": "你能找到我说明你很有资质"
       },
       "pt_npc_itempost": {
-        "name": "装备发放员",
+        "name": "Equipment Distributor",
         "title": "Villager",
         "greeting": "想要装备你就说啊，你不说我怎么知道你要呢？难道你真的要？你不会是真的要吧？\n如果领不到装备请重新登陆下"
       },
       "pt_npc_ji_woo": {
-        "name": "新手向导",
+        "name": "Novice Guide Jiwoo",
         "title": "Merchant",
         "greeting": "第一次玩直接在我这买些神秘水晶,买些回程卷,买个新手石头,武器商人那有免费的武器购买!\n到了20级,40级,60级不要接转职任务直接买转职书转职"
       },
       "pt_npc_minestone": {
-        "name": "冰封矿洞杂货店",
+        "name": "Frozen Mine Store",
         "title": "Merchant",
         "greeting": "我在幽拉矿洞迷路了,你可以帮助我吗?"
       },
       "pt_npc_mn-013": {
-        "name": "祝福传送员",
+        "name": "Bless Teleporter",
         "title": "Teleporter",
         "greeting": "我将会把您移动到卡特尔战场.祝你好运!"
       },
       "pt_npc_mrcave-keeper": {
-        "name": "洞穴守卫",
+        "name": "Cave Guard",
         "title": "Villager",
         "greeting": "即使你达到了55级，但不要太自信了，这里可不是沙漠那么容易呆的"
       },
       "pt_npc_navisko-civilian2": {
-        "name": "居民米诺",
+        "name": "Villager Mino",
         "title": "Villager",
         "greeting": "听说晚上这里闹鬼,你害怕吗"
       },
       "pt_npc_navisko-dragoman": {
-        "name": "内维斯克导游",
+        "name": "Navisko Guide",
         "title": "Villager",
         "greeting": "好啊，远到而来的勇士！"
       },
       "pt_npc_navisko-equip": {
-        "name": "铁匠默菲",
+        "name": "Blacksmith Murphy",
         "title": "Merchant",
         "greeting": "新进的货物,看看吧~!"
       },
       "pt_npc_navisko-store": {
-        "name": "杂货店",
+        "name": "General Store",
         "title": "Merchant",
         "greeting": "想要买吗?这里很便宜哦~"
       },
       "pt_npc_nevisko-magic": {
-        "name": "魔法商店",
+        "name": "Magic Store",
         "title": "Merchant",
         "greeting": "俺是实在人......"
       },
       "pt_npc_npc_ninefox": {
-        "name": "普雷娅",
+        "name": "Preya",
         "title": "Event Guide",
         "greeting": "我千辛万苦来寻找一副护身符\n他是一个怪物，但是我们彼此都深深相爱\n那副护身符时我们爱的印证，并且我永远不会忘记谁盗取了那副护身符"
       },
       "pt_npc_phillay-arad": {
-        "name": "矿石合并大师",
+        "name": "Ore Master Arad",
         "title": "Villager",
         "greeting": "圣诞快乐\n矿石碎片可以来我这合并"
       },
       "pt_npc_phillay-civilian1": {
-        "name": "莫利奶奶",
+        "name": "Grandma Molly",
         "title": "Villager",
         "greeting": "我想吃糖, 你有吗?"
       },
       "pt_npc_phillay-civilian2": {
-        "name": "蘑菇洞穴传送大师",
+        "name": "Mushroom Cave Teleporter",
         "title": "Teleporter",
         "greeting": "我能把你传送到任何地方.\n我叫纽特."
       },
       "pt_npc_phillay-dragoman1": {
-        "name": "菲尔拉导游",
+        "name": "Pillai Guide",
         "title": "Villager",
         "greeting": "见到你很开心"
       },
       "pt_npc_phillay-equip1": {
-        "name": "铁匠巴特兹",
+        "name": "Blacksmith Bartz",
         "title": "Merchant",
         "greeting": "新进的货物,来看一看吧~!"
       },
       "pt_npc_phillay-equip2": {
-        "name": "铁匠德弗里安",
+        "name": "Blacksmith Devrian",
         "title": "Merchant",
         "greeting": "你好,有什么需要的吗?"
       },
       "pt_npc_phillay-guard1": {
-        "name": "菲尔拉守卫",
+        "name": "Pillai Guard",
         "title": "Villager",
         "greeting": "请小心\n祝你好运"
       },
       "pt_npc_phillay-guard3": {
-        "name": "装备恢复大师",
+        "name": "Item Restoration Master",
         "title": "Villager",
         "greeting": "合成好的东西可以直接来我这恢复成白的\n需要购买商城的恢复石"
       },
       "pt_npc_phillay-imbue": {
-        "name": "装备锻造工匠",
+        "name": "Forge Craftsman",
         "title": "Villager",
         "greeting": "锻造可是风险与收益并存"
       },
       "pt_npc_phillay-magic": {
-        "name": "魔法商店",
+        "name": "Magic Store",
         "title": "Merchant",
         "greeting": "魔灵族的魔法物品......"
       },
       "pt_npc_phillay-master": {
-        "name": "魔法导师",
+        "name": "Magic Mentor",
         "title": "Skill Master",
         "greeting": "我会带领你领悟魔法的奥秘的，追随我吧"
       },
       "pt_npc_phillay-quest": {
-        "name": "任务物品专卖",
+        "name": "Quest Item Dealer",
         "title": "Merchant",
         "greeting": "注意,任务物品需要什么买什么千万不要多买！ \n请仔细查看需要什么物品，多买的任务物品请到商店卖掉"
       },
       "pt_npc_phillay-store": {
-        "name": "杂货店",
+        "name": "General Store",
         "title": "Merchant",
         "greeting": "想买些什么呢?"
       },
       "pt_npc_phillay-warehouse": {
-        "name": "仓库管理员",
+        "name": "Warehouse Keeper",
         "title": "Warehouse Keeper",
         "greeting": "有好东西尽管来放"
       },
       "pt_npc_puzzleking": {
-        "name": "拼图碎片任务",
+        "name": "Puzzle Master",
         "title": "Event Guide",
         "greeting": "集齐后请拼好再找我换东西哦\n找到8块拼图碎片后交给我吧,我会给你好东西"
       },
       "pt_npc_qiegao-store": {
-        "name": "属性重置商店",
+        "name": "Stat Reset Store",
         "title": "Merchant",
         "greeting": "想找到莫利亚吗?"
       },
       "pt_npc_ray": {
-        "name": "皇家法师雷蒙",
+        "name": "Royal Mage Raymond",
         "title": "Villager",
         "greeting": "等你觉得实力够了再来找我"
       },
       "pt_npc_real_clanmaster": {
-        "name": "公会管理员",
+        "name": "Clan Master",
         "title": "Clan Master",
         "greeting": "你的修炼要到一定程度才能建立工会\n这需要一定的费用哦"
       },
       "pt_npc_reddevil": {
-        "name": "合成大师",
+        "name": "Synthesis Master",
         "title": "Villager",
         "greeting": "运气需要看人品的~\n有深造石可以来我着深造装备"
       },
       "pt_npc_reddevil-01": {
-        "name": "装备锻造工匠",
+        "name": "Forge Craftsman",
         "title": "Villager",
         "greeting": "锻造可是风险与收益并存"
       },
       "pt_npc_ricarden-civilian1": {
-        "name": "竞技场传送员",
+        "name": "Arena Teleporter",
         "title": "Villager",
         "greeting": "我能将你传送至死亡竞技场,但是你得给我钱\n竞技场大门将在每天晚上的9点开启\n只有活着出来的人才能获得最高的奖励哦"
       },
       "pt_npc_ricarden-equip1": {
-        "name": "铁匠古登",
+        "name": "Blacksmith Guden",
         "title": "Merchant",
         "greeting": "随便看看吧~!初学者还是要的~!"
       },
       "pt_npc_ricarden-equip2": {
-        "name": "铁匠格斯",
+        "name": "Blacksmith Gus",
         "title": "Merchant",
         "greeting": "随便看看吧~!初学者还是要的~!"
       },
       "pt_npc_ricarden-guard": {
-        "name": "装备熔炼师",
+        "name": "Equipment Smelter",
         "title": "Villager",
         "greeting": "用过的100级以上特效装备直接交给我\n我可以帮你提炼道具,你只需要支付一点费用"
       },
       "pt_npc_ricarden-guard1": {
-        "name": "里查登守卫",
+        "name": "Ricarten Guard",
         "title": "Villager",
         "greeting": "行人们都喜欢来这里休息"
       },
       "pt_npc_ricarden-guard2": {
-        "name": "里查登守卫",
+        "name": "Ricarten Guard",
         "title": "Villager",
         "greeting": "我誓死守卫这里"
       },
       "pt_npc_ricarden-imbue": {
-        "name": "合成大师",
+        "name": "Synthesis Master",
         "title": "Villager",
         "greeting": "运气需要看人品的~\n有深造石可以来我着深造装备"
       },
       "pt_npc_ricarden-master": {
-        "name": "技能导师",
+        "name": "Skill Master",
         "title": "Skill Master",
         "greeting": "我喜欢收徒弟，但你要有天赋"
       },
       "pt_npc_ricarden-quest": {
-        "name": "任务物品专卖",
+        "name": "Quest Item Dealer",
         "title": "Merchant",
         "greeting": "注意,任务物品需要什么买什么千万不要多买！ \n请仔细查看需要什么物品，多买的任务物品请到商店卖掉"
       },
       "pt_npc_ricarden-ser": {
-        "name": "装备附魔大师",
+        "name": "Enchantment Master",
         "title": "Villager",
         "greeting": "我可以给你的武器附魔,你需要给我相应的材料就行\n左边放武器,右边放风魔石,中间放相应附魔石\n冰属性带减速效果,雷属性带眩晕效果,火属性带持续伤害"
       },
       "pt_npc_ricarden-store": {
-        "name": "理查杂货店",
+        "name": "Ricarten General Store",
         "title": "Villager",
         "greeting": "姐卖的不是药水，卖的是寂寞~~！"
       },
       "pt_npc_ricarden-tan": {
-        "name": "翅膀附魂大师",
+        "name": "Wing Ascension Master",
         "title": "Villager",
         "greeting": "我可以给你的翅膀附加特殊属性"
       },
       "pt_npc_ricarden-warehouse": {
-        "name": "仓库管理员",
+        "name": "Warehouse Keeper",
         "title": "Warehouse Keeper",
         "greeting": "从明天开始要收保管费了."
       },
       "pt_npc_ruiden-civilian1": {
-        "name": "流浪者罗斯",
+        "name": "Wanderer Ross",
         "title": "Villager",
         "greeting": "......"
       },
       "pt_npc_ruiden-equip": {
-        "name": "铁匠鲁加",
+        "name": "Blacksmith Luga",
         "title": "Merchant",
         "greeting": "有什么需要的吗?"
       },
       "pt_npc_ruiden-magic": {
-        "name": "魔法商店",
+        "name": "Magic Store",
         "title": "Merchant",
         "greeting": "要帮忙么?别小看我"
       },
       "pt_npc_ruiden-store": {
-        "name": "杂货店",
+        "name": "General Store",
         "title": "Merchant",
         "greeting": "这里可是补给的中转站呀~!"
       },
       "pt_npc_salon": {
-        "name": "装备制炼大师",
+        "name": "Master Craftsman Sarana",
         "title": "Villager",
         "greeting": "嗨~!你好,我叫萨拉娜，我能帮你做什么呢?\n我是热心的人,你需要什么尽管开口~!"
       },
       "pt_npc_sanc-guard": {
-        "name": "火龙洞穴守卫",
+        "name": "Fire Dragon Cave Guard",
         "title": "Villager",
         "greeting": "里面的怪物很危险，怕死的赶快离开\n没有人能活着出去"
       },
       "pt_npc_sillverwolverin": {
-        "name": "银狼",
+        "name": "Silver Wolf",
         "title": "Villager",
         "greeting": "......\n啊呼呼"
       },
       "pt_npc_sod_01": {
-        "name": "火之精灵卡莎",
+        "name": "Fire Spirit Kasha",
         "title": "Event Guide",
         "greeting": "愿火的力量、勇气与你同在\"1\n试炼塔的运营权由 'XXX' 所有\"2\n你来晚了,比赛正在进行\"3\n愿火的力量、勇气与你同在\"4\n你看起来也很强\"5\n现在不能进入\"3\n每天的收益将用于竞技场的维修\"4\n进入竞技场需要支付费用\"5\n愿火的力量、勇气与你同在"
       },
       "pt_npc_sod_02": {
-        "name": "水之精灵艾丽尔",
+        "name": "Water Spirit Ariel",
         "title": "Event Guide",
         "greeting": "愿水的力量、智慧、美丽与你同在\"1\n试炼塔的运营权由 'XXX' 所有\"2\n你来晚了,比赛正在进行\"3\n愿水的力量、智慧、美丽与你同在\"4\n你看起来也很强\"5\n现在不能进入\"3\n每天的收益将用于竞技场的维修\"4\n进入竞技场需要支付费用\"5\n愿水的力量、智慧、美丽与你同在"
       },
       "pt_npc_sod_03": {
-        "name": "风之精灵赛尔菲",
+        "name": "Wind Spirit Sylphy",
         "title": "Event Guide",
         "greeting": "我祈求自由之风追随着你\"1\n试炼塔的运营权由 'XXX' 所有\"2\n你来晚了,比赛正在进行\"3\n我祈求自由之风追随着你\"4\n你看起来也很强\"5\n现在不能进入\"3\n每天的收益将用于竞技场的维修\"4\n进入竞技场需要支付费用\"5\n我祈求自由之风追随着你"
       },
       "pt_npc_sod_04": {
-        "name": "地之精灵诺雅丝",
+        "name": "Earth Spirit Noas",
         "title": "Event Guide",
         "greeting": "我希望大地上财富和爱可以充满着你的生活\"1\n试炼塔的运营权由 'XXX' 所有\"2\n你来晚了,比赛正在进行\"3\n我希望大地上财富和爱可以充满着你的生活\"4\n你看起来也很强\"5\n现在不能进入\"3\n每天的收益将用于竞技场的维修\"4\n进入竞技场需要支付费用\"5\n我希望大地上财富和爱可以充满着你的生活"
       },
       "pt_npc_sod_05": {
-        "name": "秘书卡丽纳",
+        "name": "Secretary Karina",
         "title": "Event Guide",
         "greeting": "我会帮助你管理公会的运营\n你好，我能为你做些什么吗？我的名字是卡丽娜，我管理贝拉塔的管理方面\n你可以查看,获取你得到的收益\n祝福城堡的胜利者将得到运营权,给公会带来收益"
       },
       "pt_npc_templer": {
-        "name": "殿堂法师",
+        "name": "Temple Mage",
         "title": "Villager",
         "greeting": "勇士，欢迎来到这里"
       },
       "pt_npc_tmcave-keeper": {
-        "name": "洞穴守卫",
+        "name": "Cave Guard",
         "title": "Villager",
         "greeting": "这里是蜜蜂洞穴, 只有55级以上的战士才能进入, 里面有危险的怪物."
       },
       "pt_npc_town-dragoman": {
-        "name": "精英地图守卫",
+        "name": "Elite Map Guard",
         "title": "Villager",
         "greeting": "好啊，远到而来的勇士！城外怪物很猛，不到80级别出去"
       },
       "pt_npc_wfzone": {
-        "name": "传送点发明人",
+        "name": "Teleport Inventor",
         "title": "Villager",
         "greeting": "你需要一个羽翼才能去你想去的地方.\n给我带来我要的东西,我会给你一个很好的羽翼."
       },
       "pt_npc_yura-force-master": {
-        "name": "力量大师",
+        "name": "Force Master",
         "title": "Villager",
         "greeting": "我能激发石头中的力量，只要你给我石头."
       },
       "pt_npc_yura-guard": {
-        "name": "幽拉大陆守卫",
+        "name": "Eura Guard",
         "title": "Villager",
         "greeting": "这里的怪物你也应该知道吧，知难而退还不迟."
       },
       "pt_npc_yura-guard1": {
-        "name": "幽拉大陆守卫",
+        "name": "Eura Guard",
         "title": "Villager",
         "greeting": "这里非常危险~!"
       },
       "pt_npc_yura-guard2": {
-        "name": "铁路守卫",
+        "name": "Railway Guard",
         "title": "Villager",
         "greeting": "只有85级以上的战士才能通过"
       },
       "pt_npc_yura-store": {
-        "name": "杂货店",
+        "name": "General Store",
         "title": "Merchant",
         "greeting": "我们需要勇士来保护我们的城镇!"
       },
       "pt_npc_yura-warehouse": {
-        "name": "幽拉仓库管理员",
+        "name": "Eura Warehouse Keeper",
         "title": "Warehouse Keeper",
         "greeting": "我真担心储存的物品会被这刺骨的天气给冻住了."
       },
