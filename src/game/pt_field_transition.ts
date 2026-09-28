@@ -33,6 +33,10 @@ import { getPtFieldDisplayName } from '../sim/content/pt_field_names';
 // with the sim's PT population scheduler (src/sim/pt_population.ts) so the
 // active field can spawn ordinary monsters (Phase 6H-2).
 import './pt_population_data';
+// Side-effect import: registers the generated per-field fixed-NPC modules
+// (npcs.generated.ts) with the sim's PT NPC spawner (src/sim/pt_npcs.ts) so
+// an active field session places its authored NPCs (O5).
+import './pt_npc_data';
 
 export type PtFieldViewState = 'none' | 'building' | 'compiling' | 'ready' | 'failed';
 

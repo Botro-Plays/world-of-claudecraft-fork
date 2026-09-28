@@ -1,0 +1,791 @@
+{
+  "fields": {
+    "ad1": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "ad2": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "ad3": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "ancientw": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "ba1": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "ba2": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "ba3": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "ba4": {
+      "status": "placed",
+      "npcs": 3,
+      "unresolved": []
+    },
+    "boss": {
+      "status": "placed",
+      "npcs": 1,
+      "unresolved": []
+    },
+    "castle": {
+      "status": "placed",
+      "npcs": 7,
+      "unresolved": []
+    },
+    "crystalnest": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "dc1": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "dcave": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "de-1": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "de-2": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "de-3": {
+      "status": "placed",
+      "npcs": 1,
+      "unresolved": []
+    },
+    "de-4": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "dun-1": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "dun-2": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "dun-3": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "dun-4": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "dun-5": {
+      "status": "placed",
+      "npcs": 1,
+      "unresolved": []
+    },
+    "dun-6": {
+      "status": "placed",
+      "npcs": 1,
+      "unresolved": []
+    },
+    "dun-7": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "dun-8": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "dun-9": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "fall-game": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "fo1": {
+      "status": "placed",
+      "npcs": 2,
+      "unresolved": []
+    },
+    "fo2": {
+      "status": "placed",
+      "npcs": 1,
+      "unresolved": []
+    },
+    "fo3": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "fore-1": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "fore-2": {
+      "status": "placed",
+      "npcs": 1,
+      "unresolved": []
+    },
+    "fore-3": {
+      "status": "placed",
+      "npcs": 2,
+      "unresolved": []
+    },
+    "forever-fall-01": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "forever-fall-02": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "forever-fall-03": {
+      "status": "placed",
+      "npcs": 2,
+      "unresolved": []
+    },
+    "forever-fall-04": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "greedy": {
+      "status": "placed",
+      "npcs": 1,
+      "unresolved": []
+    },
+    "heartoffire": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "ice-ura": {
+      "status": "placed",
+      "npcs": 4,
+      "unresolved": []
+    },
+    "ice1": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "ice2": {
+      "status": "placed",
+      "npcs": 1,
+      "unresolved": []
+    },
+    "ice3": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "iron-1": {
+      "status": "placed",
+      "npcs": 1,
+      "unresolved": []
+    },
+    "iron-2": {
+      "status": "placed",
+      "npcs": 1,
+      "unresolved": []
+    },
+    "iron3": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "iron4": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "landofnurwn": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "lost": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "lost3": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "losttemple": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "mcave": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "mine-1": {
+      "status": "placed",
+      "npcs": 1,
+      "unresolved": []
+    },
+    "office": {
+      "status": "placed",
+      "npcs": 12,
+      "unresolved": []
+    },
+    "pilai": {
+      "status": "placed",
+      "npcs": 27,
+      "unresolved": []
+    },
+    "quest-iv": {
+      "status": "empty",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "ricarten": {
+      "status": "placed",
+      "npcs": 48,
+      "unresolved": []
+    },
+    "ruin-1": {
+      "status": "placed",
+      "npcs": 1,
+      "unresolved": []
+    },
+    "ruin-2": {
+      "status": "placed",
+      "npcs": 4,
+      "unresolved": []
+    },
+    "ruin-3": {
+      "status": "placed",
+      "npcs": 1,
+      "unresolved": []
+    },
+    "ruin-4": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "sanc1": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "sanc2": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "seaa": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "slab": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "sod-1": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "sod-2": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "tcave": {
+      "status": "no-source",
+      "npcs": 0,
+      "unresolved": []
+    },
+    "town1": {
+      "status": "placed",
+      "npcs": 17,
+      "unresolved": []
+    },
+    "village-1": {
+      "status": "placed",
+      "npcs": 12,
+      "unresolved": []
+    }
+  },
+  "totals": {
+    "fields": 70,
+    "placed": 25,
+    "npcs": 153,
+    "defs": 115,
+    "items": 1902
+  },
+  "stagedGlbs": [
+    {
+      "file": "Ascam.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Bcn01.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Bcn02.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Bcn02.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Bcn03.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Bcn03.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Bcn04.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Bcn05.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Bcn06.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Derik.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Derik.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Hosean.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Hunter.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "IceN-01.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "IceN-02.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "IceN-02.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "IceN-03.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Jin.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Jin.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-001.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-002.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-002.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-002.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-003.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-004.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-005.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-005.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-005.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-006.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-006.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-007.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-007.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-008.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-008.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-008.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-009.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-010.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-012.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-012.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-013.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-013.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MN-013.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "M_Messenger.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Marina.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "MonWolverin.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\monster"
+    },
+    {
+      "file": "MonWolverin.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\monster"
+    },
+    {
+      "file": "MonWolverin.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\monster"
+    },
+    {
+      "file": "Monfury.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\monster"
+    },
+    {
+      "file": "NineFox.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "PCmanager.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Quest_ray.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "SN-001.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "SN-002.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "SN-003.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "SN-004.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "SN-005.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Sambagirl.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Skadi.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-001.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-001.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-001.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-001.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-001.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-002.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-002.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-002.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-002.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-002.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-002.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-002.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-002.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-002.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-002.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-002.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-003.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-003.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-004.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-004.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-005.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-005.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-005.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-005.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-005.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-005.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-006.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-006.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-007.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-008.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-008.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-010.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-011.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-012.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-012.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-014.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-015.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-016.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "TN-017.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "T_Messenger.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "T_Messenger.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Teacher.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Teacher.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "Teacher.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "arad.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "dailyquest.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "ji_woo.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "salon.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    },
+    {
+      "file": "stella.glb",
+      "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    }
+  ]
+}

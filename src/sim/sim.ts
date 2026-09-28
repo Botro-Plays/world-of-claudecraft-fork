@@ -631,13 +631,14 @@ import { advancePendingProjectiles, type PendingProjectile } from './projectile_
 import { isPtPos } from './pt_band';
 import { ptFieldIdAt, withPtFieldScope } from './pt_field_active';
 import { assignPtField, tickPtFieldSessions } from './pt_field_sessions';
-import {
-  requestPtTransition,
-  updatePtTransitions,
-  type PtTransitionOutcome,
-} from './pt_transitions';
+import { ptNpcTick } from './pt_npcs';
 import { ptPopulationTick } from './pt_population';
 import { ptStartPosForClass } from './pt_start';
+import {
+  type PtTransitionOutcome,
+  requestPtTransition,
+  updatePtTransitions,
+} from './pt_transitions';
 import * as honorMod from './pvp';
 // By path, not through the pvp barrel: see the comment in src/sim/pvp/index.ts.
 import {
@@ -2885,8 +2886,7 @@ export class Sim {
     // field; resolve the saved position's floor against THAT field's
     // geometry (identity-scoped dispatch), not the positional claimant -
     // the two disagree everywhere a footprint overlaps the continent.
-    const savedPtField =
-      typeof savedState?.ptField === 'string' ? savedState.ptField : undefined;
+    const savedPtField = typeof savedState?.ptField === 'string' ? savedState.ptField : undefined;
     const startPos = savedPos
       ? withPtFieldScope(savedPtField, () => this.groundPos(savedPos.x, savedPos.z))
       : this.groundPos(playerStart.x, playerStart.z);
@@ -2916,7 +2916,7 @@ export class Sim {
       assignPtField(
         this.ctx,
         player,
-        savedPtField ?? (ptFieldIdAt(startPos.x, startPos.z) ?? undefined),
+        savedPtField ?? ptFieldIdAt(startPos.x, startPos.z) ?? undefined,
       );
     }
     if (opts?.appearance) player.modularAppearance = opts.appearance;
@@ -4109,9 +4109,7 @@ export class Sim {
     // crossings); a pre-tracker or descriptor-host entity re-resolves from
     // bounds. Omitted for non-PT positions and PT positions inside no known
     // field, so untouched saves stay byte-equal.
-    const ptField = isPtPos(e.pos.x)
-      ? (e.ptField ?? ptFieldIdAt(e.pos.x, e.pos.z))
-      : null;
+    const ptField = isPtPos(e.pos.x) ? (e.ptField ?? ptFieldIdAt(e.pos.x, e.pos.z)) : null;
     const state: CharacterState = {
       contentRevision: CURRENT_CHARACTER_CONTENT_REVISION,
       level: restore ? restore.level : e.level,
@@ -6199,6 +6197,10 @@ export class Sim {
     // registered or no session owns the field.
     ptPopulationTick(this.ctx, MOBS);
     lap?.('ptPopulation');
+    // PT fixed NPCs (O5): session-owned .spc placement, spawn-once per
+    // active field, released on drain (pt_npcs.ts). No-ops where no npc
+    // module is registered or no session owns the field.
+    ptNpcTick(this.ctx);
     // Step in-flight projectiles toward their live targets before this tick's casts and
     // swings, so a homing bolt resolves on a fixed, deterministic phase boundary.
     advancePendingProjectiles(this.ctx);

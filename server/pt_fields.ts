@@ -38,25 +38,25 @@
 // Generated modules are pure data (host-agnostic atob decode), so bundling
 // them into the server is safe.
 
-import * as FORE1_FIELD from '../generated/pt-maps/fore-1/field.generated';
-import * as FORE2_FIELD from '../generated/pt-maps/fore-2/field.generated';
-import * as FORE3_FIELD from '../generated/pt-maps/fore-3/field.generated';
-import * as RUIN4_FIELD from '../generated/pt-maps/ruin-4/field.generated';
-import * as FF01_FIELD from '../generated/pt-maps/forever-fall-01/field.generated';
-import * as FF02_FIELD from '../generated/pt-maps/forever-fall-02/field.generated';
-import * as FF03_FIELD from '../generated/pt-maps/forever-fall-03/field.generated';
-import * as FO1_FIELD from '../generated/pt-maps/fo1/field.generated';
-import * as BA4_FIELD from '../generated/pt-maps/ba4/field.generated';
-import * as TCIVE_FIELD from '../generated/pt-maps/tcave/field.generated';
-import * as MCIVE_FIELD from '../generated/pt-maps/mcave/field.generated';
-import * as DCIVE_FIELD from '../generated/pt-maps/dcave/field.generated';
-import * as DC1_FIELD from '../generated/pt-maps/dc1/field.generated';
-import * as LOST3_FIELD from '../generated/pt-maps/lost3/field.generated';
-import * as ICE3_FIELD from '../generated/pt-maps/ice3/field.generated';
 import * as AD1_FIELD from '../generated/pt-maps/ad1/field.generated';
 import * as AD2_FIELD from '../generated/pt-maps/ad2/field.generated';
 import * as AD3_FIELD from '../generated/pt-maps/ad3/field.generated';
+import * as BA4_FIELD from '../generated/pt-maps/ba4/field.generated';
+import * as DC1_FIELD from '../generated/pt-maps/dc1/field.generated';
+import * as DCIVE_FIELD from '../generated/pt-maps/dcave/field.generated';
+import * as FO1_FIELD from '../generated/pt-maps/fo1/field.generated';
+import * as FORE1_FIELD from '../generated/pt-maps/fore-1/field.generated';
+import * as FORE2_FIELD from '../generated/pt-maps/fore-2/field.generated';
+import * as FORE3_FIELD from '../generated/pt-maps/fore-3/field.generated';
+import * as FF01_FIELD from '../generated/pt-maps/forever-fall-01/field.generated';
+import * as FF02_FIELD from '../generated/pt-maps/forever-fall-02/field.generated';
+import * as FF03_FIELD from '../generated/pt-maps/forever-fall-03/field.generated';
+import * as ICE3_FIELD from '../generated/pt-maps/ice3/field.generated';
+import * as LOST3_FIELD from '../generated/pt-maps/lost3/field.generated';
+import * as MCIVE_FIELD from '../generated/pt-maps/mcave/field.generated';
 import * as MINE1_FIELD from '../generated/pt-maps/mine-1/field.generated';
+import * as RUIN4_FIELD from '../generated/pt-maps/ruin-4/field.generated';
+import * as TCIVE_FIELD from '../generated/pt-maps/tcave/field.generated';
 import { registerPtStaticField } from '../src/sim/pt_field_active';
 
 // Side effects, order-pinned: the graph first (identity/bounds resolution),
@@ -91,3 +91,7 @@ registerPtStaticField(MINE1_FIELD, 'mine-1');
 // Field-population modules for the same closure (O4): the scheduler runs
 // per active field session inside the sim (src/sim/pt_population.ts).
 import './pt_populations';
+// Side-effect import: registers the generated per-field fixed-NPC modules
+// (generated/pt-maps/<id>/npcs.generated.ts) with the sim's PT NPC spawner
+// (src/sim/pt_npcs.ts) for the same geometry closure (O5).
+import './pt_npcs';

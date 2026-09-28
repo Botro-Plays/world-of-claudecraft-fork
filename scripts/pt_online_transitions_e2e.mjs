@@ -27,7 +27,7 @@ fs.mkdirSync('tmp', { recursive: true });
 
 const PHASES = (
   process.env.PHASES ??
-  'fieldgate,reverse,multihop,warp,se1,reconnect,duo,sessions,island,population'
+  'fieldgate,reverse,multihop,warp,se1,reconnect,duo,sessions,island,population,npcs'
 )
   .split(',')
   .map((s) => s.trim());
@@ -165,6 +165,20 @@ async function enterWorld(page, bootMs = 180000) {
               y: e.pos.y,
               z: e.pos.z,
               dead: e.dead === true,
+            })),
+          // Server-placed .spc NPCs in this client's world; vendorItems are
+          // resolved client-side from NPCS[templateId] (online.ts).
+          npcs: [...(w?.entities?.values() ?? [])]
+            .filter((e) => e.kind === 'npc')
+            .map((e) => ({
+              id: e.id,
+              t: e.templateId,
+              name: e.name,
+              x: e.pos.x,
+              y: e.pos.y,
+              z: e.pos.z,
+              facing: e.facing ?? 0,
+              vendor: e.vendorItems?.length ?? 0,
             })),
         };
       },
@@ -1066,6 +1080,179 @@ if (PHASES.includes('population')) {
       { x: spawn?.s?.x ?? 0, z: spawn?.s?.z ?? 0 },
     )
     .catch(() => {});
+}
+
+if (PHASES.includes('npcs')) {
+  console.log('\n=== K. O5 fixed NPC placement (server-authoritative) ===');
+  // Placement records are parsed from the pinned generated modules (the same
+  // data the server spawner consumes - never client-invented numbers).
+  const npcRecords = (fieldId) => {
+    const src = fs.readFileSync(`generated/pt-maps/${fieldId}/npcs.generated.ts`, 'utf8');
+    return [
+      ...src.matchAll(
+        /\{\s*slot:\s*(\d+),\s*def:\s*"([^"]+)"[^}]*?x:\s*(-?[\d.]+),\s*y:\s*(-?[\d.]+),\s*z:\s*(-?[\d.]+),\s*ay:\s*(-?[\d.]+)/gs,
+      ),
+    ].map((m) => ({ slot: +m[1], def: m[2], x: +m[3], y: +m[4], z: +m[5], ay: +m[6] }));
+  };
+  const ptNpcs = (s) => (s?.npcs ?? []).filter((n) => n.t?.startsWith('pt_npc_'));
+
+  // A) ricarten: sweep every authored record's spot (NPC_INTEREST_RADIUS=120
+  //    only streams nearby NPCs into the snapshot) and union the delivered
+  //    entity ids - the union must equal the full authored set, every entity
+  //    must stand on its record's transformed x/z, and no invented npc may
+  //    appear.
+  const ric = npcRecords('ricarten');
+  await page.evaluate(
+    (p) => window.__pto.teleport(p.x, p.z, 'ricarten'),
+    { x: spawn?.s?.x ?? 0, z: spawn?.s?.z ?? 0 },
+  );
+  await poll(page, (s) => s.ptf === 'ricarten', 30000);
+  const seenById = new Map();
+  const placedRecords = new Set();
+  for (const rec of ric) {
+    const wx = ptXToWoC(rec.x);
+    const wz = ptZToWoC(rec.z);
+    const tpl = `pt_npc_${rec.def}`;
+    await page.evaluate(
+      (p) => window.__pto.teleport(p.x, p.z, 'ricarten'),
+      { x: wx, z: wz },
+    );
+    // Wait for the near-window snapshot to actually deliver this record's
+    // entity: ptf stays 'ricarten' across hops, so an immediate read can
+    // still carry the pre-teleport interest set.
+    const r = await poll(
+      page,
+      (s) =>
+        s.ptf === 'ricarten' &&
+        s.npcs.some(
+          (n) => n.t === tpl && Math.abs(n.x - wx) < 1 && Math.abs(n.z - wz) < 1,
+        ),
+      4000,
+    );
+    for (const n of ptNpcs(r.s)) seenById.set(n.id, n);
+    if (
+      ptNpcs(r.s).some(
+        (n) => n.t === tpl && Math.abs(n.x - wx) < 1 && Math.abs(n.z - wz) < 1,
+      )
+    ) {
+      placedRecords.add(rec.slot);
+    }
+  }
+  const seen = [...seenById.values()];
+  check(
+    'ricarten realm places the authored .spc npc set',
+    seen.length === ric.length,
+    `seen=${seen.length} authored=${ric.length}`,
+  );
+  check(
+    'every authored record has an entity on its transformed spot',
+    placedRecords.size === ric.length,
+    `placed=${placedRecords.size}/${ric.length}`,
+  );
+  if (placedRecords.size !== ric.length) {
+    const missing = ric
+      .filter((r) => !placedRecords.has(r.slot))
+      .map(
+        (r) =>
+          `${r.def}#${r.slot}@(${ptXToWoC(r.x).toFixed(1)},${ptZToWoC(r.z).toFixed(1)})`,
+      );
+    console.log(`  missing: ${missing.join(', ')}`);
+  }
+  if (seen.length === ric.length) {
+    // ricarden-equip1's .NPC *武器出售 + *防具出售 stock resolves client-side
+    // into real vendor rows through NPCS[templateId].vendorItems.
+    const npc = seen.find((n) => n.t === 'pt_npc_ricarden-equip1');
+    check('ricarden-equip1 npc entity exists', !!npc);
+    if (npc) {
+      check(
+        'ricarden-equip1 vendorItems resolve to real stock',
+        npc.vendor > 0,
+        `vendorItems=${npc.vendor}`,
+      );
+    }
+    const warehouse = seen.find((n) => n.t === 'pt_npc_ricarden-warehouse');
+    check('ricarten warehouse (*物品保管) npc placed', !!warehouse);
+    await page.screenshot({ path: 'tmp/ptonline_npcs_ricarten.png' });
+
+    // B) second viewer: in fore-2 sees that field's npc and NONE of
+    //    ricarten's; once moved into ricarten sees the SAME ids.
+    const ctxQ = await browser.createBrowserContext();
+    const pageQ = await ctxQ.newPage();
+    wirePage(pageQ, '(Q)');
+    const accountQ = await makeAccount('q');
+    await pageQ.goto(`${BASE}/`, { waitUntil: 'domcontentloaded', timeout: 120000 });
+    await pageQ.evaluate(
+      (sess, realm) => {
+        localStorage.setItem('woc_session', JSON.stringify(sess));
+        localStorage.setItem('woc_last_realm', realm);
+      },
+      { token: accountQ.token, username: accountQ.username },
+      REALM,
+    );
+    const inQ = await enterWorld(pageQ, 360000);
+    check('Q entered world', inQ);
+    if (inQ) {
+      const f2 = npcRecords('fore-2');
+      const ricIds = new Set(seen.map((n) => n.id));
+      await pageQ.evaluate(
+        (p) => window.__pto.teleport(p.x, p.z, 'fore-2'),
+        { x: ptXToWoC(f2[0].x), z: ptZToWoC(f2[0].z) },
+      );
+      // Field-out removals land on the next snapshots: wait until the stale
+      // ricarten ids are gone AND fore-2's own npc is delivered.
+      const qF2 = await poll(
+        pageQ,
+        (s) =>
+          s.ptf === 'fore-2' &&
+          ptNpcs(s).length === f2.length &&
+          ptNpcs(s).every((n) => !ricIds.has(n.id)),
+        30000,
+      );
+      const f2Npcs = ptNpcs(qF2.s);
+      check(
+        'fore-2 viewer sees its own authored npc',
+        f2Npcs.length === f2.length && f2Npcs[0]?.t === `pt_npc_${f2[0].def}`,
+        `seen=${f2Npcs.length} t=${f2Npcs[0]?.t}`,
+      );
+      check(
+        'cross-field isolation: fore-2 viewer sees no ricarten npcs',
+        f2Npcs.every((n) => !ricIds.has(n.id)),
+        `shared=${f2Npcs.filter((n) => ricIds.has(n.id)).length}`,
+      );
+      // Same-field shared identity: stand Q on equip1's authored spot and
+      // require the SAME server entity id A's sweep recorded - plus every
+      // npc Q sees there must belong to ricarten's authored id set.
+      const equip1Id = seen.find((n) => n.t === 'pt_npc_ricarden-equip1')?.id;
+      const e1 = ric.find((r) => r.def === 'ricarden-equip1');
+      await pageQ.evaluate(
+        (p) => window.__pto.teleport(p.x, p.z, 'ricarten'),
+        { x: ptXToWoC(e1.x), z: ptZToWoC(e1.z) },
+      );
+      const qE1 = await poll(
+        pageQ,
+        (s) =>
+          s.ptf === 'ricarten' &&
+          ptNpcs(s).some((n) => n.t === 'pt_npc_ricarden-equip1') &&
+          // field-in removals trail the ptf flip by a snapshot; wait for the
+          // stale fore-2 npc to drop before judging the set.
+          ptNpcs(s).every((n) => ricIds.has(n.id)),
+        30000,
+      );
+      const qRic = ptNpcs(qE1.s);
+      check(
+        'same-field viewer receives the same authoritative npc id',
+        qRic.some((n) => n.id === equip1Id),
+        `equip1 id=${equip1Id} q-sees=${qRic.map((n) => `${n.t}#${n.id}`).join(' ').slice(0, 200)}`,
+      );
+      check(
+        'all of Q\'s ricarten npcs belong to the authored set',
+        qRic.length > 0 && qRic.every((n) => ricIds.has(n.id)),
+        `foreign=${qRic.filter((n) => !ricIds.has(n.id)).length}`,
+      );
+      await pageQ.screenshot({ path: 'tmp/ptonline_npcs_ricarten_b.png' });
+    }
+    await ctxQ.close().catch(() => {});
+  }
 }
 
 console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} FAILURES`}`);

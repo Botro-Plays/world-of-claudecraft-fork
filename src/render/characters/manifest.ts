@@ -37,6 +37,7 @@ import type { OverheadEmoteId } from '../../world_api';
 import { VARKHUL_FORGING_STRIKE_TIMESCALE } from '../varkhul_forge_hammer';
 import { NPC_PROP_SET_IDS, type NpcPropSet } from './npc_looks';
 import { PT_MOB_KEYS, PT_MOB_VISUALS } from './pt_mob_visuals';
+import { PT_NPC_KEYS, PT_NPC_VISUALS } from './pt_npc_visuals';
 
 export interface EmoteClipSpec {
   clips: readonly string[];
@@ -1420,6 +1421,8 @@ export const VISUALS: Record<string, VisualDef> = {
   // (pt_mob_visuals.ts): all lazyPreload, fetched on first sight. Spread
   // first so a hand-authored def below can still win a shared key.
   ...PT_MOB_VISUALS,
+  // PT fixed-NPC visuals (pt_npc_visuals.ts): same generated lazy convention.
+  ...PT_NPC_VISUALS,
   // -- player classes ------------------------------------------------------
   player_warrior: swims({
     url: `${PLAYERS}/knight.glb`,
@@ -4851,6 +4854,9 @@ const NPC_KEYS: Record<string, string> = {
   cook_marlow: 'npc_villager',
   tanner_hesk: 'npc_villager',
   huntsman_deral: 'npc_scout',
+  // PT fixed NPCs: pt_npc_<def> -> npc_pt_<def> (pt_npc_visuals.ts), spread
+  // last so the lazy GLB path wins only where a converted model exists.
+  ...PT_NPC_KEYS,
 };
 
 export function visualKeyFor(e: Entity): string {

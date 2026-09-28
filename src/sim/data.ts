@@ -189,7 +189,9 @@ import {
   PROVING_SHORE_ROADS,
   PROVING_SHORE_ZONE,
 } from './content/proving_shore';
+import { PT_ITEMS } from './content/pt_items';
 import { PT_MOBS } from './content/pt_mobs';
+import { PT_NPCS } from './content/pt_npcs';
 import {
   REALM_CAMPS,
   REALM_ITEMS,
@@ -392,6 +394,9 @@ export const ITEMS: Record<string, ItemDef> = mergeItems(
   DUNGEON_KEEPSAKE_ITEMS,
   IGNIVAR_DROP_ITEMS,
   CRUCIBLE_PROFESSION_ITEMS,
+  // PT OpenItem definitions (src/sim/content/pt_items.ts): keyed pt_*, stocked
+  // by PT shop NPCs and usable by later drop/reward phases.
+  PT_ITEMS,
 );
 
 export type { AggregatedSetEffect } from './content/item_sets';
@@ -470,6 +475,10 @@ export const NPCS: Record<string, NpcDef> = {
   // dynamic, spawned after the player by sim/hub_practice.ts, so his
   // presence in this record moves no id.
   ...HUB_PRACTICE_NPCS,
+  // PT fixed NPCs (content/pt_npcs.ts): all `dynamic`, keyed pt_npc_*,
+  // spawned by src/sim/pt_npcs.ts per active PtFieldSession (O5) - never
+  // surface-placed.
+  ...PT_NPCS,
 };
 
 // Graveyards + the Spirit Healer: re-exported so the Sim and spirit.ts import the
