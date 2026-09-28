@@ -60,6 +60,8 @@ import { effectiveFishingBand } from '../src/sim/professions/fishing';
 import { cancelProfessionSessionOnDisplacement } from '../src/sim/professions/session_teardown';
 import { restoreToolEffectSlotAction } from '../src/sim/professions/tool_effect_actions';
 import type { ToolEffectConfirmMode } from '../src/sim/professions/tools';
+import { ptStaticFieldRegistered, withPtFieldScope } from '../src/sim/pt_field_active';
+import { PT_WARP_DELAY_S } from '../src/sim/pt_transitions';
 import {
   catalogCharacterCompletion,
   characterReliquaryOwnership,
@@ -310,6 +312,7 @@ import {
   INTEREST_DROP_RADIUS,
   INTEREST_QUERY_RADIUS,
   INTEREST_RADIUS,
+  inSamePtField,
   interestLimitSq,
   isStealthed,
   NPC_DROP_RADIUS,
@@ -7866,10 +7869,32 @@ export class GameServer {
         ) {
           const e = sim.entities.get(pid);
           if (e) {
+            const x = msg.x;
+            const z = msg.z;
             cancelProfessionSessionOnDisplacement(sim.ctx, e);
-            const p = sim.groundPos(msg.x, msg.z);
+            // Optional authoritative field seed: band-island placement cannot
+            // be reached positionally (island footprints overlap continent
+            // claims), so dev placement carries the identity the same way
+            // execWarp's landing does. Only registered ids are accepted - an
+            // unknown field would strand the entity on geometry this host
+            // cannot simulate.
+            if (
+              typeof msg.ptf === 'string' &&
+              msg.ptf.length > 0 &&
+              ptStaticFieldRegistered(msg.ptf)
+            ) {
+              e.ptField = msg.ptf;
+            }
+            // PT band entity scope: the teleport lands on the field the
+            // entity's ptField names, so a band-island resident teleports
+            // on its own floor instead of the overlapping continent's.
+            const p = withPtFieldScope(e.ptField, () => sim.groundPos(x, z));
             e.pos = p;
             e.prevPos = { ...p };
+            // Warp arrivals get the dwWarpDelayTime+3000ms re-warp lockout;
+            // a dev placement landing inside a trigger cylinder needs the
+            // same grace or the presence scan sends it straight back out.
+            e.ptWarpLockUntil = sim.ctx.time + PT_WARP_DELAY_S;
             sim.grid.update(e);
             sim.playerGrid.update(e);
           }
@@ -8304,6 +8329,10 @@ export class GameServer {
   }
 
   private canObserveEntity(viewer: Entity, e: Entity, d2: number): boolean {
+    // PT field identity gates visibility before anything else: two entities
+    // at the same WoC position in different fields (a dc1 resident and a
+    // Ricarten walker on the overlapping footprint) are on different maps.
+    if (!inSamePtField(viewer, e)) return false;
     if (e.kind !== 'player' || !isStealthed(e)) return true;
     if (this.sim.isHostileTo(viewer, e)) return false;
     const party = this.sim.partyOf(viewer.id);

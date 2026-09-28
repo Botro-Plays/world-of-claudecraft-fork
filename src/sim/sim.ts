@@ -629,7 +629,7 @@ import {
 import { prestige as prestigeImpl, updateRested } from './progression/xp';
 import { advancePendingProjectiles, type PendingProjectile } from './projectile_travel';
 import { isPtPos } from './pt_band';
-import { ptFieldIdAt } from './pt_field_active';
+import { ptFieldIdAt, withPtFieldScope } from './pt_field_active';
 import {
   requestPtTransition,
   updatePtTransitions,
@@ -2880,8 +2880,14 @@ export class Sim {
       savedPos = this.findSafePos(savedPos.x, savedPos.z, -Infinity, PLAYER_BODY_RADIUS);
     }
     const playerStart = this.worldContent.playerStart;
+    // A persisted ptField names a band island as readily as a continent
+    // field; resolve the saved position's floor against THAT field's
+    // geometry (identity-scoped dispatch), not the positional claimant -
+    // the two disagree everywhere a footprint overlaps the continent.
+    const savedPtField =
+      typeof savedState?.ptField === 'string' ? savedState.ptField : undefined;
     const startPos = savedPos
-      ? this.groundPos(savedPos.x, savedPos.z)
+      ? withPtFieldScope(savedPtField, () => this.groundPos(savedPos.x, savedPos.z))
       : this.groundPos(playerStart.x, playerStart.z);
     const savedArena1v1: ArenaStanding = {
       rating: savedState?.arena1v1Rating ?? savedState?.arenaRating ?? arenaMod.ARENA_BASE_RATING,
@@ -2904,10 +2910,7 @@ export class Sim {
     // PT save falls back to bounds resolution. The per-tick tracker repairs
     // a stale seed the first tick the position disagrees.
     if (isPtPos(startPos.x)) {
-      player.ptField =
-        typeof savedState?.ptField === 'string'
-          ? savedState.ptField
-          : (ptFieldIdAt(startPos.x, startPos.z) ?? undefined);
+      player.ptField = savedPtField ?? (ptFieldIdAt(startPos.x, startPos.z) ?? undefined);
     }
     if (opts?.appearance) player.modularAppearance = opts.appearance;
     this.addEntity(player);
@@ -3640,7 +3643,9 @@ export class Sim {
       player.dead = true;
       player.ghost = true;
       player.corpsePos = savedState.corpsePos
-        ? this.groundPos(savedState.corpsePos.x, savedState.corpsePos.z)
+        ? withPtFieldScope(player.ptField, () =>
+            this.groundPos(savedState.corpsePos!.x, savedState.corpsePos!.z),
+          )
         : null;
       // Instance ids are boot-local (recreated on every claim), so recompute
       // from the restored position via the same helper the death path uses
@@ -3658,7 +3663,9 @@ export class Sim {
       // graveyard nearest the door) cannot drift from spirit.ts. Delve, arena,
       // and fiesta deaths keep their own bounded respawn rules and never enter
       // the ghost loop, so those positions load exactly as before.
-      player.pos = this.groundPos(savedState.pos.x, savedState.pos.z);
+      player.pos = withPtFieldScope(player.ptField, () =>
+        this.groundPos(savedState.pos.x, savedState.pos.z),
+      );
       player.prevPos = { ...player.pos };
       this.rebucket(player);
       player.dead = true;
@@ -6197,7 +6204,7 @@ export class Sim {
         this.updateDoorTriggers(p);
         this.updateRiftTriggers(p);
         updatePortalTriggers(this.ctx, p);
-        updateSwimFatigue(this.ctx, p);
+        withPtFieldScope(p.ptField, () => updateSwimFatigue(this.ctx, p));
         lap?.('p.doors');
         this.updateCasting(p, meta);
         lap?.('p.casting');
@@ -6226,7 +6233,11 @@ export class Sim {
         // on combat/swim, complete a mount/dismount, and force-dismount a mounted
         // swimmer. Live players only (a dead player is already force-dismounted by
         // handleDeath). Draws no rng, so the tick-phase draw order is unchanged.
-        updateMountTransition(this.ctx, p, this.isSwimming(p));
+        updateMountTransition(
+          this.ctx,
+          p,
+          withPtFieldScope(p.ptField, () => this.isSwimming(p)),
+        );
         lap?.('p.regen');
       } else if (p.ghost) {
         // A released spirit only runs (boosted speed via moveSpeedMult); it does not
@@ -6245,7 +6256,7 @@ export class Sim {
       // rng only through the drown pulse's dealDamage, which cannot fire for a
       // dead player (the reset returns first), so the tick-phase draw order is
       // unchanged for everyone who is not actively drowning.
-      updateBreath(this.ctx, p);
+      withPtFieldScope(p.ptField, () => updateBreath(this.ctx, p));
       // Riding-lesson driver: server-authoritative; tracks the training-steed
       // phase and ends a dead/ghost player's IN_PROGRESS lesson, so death never
       // strands the session. Finishing the race credits success. Draws no rng,
@@ -6839,6 +6850,16 @@ export class Sim {
   }
 
   private updatePlayerMovement(p: Entity, meta: PlayerMeta): void {
+    // PT band entities move against THEIR OWN field's geometry: the entity
+    // scope binds p.ptField for every floor/wall/water query inside the
+    // kernel, so a band-island resident reads its island's collision and a
+    // seam walker reads its own field's floor past the claim edge (the
+    // two-slot rule lives in pt_field_active). No-op for undefined ptField
+    // and for descriptor-bound hosts.
+    withPtFieldScope(p.ptField, () => this.updatePlayerMovementImpl(p, meta));
+  }
+
+  private updatePlayerMovementImpl(p: Entity, meta: PlayerMeta): void {
     // Verticality: strip last tick's rift raised-tier lift so the movement kernel
     // (and the charge/follow/fear paths) integrate jumps + gravity against the true
     // flat rift floor; updateRiftTriggers re-applies it after the step. Zero outside

@@ -6,6 +6,8 @@
 // a thin consumer.
 
 import { bgOriginAt, isBgPos } from '../src/sim/data';
+import { isPtPos } from '../src/sim/pt_band';
+import { ptFieldIdAt } from '../src/sim/pt_field_active';
 import { type Entity, PLAYER_INTEREST_DROP_RADIUS, PLAYER_INTEREST_RADIUS } from '../src/sim/types';
 
 // Interest management: new entities enter interest at the shared sim edge
@@ -56,6 +58,26 @@ export function interestLimitSq(e: Entity, known: boolean): number {
 
 export function isStealthed(e: Entity): boolean {
   return e.stealthed; // cached in the sim's updateAuras; see Entity.stealthed
+}
+
+// Both endpoints in the same authoritative PT field, or neither in the PT
+// band at all. Band-island footprints overlap the continent's in WoC space
+// (dc1's whole extent sits inside Ricarten's claim), so distance alone would
+// show a dc1 resident and a Ricarten walker the same positions to each
+// other - they are different maps sharing coordinates, never visible.
+// Entities with no recorded identity (pets, props - the transition tracker
+// only assigns players; spawned mobs carry their anchor's field) resolve
+// positionally: an identity-less in-band entity lives on the continent
+// claimant's floor, which is the field island-overlapped viewers cannot be
+// standing in.
+function effectivePtField(e: Entity): string | undefined {
+  if (e.ptField !== undefined) return e.ptField;
+  if (!isPtPos(e.pos.x)) return undefined;
+  return ptFieldIdAt(e.pos.x, e.pos.z) ?? undefined;
+}
+
+export function inSamePtField(a: Entity, b: Entity): boolean {
+  return effectivePtField(a) === effectivePtField(b);
 }
 
 // Both endpoints inside the SAME battleground slot: the necessary condition for

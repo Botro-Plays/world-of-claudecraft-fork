@@ -35,6 +35,7 @@ import type { PtFieldTransform } from './pt_field';
 import {
   activePtMapDescriptor,
   ptFieldIdAt,
+  ptFloorOwnerAt,
   ptStaticFieldRegistered,
 } from './pt_field_active';
 import {
@@ -55,7 +56,7 @@ import { settleTeleportArrival } from './teleport_arrival';
 import type { Entity } from './types';
 
 // dwWarpDelayTime + 3000ms: the global re-warp lockout, in sim seconds.
-const PT_WARP_DELAY_S = 3;
+export const PT_WARP_DELAY_S = 3;
 // SpecialEffect 1 delayed warps release ~2s after arming
 // (dwWarpDelayTime = dwPlayTime - 1000 + 3000 in the source).
 const PT_EFFECT_WARP_DELAY_S = 2;
@@ -242,7 +243,10 @@ export function requestPtTransition(
   }
 
   // FieldGate: the crossing is position-continuous, so "transition" here is
-  // the ownership flip. Approve only a live-edge-connected claimant.
+  // the ownership flip. Approve only a live-edge-connected claimant whose
+  // floor the player is actually standing on - inside a bounds overlap the
+  // claim edge runs ahead of the floor handoff, and flipping identity early
+  // would be undone by the tracker's floor-owner check next tick.
   const dest = requestedFieldAt(current, p.pos.x, p.pos.z);
   if (dest === null) {
     // Sticky fallback: the passive tracker may already have flipped this
@@ -258,6 +262,15 @@ export function requestPtTransition(
     return { ok: false, reason: 'no_transition' };
   }
   if (!ptStaticFieldRegistered(dest)) return { ok: false, reason: 'field_unavailable' };
+  // Floor ownership is the transfer rule (CheckNextMove's OnStageField
+  // promotion): approve the flip only when the destination's floor already
+  // owns this position. Where both floors resolve (deep overlaps, bridge
+  // decks) identity stays with the current field until its floor gives out.
+  const owner = ptFloorOwnerAt(current, p.pos.x, p.pos.z, p.pos.y);
+  if (owner !== null && owner !== dest) return { ok: false, reason: 'no_transition' };
+  if (owner === null && ptFieldClaimsWocPos(current, p.pos.x, p.pos.z)) {
+    return { ok: false, reason: 'no_transition' };
+  }
   p.ptField = dest;
   ctx.emit({ type: 'pt_transition', pid: p.id, kind: 'field', field: dest });
   return { ok: true, kind: 'field', field: dest };
@@ -350,7 +363,22 @@ function trackPtField(ctx: SimContext, p: Entity): void {
     return;
   }
   const next = ptStickyFieldAt(current, p.pos.x, p.pos.z);
-  if (next === null || next === current) return;
+  if (next === current) {
+    // Still inside our own bounds claim - but bounds overlap at seams while
+    // floors hand off partway through. The movement kernel's two-slot
+    // resolution accepts the neighbor's floor once ours is void underfoot
+    // (or stands the divergence band below it); promote identity to the
+    // floor's owner so a walker crossing mid-overlap is not held to the
+    // claim edge. Never fires for band islands: they have no FieldGate
+    // edges, so claimNeighbors finds no standby to promote.
+    const owner = ptFloorOwnerAt(current, p.pos.x, p.pos.z, p.pos.y);
+    if (owner !== null && owner !== current && ptStaticFieldRegistered(owner)) {
+      p.ptField = owner;
+      ctx.emit({ type: 'pt_transition', pid: p.id, kind: 'field', field: owner });
+    }
+    return;
+  }
+  if (next === null) return;
   if (!ptStaticFieldRegistered(next)) return;
   if (ptFieldClaimsWocPos(current, p.pos.x, p.pos.z) && ptGateEdgeBetween(current, next) === null) {
     return;

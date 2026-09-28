@@ -16,7 +16,12 @@ import {
   woCToPtY,
   woCToPtZ,
 } from './pt_band';
-import { ptMapGraph, ptGraphWocBounds } from './pt_map_graph';
+import {
+  ptMapGraph,
+  ptGraphFieldGatesOf,
+  ptGraphWocBounds,
+  type PtWocBounds,
+} from './pt_map_graph';
 import {
   createPtField,
   makePtBandTransform,
@@ -188,6 +193,30 @@ interface PtStaticFieldEntry {
 const _staticFields: PtStaticFieldEntry[] = [];
 const _staticModules = new Set<PtFieldModule>();
 
+// ---------------------------------------------------------------------------
+// Identity-scoped fields (band islands) + the per-entity two-slot dispatch
+// ---------------------------------------------------------------------------
+//
+// A non-continent field's per-map band transform self-anchors at the band
+// origin, so its WoC footprint overlays the continent's - tcave's footprint
+// is Ricarten's almost exactly. Such a field can never answer a POSITIONAL
+// query (a position inside it is equally a continent position), but an
+// entity whose authoritative ptField names it needs ITS geometry. These
+// modules register into `_islandFields`: reachable only through the entity
+// scope below, invisible to staticFieldAt/ptFieldIdAt's claimant order.
+
+const _islandFields = new Map<string, PtField>();
+
+/**
+ * The field module an identity names, or null: the built-in Ricarten, an
+ * id-tagged static registration, or an identity-scoped island registration.
+ */
+function fieldModuleFor(id: string | null | undefined): PtField | null {
+  if (id === 'ricarten') return ptRicartenField();
+  if (id === undefined || id === null) return null;
+  return _islandFields.get(id) ?? _staticFields.find((s) => s.id === id)?.field ?? null;
+}
+
 /**
  * Register a generated field module as a static fallback field. The
  * transform follows the same rule the package loader uses (continent when
@@ -198,20 +227,24 @@ const _staticModules = new Set<PtFieldModule>();
  * that also want field IDENTITY (the server naming which field a saved
  * position belongs to, ptFieldIdAt) pass it; floor dispatch works without
  * it, so pre-registration callers compile unchanged.
+ *
+ * Continent fields join the positional dispatch list. Non-continent fields
+ * (band islands - self-anchored footprints overlapping the continent)
+ * register only into the identity-scoped tier: their geometry answers
+ * queries made under withPtFieldScope(fieldId) and never a bare positional
+ * scan. Without `id` an island cannot be scoped at all - the registration
+ * is accepted but unreachable, so callers must pass the package id.
  */
 export function registerPtStaticField(field: PtFieldModule, id?: string): void {
   if (_staticModules.has(field)) return;
-  // Positional dispatch cannot host a non-continent field: the per-map band
-  // transform anchors every such field at the SAME band origin, so its WoC
-  // footprint overlaps the continent fields' (tcave's footprint is Ricarten's,
-  // almost exactly). A bounds claim here would steal floor/identity answers
-  // for positions that belong to another field. Band islands join online only
-  // with identity-scoped dispatch (a later phase); refuse the registration.
-  if (!ptFieldFitsContinent(field.PT_BOUNDS)) return;
   _staticModules.add(field);
   const transform = ptFieldFitsContinent(field.PT_BOUNDS)
     ? makePtContinentTransform()
     : makePtBandTransform(field.PT_BOUNDS);
+  if (!ptFieldFitsContinent(field.PT_BOUNDS)) {
+    if (id !== undefined) _islandFields.set(id, createPtField(field, transform));
+    return;
+  }
   const b = field.PT_BOUNDS;
   _staticFields.push({
     field: createPtField(field, transform),
@@ -301,7 +334,203 @@ export function ptFieldIdAt(x: number, z: number): string | null {
  */
 export function ptStaticFieldRegistered(id: string): boolean {
   if (id === 'ricarten') return true;
-  return _staticFields.some((s) => s.id === id);
+  return _islandFields.has(id) || _staticFields.some((s) => s.id === id);
+}
+
+// ---------------------------------------------------------------------------
+// Entity-scoped two-slot field (CheckNextMove's StageField[0]/[1] on hosts
+// with no descriptor binding)
+// ---------------------------------------------------------------------------
+//
+// The offline/descriptor host already runs the two-slot composite above:
+// the active field's floor answers first and the preloaded FieldGate
+// neighbor's floor answers when the active's is void (or stands above it by
+// the source's ~8-unit divergence band) - that promotion IS how a walker
+// crosses a seam where footprints overlap (Ricarten's gate road extends
+// ~70yd into fore-1's bounds before its floor ends).
+//
+// Descriptor-less hosts (the realm, bare sims) historically dispatched by
+// bounds alone, which answers the WRONG field inside an overlap (the first
+// registered claimant's void floor stalls the walk at the claim edge) and
+// cannot serve a band island at all (its footprint IS a continent
+// footprint). withPtFieldScope(fieldId, fn) binds the entity's authoritative
+// field for one synchronous operation; while bound, activePtField() returns
+// the composite below: the entity's own field in slot 0 and its live-edge
+// neighbors whose bounds claim the query position in the standby role -
+// the same fields the client preloads, the same floors PT compares.
+
+let _scopeFieldId: string | null = null;
+
+/** Live-FieldGate neighbors of a field, memoized per registered graph. */
+let _neighborCacheGraph: unknown = null;
+const _neighborCache = new Map<string, string[]>();
+const _claimBoundsCache = new Map<string, PtWocBounds | null>();
+
+function gateNeighborIds(fieldId: string): readonly string[] {
+  const g = ptMapGraph();
+  if (g !== _neighborCacheGraph) {
+    _neighborCacheGraph = g;
+    _neighborCache.clear();
+    _claimBoundsCache.clear();
+  }
+  let ids = _neighborCache.get(fieldId);
+  if (ids === undefined) {
+    ids = g === null
+      ? []
+      : ptGraphFieldGatesOf(fieldId)
+          .filter((e) => !e.dead && e.otherId !== null)
+          .map((e) => e.otherId as string);
+    _neighborCache.set(fieldId, ids);
+  }
+  return ids;
+}
+
+function claimBounds(fieldId: string): PtWocBounds | null {
+  let wb = _claimBoundsCache.get(fieldId);
+  if (wb === undefined) {
+    wb = ptGraphWocBounds(fieldId);
+    _claimBoundsCache.set(fieldId, wb);
+  }
+  return wb;
+}
+
+// Reused output buffer: neighbor claims are consumed synchronously and never
+// retained, so one scratch array keeps the hot path allocation-free.
+const _claimScratch: { id: string; field: PtField }[] = [];
+
+/**
+ * The entity's standby slot content at (x, z): live-edge neighbors of the
+ * scoped field whose bounds claim the position AND whose collision module
+ * is registered on this host. Returns the shared scratch array.
+ */
+function claimNeighbors(fieldId: string, x: number, z: number): readonly { id: string; field: PtField }[] {
+  _claimScratch.length = 0;
+  for (const nid of gateNeighborIds(fieldId)) {
+    const wb = claimBounds(nid);
+    if (wb === null || x < wb.minX || x > wb.maxX || z < wb.minZ || z > wb.maxZ) continue;
+    const field = fieldModuleFor(nid);
+    if (field !== null) _claimScratch.push({ id: nid, field });
+  }
+  return _claimScratch;
+}
+
+const _entityField: PtField = {
+  groundHeight(x, z) {
+    const own = fieldModuleFor(_scopeFieldId);
+    const a = own?.groundHeight(x, z) ?? -Infinity;
+    if (a !== -Infinity) return a;
+    for (const c of claimNeighbors(_scopeFieldId ?? '', x, z)) {
+      const b = c.field.groundHeight(x, z);
+      if (b !== -Infinity) return b;
+    }
+    return -Infinity;
+  },
+  supportHeight(x, z, r, maxY) {
+    const own = fieldModuleFor(_scopeFieldId);
+    const a = own?.supportHeight(x, z, r, maxY) ?? -Infinity;
+    if (a !== -Infinity) return a;
+    for (const c of claimNeighbors(_scopeFieldId ?? '', x, z)) {
+      const b = c.field.supportHeight(x, z, r, maxY);
+      if (b !== -Infinity) return b;
+    }
+    return -Infinity;
+  },
+  floorHeight(x, z, refY) {
+    const own = fieldModuleFor(_scopeFieldId);
+    const a = own?.floorHeight(x, z, refY) ?? -Infinity;
+    // The standby candidates are the gate-connected claimants (islands have
+    // no edges, so an island scope degenerates to own-field-only - exactly
+    // the isolation that makes overlap registration safe).
+    let b = -Infinity;
+    for (const c of claimNeighbors(_scopeFieldId ?? '', x, z)) {
+      const f = c.field.floorHeight(x, z, refY);
+      if (f > b) b = f;
+    }
+    if (a === -Infinity) return b;
+    if (b !== -Infinity && b > a && b - a >= PT_FLOOR_DIVERGENCE_WOC) return b;
+    return a;
+  },
+  wallHit(sx, sy, sz, ex, ez, destFloorY) {
+    const own = fieldModuleFor(_scopeFieldId);
+    if (own?.wallHit(sx, sy, sz, ex, ez, destFloorY)) return true;
+    // The sweep crosses the seam: gate any wall face claimed at either end.
+    const hits = new Set<PtField>();
+    for (const c of claimNeighbors(_scopeFieldId ?? '', sx, sz)) hits.add(c.field);
+    for (const c of claimNeighbors(_scopeFieldId ?? '', ex, ez)) hits.add(c.field);
+    for (const f of hits) {
+      if (f.wallHit(sx, sy, sz, ex, ez, destFloorY)) return true;
+    }
+    return false;
+  },
+  spawnY(x, z) {
+    const own = fieldModuleFor(_scopeFieldId);
+    const a = own?.groundHeight(x, z) ?? -Infinity;
+    if (Number.isFinite(a)) return a;
+    for (const c of claimNeighbors(_scopeFieldId ?? '', x, z)) {
+      const b = c.field.groundHeight(x, z);
+      if (Number.isFinite(b)) return b;
+    }
+    return 0;
+  },
+  waterLevel(x, z) {
+    const own = fieldModuleFor(_scopeFieldId);
+    const a = own?.waterLevel(x, z) ?? -Infinity;
+    if (a !== -Infinity) return a;
+    for (const c of claimNeighbors(_scopeFieldId ?? '', x, z)) {
+      const b = c.field.waterLevel(x, z);
+      if (b !== -Infinity) return b;
+    }
+    return -Infinity;
+  },
+};
+
+/**
+ * Bind an entity's authoritative PT field for the duration of one
+ * synchronous operation (its movement step, breath/swim pass, spawn floor
+ * resolution). While bound, every PT-band floor/wall/water query - however
+ * deep the call chain - resolves through the entity's own field with its
+ * gate-connected neighbors as the standby, reproducing the descriptor
+ * host's two-slot CheckNextMove behavior on the realm.
+ *
+ * No-ops when the id is absent (positional dispatch stays the legacy path)
+ * or when a descriptor is bound (the client already evaluates the real
+ * two-slot composite). Re-entrant.
+ */
+export function withPtFieldScope<T>(fieldId: string | undefined, fn: () => T): T {
+  if (fieldId === undefined || _activeField !== null) return fn();
+  const prev = _scopeFieldId;
+  _scopeFieldId = fieldId;
+  try {
+    return fn();
+  } finally {
+    _scopeFieldId = prev;
+  }
+}
+
+/**
+ * Which field's floor OWNS (x, z) for an entity currently identified with
+ * `currentId`, mirroring the composite's choice: the own floor wins while
+ * real; a gate-connected claimant takes it when ours is void there or its
+ * floor stands above ours by the divergence band. Returns the owning field
+ * id only when it differs from `currentId`, else null - the caller uses
+ * this to promote ptField at the floor edge, not the bounds edge.
+ */
+export function ptFloorOwnerAt(
+  currentId: string,
+  x: number,
+  z: number,
+  refY: number,
+): string | null {
+  const own = fieldModuleFor(currentId);
+  const a = own?.floorHeight(x, z, refY) ?? -Infinity;
+  let best: { id: string; y: number } | null = null;
+  for (const c of claimNeighbors(currentId, x, z)) {
+    const f = c.field.floorHeight(x, z, refY);
+    if (f !== -Infinity && (best === null || f > best.y)) best = { id: c.id, y: f };
+  }
+  if (a === -Infinity) return best?.id ?? null;
+  if (best !== null && best.y > a && best.y - a >= PT_FLOOR_DIVERGENCE_WOC) return best.id;
+  return null;
 }
 
 const _dispatchField: PtField = {
@@ -321,6 +550,7 @@ const _dispatchField: PtField = {
  */
 export function activePtField(): PtField {
   if (_activeField === null) {
+    if (_scopeFieldId !== null) return _entityField;
     return _staticFields.length === 0 ? ptRicartenField() : _dispatchField;
   }
   return _standbyField === null ? _activeField : _linkedField;

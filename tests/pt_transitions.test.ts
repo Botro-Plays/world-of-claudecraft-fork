@@ -20,12 +20,11 @@
 //   - Offline/dev preservation: on a descriptor host the whole resolver is
 //     inert - pt_field_links.ts / pt_warp_gates.ts keep owning traversal.
 //
-// Registration mirrors server/pt_fields.ts (the O2 closure). 'ruin-3' -
+// Registration mirrors server/pt_fields.ts's continent closure. 'ruin-3' -
 // gate-connected to ruin-4 but outside the closure - supplies the
 // field_unavailable rejection's live-edge destination. Band islands
-// (tcave, dc1, ...) are unregisterable by design (registerPtStaticField
-// refuses non-continent modules: their self-anchored footprints overlap
-// the continent's).
+// (tcave, dc1, ...) are not registered in THIS file: the identity-scoped
+// tier they occupy on the realm is covered by tests/pt_field_dispatch.test.ts.
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -77,9 +76,10 @@ registerPtStaticField(FORE3_FIELD, 'fore-3');
 registerPtStaticField(FF01_FIELD, 'forever-fall-01');
 registerPtStaticField(FF02_FIELD, 'forever-fall-02');
 registerPtStaticField(FO1_FIELD, 'fo1');
-// 'ruin-3' stays unregistered (see header); band islands (tcave,
-// dc1, ...) cannot register at all - registerPtStaticField refuses them
-// (their self-anchored footprints overlap the continent's).
+// 'ruin-3' stays unregistered (see header); band islands (tcave, dc1, ...)
+// go unregistered HERE on purpose so the field_unavailable path keeps a
+// live-edge destination - their identity-scoped tier is exercised by
+// tests/pt_field_dispatch.test.ts.
 
 function makeSim(playerClass: PlayerClass, seed = 7310): Sim {
   return new Sim({ seed, playerClass, autoEquip: true, compulsoryTutorial: true });
@@ -355,11 +355,16 @@ describe('authoritative WarpGate transitions', () => {
   it('rejects a warp whose exit field has no collision (field_unavailable)', () => {
     const sim = makeSim('tempskron_fighter');
     const p = seedPtField(sim);
-    p.level = 200; // clears the level gate; dc1 is still unregistered here.
-    place(sim, 'ricarten', RICARTEN_LV180.x, RICARTEN_LV180.y, RICARTEN_LV180.z);
-    expect(ptStaticFieldRegistered('dc1')).toBe(false);
+    p.level = 200; // clears the level gate; sanc1 is registered NOWHERE.
+    // ba4 -> sanc1 (lvl 135): ba4 is registered (it is the ad-chain's
+    // continent endpoint), but the exit field is not, so the resolver
+    // refuses rather than simulating a floor on the wrong geometry.
+    const gate = warpGates('ba4').find((g) => g.exits.some((e) => e.toId === 'sanc1'))!;
+    expect(ptStaticFieldRegistered('sanc1')).toBe(false);
+    place(sim, 'ba4', gate.x, gate.y, gate.z);
+    p.ptField = 'ba4';
     expect(sim.requestPtTransition()).toEqual({ ok: false, reason: 'field_unavailable' });
-    expect(p.ptField).toBe('ricarten');
+    expect(p.ptField).toBe('ba4');
   });
 
   it('drops a delayed arm when the player dies before release', () => {

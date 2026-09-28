@@ -514,6 +514,11 @@ function attemptSpawn(
   const spawnAt = (x: number, y: number, z: number): void => {
     const mob = createMob(ctx.nextId++, template, template.minLevel, { x, y, z });
     mob.ptFieldAnchor = { fieldId: mod.fieldId, anchorIndex };
+    // The mob OWNS its spawn field's identity: inSamePtField gates visibility
+    // on ptField, and fieldless in-band entities would be invisible to the
+    // field's players. Mob identity is static - the transition tracker only
+    // advances players, and a mob never walks a FieldGate seam.
+    mob.ptField = mod.fieldId;
     mob.facing = rng.range(0, Math.PI * 2);
     mob.prevFacing = mob.facing;
     ctx.addEntity(mob);
