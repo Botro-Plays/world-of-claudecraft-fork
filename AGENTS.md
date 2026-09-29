@@ -11,7 +11,9 @@ Do not edit or replace the Claude setup unless the user explicitly asks for that
 
 1. Run `git status --short` before edits and preserve unrelated user work.
 2. Follow the default task workflow in `CLAUDE.md`: base the work on the latest
-   `release/**` branch, never `main`, and create a separate worktree for the task.
+   `release/**` branch, never `main`, and work directly in the existing designated
+   repository. Do not create additional worktrees, clones, junctions, or repository
+   copies unless isolation is genuinely required and explicitly authorized first.
 3. Read the root `CLAUDE.md` in full. Before reading or changing files in a directory,
    read that directory's `CLAUDE.md` if it exists. Codex builds its instruction chain at
    session start, so opening a nested file does not load local guidance automatically.

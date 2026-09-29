@@ -90,8 +90,9 @@ objective, and to deliver it this way. This is the baseline for every contributi
 Before making changes:
 - **Base your work off the latest release branch** (and its tracking issue), not `main`. The
   release branch is the active integration base; `main` trails it.
-- **Create and use a separate git worktree for the task**, so unrelated working-tree WIP never
-  contaminates the branch and parallel tasks stay isolated.
+- **Work directly in the existing designated repository.** Do not create a separate git
+  worktree, clone, junction, or repository copy unless isolation is genuinely required
+  and explicitly authorized first. Preserve unrelated working-tree WIP.
 - **Review the existing implementation before modifying anything.** Read the code paths, tests,
   and the local `CLAUDE.md` for the area you are touching first.
 - **Preserve existing behavior unless the goal explicitly requires changing it.**
