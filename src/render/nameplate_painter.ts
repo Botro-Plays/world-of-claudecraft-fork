@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { isOwnAura } from '../sim/aura_classify';
 import { corpseIndicatorFor } from '../sim/corpse_loot_state';
+import { PT_NPC_ID_PREFIX } from '../sim/content/pt_npcs';
 import { ABILITIES, MOBS, QUESTS } from '../sim/data';
 import { specialRoleColor } from '../sim/discord_roles';
 import { isQuestGatedEntityHidden } from '../sim/quest_gated_entity';
@@ -212,6 +213,16 @@ export class NameplatePainter {
   // pass so the corpse indicator (corpseIndicatorFor) can answer loot rights
   // without a per-plate allocation; empty when solo.
   private readonly viewerPartyIds: number[] = [];
+  // Entity the cursor's direct pick currently sits on (renderer.setHoveredEntity
+  // -> here). PT NPC plates read it through the plan: an unhovered pt_npc_*
+  // entity draws no name, a hovered one draws it. Plain field, not per-frame
+  // allocation; the plan runs every update() so a hover flip lands within a
+  // frame.
+  private hoverEntityId: number | null = null;
+
+  setHoverEntityId(id: number | null): void {
+    this.hoverEntityId = id;
+  }
 
   constructor(deps: NameplatePainterDeps) {
     this.views = deps.views;
@@ -287,6 +298,18 @@ export class NameplatePainter {
         standIn,
       );
       if (plan.hidden) continue;
+      // PT NPC plates are hover-driven: the name shows only while the
+      // cursor's direct pick lands on THIS npc (mirrors the source client,
+      // where npc names appear under the pointer instead of permanently).
+      // WoC npcs keep their always-on plates, and the standIn override stays
+      // above this so a body-less npc's plate still stands in for it.
+      if (
+        !standIn &&
+        entity.kind === 'npc' &&
+        !!entity.templateId?.startsWith(PT_NPC_ID_PREFIX) &&
+        entity.id !== this.hoverEntityId
+      )
+        continue;
 
       this.tmpV.copy(view.group.position);
       this.tmpV.y += plan.anchorYOffset;

@@ -116,6 +116,19 @@ fallback — `glb: null` in the catalog (8 defs), not silently dropped.
   equipment phase.
 - Service flags beyond shop/warehouse are kept in the catalog but unmapped.
 
+## Client interaction
+
+PT NPC nameplates are hidden by default and shown on hover:
+`nameplatePainter.update` gates `pt_npc_*` entities to `!npc ||
+hoveredNpcId === ent.id` before planning plates, and `renderer.pick()`
+stores a `lastDirectResult` each frame; when that result resolves to a
+`pt_npc_*` entity a single ground-draped hover ring (friendly nameplate
+green `#9fdc7f`) follows the entity position. At most one PT NPC name is
+visible at a time — cursor leave clears the ring and rehides the plate.
+WoC NPCs and click/vendor/banker paths are untouched; the hover pick
+reuses the existing per-frame `updateHoverCursor` raycast, so no extra
+picking pass was added.
+
 ## Verification
 
 - `tests/pt_online_npcs.test.ts` (12 tests): parse/count/coords/facing,

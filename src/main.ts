@@ -4253,10 +4253,16 @@ async function startGame(
     if (!input.hoverActive || input.isDragging() || hud.isModalOpen()) {
       input.setHoverCursor('default');
       hud.clearHoverTooltip();
+      renderer.setHoveredEntity(null);
       return;
     }
     if (hoverPickGate.shouldPick(input.hoverX, input.hoverY, performance.now())) {
       hoverPickedId = renderer.pick(input.hoverX, input.hoverY);
+      // The DIRECT half of that same pick() is the hover source for the PT
+      // npc ring/name cue: the cursor must actually intersect the npc's mesh,
+      // not merely pass near its screen column (the sloppy assist is for
+      // click forgiveness, not hover). One raycast, reused.
+      renderer.setHoveredEntity(renderer.lastDirectPick());
     }
     const entity = hoverPickedId !== null ? world.entities.get(hoverPickedId) : undefined;
     const pvpOpponents = activePvpOpponentIds(world, hoverPvpOpponentIds);

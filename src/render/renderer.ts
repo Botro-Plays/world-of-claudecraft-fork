@@ -32,6 +32,7 @@ import {
   zoneAt,
 } from '../sim/data';
 import { isPtPos } from '../sim/pt_band';
+import { PT_NPC_ID_PREFIX } from '../sim/content/pt_npcs';
 import {
   activePtMapDescriptor,
   standbyPtMapDescriptor,
@@ -1320,6 +1321,23 @@ export class Renderer {
   selectionRingMesh: THREE.Mesh;
   selectionRingTicks: THREE.Group;
   selectionRingMat: THREE.MeshBasicMaterial;
+  // PT NPC hover cue: a lighter ground ring (no ticks, no spin) under the npc
+  // the cursor's direct pick is on. Drives off hoverEntityId, set per frame by
+  // updateHoverCursor in main.ts.
+  hoverNpcRing: THREE.Group;
+  hoverNpcRingMesh: THREE.Mesh;
+  hoverNpcRingMat: THREE.MeshBasicMaterial;
+  private hoverNpcRingLocalXZ: Float32Array;
+  private hoverNpcRingDrapeY: Float32Array;
+  private hoverRingX = NaN;
+  private hoverRingZ = NaN;
+  private hoverRingScale = NaN;
+  private hoverEntityId: number | null = null;
+  // The direct-half result of the last pick() call: pick() runs pickDirect
+  // first, so exposing it costs no extra raycast. main.ts feeds it to
+  // setHoveredEntity so the PT npc hover follows the actual mesh intersection,
+  // not the sloppy screen-distance assist.
+  private lastDirectPickId: number | null = null;
   // center-relative XZ of every base-ring vertex (cached) + scratch draped Y,
   // so sync() can re-drape the ring over the terrain without allocating.
   selectionRingLocalXZ: Float32Array;
@@ -2828,6 +2846,33 @@ export class Renderer {
     setRenderCategory(this.selectionRing, 'ui3d');
     this.selectionRing.visible = false;
     this.scene.add(this.selectionRing);
+
+    // PT NPC hover cue: same draped-ground-ring construction as the
+    // selection reticle but quieter - a thin ring, no ticks, no spin,
+    // friendly-green, so "cursor is on this npc" reads without competing
+    // with the gold/red target reticle.
+    const hoverGeo = new THREE.RingGeometry(0.55, 0.75, 40);
+    hoverGeo.rotateX(-Math.PI / 2);
+    this.hoverNpcRingMat = new THREE.MeshBasicMaterial({
+      color: 0x9fdc7f,
+      transparent: true,
+      opacity: 0.55,
+      depthWrite: false,
+    });
+    this.hoverNpcRing = new THREE.Group();
+    this.hoverNpcRingMesh = new THREE.Mesh(hoverGeo, this.hoverNpcRingMat);
+    this.hoverNpcRingMesh.frustumCulled = false;
+    this.hoverNpcRing.add(this.hoverNpcRingMesh);
+    const hoverPos = hoverGeo.getAttribute('position') as THREE.BufferAttribute;
+    this.hoverNpcRingLocalXZ = new Float32Array(hoverPos.count * 2);
+    for (let i = 0; i < hoverPos.count; i++) {
+      this.hoverNpcRingLocalXZ[i * 2] = hoverPos.getX(i);
+      this.hoverNpcRingLocalXZ[i * 2 + 1] = hoverPos.getZ(i);
+    }
+    this.hoverNpcRingDrapeY = new Float32Array(hoverPos.count);
+    setRenderCategory(this.hoverNpcRing, 'ui3d');
+    this.hoverNpcRing.visible = false;
+    this.scene.add(this.hoverNpcRing);
 
     this.playerAuraRings = new PlayerAuraRings(GFX.effectsTier, GFX.composer);
     setRenderCategory(this.playerAuraRings.group, 'ui3d');
@@ -11672,6 +11717,63 @@ export class Renderer {
     } else {
       this.selectionRing.visible = false;
     }
+
+    // PT NPC hover ring: the same ground-drape pattern as the selection
+    // reticle, driven by the cursor's DIRECT pick (setHoveredEntity from
+    // updateHoverCursor). PT npcs only - WoC npcs keep their always-on
+    // plates and need no hover cue.
+    const hoverEnt =
+      this.hoverEntityId !== null ? sim.entities.get(this.hoverEntityId) : undefined;
+    const hoverNpcView =
+      hoverEnt &&
+      hoverEnt.kind === 'npc' &&
+      !!hoverEnt.templateId?.startsWith(PT_NPC_ID_PREFIX) &&
+      !hoverEnt.dead
+        ? this.views.get(hoverEnt.id)
+        : undefined;
+    if (hoverEnt && hoverNpcView?.group.visible) {
+      const cx = hoverNpcView.group.position.x;
+      const cz = hoverNpcView.group.position.z;
+      if (
+        cx !== this.hoverRingX ||
+        cz !== this.hoverRingZ ||
+        hoverEnt.scale !== this.hoverRingScale
+      ) {
+        this.hoverRingX = cx;
+        this.hoverRingZ = cz;
+        this.hoverRingScale = hoverEnt.scale;
+        const seed = this.sim.cfg.seed;
+        const supportY = supportHeightAt(
+          seed,
+          cx,
+          cz,
+          0.5,
+          hoverNpcView.group.position.y + 0.01,
+        );
+        const gy = Math.max(groundHeight(cx, cz, seed), supportY);
+        this.hoverNpcRing.position.set(cx, gy, cz);
+        this.hoverNpcRing.scale.setScalar(hoverEnt.scale);
+        const drape = drapeRingLocalY(
+          this.hoverNpcRingLocalXZ,
+          cx,
+          cz,
+          gy,
+          hoverEnt.scale,
+          0.08,
+          this.selectionGroundSample,
+          this.hoverNpcRingDrapeY,
+        );
+        const hoverPos = this.hoverNpcRingMesh.geometry.getAttribute(
+          'position',
+        ) as THREE.BufferAttribute;
+        for (let i = 0; i < drape.length; i++) hoverPos.setY(i, drape[i]);
+        hoverPos.needsUpdate = true;
+      }
+      this.hoverNpcRing.visible = true;
+    } else {
+      this.hoverNpcRing.visible = false;
+      this.hoverRingX = NaN;
+    }
     const playerView = this.views.get(p.id);
     if (playerView && !p.dead && this.playerAuraRings.hasVisibleRings()) {
       const px = playerView.group.position.x;
@@ -12801,8 +12903,23 @@ export class Renderer {
 
   pick(clientX: number, clientY: number): number | null {
     const direct = this.pickDirect(clientX, clientY);
+    this.lastDirectPickId = direct;
     if (direct !== null) return direct;
     return this.pickSloppy(clientX, clientY);
+  }
+
+  /** The entity the last pick()'s direct raycast resolved to (null when the
+   *  click fell through to the sloppy assist or hit nothing). */
+  lastDirectPick(): number | null {
+    return this.lastDirectPickId;
+  }
+
+  /** Cursor-hover entity for the PT NPC hover cue (ring + on-demand plate).
+   *  Forwards to the nameplate painter so its per-frame plan can un-hide the
+   *  hovered npc's plate. */
+  setHoveredEntity(id: number | null): void {
+    this.hoverEntityId = id;
+    this.nameplatePainter.setHoverEntityId(id);
   }
 
   // The direct half of pick(): a visible nameplate health bar or an entity mesh.
