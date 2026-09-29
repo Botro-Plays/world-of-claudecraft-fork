@@ -37,7 +37,7 @@ import type { OverheadEmoteId } from '../../world_api';
 import { VARKHUL_FORGING_STRIKE_TIMESCALE } from '../varkhul_forge_hammer';
 import { NPC_PROP_SET_IDS, type NpcPropSet } from './npc_looks';
 import { PT_MOB_KEYS, PT_MOB_VISUALS } from './pt_mob_visuals';
-import { PT_NPC_KEYS, PT_NPC_VISUALS } from './pt_npc_visuals';
+import { PT_NPC_KEYS, PT_NPC_MODEL_SCALE, PT_NPC_VISUALS } from './pt_npc_visuals';
 
 export interface EmoteClipSpec {
   clips: readonly string[];
@@ -4443,29 +4443,31 @@ export const VISUALS: Record<string, VisualDef> = {
 };
 
 // ---------------------------------------------------------------------------
-// PT player world scale. Everything in the PT band shares one unit scale:
-// terrain, stage objects, mobs and the fixed NPCs all render 1 PT world unit
-// as PT_SCALE = 0.036 WoC yards (src/sim/pt_band.ts), and pt_npc_visuals.ts
-// derives NPC height the same way. The player defs above target the WoC-wide
-// HUMANOID_H instead, which normScales the ~45-51-unit PT bodies to
-// ~0.052 yd/unit - about 45% larger than every NPC and building authored in
-// the same unit space (the posed 61-unit TN-002 guard rendered SHORTER than
-// the 51-unit fighter, inverting the source proportions: PT draws players at
-// 1.0x model scale and NPCs at their authored *模型尺寸 1.2x vertex scale).
-// Rebinding height to rawHeight * PT_YD makes the player normScale exactly
-// the band scale, restoring source proportions. walkRef/runRef shrink by the
-// same ratio so the WALK/RUN stride rate still matches ground speed
-// (locomotionTimeScale = world speed / ref, and stride length scales with
-// normScale).
+// PT player world scale. PT players render on the same visual baseline as
+// the fixed NPCs: rawHeight (PT model units) x PT_SCALE x
+// PT_NPC_MODEL_SCALE. Terrain, stage objects and mobs render 1 PT world
+// unit as PT_SCALE = 0.036 WoC yards (src/sim/pt_band.ts); the NPC visual
+// table in pt_npc_visuals.ts additionally carries the source's uniform
+// *模型尺寸 1.2 vertex scale, and live visual validation showed players at
+// the bare 0.036 baseline read visibly undersized next to that NPC
+// population. Sharing PT_NPC_MODEL_SCALE puts both castes on the same
+// 0.0432 yd/unit effective scale so remaining height differences come from
+// the authored models themselves (a 61-unit TN-002 guard still stands
+// taller than a 51-unit fighter), not from a renderer-side scale split.
+// walkRef/runRef scale by the same ratio so the WALK/RUN stride rate still
+// matches ground speed (locomotionTimeScale = world speed / ref, and
+// stride length scales with normScale). Render-only: no gameplay,
+// collision, or server-position effect.
 // ---------------------------------------------------------------------------
 const PT_YD = 0.036; // 1 PT world unit -> WoC yards; PT_SCALE in src/sim/pt_band.ts
+const PT_PLAYER_SCALE = PT_YD * PT_NPC_MODEL_SCALE;
 for (const [key, def] of Object.entries(VISUALS)) {
   if (!/^player_(?:tempskron|morion|atlanteon)_/.test(key)) continue;
   if (!def.rawHeight) continue;
-  const shrink = (def.rawHeight * PT_YD) / def.height;
-  def.height = def.rawHeight * PT_YD;
-  def.walkRef = (def.walkRef ?? 2.2) * shrink;
-  def.runRef = (def.runRef ?? 7) * shrink;
+  const scale = (def.rawHeight * PT_PLAYER_SCALE) / def.height;
+  def.height = def.rawHeight * PT_PLAYER_SCALE;
+  def.walkRef = (def.walkRef ?? 2.2) * scale;
+  def.runRef = (def.runRef ?? 7) * scale;
 }
 
 // ---------------------------------------------------------------------------

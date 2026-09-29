@@ -23,10 +23,11 @@ const PT_YD = 0.036;
 // smCharInfo.wPlayClass[1] (fileread.cpp smCharDecode) and drawn as
 // smRender.ObjectVertexScale - a render-only vertex scale of 1.2x the
 // authored model units. Uniform across all 123 NPC defs, so it stays a
-// constant here rather than catalog data. Players carry no such directive
-// and render at 1.0x; this asymmetry is part of the source's intended
-// player-vs-NPC proportion (a TN-002 guard is meant to loom).
-const PT_NPC_MODEL_SCALE = 1.2;
+// constant here rather than catalog data.
+// Exported: manifest.ts renders PT players on this same baseline so
+// players and NPCs share one visual scale denominator - a shared-caste
+// convention, not a claim about the source's player-vs-NPC asymmetry.
+export const PT_NPC_MODEL_SCALE = 1.2;
 
 export const PT_NPC_VISUALS: Record<string, VisualDef> = {};
 export const PT_NPC_KEYS: Record<string, string> = {};
