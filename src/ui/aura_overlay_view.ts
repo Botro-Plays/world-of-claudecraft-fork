@@ -62,7 +62,9 @@ export type AuraOverlayTheme =
   // PT Atlanteon Martial Artist POC: reuse warrior's theme
   | 'atlanteon_martial_artist'
   // PT Atlanteon Shaman POC: reuse shaman's theme
-  | 'atlanteon_shaman';
+  | 'atlanteon_shaman'
+  // PT Morion Monk (fork-added): reuse shaman's theme
+  | 'morion_monk';
 
 export interface AuraOverlayProcDef {
   id: AuraOverlayProcId;

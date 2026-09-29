@@ -50,6 +50,8 @@ const PALETTE: Record<PlayerClass, number> = {
   atlanteon_martial_artist: 0xd4a040,
   // PT Atlanteon Shaman POC: distinct teal color (spiritual caster)
   atlanteon_shaman: 0x3d6b5c,
+  // PT Morion Monk (fork-added): distinct earth-brown color (cloth ascetic)
+  morion_monk: 0x8b7355,
 };
 const CLASS_IDS = Object.keys(PALETTE) as PlayerClass[];
 

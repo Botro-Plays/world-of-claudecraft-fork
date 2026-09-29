@@ -43,6 +43,7 @@ const VALID_CLASSES: ReadonlySet<string> = new Set([
   'atlanteon_assassin',
   'atlanteon_shaman',
   'atlanteon_martial_artist',
+  'morion_monk',
 ]);
 
 // Shape-check the content enough that the Sim ctor and terrain function won't trip

@@ -665,6 +665,7 @@ export const MEDIA_ASSETS: Record<string, string> =
   "models/creatures/pt_mechanician.glb": "/media/models/creatures/pt_mechanician.da9166b18326.glb",
   "models/creatures/pt_mechanician_hair2.glb": "/media/models/creatures/pt_mechanician_hair2.31fbe8c9e689.glb",
   "models/creatures/pt_mechanician_hair3.glb": "/media/models/creatures/pt_mechanician_hair3.2e979fcb6b7a.glb",
+  "models/creatures/pt_monk.glb": "/media/models/creatures/pt_monk.85599c75039b.glb",
   "models/creatures/pt_pikeman.glb": "/media/models/creatures/pt_pikeman.f615e69e571e.glb",
   "models/creatures/pt_pikeman_hair2.glb": "/media/models/creatures/pt_pikeman_hair2.c1e16c188695.glb",
   "models/creatures/pt_pikeman_hair3.glb": "/media/models/creatures/pt_pikeman_hair3.3a0b7be4f8bb.glb",

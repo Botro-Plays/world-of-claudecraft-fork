@@ -81,19 +81,21 @@ describe('PT tribe configuration', () => {
 
     it('exists', () => expect(tribe).toBeDefined());
     it('name is Morion', () => expect(tribe.name).toBe('Morion'));
-    it('has 3 classes', () => expect(tribe.classIds).toHaveLength(3));
-    it('has 3 implemented classes', () => expect(tribe.implementedClassIds).toHaveLength(3));
+    it('has 4 classes', () => expect(tribe.classIds).toHaveLength(4));
+    it('has 4 implemented classes', () => expect(tribe.implementedClassIds).toHaveLength(4));
 
-    it('classIds contains the three Morion classes', () => {
+    it('classIds contains the four Morion classes', () => {
       expect(tribe.classIds).toContain('morion_magician');
       expect(tribe.classIds).toContain('atlanteon_shaman');
       expect(tribe.classIds).toContain('morion_priestess');
+      expect(tribe.classIds).toContain('morion_monk');
     });
 
-    it('all three Morion classes are implemented', () => {
+    it('all four Morion classes are implemented', () => {
       expect(tribe.implementedClassIds).toContain('morion_magician');
       expect(tribe.implementedClassIds).toContain('atlanteon_shaman');
       expect(tribe.implementedClassIds).toContain('morion_priestess');
+      expect(tribe.implementedClassIds).toContain('morion_monk');
     });
 
     it('first implemented class is morion_magician', () => {
@@ -166,6 +168,8 @@ describe('PT tribe configuration', () => {
       expect(PT_CLASS_DISPLAY_NAMES['atlanteon_shaman']).toBe('Shaman'));
     it('Martial Artist display name is Martial Artist', () =>
       expect(PT_CLASS_DISPLAY_NAMES['atlanteon_martial_artist']).toBe('Martial Artist'));
+    it('Monk display name is Monk', () =>
+      expect(PT_CLASS_DISPLAY_NAMES['morion_monk']).toBe('Monk'));
   });
 });
 

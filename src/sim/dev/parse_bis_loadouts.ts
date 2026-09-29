@@ -466,6 +466,8 @@ const LOADOUTS: Readonly<Record<PlayerClass, ClassParseGear>> = Object.freeze({
   atlanteon_martial_artist: WARRIOR_LOADOUT,
   // PT Atlanteon Shaman POC: reuse warrior's loadouts (Phase A)
   atlanteon_shaman: WARRIOR_LOADOUT,
+  // PT Morion Monk (fork-added): reuse warrior's loadouts (Phase A)
+  morion_monk: WARRIOR_LOADOUT,
 });
 
 export interface ParseBisLoadoutEntry {

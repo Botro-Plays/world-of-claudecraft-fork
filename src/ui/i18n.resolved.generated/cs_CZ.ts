@@ -8788,6 +8788,7 @@ export const cs_CZ: EnTranslations = {
     "atlanteon_assassin": "Atlanteon Assassin",
     "atlanteon_martial_artist": "Atlanteon Martial Artist",
     "atlanteon_shaman": "Morion Shaman",
+    "morion_monk": "Morion Monk",
     "warriorAria": "Třída válečník",
     "paladinAria": "Třída paladin",
     "hunterAria": "Třída lovec",
@@ -8807,7 +8808,8 @@ export const cs_CZ: EnTranslations = {
     "morion_magicianAria": "Morion Magician class",
     "atlanteon_assassinAria": "Atlanteon Assassin class",
     "atlanteon_martial_artistAria": "Atlanteon Martial Artist class",
-    "atlanteon_shamanAria": "Morion Shaman class"
+    "atlanteon_shamanAria": "Morion Shaman class",
+    "morion_monkAria": "Morion Monk class"
   },
   "controls": {
     "title": "Průvodce ovládáním",
@@ -9753,7 +9755,8 @@ export const cs_CZ: EnTranslations = {
       "morion_magician": "Magicians manipulate their magical power to harm their enemies. They have an excellent understanding of every element and study how to turn magical power into a fatal attack. Magicians who advance to a certain class can even move the earth and stars as they wish.",
       "atlanteon_assassin": "Assassins are skilled dual-sword fighters who specialize in techniques such as hiding and poisoning.",
       "atlanteon_martial_artist": "Martial Artists use their fists and feet as weapons. They are powerful close-combat fighters whose primary weapon is the vambrace.",
-      "atlanteon_shaman": "Shamans have strong abilities in dark magic, drawing on the power of darkness. Their weapon is not a magic wand but the phantom on their back."
+      "atlanteon_shaman": "Shamans have strong abilities in dark magic, drawing on the power of darkness. Their weapon is not a magic wand but the phantom on their back.",
+      "morion_monk": "Monks are disciplined spiritual adepts who train body and mind in equal measure. They fight unarmored in simple cloth, relying on inner focus rather than weapons or dark arts."
     },
     "aria": "Detaily třídy {className}: role {role}. Počáteční statistiky: Síla {str}, Obratnost {agi}, Výdrž {sta}, Intelekt {int}, Duch {spi}.",
     "ariaPt": "Class details for {className}: tribe {tribe}. Starting stats: Strength {str}, Spirit {spi}, Talent {tal}, Agility {dex}, Health {hp}.",

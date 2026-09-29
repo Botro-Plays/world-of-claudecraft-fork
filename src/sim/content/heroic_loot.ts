@@ -58,6 +58,8 @@ const HEAVY = [
   'atlanteon_martial_artist',
   // PT Atlanteon Shaman reuses warrior's armor/weapon proficiency (plate/mail)
   'atlanteon_shaman',
+  // PT Morion Monk (fork-added) reuses warrior's armor/weapon proficiency (plate/mail)
+  'morion_monk',
 ] as ItemDef['requiredClass']; // plate/mail
 const HEAL_MAIL = ['paladin', 'shaman'] as ItemDef['requiredClass']; // int/spi mail wearers
 const HEAL_LEATHER = ['druid'] as ItemDef['requiredClass']; // int/spi leather wearers

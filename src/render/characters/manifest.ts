@@ -2750,6 +2750,29 @@ export const VISUALS: Record<string, VisualDef> = {
     },
     walkRef: 5,
   },
+  // The Morion Monk — a fork-added class (no original MagicPT JOBCODE). The
+  // GLB is a static Tripo source mesh rigid-skinned onto the Shaman's m7
+  // Bip01 skeleton + clip set (scripts/pt-port/monk_assembler.ts), so the
+  // clip names are the same m7 INX names as the Shaman's. Single bald
+  // variant: no hair2/hair3 GLBs exist.
+  player_morion_monk: {
+    url: `${CREATURES}/pt_monk.glb`,
+    height: HUMANOID_H,
+    rawHeight: 47.0,
+    clips: {
+      idle: 'STAND',
+      combatIdle: 'STAND_COMBAT',
+      walk: 'WALK',
+      run: 'RUN',
+      jump: 'FALLSTAND_REVERSED',
+      fall: 'FALLDOWN',
+      land: 'FALLSTAND',
+      attack: ['ATTACK'],
+      death: 'DEAD',
+      hit: ['DAMAGE'],
+    },
+    walkRef: 5,
+  },
   // -- cosmetic body skin (class-agnostic; both the skin preview and a live
   //    player whose skinCatalog === 'mech', see visualKeyFor) ----------------
   player_mech: swims({
@@ -4514,7 +4537,8 @@ for (const cls of ALL_CLASSES) {
     cls === 'morion_magician' ||
     cls === 'atlanteon_assassin' ||
     cls === 'atlanteon_martial_artist' ||
-    cls === 'atlanteon_shaman'
+    cls === 'atlanteon_shaman' ||
+    cls === 'morion_monk'
   )
     continue;
   const {

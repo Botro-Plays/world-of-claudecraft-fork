@@ -386,6 +386,10 @@ export const shellStrings = {
         // T_chr-sha.tga
         atlanteon_shaman:
           'Shamans have strong abilities in dark magic, drawing on the power of darkness. Their weapon is not a magic wand but the phantom on their back.',
+        // Fork-added class: no MagicPT source lore exists, so this text is
+        // authored for the fork (not a source translation).
+        morion_monk:
+          'Monks are disciplined spiritual adepts who train body and mind in equal measure. They fight unarmored in simple cloth, relying on inner focus rather than weapons or dark arts.',
       },
       aria: 'Class details for {className}: role {role}. Starting stats: Strength {str}, Agility {agi}, Stamina {sta}, Intellect {int}, Spirit {spi}.',
       // PT classes show tribe (not role) and the five PT stats

@@ -89,6 +89,8 @@ const LOOT_ARCHETYPE: Record<PlayerClass, 'WAR' | 'ROG' | 'MAG'> = {
   atlanteon_martial_artist: 'WAR',
   // PT Atlanteon Shaman POC: reuse shaman's archetype
   atlanteon_shaman: 'MAG',
+  // PT Morion Monk (fork-added, Morion magic-type): reuse shaman's archetype
+  morion_monk: 'MAG',
 };
 
 /**

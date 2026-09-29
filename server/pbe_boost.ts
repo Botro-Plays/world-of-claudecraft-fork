@@ -104,6 +104,7 @@ export const BOOST_CLASSES: readonly PlayerClass[] = [
   'atlanteon_assassin',
   'atlanteon_shaman',
   'atlanteon_martial_artist',
+  'morion_monk',
 ];
 
 export function pbeBoostEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
@@ -387,6 +388,12 @@ export const CLASS_ROLES: Record<PlayerClass, readonly BoostRole[]> = {
   ],
   // PT Atlanteon Shaman POC: reuse warrior's roles (Phase A)
   atlanteon_shaman: [
+    { id: 'arms', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true },
+    { id: 'fury', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true, hands: 'dualWield' },
+    { id: 'prot', weights: { sta: 1, str: 0.6, agi: 0.3 }, melee: true, tank: true, hands: 'shield' },
+  ],
+  // PT Morion Monk (fork-added): reuse warrior's roles (Phase A)
+  morion_monk: [
     { id: 'arms', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true },
     { id: 'fury', weights: { str: 1, sta: 0.8, agi: 0.4 }, melee: true, hands: 'dualWield' },
     { id: 'prot', weights: { sta: 1, str: 0.6, agi: 0.3 }, melee: true, tank: true, hands: 'shield' },

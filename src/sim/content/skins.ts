@@ -147,6 +147,8 @@ export const SKIN_COUNTS: Record<PlayerClass, number> = {
   atlanteon_martial_artist: 6,
   // PT Atlanteon Shaman POC: reuse shaman's skin count
   atlanteon_shaman: 6,
+  // PT Morion Monk POC (fork-added): reuse shaman's skin count
+  morion_monk: 6,
 };
 
 /** Whether `skin` is a valid appearance index for `cls` (0 = default). */

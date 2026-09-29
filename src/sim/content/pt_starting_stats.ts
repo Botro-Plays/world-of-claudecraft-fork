@@ -54,6 +54,10 @@ export const PT_STARTING_STATS: Readonly<Partial<Record<PlayerClass, PtStartingS
   atlanteon_assassin: { str: 25, spi: 10, tal: 22, dex: 20, hp: 22 },
   atlanteon_shaman: { str: 15, spi: 27, tal: 20, dex: 15, hp: 22 },
   atlanteon_martial_artist: { str: 26, spi: 9, tal: 20, dex: 20, hp: 24 },
+  // Fork-added Morion magic-type class with no original MagicPT JOBCODE;
+  // copies the Shaman's Morion magic starting stats (MorNewCharacterInit
+  // case 4) as its baseline.
+  morion_monk: { str: 15, spi: 27, tal: 20, dex: 15, hp: 22 },
 };
 
 /** Get the PT starting stats for a class, or null if the class is not a PT class. */

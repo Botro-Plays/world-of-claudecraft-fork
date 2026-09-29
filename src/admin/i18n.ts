@@ -379,6 +379,7 @@ const CLASS_LABEL_IDS = new Set([
   'atlanteon_assassin',
   'atlanteon_shaman',
   'atlanteon_martial_artist',
+  'morion_monk',
 ]);
 export function classLabel(classId: string): string {
   return CLASS_LABEL_IDS.has(classId) ? t(`class.${classId}`) : classId;

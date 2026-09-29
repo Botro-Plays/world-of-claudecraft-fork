@@ -516,6 +516,14 @@ export const TALENTS = {
     class: 'atlanteon_shaman' as const,
     specs: WARRIOR_TALENTS.specs.map((s) => ({ ...s, class: 'atlanteon_shaman' as const })),
   },
+  // PT Morion Monk (fork-added): same approach as the existing PT classes.
+  // Reuses the warrior's talent tree (Phase A scope); the visual + animation
+  // set is the m7-rigged Monk's.
+  morion_monk: {
+    ...WARRIOR_TALENTS,
+    class: 'morion_monk' as const,
+    specs: WARRIOR_TALENTS.specs.map((s) => ({ ...s, class: 'morion_monk' as const })),
+  },
 } satisfies Record<PlayerClass, ClassTalents>;
 
 export function talentsFor(cls: PlayerClass): ClassTalents | null {

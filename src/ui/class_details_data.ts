@@ -152,6 +152,13 @@ export const CLASS_DETAILS: Record<PlayerClass, ClassDetails> = {
     armorKey: 'classDetails.armor.chainLeatherCloth',
     weaponsKey: 'classDetails.weapons.macesAxes',
   },
+  // PT Morion Monk (fork-added): reuse shaman's class details
+  morion_monk: {
+    roleKey: 'classDetails.roles.shaman',
+    roleType: 'hybrid',
+    armorKey: 'classDetails.armor.chainLeatherCloth',
+    weaponsKey: 'classDetails.weapons.macesAxes',
+  },
 };
 
 // Three curated "signature" abilities per class, shown on the select screen.
@@ -189,6 +196,8 @@ export const SIGNATURE_ABILITIES: Record<PlayerClass, string[]> = {
   atlanteon_martial_artist: ['charge', 'heroic_strike', 'execute'],
   // PT Atlanteon Shaman POC: reuse warrior's signature abilities (Phase A)
   atlanteon_shaman: ['charge', 'heroic_strike', 'execute'],
+  // PT Morion Monk (fork-added): reuse warrior's signature abilities (Phase A)
+  morion_monk: ['charge', 'heroic_strike', 'execute'],
 };
 
 // Spec-card presentation for the Specialization screen. Keyed by class, then spec id:
@@ -543,6 +552,24 @@ export const SPEC_CARD_INFO: Record<PlayerClass, Record<string, SpecCardInfo>> =
   },
   // PT Atlanteon Shaman POC: reuse warrior's spec card info (Phase A)
   atlanteon_shaman: {
+    arms: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['mortal_strike', 'overpower', 'sweeping_strikes', 'execute'],
+    },
+    fury: {
+      primaryStat: 'str',
+      complexity: 'high',
+      examples: ['bloodthirst', 'raging_gale', 'red_harvest', 'whirlwind'],
+    },
+    prot: {
+      primaryStat: 'str',
+      complexity: 'medium',
+      examples: ['shield_slam', 'revenge', 'thunder_clap', 'sunder_armor'],
+    },
+  },
+  // PT Morion Monk (fork-added): reuse warrior's spec card info (Phase A)
+  morion_monk: {
     arms: {
       primaryStat: 'str',
       complexity: 'medium',

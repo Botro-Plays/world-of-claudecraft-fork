@@ -71,6 +71,8 @@ export const ROW_TREES = {
   atlanteon_martial_artist: WARRIOR_ROWS,
   // PT Atlanteon Shaman POC: reuse warrior's talent rows (Phase A)
   atlanteon_shaman: WARRIOR_ROWS,
+  // PT Morion Monk (fork-added): reuse warrior's talent rows (Phase A)
+  morion_monk: WARRIOR_ROWS,
 } satisfies Record<PlayerClass, RowTree>;
 
 const ROW_LEVEL_SET = new Set<number>(ROW_LEVELS);

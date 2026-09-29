@@ -5,9 +5,13 @@ import { tEntity, classDisplayName } from '../src/ui/entity_i18n';
 import { t } from '../src/ui/i18n';
 import type { PlayerClass } from '../src/sim/types';
 
-// Guards the Character Creation details panel data for the 11 PT classes
+// Guards the Character Creation details panel data for the 12 PT classes
 // against the generic WoC fallback regression (PT classes used to resolve
 // to classes.warrior / classDetails.lore.warrior).
+//
+// morion_monk has no MagicPT source (the source defines no Monk job code);
+// its entry pins the donor-derived values actually shipped rather than an
+// invented MagicPT record.
 //
 // Authoritative sources (MagicPT-Chinese):
 //   names/job codes:  PT-Source/fileread.cpp  JobDataBase[]
@@ -141,6 +145,17 @@ const PT_CLASSES: PtClassExpectation[] = [
     descriptionHas: ['dual-sword', 'poisoning'],
     descriptionRejects: ['Thamskron', 'Tempskron'], // obsolete source tribe ref
   },
+  {
+    // No MagicPT Monk exists: stats are the Morion magic (Shaman) donor
+    // baseline and the description is Botro-authored for the new class.
+    id: 'morion_monk',
+    displayName: 'Monk',
+    catalogName: 'Morion Monk',
+    tribe: 'Morion',
+    stats: { str: 15, spi: 27, tal: 20, dex: 15, hp: 22 },
+    descriptionHas: ['spiritual adepts', 'simple cloth'],
+    descriptionRejects: [],
+  },
 ];
 
 function ptTribeNameFor(classId: PlayerClass): string | null {
@@ -153,8 +168,8 @@ function classDescription(classId: PlayerClass): string {
 }
 
 describe('PT character-creation class information', () => {
-  it('covers all 11 implemented PT classes', () => {
-    expect(PT_CLASSES).toHaveLength(11);
+  it('covers all 12 implemented PT classes', () => {
+    expect(PT_CLASSES).toHaveLength(12);
     for (const c of PT_CLASSES) {
       expect(PT_CLASS_DISPLAY_NAMES[c.id], c.id).toBe(c.displayName);
       expect(ptStartingStatsFor(c.id), c.id).not.toBeNull();

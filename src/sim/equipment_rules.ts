@@ -36,6 +36,8 @@ const MAIL_CLASSES = new Set<PlayerClass>([
   'atlanteon_martial_artist',
   // PT Atlanteon Shaman reuses warrior's armor proficiency (mail) (Phase A)
   'atlanteon_shaman',
+  // PT Morion Monk reuses warrior's armor proficiency (mail) (Phase A)
+  'morion_monk',
 ]);
 const LEATHER_CLASSES = new Set<PlayerClass>(['druid', 'rogue', 'hunter']);
 const WARRIOR_WEAPON_CLASSES = new Set<PlayerClass>([
@@ -73,6 +75,7 @@ const PT_TEMPSKRON_CLASSES: ReadonlySet<PlayerClass> = new Set<PlayerClass>([
   'atlanteon_assassin',
   'atlanteon_martial_artist',
   'atlanteon_shaman',
+  'morion_monk',
 ]);
 function isPtTempskron(cls: PlayerClass): boolean {
   return PT_TEMPSKRON_CLASSES.has(cls);

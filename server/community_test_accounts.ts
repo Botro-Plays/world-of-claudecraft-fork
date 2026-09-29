@@ -114,6 +114,7 @@ const PT_NAME_PREFIXES: Partial<Record<PlayerClass, string>> = {
   atlanteon_assassin: 'Assassin',
   atlanteon_martial_artist: 'Martial',
   atlanteon_shaman: 'Spirit',
+  morion_monk: 'Monk',
 };
 
 export function generatedTestCharacterName(

@@ -326,7 +326,13 @@ export type PlayerClass =
   // Priston Tale Atlanteon Shaman (reassigned from Morion in the Botro fork).
   // A playable player class whose visual is the converted MagicPT-Chinese
   // Shaman GLB. See scripts/pt-port/shaman_assembler.ts.
-  | 'atlanteon_shaman';
+  | 'atlanteon_shaman'
+  // Priston Tale Morion Monk — a fork-added class, NOT an original MagicPT
+  // JOBCODE (the source job list ends at JOBCODE_MARTIALARTIST = 11). Morion
+  // magic-type. The visual is a Tripo source mesh grafted onto the Shaman's
+  // m7 Bip01 skeleton + animation set; gameplay data reuses the Shaman
+  // baseline. See scripts/pt-port/monk_assembler.ts.
+  | 'morion_monk';
 
 // Sanguine Aura's class-level melee recipient filter. It excludes the pure
 // casters and Hunter, whose primary attack loop is ranged.
@@ -395,6 +401,7 @@ export const ALL_CLASSES: PlayerClass[] = [
   'atlanteon_assassin',
   'atlanteon_martial_artist',
   'atlanteon_shaman',
+  'morion_monk',
 ];
 export type ResourceType = 'rage' | 'mana' | 'energy' | 'focus';
 export const OVERHEAD_EMOTE_IDS = [

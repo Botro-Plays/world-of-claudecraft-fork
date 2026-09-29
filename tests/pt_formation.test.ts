@@ -48,7 +48,7 @@ describe('formationSlots', () => {
     expect(formationSlots(4)).toHaveLength(4);
   });
 
-  it('returns 3 slots for Morion (3 classes)', () => {
+  it('returns 3 slots for a 3-member formation', () => {
     expect(formationSlots(3)).toHaveLength(3);
   });
 
@@ -99,7 +99,7 @@ describe('stageRowSlots', () => {
     expect(stageRowSlots(4)).toHaveLength(4);
   });
 
-  it('returns 3 slots for Morion (3 classes)', () => {
+  it('returns 3 slots for a 3-member stage row', () => {
     expect(stageRowSlots(3)).toHaveLength(3);
   });
 
@@ -162,9 +162,9 @@ describe('tribeFormationEntries', () => {
     expect(entries).toHaveLength(3);
   });
 
-  it('Morion formation has 2 entries (3 classes minus selected)', () => {
+  it('Morion formation has 3 entries (4 classes minus selected)', () => {
     const entries = tribeFormationEntries('morion', 'morion_magician');
-    expect(entries).toHaveLength(2);
+    expect(entries).toHaveLength(3);
   });
 
   it('Atlanteon formation has 3 entries (4 classes minus selected)', () => {
@@ -241,9 +241,9 @@ describe('selectedFormationSlot', () => {
 // ---------------------------------------------------------------------------
 
 describe('PT_STARTING_STATS', () => {
-  it('has entries for all 11 PT classes', () => {
+  it('has entries for all 12 PT classes', () => {
     const ptClasses = ALL_CLASSES.filter((c) => hasPtStartingStats(c));
-    expect(ptClasses).toHaveLength(11);
+    expect(ptClasses).toHaveLength(12);
   });
 
   it('Fighter stats match MagicPT source (STR 28, SPI 6, TAL 21, DEX 17, HP 27)', () => {
@@ -451,9 +451,9 @@ describe('tribeStageEntries', () => {
     expect(entries).toHaveLength(4);
   });
 
-  it('Morion stage has 3 entries (all classes, none excluded)', () => {
+  it('Morion stage has 4 entries (all classes, none excluded)', () => {
     const entries = tribeStageEntries('morion');
-    expect(entries).toHaveLength(3);
+    expect(entries).toHaveLength(4);
   });
 
   it('Atlanteon stage has 4 entries (all classes, none excluded)', () => {
@@ -495,13 +495,14 @@ describe('tribeStageEntries', () => {
     ]);
   });
 
-  it('three Morion characters map correctly (Magician, Shaman, Priestess)', () => {
+  it('four Morion characters map correctly (Magician, Shaman, Priestess, Monk)', () => {
     const entries = tribeStageEntries('morion');
     const classes = entries.map((e) => e.cls);
     expect(classes).toEqual([
       'morion_magician',
       'atlanteon_shaman',
       'morion_priestess',
+      'morion_monk',
     ]);
   });
 
@@ -562,6 +563,7 @@ describe('classHomeSlot', () => {
       'morion_magician',
       'atlanteon_shaman',
       'morion_priestess',
+      'morion_monk',
     ]) {
       const slot = classHomeSlot('morion', cls as PlayerClass);
       expect(slot.z, `${cls} HOME Z must be negative`).toBeLessThan(0);
@@ -863,7 +865,7 @@ describe('stage selection state (home <-> center with diagonal walking)', () => 
     expect(stage.homes).toEqual(homesBefore);
   });
 
-  it('three-character formation (Morion) works', () => {
+  it('four-character formation (Morion) works', () => {
     const stage = makeStage('morion');
     stage.select('morion_magician');
     expect(stage.isAtCenter('morion_magician')).toBe(true);
@@ -873,6 +875,9 @@ describe('stage selection state (home <-> center with diagonal walking)', () => 
     stage.select('morion_priestess');
     expect(stage.isAtHome('atlanteon_shaman')).toBe(true);
     expect(stage.isAtCenter('morion_priestess')).toBe(true);
+    stage.select('morion_monk');
+    expect(stage.isAtHome('morion_priestess')).toBe(true);
+    expect(stage.isAtCenter('morion_monk')).toBe(true);
   });
 
   it('Atlanteon four-character formation works', () => {
@@ -936,17 +941,31 @@ describe('stage presentation target (formation-aware depth)', () => {
   });
 });
 
-describe('3-character formation (Morion) presentation overlap fix', () => {
-  // Morion has 3 characters. The middle character's home X is 0 (same as
-  // the presentation X). The presentation Z must be sufficiently forward that
-  // the selected character does not overlap the middle character from the
-  // camera's view.
+describe('3-member stage rotation (generic three-class row)', () => {
+  // The side-swap rotation is generic to any stage with exactly three
+  // members (tribeStageUsesRotation keys on the member count). No tribe
+  // ships three classes after the Monk joined Morion, so this harness
+  // builds a synthetic three-member row — the pre-Monk Morion trio — to
+  // keep the rotation semantics pinned. The middle character's home X is 0
+  // (same as the presentation X): the presentation Z must be sufficiently
+  // forward that the selected character does not overlap the middle
+  // character from the camera's view.
 
   const FOCUS_SCALE = 1.08;
   const BACKGROUND_SCALE = 0.92;
 
   function makeMorionStage() {
-    const entries = tribeStageEntries('morion');
+    const slots = stageRowSlots(3);
+    const entries = [
+      'morion_magician',
+      'atlanteon_shaman',
+      'morion_priestess',
+    ].map((cls, i) => ({
+      cls,
+      visualKey: `player_${cls}`,
+      x: slots[i]!.x,
+      z: slots[i]!.z,
+    }));
     const homes = new Map<string, { x: number; z: number }>();
     const targetX = new Map<string, number>();
     const targetZ = new Map<string, number>();
@@ -1032,8 +1051,8 @@ describe('3-character formation (Morion) presentation overlap fix', () => {
     };
   }
 
-  it('Morion (3 members) uses the side-swap rotation; Tempskron and Atlanteon (4 members) use normal selection', () => {
-    expect(tribeStageUsesRotation('morion')).toBe(true);
+  it('no tribe uses the side-swap rotation today (all rosters have 4 members; the rule keys on count, not tribe)', () => {
+    expect(tribeStageUsesRotation('morion')).toBe(false);
     expect(tribeStageUsesRotation('tempskron')).toBe(false);
     expect(tribeStageUsesRotation('atlanteon')).toBe(false);
     expect(tribeStageUsesRotation(null)).toBe(false);
@@ -1147,17 +1166,17 @@ describe('3-character formation (Morion) presentation overlap fix', () => {
   });
 
   it('3-member formation creates three unique home positions', () => {
-    const entries = tribeStageEntries('morion');
-    expect(entries).toHaveLength(3);
-    const positions = entries.map((e) => `${e.x},${e.z}`);
+    const slots = stageRowSlots(3);
+    expect(slots).toHaveLength(3);
+    const positions = slots.map((s) => `${s.x},${s.z}`);
     const unique = new Set(positions);
     expect(unique.size, 'all 3 home positions must be unique').toBe(3);
   });
 
   it('3-member formation middle character home X is 0 (centered)', () => {
-    const entries = tribeStageEntries('morion');
+    const slots = stageRowSlots(3);
     // The middle entry (index 1) should have X = 0.
-    expect(entries[1]!.x, 'middle character must be at X=0').toBe(0);
+    expect(slots[1]!.x, 'middle character must be at X=0').toBe(0);
   });
 
   it('selected left Morion target is centered but does not equal middle home', () => {

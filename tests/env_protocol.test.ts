@@ -28,12 +28,12 @@ describe('headless environment protocol validation', () => {
   });
 
   it('accepts every declared player class and rejects anything else', () => {
-    // all 20 classes are valid env inputs: 9 base WoC classes plus 11 PT
-    // classes (4 Tempskron, 4 Morion, 3 Atlanteon).
+    // all 21 classes are valid env inputs: 9 base WoC classes plus 12 PT
+    // classes (4 Tempskron, 5 Morion, 3 Atlanteon).
     for (const cls of ALL_CLASSES) {
       expect(validatePlayerClass(cls)).toBe(cls);
     }
-    expect(ALL_CLASSES.length).toBe(20);
+    expect(ALL_CLASSES.length).toBe(21);
     expect(validatePlayerClass('warlock')).toBe('warlock');
     expect(validatePlayerClass('necromancer')).toBeNull();
     expect(validatePlayerClass('')).toBeNull();

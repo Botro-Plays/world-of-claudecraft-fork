@@ -5454,7 +5454,7 @@ async function startOffline(
     // player_tempskron_mechanician / player_tempskron_pikeman /
     // player_tempskron_archer / player_morion_knight / player_morion_atalanta), showing the
     // converted PT model directly.
-    const isPtClass = playerClass === 'tempskron_fighter' || playerClass === 'tempskron_mechanician' || playerClass === 'tempskron_pikeman' || playerClass === 'tempskron_archer' || playerClass === 'morion_knight' || playerClass === 'morion_atalanta' || playerClass === 'morion_priestess' || playerClass === 'morion_magician' || playerClass === 'atlanteon_assassin' || playerClass === 'atlanteon_martial_artist' || playerClass === 'atlanteon_shaman';
+    const isPtClass = playerClass === 'tempskron_fighter' || playerClass === 'tempskron_mechanician' || playerClass === 'tempskron_pikeman' || playerClass === 'tempskron_archer' || playerClass === 'morion_knight' || playerClass === 'morion_atalanta' || playerClass === 'morion_priestess' || playerClass === 'morion_magician' || playerClass === 'atlanteon_assassin' || playerClass === 'atlanteon_martial_artist' || playerClass === 'atlanteon_shaman' || playerClass === 'morion_monk';
     if (!isPtClass) {
       offlinePlayer.modularAppearance = modularAppearance as unknown as Record<string, unknown>;
     } else if (ptHair > 0) {
@@ -5642,6 +5642,12 @@ const PT_SHAMAN_HAIR_KEYS = [
   'player_atlanteon_shaman_hair3',
 ] as const;
 
+// The fork-added Morion Monk ships a single bald visual — no hair GLBs.
+// Every hair index resolves to the base key, which also lets the shared
+// hair-row logic detect that this PT class has no real variants (index 1
+// resolves to the same key as index 0) and hide the selector for it.
+const PT_MONK_HAIR_KEYS = ['player_morion_monk'] as const;
+
 function ptFighterVisualKey(hair: number): string {
   return PT_FIGHTER_HAIR_KEYS[hair] ?? PT_FIGHTER_HAIR_KEYS[0];
 }
@@ -5686,6 +5692,10 @@ function ptShamanVisualKey(hair: number): string {
   return PT_SHAMAN_HAIR_KEYS[hair] ?? PT_SHAMAN_HAIR_KEYS[0];
 }
 
+function ptMonkVisualKey(hair: number): string {
+  return PT_MONK_HAIR_KEYS[hair] ?? PT_MONK_HAIR_KEYS[0];
+}
+
 /** Resolve the PT hair selection to a visual key for the given PT class.
  *  Returns null for non-PT classes (they do not use the hair override system). */
 function ptVisualKey(cls: PlayerClass, hair: number): string | null {
@@ -5700,6 +5710,7 @@ function ptVisualKey(cls: PlayerClass, hair: number): string | null {
   if (cls === 'atlanteon_assassin') return ptAssassinVisualKey(hair);
   if (cls === 'atlanteon_martial_artist') return ptMartialArtistVisualKey(hair);
   if (cls === 'atlanteon_shaman') return ptShamanVisualKey(hair);
+  if (cls === 'morion_monk') return ptMonkVisualKey(hair);
   return null;
 }
 
@@ -5923,7 +5934,7 @@ function previewClassBody(cls: PlayerClass): void {
   if (!characterPreview) return;
   const look = modularLookForClass(cls);
   if (look) characterPreview.setModular(look.app, look.worn, cls);
-  else if (cls === 'tempskron_fighter' || cls === 'tempskron_mechanician' || cls === 'tempskron_pikeman' || cls === 'tempskron_archer' || cls === 'morion_knight' || cls === 'morion_atalanta' || cls === 'morion_priestess' || cls === 'morion_magician' || cls === 'atlanteon_assassin' || cls === 'atlanteon_martial_artist' || cls === 'atlanteon_shaman') {
+  else if (cls === 'tempskron_fighter' || cls === 'tempskron_mechanician' || cls === 'tempskron_pikeman' || cls === 'tempskron_archer' || cls === 'morion_knight' || cls === 'morion_atalanta' || cls === 'morion_priestess' || cls === 'morion_magician' || cls === 'atlanteon_assassin' || cls === 'atlanteon_martial_artist' || cls === 'atlanteon_shaman' || cls === 'morion_monk') {
     // PT classes have 3 hair style GLB variants; swap the visual key by hair choice.
     const vk = ptVisualKey(cls, offlinePtHair);
     if (vk) characterPreview.setVisualKey(vk);
@@ -6107,8 +6118,10 @@ function refreshOfflineSkins(cls: PlayerClass): void {
   // Pikeman).
   const hairRow = document.getElementById('offline-pt-hair-row');
   if (hairRow) {
-    const isPtClass = cls === 'tempskron_fighter' || cls === 'tempskron_mechanician' || cls === 'tempskron_pikeman' || cls === 'tempskron_archer' || cls === 'morion_knight' || cls === 'morion_atalanta' || cls === 'morion_priestess' || cls === 'morion_magician' || cls === 'atlanteon_assassin' || cls === 'atlanteon_martial_artist' || cls === 'atlanteon_shaman';
-    hairRow.hidden = !isPtClass;
+    const isPtClass = cls === 'tempskron_fighter' || cls === 'tempskron_mechanician' || cls === 'tempskron_pikeman' || cls === 'tempskron_archer' || cls === 'morion_knight' || cls === 'morion_atalanta' || cls === 'morion_priestess' || cls === 'morion_magician' || cls === 'atlanteon_assassin' || cls === 'atlanteon_martial_artist' || cls === 'atlanteon_shaman' || cls === 'morion_monk';
+    // PT classes ship 3 hair GLB variants EXCEPT the fork-added Monk, whose
+    // single bald GLB resolves every hair index to the same visual key.
+    hairRow.hidden = !isPtClass || ptVisualKey(cls, 1) === ptVisualKey(cls, 0);
     if (isPtClass) {
       hairRow.querySelectorAll('.pt-hair-card').forEach((b, i) => {
         const sel = i === 0;
@@ -6135,8 +6148,8 @@ function refreshOnlineSkins(cls: PlayerClass): void {
   // Show the 3-choice hair selector for PT classes.
   const hairRow = document.getElementById('online-pt-hair-row');
   if (hairRow) {
-    const isPtClass = cls === 'tempskron_fighter' || cls === 'tempskron_mechanician' || cls === 'tempskron_pikeman' || cls === 'tempskron_archer' || cls === 'morion_knight' || cls === 'morion_atalanta' || cls === 'morion_priestess' || cls === 'morion_magician' || cls === 'atlanteon_assassin' || cls === 'atlanteon_martial_artist' || cls === 'atlanteon_shaman';
-    hairRow.hidden = !isPtClass;
+    const isPtClass = cls === 'tempskron_fighter' || cls === 'tempskron_mechanician' || cls === 'tempskron_pikeman' || cls === 'tempskron_archer' || cls === 'morion_knight' || cls === 'morion_atalanta' || cls === 'morion_priestess' || cls === 'morion_magician' || cls === 'atlanteon_assassin' || cls === 'atlanteon_martial_artist' || cls === 'atlanteon_shaman' || cls === 'morion_monk';
+    hairRow.hidden = !isPtClass || ptVisualKey(cls, 1) === ptVisualKey(cls, 0);
     if (isPtClass) {
       hairRow.querySelectorAll('.pt-hair-card').forEach((b, i) => {
         const sel = i === 0;

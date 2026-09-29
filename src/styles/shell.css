@@ -2834,6 +2834,9 @@
   .mini-class[data-class="atlanteon_shaman"] {
     --class-color: #3d6b5c;
   }
+  .mini-class[data-class="morion_monk"] {
+    --class-color: #8b7355;
+  }
 
   /* Priston Tale Tempskron Fighter proof-of-concept: a separate tribe section
      visually distinguishing the PT class from the base Botro classes. */
@@ -6441,6 +6444,9 @@
   }
   [data-class="atlanteon_shaman"] {
     --class-color: #3d6b5c;
+  }
+  [data-class="morion_monk"] {
+    --class-color: #8b7355;
   }
 
   /* PT tribe ring: a chip carrying data-pt-tribe (emitted by

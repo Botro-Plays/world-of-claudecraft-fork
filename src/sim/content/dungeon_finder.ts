@@ -64,6 +64,7 @@ export const FINDER_PRE_SPEC_ROLES: Record<Role, readonly PlayerClass[]> = {
     'atlanteon_assassin',
     'atlanteon_shaman',
     'atlanteon_martial_artist',
+    'morion_monk',
   ],
 };
 

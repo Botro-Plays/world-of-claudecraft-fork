@@ -698,6 +698,34 @@ const SHAMAN_DEF: ClassDef = {
   color: 0x3d6b5c,
 };
 
+// Fork-added PT Morion Monk (morion_monk). There is NO original MagicPT Monk
+// JOBCODE — the source job list ends at JOBCODE_MARTIALARTIST = 11 — so there
+// are no authentic Monk stats to transcribe. Per the class-design decision,
+// the Monk is a Morion magic-type class and reuses the Shaman's stat/resource
+// foundation (the Shaman is itself a Morion male magic class in MagicPT;
+// MorNewCharacterInit Str 15 / Spi 27 / Talent 20 / Def 15 / Health 22,
+// LifeFunction=5 / ManaFunction=1). The ability kit and talent tree reuse the
+// warrior's, matching the established PT Phase-A POC convention. The visual is
+// a Tripo source mesh grafted onto the Shaman's m7 Bip01 skeleton + animation
+// set (player_morion_monk VisualDef); see scripts/pt-port/monk_assembler.ts.
+const MONK_DEF: ClassDef = {
+  id: 'morion_monk',
+  name: 'Morion Monk',
+  baseStats: { str: 15, agi: 20, sta: 22, int: 27, spi: 27, armor: 15 },
+  statsPerLevel: { str: 1, agi: 1, sta: 1, int: 3, spi: 3, armor: 10 },
+  baseHp: 42,
+  hpPerLevel: 12,
+  baseMana: 108,
+  manaPerLevel: 22,
+  resourceType: 'mana',
+  startWeapon: 'worn_sword',
+  startOffhand: 'eastbrook_buckler',
+  startChest: 'recruit_tunic',
+  startItems: START_RATIONS_MANA,
+  abilities: WARRIOR_DEF.abilities,
+  color: 0x8b7355,
+};
+
 export const CLASSES: Record<PlayerClass, ClassDef> = {
   warrior: WARRIOR_DEF,
   mage: {
@@ -1259,6 +1287,11 @@ export const CLASSES: Record<PlayerClass, ClassDef> = {
   // converted MagicPT-Chinese Shaman (player_atlanteon_shaman VisualDef).
   // See scripts/pt-port/shaman_assembler.ts.
   atlanteon_shaman: SHAMAN_DEF,
+  // PT Morion Monk: fork-added class (no original MagicPT JOBCODE). Morion
+  // magic-type; stat/resource foundation copied from the Shaman baseline.
+  // The visual is a Tripo mesh grafted onto the m7 Bip01 rig
+  // (player_morion_monk VisualDef). See scripts/pt-port/monk_assembler.ts.
+  morion_monk: MONK_DEF,
 };
 
 // ---------------------------------------------------------------------------

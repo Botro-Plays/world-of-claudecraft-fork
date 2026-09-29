@@ -96,7 +96,8 @@ type PlayerClassKey =
   | 'morion_magician'
   | 'atlanteon_assassin'
   | 'atlanteon_shaman'
-  | 'atlanteon_martial_artist';
+  | 'atlanteon_martial_artist'
+  | 'morion_monk';
 
 export interface PublicCardCopy {
   gameName: string;
@@ -133,6 +134,7 @@ const EN_CLASSES: Record<PlayerClassKey, string> = {
   atlanteon_assassin: 'Assassin',
   atlanteon_shaman: 'Shaman',
   atlanteon_martial_artist: 'Martial Artist',
+  morion_monk: 'Monk',
 };
 
 export const PUBLIC_CARD_COPY: Record<PublicCardLocale, PublicCardCopy> = {

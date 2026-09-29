@@ -13,8 +13,8 @@
  * save data, i18n keys, and the whole PT pipeline depend on it. Tribe
  * membership is defined ONLY by the rosters below.
  *
- * Morion currently has 3 classes; a fourth (Monk) is planned but NOT
- * implemented yet — do not add placeholder data.
+ * Morion has 4 classes; the fourth (Monk) is a fork-added class with no
+ * original MagicPT JOBCODE — implemented as morion_monk.
  */
 
 export type PtTribeId = 'tempskron' | 'morion' | 'atlanteon';
@@ -52,6 +52,7 @@ export const PT_CLASS_DISPLAY_NAMES: Readonly<Record<string, string>> = {
   atlanteon_assassin: 'Assassin',
   atlanteon_shaman: 'Shaman',
   atlanteon_martial_artist: 'Martial Artist',
+  morion_monk: 'Monk',
 };
 
 /** The three Priston Tale tribes and their intended class rosters. */
@@ -81,8 +82,9 @@ export const PT_TRIBES: readonly PtTribeDef[] = [
       'morion_magician',
       'atlanteon_shaman',
       'morion_priestess',
+      'morion_monk',
     ],
-    implementedClassIds: ['morion_magician', 'atlanteon_shaman', 'morion_priestess'],
+    implementedClassIds: ['morion_magician', 'atlanteon_shaman', 'morion_priestess', 'morion_monk'],
     logoPath: '/ui/tribes/Morion.png',
     placeholderLogoFromTribe: null,
   },

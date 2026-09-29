@@ -187,6 +187,7 @@ const CLASS_NAME_KEYS: Record<PlayerClass, string> = {
   atlanteon_assassin: 'classes.atlanteon_assassin',
   atlanteon_martial_artist: 'classes.atlanteon_martial_artist',
   atlanteon_shaman: 'classes.atlanteon_shaman',
+  morion_monk: 'classes.morion_monk',
 };
 
 const CLASS_DESCRIPTION_KEYS: Record<PlayerClass, string> = {
@@ -213,6 +214,9 @@ const CLASS_DESCRIPTION_KEYS: Record<PlayerClass, string> = {
   atlanteon_assassin: 'classDetails.lore.atlanteon_assassin',
   atlanteon_martial_artist: 'classDetails.lore.atlanteon_martial_artist',
   atlanteon_shaman: 'classDetails.lore.atlanteon_shaman',
+  // Fork-added class with no MagicPT source lore image; English text in the
+  // catalog is authored for the fork.
+  morion_monk: 'classDetails.lore.morion_monk',
 };
 
 const fallbackLog = new Map<string, EntityTranslationFallback>();

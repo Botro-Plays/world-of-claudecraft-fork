@@ -743,6 +743,8 @@ export const REWARD_ARCHETYPE: Record<PlayerClass, PlayerClass> = {
   atlanteon_martial_artist: 'warrior',
   // PT Atlanteon Shaman POC: reuse warrior's reward archetype (Phase A)
   atlanteon_shaman: 'warrior',
+  // PT Morion Monk POC (fork-added): reuse warrior's reward archetype (Phase A)
+  morion_monk: 'warrior',
 };
 
 // Resolve the item a quest awards a given class: a class-specific reward if the

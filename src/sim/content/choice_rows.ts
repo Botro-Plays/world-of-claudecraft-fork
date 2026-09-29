@@ -68,6 +68,8 @@ export const CHOICE_ROWS: Record<PlayerClass, ClassChoiceRows> & Record<string, 
   atlanteon_martial_artist: { rows: WARRIOR_ROWS },
   // PT Atlanteon Shaman POC: reuse warrior's choice rows (Phase A)
   atlanteon_shaman: { rows: WARRIOR_ROWS },
+  // PT Morion Monk (fork-added): reuse warrior's choice rows (Phase A)
+  morion_monk: { rows: WARRIOR_ROWS },
 };
 
 const CHOICE_ROW_LEVEL_SET = new Set<number>(CHOICE_ROW_LEVELS);

@@ -156,6 +156,11 @@
     <priority>0.55</priority>
   </url>
   <url>
+    <loc>https://worldofclaudecraft.com/wiki/classes/morion_monk</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.55</priority>
+  </url>
+  <url>
     <loc>https://worldofclaudecraft.com/wiki/bestiary</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>

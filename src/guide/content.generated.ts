@@ -4519,6 +4519,225 @@ export const GUIDE_CLASSES: GuideClassInfo[] = [
     ],
     "model": "player_atlanteon_shaman",
     "still": "/guide-stills/player_atlanteon_shaman.webp"
+  },
+  {
+    "id": "morion_monk",
+    "color": "#8b7355",
+    "resource": "mana",
+    "roles": [
+      "tank",
+      "dps"
+    ],
+    "specs": [
+      {
+        "id": "arms",
+        "name": "Battlecraft",
+        "role": "dps",
+        "signature": "mortal_strike"
+      },
+      {
+        "id": "fury",
+        "name": "Bloodrush",
+        "role": "dps",
+        "signature": "bloodthirst"
+      },
+      {
+        "id": "prot",
+        "name": "Ironguard",
+        "role": "tank",
+        "signature": "shield_slam"
+      }
+    ],
+    "signatureAbilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      }
+    ],
+    "abilities": [
+      {
+        "id": "heroic_strike",
+        "name": "Reaver Strike"
+      },
+      {
+        "id": "revenge",
+        "name": "Revenge"
+      },
+      {
+        "id": "battle_shout",
+        "name": "Iron Bellow"
+      },
+      {
+        "id": "charge",
+        "name": "Onrush"
+      },
+      {
+        "id": "thunder_clap",
+        "name": "Quaking Blow"
+      },
+      {
+        "id": "hamstring",
+        "name": "Hobbling Cut"
+      },
+      {
+        "id": "bloodrage",
+        "name": "Blood Toll"
+      },
+      {
+        "id": "overpower",
+        "name": "Redhand"
+      },
+      {
+        "id": "raging_gale",
+        "name": "Twinstrike"
+      },
+      {
+        "id": "raised_guard",
+        "name": "Raised Guard"
+      },
+      {
+        "id": "pummel",
+        "name": "Jawcrack"
+      },
+      {
+        "id": "berserker_rage",
+        "name": "Seething Fury"
+      },
+      {
+        "id": "execute",
+        "name": "Early Grave"
+      },
+      {
+        "id": "furious_mending",
+        "name": "Furious Mending"
+      },
+      {
+        "id": "iron_resolve",
+        "name": "Iron Resolve"
+      },
+      {
+        "id": "slam",
+        "name": "Brute Swing"
+      },
+      {
+        "id": "red_harvest",
+        "name": "Red Harvest"
+      },
+      {
+        "id": "whirlwind",
+        "name": "Bladed Gyre"
+      },
+      {
+        "id": "faultline",
+        "name": "Faultline"
+      },
+      {
+        "id": "heroic_leap",
+        "name": "Vaulting Charge"
+      },
+      {
+        "id": "cleave",
+        "name": "Reaping Arc"
+      },
+      {
+        "id": "rallying_cry",
+        "name": "Valor Roar"
+      },
+      {
+        "id": "emboldening_roar",
+        "name": "Emboldening Roar"
+      },
+      {
+        "id": "defiant_bellow",
+        "name": "Defiant Bellow"
+      },
+      {
+        "id": "battle_stance",
+        "name": "Battle Stance"
+      },
+      {
+        "id": "berserker_stance",
+        "name": "Berserker Stance"
+      },
+      {
+        "id": "defensive_stance",
+        "name": "Guarded Stance"
+      },
+      {
+        "id": "demoralizing_shout",
+        "name": "Direhowl"
+      },
+      {
+        "id": "intimidating_shout",
+        "name": "Intimidating Shout"
+      },
+      {
+        "id": "sunder_armor",
+        "name": "Armor Shear"
+      },
+      {
+        "id": "taunt",
+        "name": "Goad"
+      },
+      {
+        "id": "measured_fury",
+        "name": "Measured Fury"
+      },
+      {
+        "id": "seasoned_soldier",
+        "name": "Seasoned Soldier"
+      },
+      {
+        "id": "sudden_death",
+        "name": "Sudden Death"
+      },
+      {
+        "id": "diabolical_twinstrike",
+        "name": "Diabolical Twinstrike"
+      },
+      {
+        "id": "cleaving_blows",
+        "name": "Cleaving Blows"
+      },
+      {
+        "id": "breachmaker",
+        "name": "Breachmaker"
+      },
+      {
+        "id": "sweeping_strikes",
+        "name": "Widening Arc"
+      },
+      {
+        "id": "deep_wounds",
+        "name": "Gaping Wounds"
+      },
+      {
+        "id": "enrage_passive",
+        "name": "Mayhem"
+      }
+    ],
+    "model": "player_morion_monk",
+    "still": "/guide-stills/player_morion_monk.webp"
   }
 ];
 
@@ -22680,57 +22899,62 @@ export const GUIDE_MODELS: Record<string, GuideModelSpec> = {
   "player_tempskron_fighter": {
     "url": "models/creatures/pt_fighter.glb",
     "idle": "STAND",
-    "height": 2.6
+    "height": 2.156112
   },
   "player_tempskron_mechanician": {
     "url": "models/creatures/pt_mechanician.glb",
     "idle": "STAND",
-    "height": 2.6
+    "height": 2.156112
   },
   "player_tempskron_pikeman": {
     "url": "models/creatures/pt_pikeman.glb",
     "idle": "STAND",
-    "height": 2.6
+    "height": 2.156112
   },
   "player_tempskron_archer": {
     "url": "models/creatures/pt_archer.glb",
     "idle": "STAND",
-    "height": 2.6
+    "height": 2.2161599999999995
   },
   "player_morion_knight": {
     "url": "models/creatures/pt_knight.glb",
     "idle": "STAND",
-    "height": 2.6
+    "height": 2.156112
   },
   "player_morion_atalanta": {
     "url": "models/creatures/pt_atalanta.glb",
     "idle": "STAND",
-    "height": 2.6
+    "height": 2.2161599999999995
   },
   "player_morion_priestess": {
     "url": "models/creatures/pt_priestess.glb",
     "idle": "STAND",
-    "height": 2.6
+    "height": 1.9569599999999996
   },
   "player_morion_magician": {
     "url": "models/creatures/pt_magician.glb",
     "idle": "STAND",
-    "height": 2.6
+    "height": 1.9569599999999996
   },
   "player_atlanteon_assassin": {
     "url": "models/creatures/pt_assassin.glb",
     "idle": "STAND",
-    "height": 2.6
+    "height": 2.091312
   },
   "player_atlanteon_martial_artist": {
     "url": "models/creatures/pt_martial_artist.glb",
     "idle": "STAND",
-    "height": 2.6
+    "height": 1.9746719999999998
   },
   "player_atlanteon_shaman": {
     "url": "models/creatures/pt_shaman.glb",
     "idle": "STAND",
-    "height": 2.6
+    "height": 2.03904
+  },
+  "player_morion_monk": {
+    "url": "models/creatures/pt_monk.glb",
+    "idle": "STAND",
+    "height": 2.0303999999999998
   },
   "form_bear": {
     "url": "models/creatures/bear_form.glb",

@@ -169,10 +169,16 @@ export const DEV_KIT_ROLES: Readonly<Record<PlayerClass, readonly DevKitRole[]>>
     { spec: 'fury', weights: PHYS_STR, melee: true, hands: 'dualWield' },
     { spec: 'prot', weights: TANK_STR, melee: true, tank: true, hands: 'shield' },
   ],
+  // PT Morion Monk (fork-added): reuse warrior's dev kit roles (Phase A)
+  morion_monk: [
+    { spec: 'arms', weights: PHYS_STR, melee: true },
+    { spec: 'fury', weights: PHYS_STR, melee: true, hands: 'dualWield' },
+    { spec: 'prot', weights: TANK_STR, melee: true, tank: true, hands: 'shield' },
+  ],
 });
 
-// Every class-and-spec pair, flattened. 60 entries: 20 classes times 3 specs.
-export const DEV_KIT_ROLE_COUNT = 60;
+// Every class-and-spec pair, flattened. 63 entries: 21 classes times 3 specs.
+export const DEV_KIT_ROLE_COUNT = 63;
 
 export function devKitRole(cls: PlayerClass, spec: string): DevKitRole | null {
   return DEV_KIT_ROLES[cls]?.find((role) => role.spec === spec) ?? null;

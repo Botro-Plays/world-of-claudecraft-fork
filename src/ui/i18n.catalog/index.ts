@@ -864,6 +864,8 @@ export const en = {
     atlanteon_martial_artist: 'Atlanteon Martial Artist',
     // PT Morion Shaman POC (ID prefix kept for stability): distinct display name, reuses shaman gameplay
     atlanteon_shaman: 'Morion Shaman',
+    // PT Morion Monk (fork-added class, no original MagicPT JOBCODE): distinct display name, reuses shaman gameplay
+    morion_monk: 'Morion Monk',
     warriorAria: 'Warrior class',
     paladinAria: 'Paladin class',
     hunterAria: 'Hunter class',
@@ -884,6 +886,7 @@ export const en = {
     atlanteon_assassinAria: 'Atlanteon Assassin class',
     atlanteon_martial_artistAria: 'Atlanteon Martial Artist class',
     atlanteon_shamanAria: 'Morion Shaman class',
+    morion_monkAria: 'Morion Monk class',
   },
   controls: {
     title: 'Controls Guide',

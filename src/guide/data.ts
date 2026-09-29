@@ -65,6 +65,8 @@ export const CLASS_CHIPS: ClassChip[] = [
   { id: 'atlanteon_martial_artist', nameKey: 'classes.warrior', color: '#d4a040' },
   // PT Atlanteon Shaman POC: distinct teal color (spiritual caster)
   { id: 'atlanteon_shaman', nameKey: 'classes.warrior', color: '#3d6b5c' },
+  // PT Morion Monk (fork-added): distinct earth-brown color (cloth ascetic)
+  { id: 'morion_monk', nameKey: 'classes.warrior', color: '#8b7355' },
 ];
 
 export interface ZoneTeaser {

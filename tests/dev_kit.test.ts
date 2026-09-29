@@ -321,6 +321,10 @@ describe('kit construction', () => {
       'atlanteon_shaman/arms',
       'atlanteon_shaman/fury',
       'atlanteon_shaman/prot',
+      // PT Morion Monk reuses warrior's str-based roles (Phase A)
+      'morion_monk/arms',
+      'morion_monk/fury',
+      'morion_monk/prot',
     ];
     const AGI_SPECS = [
       'hunter/beast_mastery',

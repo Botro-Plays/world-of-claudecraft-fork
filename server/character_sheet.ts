@@ -405,6 +405,8 @@ const CLASS_LABELS: Record<PlayerClass, string> = {
   atlanteon_martial_artist: 'Warrior',
   // PT Atlanteon Shaman POC: reuse warrior's label (Phase A)
   atlanteon_shaman: 'Warrior',
+  // PT Morion Monk POC (fork-added): reuse warrior's label (Phase A)
+  morion_monk: 'Warrior',
 };
 
 export function splitCopper(copper: number): MoneySplit {

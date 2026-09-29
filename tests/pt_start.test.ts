@@ -67,6 +67,7 @@ const MORION_CLASSES: readonly PlayerClass[] = [
   'morion_magician',
   'atlanteon_shaman',
   'morion_priestess',
+  'morion_monk',
 ];
 
 const ATLANTEON_CLASSES: readonly PlayerClass[] = [

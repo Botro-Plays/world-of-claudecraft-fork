@@ -45,6 +45,7 @@ const PT_CLASSES: ReadonlySet<string> = new Set([
   'atlanteon_assassin',
   'atlanteon_martial_artist',
   'atlanteon_shaman',
+  'morion_monk',
 ]);
 
 export function isPtClass(cls: string): boolean {

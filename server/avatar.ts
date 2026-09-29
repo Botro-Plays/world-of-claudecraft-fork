@@ -43,6 +43,8 @@ export const PLAYER_CLASSES: readonly PlayerClass[] = [
   'atlanteon_martial_artist',
   // PT Atlanteon Shaman POC: distinct teal color (spiritual caster)
   'atlanteon_shaman',
+  // PT Morion Monk (fork-added): distinct earth-brown color (cloth ascetic)
+  'morion_monk',
 ];
 
 export const MAX_SKIN = 7;
