@@ -21281,6 +21281,72 @@ export const zh_TW: EnTranslations = {
       "pt_wv301": {
         "name": "南瓜拳套"
       },
+      "pt_da157": {
+        "name": "禮服女(30天)"
+      },
+      "pt_db130": {
+        "name": "幻影戰靴"
+      },
+      "pt_qwa108": {
+        "name": "惡魔獵手"
+      },
+      "pt_qwa120": {
+        "name": "米諾陶斯斧"
+      },
+      "pt_qwc108": {
+        "name": "古代復仇者"
+      },
+      "pt_qwc120": {
+        "name": "寂滅龍爪"
+      },
+      "pt_qwd109": {
+        "name": "巨型彎刀"
+      },
+      "pt_qwd121": {
+        "name": "謎之劍"
+      },
+      "pt_qwh109": {
+        "name": "隕星"
+      },
+      "pt_qwh121": {
+        "name": "轟雷戰錘"
+      },
+      "pt_qwm109": {
+        "name": "鬼魂"
+      },
+      "pt_qwm121": {
+        "name": "雅典娜之光"
+      },
+      "pt_qwn109": {
+        "name": "塔坦卡法珠"
+      },
+      "pt_qwn121": {
+        "name": "卡塞塔法珠"
+      },
+      "pt_qwp109": {
+        "name": "魔鬼之鐮"
+      },
+      "pt_qwp121": {
+        "name": "靈犀之鐮"
+      },
+      "pt_qws110": {
+        "name": "薄霧"
+      },
+      "pt_qws122": {
+        "name": "鳳舞九天"
+      },
+      "pt_qws210": {
+        "name": "鍍金劍"
+      },
+      "pt_qws223": {
+        "name": "創世之劍"
+      },
+      "pt_qwt109": {
+        "name": "水蟒"
+      },
+      "pt_qwt121": {
+        "name": "龍翔標槍"
+      },
       "conjured_water4": {
         "name": "魔法泉水"
       },

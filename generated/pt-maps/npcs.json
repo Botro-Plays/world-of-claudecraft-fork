@@ -356,7 +356,8 @@
     "placed": 25,
     "npcs": 153,
     "defs": 115,
-    "items": 1902
+    "items": 1902,
+    "itemVariants": 22
   },
   "stagedGlbs": [
     {
@@ -786,6 +787,198 @@
     {
       "file": "stella.glb",
       "from": "E:\\CascadeProjects\\PT Cross-Platform\\ClaudeCraft-Comparison\\world-of-claudecraft-fork\\scripts\\pt-port\\converted\\npc"
+    }
+  ],
+  "itemCollisions": [
+    {
+      "code": "DA156",
+      "primary": "DA156.txt",
+      "duplicates": [],
+      "variants": [
+        "DA157"
+      ]
+    },
+    {
+      "code": "DB121",
+      "primary": "DB121.txt",
+      "duplicates": [],
+      "variants": [
+        "DB130"
+      ]
+    },
+    {
+      "code": "OA145",
+      "primary": "OA145.txt",
+      "duplicates": [
+        "OA145 - 副本 (4).txt",
+        "OA145 - 副本 (5).txt",
+        "OA145 - 副本 (6).txt",
+        "OA145 - 副本 (7).txt",
+        "OA145 - 副本 (8).txt",
+        "OA145 - 副本 (9).txt",
+        "OA145 - 副本.txt"
+      ],
+      "variants": []
+    },
+    {
+      "code": "WA108",
+      "primary": "WA108.txt",
+      "duplicates": [],
+      "variants": [
+        "QWA108"
+      ]
+    },
+    {
+      "code": "WA120",
+      "primary": "WA120.txt",
+      "duplicates": [],
+      "variants": [
+        "QWA120"
+      ]
+    },
+    {
+      "code": "WC108",
+      "primary": "WC108.txt",
+      "duplicates": [],
+      "variants": [
+        "QWC108"
+      ]
+    },
+    {
+      "code": "WC120",
+      "primary": "WC120.txt",
+      "duplicates": [],
+      "variants": [
+        "QWC120"
+      ]
+    },
+    {
+      "code": "WD109",
+      "primary": "WD109.txt",
+      "duplicates": [],
+      "variants": [
+        "QWD109"
+      ]
+    },
+    {
+      "code": "WD121",
+      "primary": "WD121.txt",
+      "duplicates": [],
+      "variants": [
+        "QWD121"
+      ]
+    },
+    {
+      "code": "WH109",
+      "primary": "WH109.txt",
+      "duplicates": [],
+      "variants": [
+        "QWH109"
+      ]
+    },
+    {
+      "code": "WH121",
+      "primary": "WH121.txt",
+      "duplicates": [],
+      "variants": [
+        "QWH121"
+      ]
+    },
+    {
+      "code": "WM109",
+      "primary": "WM109.txt",
+      "duplicates": [],
+      "variants": [
+        "QWM109"
+      ]
+    },
+    {
+      "code": "WM121",
+      "primary": "WM121.txt",
+      "duplicates": [],
+      "variants": [
+        "QWM121"
+      ]
+    },
+    {
+      "code": "WN109",
+      "primary": "WN109.txt",
+      "duplicates": [],
+      "variants": [
+        "QWN109"
+      ]
+    },
+    {
+      "code": "WN121",
+      "primary": "WN121.txt",
+      "duplicates": [],
+      "variants": [
+        "QWN121"
+      ]
+    },
+    {
+      "code": "WP109",
+      "primary": "WP109.txt",
+      "duplicates": [],
+      "variants": [
+        "QWP109"
+      ]
+    },
+    {
+      "code": "WP121",
+      "primary": "WP121.txt",
+      "duplicates": [],
+      "variants": [
+        "QWP121"
+      ]
+    },
+    {
+      "code": "WS110",
+      "primary": "WS110.txt",
+      "duplicates": [],
+      "variants": [
+        "QWS110"
+      ]
+    },
+    {
+      "code": "WS122",
+      "primary": "WS122.txt",
+      "duplicates": [],
+      "variants": [
+        "QWS122"
+      ]
+    },
+    {
+      "code": "WS210",
+      "primary": "WS210.txt",
+      "duplicates": [],
+      "variants": [
+        "QWS210"
+      ]
+    },
+    {
+      "code": "WS223",
+      "primary": "WS223.txt",
+      "duplicates": [],
+      "variants": [
+        "QWS223"
+      ]
+    },
+    {
+      "code": "WT109",
+      "primary": "WT109.txt",
+      "duplicates": [],
+      "variants": [
+        "QWT109"
+      ]
+    },
+    {
+      "code": "WT121",
+      "primary": "WT121.txt",
+      "duplicates": [],
+      "variants": [
+        "QWT121"
+      ]
     }
   ]
 }

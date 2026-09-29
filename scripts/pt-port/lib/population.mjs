@@ -218,6 +218,31 @@ const INF_INT_FIELDS = new Set([
 ]);
 const INF_PAIR_FIELDS = new Set(['group', 'attack']);
 
+// Drop-table directives (fileread.cpp DecodeMonsterInfo):
+//   *物品数量 <n>            FallItemMax - cap on rolled drops
+//   *物品 <weight> <toks...> weighted pool entry. 无 = empty slot;
+//                            金 <min> <max> = coin drop; otherwise item codes.
+//                            The source divides the weight across the line's
+//                            item count (percent /= ItemCodeCnt) - the raw
+//                            weight and full code list are preserved here so
+//                            the future loot phase owns the split.
+//   *增加物品 <per10k> <code>  FallItems_Plus - independent bonus-drop chance
+//                            in units of 1/10000 (the server rolls
+//                            rand()%10000 < Percentage, OnSever.cpp:8226).
+//   *物品全部                AllSeeItem flag
+//   *事件物品 <code>         dwEvnetItem - event/quest item drop
+// Codes stay as authored (uppercased) LastCategory strings; item-id
+// resolution is a consumer concern.
+function parseDropLine(rest) {
+  const toks = rest.split(/\s+/).filter((t) => t && t !== '无');
+  const weight = atoi(toks[0] ?? '0');
+  const body = toks.slice(1);
+  if (body.length && body[0] === '金') {
+    return { weight, gold: [atoi(body[1] ?? '0'), atoi(body[2] ?? body[1] ?? '0')], items: [] };
+  }
+  return { weight, gold: null, items: body.map((t) => t.toUpperCase()) };
+}
+
 export function parseInf(buf) {
   const text = GBK.decode(buf);
   const out = {
@@ -226,6 +251,11 @@ export function parseInf(buf) {
     life: null, attack: null, defense: null, attackSpeed: null,
     moveSpeed: null, vision: null, attackRange: null, xp: null,
     size: null, race: null, moveType: null,
+    drops: [],
+    dropLimit: null,
+    bonusDrops: [],
+    eventItem: null,
+    allSeeItem: false,
   };
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.trim();
@@ -233,8 +263,33 @@ export function parseInf(buf) {
     const m = line.match(/^\*(\S+)\s*(.*)$/);
     if (!m) continue;
     const field = INF_FIELDS[m[1]];
-    if (!field) continue;
     const rest = m[2].trim();
+    if (!field) {
+      switch (m[1]) {
+        case '物品':
+          out.drops.push(parseDropLine(rest));
+          break;
+        case '物品数量':
+          out.dropLimit = atoi(rest);
+          break;
+        case '增加物品': {
+          const toks = rest.split(/\s+/).filter(Boolean);
+          if (toks.length >= 2) {
+            out.bonusDrops.push({ per10k: atoi(toks[0]), code: toks[1].toUpperCase() });
+          }
+          break;
+        }
+        case '事件物品':
+          out.eventItem = rest.split(/\s+/)[0]?.toUpperCase() ?? null;
+          break;
+        case '物品全部':
+          out.allSeeItem = true;
+          break;
+        default:
+          break;
+      }
+      continue;
+    }
     const quoted = rest.match(/^"([^"]*)"/);
     const val = quoted ? quoted[1] : rest;
     if (INF_PAIR_FIELDS.has(field)) {
@@ -335,6 +390,14 @@ export function buildMonsterRegistry(monsterDir, { convertedDir } = {}) {
         size: inf.size,
         race: inf.race,
         moveType: inf.moveType,
+      },
+      // Source drop definitions (data only - no runtime loot roll yet).
+      drops: {
+        pools: inf.drops,
+        bonus: inf.bonusDrops,
+        limit: inf.dropLimit,
+        eventItem: inf.eventItem,
+        allSee: inf.allSeeItem,
       },
     };
     // GLB conversion outputs live under scripts/pt-port/converted/monster/
@@ -584,6 +647,7 @@ export function emitMobCatalogModule(registry, records) {
       level: d.level,
       group: d.group,
       stats: d.stats,
+      drops: d.drops,
       visual: {
         file: d.asset ? d.asset.split('/').pop() : null,
         dieFile: d.dieAsset ? d.dieAsset.split('/').pop() : null,

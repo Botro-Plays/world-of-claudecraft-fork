@@ -39,6 +39,10 @@ export function ptClientExists(rel) {
   return existsSync(ptClientPath(rel));
 }
 
+export function ptSourcePath(rel) {
+  return join(ptSourceDir(), rel);
+}
+
 export function ptServerPath(rel) {
   return join(ptServerDir(), rel);
 }

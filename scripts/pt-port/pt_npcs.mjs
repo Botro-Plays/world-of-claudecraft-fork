@@ -17,15 +17,14 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ptServerPath, ptServerExists } from './lib/pt_client.mjs';
+import { ptServerPath, ptServerExists, ptSourcePath } from './lib/pt_client.mjs';
 import {
   buildFieldNpcs,
   emitFieldNpcsModule,
-  emitItemCatalogModule,
   emitNpcCatalogModule,
   glbHeightUnits,
-  parseOpenItem,
 } from './lib/pt_npcs.mjs';
+import { buildItemCatalog, emitItemCatalogModule, parseSitemTable } from './lib/pt_items.mjs';
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const genDir = join(repoRoot, 'generated', 'pt-maps');
@@ -129,19 +128,32 @@ function main() {
     copyFileSync(join(from, file), join(outDir, file));
   }
 
-  // Full OpenItem catalog (shop lists join on it, and future drops/rewards
+  // Full OpenItem catalog, joined with the client sItem[] table for English
+  // names/equip metadata (shop lists join on it, and future drops/rewards
   // read the same table - emitting all of it keeps the catalog complete).
-  const items = new Map();
+  // Duplicate-code groups are resolved by explicit policy (see
+  // lib/pt_items.mjs): the stem-matching file is primary, identical copies
+  // collapse into source.duplicates, differing files become keyed variants.
+  const items = { entries: new Map(), variants: new Map(), collisions: [], rules: null };
   const openItemDir = ptServerPath('GameServer/OpenItem');
+  const sitemPath = ptSourcePath('sinbaram/sinItem.cpp');
   if (existsSync(openItemDir)) {
-    for (const f of readdirSync(openItemDir).sort()) {
-      if (!f.toLowerCase().endsWith('.txt')) continue;
-      const def = parseOpenItem(readFileSync(join(openItemDir, f)));
-      if (def.code) items.set(def.code, def);
-    }
+    const sitem = existsSync(sitemPath)
+      ? parseSitemTable(readFileSync(sitemPath))
+      : { byCode: {}, rules: null };
+    const files = readdirSync(openItemDir)
+      .filter((f) => f.toLowerCase().endsWith('.txt'))
+      .sort();
+    const built = buildItemCatalog(openItemDir, files, sitem);
+    items.entries = built.entries;
+    items.variants = built.variants;
+    items.collisions = built.collisions;
+    items.rules = sitem.rules;
   }
-  summary.totals.items = items.size;
-  log(`npc defs: ${npcDefs.size}  items: ${items.size}`);
+  summary.totals.items = items.entries.size;
+  summary.totals.itemVariants = items.variants.size;
+  summary.itemCollisions = items.collisions;
+  log(`npc defs: ${npcDefs.size}  items: ${items.entries.size}  variants: ${items.variants.size}`);
 
   writeFileSync(join(genDir, 'pt_npc_catalog.generated.ts'), emitNpcCatalogModule(npcDefs));
   writeFileSync(join(genDir, 'pt_item_catalog.generated.ts'), emitItemCatalogModule(items));

@@ -15576,3088 +15576,3088 @@ export const ru_RU: EnTranslations = {
         "name": "Кольчужные сапоги Штормового гимна"
       },
       "pt_bc101": {
-        "name": "阿塔纳西娅"
+        "name": "Athanasia"
       },
       "pt_bc102": {
-        "name": "必杀卷轴"
+        "name": "Critical Scroll"
       },
       "pt_bc103": {
-        "name": "躲闪卷轴"
+        "name": "Evasion Scroll"
       },
       "pt_bc104": {
-        "name": "全愈卷轴"
+        "name": "Full Heal Scroll"
       },
       "pt_bc105": {
-        "name": "复活卷轴"
+        "name": "Resurrection Scroll"
       },
       "pt_bc106": {
-        "name": "水晶塔之印"
+        "name": "Crystal Tower Seal"
       },
       "pt_bc107": {
-        "name": "水晶塔之印"
+        "name": "Crystal Tower Seal"
       },
       "pt_bc108": {
-        "name": "水晶塔之印"
+        "name": "Crystal Tower Seal"
       },
       "pt_bc109": {
-        "name": "攻击纹章"
+        "name": "Attack Crest"
       },
       "pt_bc110": {
-        "name": "攻击纹章"
+        "name": "Attack Crest"
       },
       "pt_bc111": {
-        "name": "攻击纹章"
+        "name": "Attack Crest"
       },
       "pt_bc112": {
-        "name": "攻击纹章"
+        "name": "Attack Crest"
       },
       "pt_bc113": {
-        "name": "攻击纹章"
+        "name": "Attack Crest"
       },
       "pt_bc114": {
-        "name": "攻击纹章"
+        "name": "Attack Crest"
       },
       "pt_bc115": {
-        "name": "攻击纹章"
+        "name": "Attack Crest"
       },
       "pt_bc116": {
-        "name": "攻击纹章"
+        "name": "Attack Crest"
       },
       "pt_bc117": {
-        "name": "攻击纹章"
+        "name": "Attack Crest"
       },
       "pt_bc118": {
-        "name": "攻击纹章"
+        "name": "Attack Crest"
       },
       "pt_bc119": {
-        "name": "攻击纹章"
+        "name": "Attack Crest"
       },
       "pt_bc121": {
-        "name": "生命上限药水(1小时)"
+        "name": "HP Up Potion (1 Hour)"
       },
       "pt_bc122": {
-        "name": "生命上限药水(3小时)"
+        "name": "HP Up Potion (3 Hours)"
       },
       "pt_bc123": {
-        "name": "生命上限药水(1天)"
+        "name": "HP Up Potion (1 Day)"
       },
       "pt_bc124": {
-        "name": "魔法上限药水(1小时)"
+        "name": "MP Up Potion (1 Hour)"
       },
       "pt_bc125": {
-        "name": "魔法上限药水(3小时)"
+        "name": "MP Up Potion (3 Hours)"
       },
       "pt_bc126": {
-        "name": "魔法上限药水(1天)"
+        "name": "MP Up Potion (1 Day)"
       },
       "pt_bc127": {
-        "name": "耐力上限药水(1小时)"
+        "name": "SP Up Potion (1 Hour)"
       },
       "pt_bc128": {
-        "name": "耐力上限药水(3小时)"
+        "name": "SP Up Potion (3 Hours)"
       },
       "pt_bc129": {
-        "name": "耐力上限药水(1天)"
+        "name": "SP Up Potion (1 Day)"
       },
       "pt_bc130": {
-        "name": "紫色药水(3小时)"
+        "name": "Purple Potion (3 Hours)"
       },
       "pt_bc131": {
-        "name": "魔法上限药水(1小时)"
+        "name": "MP Up Potion (1 Hour)"
       },
       "pt_bc132": {
-        "name": "耐力上限药水(1小时)"
+        "name": "SP Up Potion (1 Hour)"
       },
       "pt_bc135": {
-        "name": "哈瓦那之光"
+        "name": "Havana Light"
       },
       "pt_bc136": {
-        "name": "卫队"
+        "name": "Guard"
       },
       "pt_bi101": {
-        "name": "蓝水晶"
+        "name": "Blue Crystal"
       },
       "pt_bi102": {
-        "name": "红水晶"
+        "name": "Red Crystal"
       },
       "pt_bi103": {
-        "name": "绿水晶"
+        "name": "Green Crystal"
       },
       "pt_bi104": {
-        "name": "复活卷轴"
+        "name": "Resurrection Scroll"
       },
       "pt_bi105": {
-        "name": "永恒生命"
+        "name": "Eternal Life"
       },
       "pt_bi106": {
-        "name": "暴怒卷轴"
+        "name": "Rage Scroll"
       },
       "pt_bi107": {
-        "name": "闪避卷轴"
+        "name": "Dodge Scroll"
       },
       "pt_bi108": {
-        "name": "传送卷轴"
+        "name": "Teleport Scroll"
       },
       "pt_bi109": {
-        "name": "大头药水"
+        "name": "Big Head Potion"
       },
       "pt_bi110": {
-        "name": "锻造紫水晶"
+        "name": "Forge Amethyst"
       },
       "pt_bi111": {
-        "name": "锻造守护石"
+        "name": "Forge Guard Stone"
       },
       "pt_bi112": {
-        "name": "夺宝卷轴(1天)"
+        "name": "Loot Scroll (1 Day)"
       },
       "pt_bi113": {
-        "name": "经验药水(1天)"
+        "name": "EXP Potion (1 Day)"
       },
       "pt_bi114": {
-        "name": "夺宝卷轴(7天)"
+        "name": "Loot Scroll (7 Days)"
       },
       "pt_bi115": {
-        "name": "经验药水(7天)"
+        "name": "EXP Potion (7 Days)"
       },
       "pt_bi116": {
-        "name": "A型染发剂"
+        "name": "Type A Hair Dye"
       },
       "pt_bi117": {
-        "name": "B型染发剂"
+        "name": "Type B Hair Dye"
       },
       "pt_bi118": {
-        "name": "C型染发剂"
+        "name": "Type C Hair Dye"
       },
       "pt_bi119": {
-        "name": "吸血鬼之牙(3小时)"
+        "name": "Vampire Fang (3 Hours)"
       },
       "pt_bi120": {
-        "name": "吸血鬼之牙(6小时)"
+        "name": "Vampire Fang (6 Hours)"
       },
       "pt_bi121": {
-        "name": "魔法药剂(3小时)"
+        "name": "Magic Potion (3 Hours)"
       },
       "pt_bi122": {
-        "name": "魔法药剂(3小时)"
+        "name": "Magic Potion (3 Hours)"
       },
       "pt_bi123": {
-        "name": "烟花"
+        "name": "Fireworks"
       },
       "pt_bi124": {
-        "name": "中级经验药水(1天)"
+        "name": "Medium EXP Potion (1 Day)"
       },
       "pt_bi125": {
-        "name": "中级经验药水(7天)"
+        "name": "Medium EXP Potion (7 Days)"
       },
       "pt_bi126": {
-        "name": "负重药水(1小时)"
+        "name": "Weight Potion (1 Hour)"
       },
       "pt_bi127": {
-        "name": "负重药水(6小时)"
+        "name": "Weight Potion (6 Hours)"
       },
       "pt_bi128": {
-        "name": "魔法圣水(1天)"
+        "name": "Magic Holy Water (1 Day)"
       },
       "pt_bi129": {
-        "name": "魔法圣水(7天)"
+        "name": "Magic Holy Water (7 Days)"
       },
       "pt_bi136": {
-        "name": "锻造熟练(武器)"
+        "name": "Forge Mastery (Weapon)"
       },
       "pt_bi137": {
-        "name": "锻造熟练(盾)"
+        "name": "Forge Mastery (Shield)"
       },
       "pt_bi138": {
-        "name": "锻造熟练(衣服)"
+        "name": "Forge Mastery (Armor)"
       },
       "pt_bi139": {
-        "name": "技能之石(初级)"
+        "name": "Skill Stone (Basic)"
       },
       "pt_bi140": {
-        "name": "技能之石(中级)"
+        "name": "Skill Stone (Medium)"
       },
       "pt_bi141": {
-        "name": "技能之石(高级)"
+        "name": "Skill Stone (Superior)"
       },
       "pt_bi142": {
-        "name": "商店之石"
+        "name": "Shop Stone"
       },
       "pt_bi143": {
-        "name": "高级经验药水(1天)"
+        "name": "Superior EXP Potion (1 Day)"
       },
       "pt_bi144": {
-        "name": "高级经验药水(7天)"
+        "name": "Superior EXP Potion (7 Days)"
       },
       "pt_bi145": {
-        "name": "力量水晶"
+        "name": "Strength Crystal"
       },
       "pt_bi146": {
-        "name": "精神水晶"
+        "name": "Spirit Crystal"
       },
       "pt_bi147": {
-        "name": "才能水晶"
+        "name": "Talent Crystal"
       },
       "pt_bi148": {
-        "name": "敏捷水晶"
+        "name": "Agility Crystal"
       },
       "pt_bi149": {
-        "name": "体质水晶"
+        "name": "Health Crystal"
       },
       "pt_bi152": {
-        "name": "火龙(30天)"
+        "name": "Fire Dragon (30 Days)"
       },
       "pt_bi153": {
-        "name": "冰龙(30天)"
+        "name": "Ice Dragon (30 Days)"
       },
       "pt_bi154": {
-        "name": "雷龙(30天)"
+        "name": "Thunder Dragon (30 Days)"
       },
       "pt_bi155": {
-        "name": "愈龙(30天)"
+        "name": "Heal Dragon (30 Days)"
       },
       "pt_bi160": {
-        "name": "锻造等级石"
+        "name": "Forge Level Stone"
       },
       "pt_bi162": {
-        "name": "锻造熟练石(臂环)"
+        "name": "Forge Mastery Stone (Armlet)"
       },
       "pt_bi163": {
-        "name": "锻造熟练石(护手)"
+        "name": "Forge Mastery Stone (Gauntlets)"
       },
       "pt_bi164": {
-        "name": "锻造熟练石(鞋子)"
+        "name": "Forge Mastery Stone (Boots)"
       },
       "pt_bi165": {
-        "name": "火龙(7天)"
+        "name": "Fire Dragon (7 Days)"
       },
       "pt_bi166": {
-        "name": "冰龙(7天)"
+        "name": "Ice Dragon (7 Days)"
       },
       "pt_bi167": {
-        "name": "雷龙(7天)"
+        "name": "Thunder Dragon (7 Days)"
       },
       "pt_bi168": {
-        "name": "愈龙(7天)"
+        "name": "Heal Dragon (7 Days)"
       },
       "pt_bi178": {
-        "name": "夺宝卷轴(1小时)"
+        "name": "Loot Scroll (1 Hour)"
       },
       "pt_bi179": {
-        "name": "经验药水(1小时)"
+        "name": "EXP Potion (1 Hour)"
       },
       "pt_bi180": {
-        "name": "高级经验药水(1小时)"
+        "name": "Superior EXP Potion (1 Hour)"
       },
       "pt_bi181": {
-        "name": "吸血之牙(1小时)"
+        "name": "Blood Fang (1 Hour)"
       },
       "pt_bi182": {
-        "name": "魔法药剂(1小时)"
+        "name": "Magic Potion (1 Hour)"
       },
       "pt_bi183": {
-        "name": "魔法圣水(1小时)"
+        "name": "Magic Holy Water (1 Hour)"
       },
       "pt_bi184": {
-        "name": "负重提升药水"
+        "name": "Weight-Up Potion"
       },
       "pt_bi185": {
-        "name": "超级合成解锁石"
+        "name": "Super Synthesis Unlock Stone"
       },
       "pt_bi186": {
-        "name": "耐力药剂(1天)"
+        "name": "SP Potion (1 Day)"
       },
       "pt_bi187": {
-        "name": "耐力药剂(7天)"
+        "name": "SP Potion (7 Days)"
       },
       "pt_bi189": {
-        "name": "合成回复石"
+        "name": "Synthesis Restore Stone"
       },
       "pt_bi190": {
-        "name": "巴别塔之角"
+        "name": "Babel Horn"
       },
       "pt_bi191": {
-        "name": "耐力药剂(1天)"
+        "name": "SP Potion (1 Day)"
       },
       "pt_bi192": {
-        "name": "耐力药剂(7天)"
+        "name": "SP Potion (7 Days)"
       },
       "pt_bi193": {
-        "name": "传送卷轴(1天)"
+        "name": "Teleport Scroll (1 Day)"
       },
       "pt_bi194": {
-        "name": "传送卷轴(7天)"
+        "name": "Teleport Scroll (7 Days)"
       },
       "pt_bi195": {
-        "name": "独角兽之家"
+        "name": "Unicorn Home"
       },
       "pt_bi196": {
-        "name": "快乐药水"
+        "name": "Happy Potion"
       },
       "pt_bi197": {
-        "name": "爱情药水"
+        "name": "Love Potion"
       },
       "pt_bi198": {
-        "name": "悲伤药水"
+        "name": "Sad Potion"
       },
       "pt_bi199": {
-        "name": "兴奋药水"
+        "name": "Excited Potion"
       },
       "pt_bi201": {
-        "name": "铜质宝箱(3小时)"
+        "name": "Bronze Chest (3 Hours)"
       },
       "pt_bi202": {
-        "name": "铜质宝箱(1天)"
+        "name": "Bronze Chest (1 Day)"
       },
       "pt_bi203": {
-        "name": "铜质宝箱(7天)"
+        "name": "Bronze Chest (7 Days)"
       },
       "pt_bi204": {
-        "name": "铜质宝箱(30天)"
+        "name": "Bronze Chest (30 Days)"
       },
       "pt_bi205": {
-        "name": "银质宝箱(3小时)"
+        "name": "Silver Chest (3 Hours)"
       },
       "pt_bi206": {
-        "name": "银质宝箱(1天)"
+        "name": "Silver Chest (1 Day)"
       },
       "pt_bi207": {
-        "name": "银质宝箱(7天)"
+        "name": "Silver Chest (7 Days)"
       },
       "pt_bi208": {
-        "name": "银质宝箱(30天)"
+        "name": "Silver Chest (30 Days)"
       },
       "pt_bi209": {
-        "name": "金质宝箱(3小时)"
+        "name": "Gold Chest (3 Hours)"
       },
       "pt_bi210": {
-        "name": "金质宝箱(1天)"
+        "name": "Gold Chest (1 Day)"
       },
       "pt_bi211": {
-        "name": "金质宝箱(7天)"
+        "name": "Gold Chest (7 Days)"
       },
       "pt_bi212": {
-        "name": "金质宝箱(30天)"
+        "name": "Gold Chest (30 Days)"
       },
       "pt_bi213": {
-        "name": "D型染发剂"
+        "name": "Type D Hair Dye"
       },
       "pt_bi214": {
-        "name": "E型染发剂"
+        "name": "Type E Hair Dye"
       },
       "pt_bi215": {
-        "name": "F型染发剂"
+        "name": "Type F Hair Dye"
       },
       "pt_bi216": {
-        "name": "G型染发剂"
+        "name": "Type G Hair Dye"
       },
       "pt_bi217": {
-        "name": "H型染发剂"
+        "name": "Type H Hair Dye"
       },
       "pt_bi218": {
-        "name": "I型染发剂"
+        "name": "Type I Hair Dye"
       },
       "pt_bi219": {
-        "name": "J型染发剂"
+        "name": "Type J Hair Dye"
       },
       "pt_bi220": {
-        "name": "K型染发剂"
+        "name": "Type K Hair Dye"
       },
       "pt_bi221": {
-        "name": "L型染发剂"
+        "name": "Type L Hair Dye"
       },
       "pt_bi222": {
-        "name": "M型染发剂"
+        "name": "Type M Hair Dye"
       },
       "pt_bi223": {
-        "name": "精英药水(3小时)"
+        "name": "Elite Potion (3 Hours)"
       },
       "pt_bi224": {
-        "name": "精英药水(1天)"
+        "name": "Elite Potion (1 Day)"
       },
       "pt_bi225": {
-        "name": "精英药水(7天)"
+        "name": "Elite Potion (7 Days)"
       },
       "pt_bi226": {
-        "name": "铜箱子(3小时)"
+        "name": "Bronze Box (3 Hours)"
       },
       "pt_bi227": {
-        "name": "铜箱子(1天)"
+        "name": "Bronze Box (1 Day)"
       },
       "pt_bi228": {
-        "name": "铜箱子(7天)"
+        "name": "Bronze Box (7 Days)"
       },
       "pt_bi229": {
-        "name": "银箱子(3小时)"
+        "name": "Silver Box (3 Hours)"
       },
       "pt_bi230": {
-        "name": "银箱子(1天)"
+        "name": "Silver Box (1 Day)"
       },
       "pt_bi231": {
-        "name": "银箱子(7天)"
+        "name": "Silver Box (7 Days)"
       },
       "pt_bi232": {
-        "name": "金箱子(3小时)"
+        "name": "Gold Box (3 Hours)"
       },
       "pt_bi233": {
-        "name": "金箱子(1天)"
+        "name": "Gold Box (1 Day)"
       },
       "pt_bi234": {
-        "name": "金箱子(7天)"
+        "name": "Gold Box (7 Days)"
       },
       "pt_bi235": {
-        "name": "精英箱子(3小时)"
+        "name": "Elite Box (3 Hours)"
       },
       "pt_bi236": {
-        "name": "精英箱子(1天)"
+        "name": "Elite Box (1 Day)"
       },
       "pt_bi237": {
-        "name": "精英箱子(7天)"
+        "name": "Elite Box (7 Days)"
       },
       "pt_bi238": {
-        "name": "长颈鹿"
+        "name": "Giraffe"
       },
       "pt_bi239": {
-        "name": "魔法帽子"
+        "name": "Magic Hat"
       },
       "pt_bi240": {
-        "name": "魔法帽子"
+        "name": "Magic Hat"
       },
       "pt_bi241": {
-        "name": "面具"
+        "name": "Mask"
       },
       "pt_bi242": {
-        "name": "面具"
+        "name": "Mask"
       },
       "pt_bi243": {
-        "name": "南瓜头"
+        "name": "Pumpkin Head"
       },
       "pt_bi244": {
-        "name": "喜羊羊"
+        "name": "Pleasant Goat"
       },
       "pt_bi245": {
-        "name": "足球帽"
+        "name": "Soccer Cap"
       },
       "pt_bi246": {
-        "name": "圣诞帽子"
+        "name": "Christmas Hat"
       },
       "pt_bi247": {
-        "name": "圣诞帽子"
+        "name": "Christmas Hat"
       },
       "pt_bi248": {
-        "name": "高级回复石"
+        "name": "Superior Restore Stone"
       },
       "pt_bi249": {
-        "name": "超级回复石"
+        "name": "Super Restore Stone"
       },
       "pt_bi250": {
-        "name": "凤凰蛋"
+        "name": "Phoenix Egg"
       },
       "pt_bi251": {
-        "name": "发型药水N"
+        "name": "Hairstyle Potion N"
       },
       "pt_bi252": {
-        "name": "发型药水O"
+        "name": "Hairstyle Potion O"
       },
       "pt_bi253": {
-        "name": "发型药水P"
+        "name": "Hairstyle Potion P"
       },
       "pt_bi254": {
-        "name": "发型药水Q"
+        "name": "Hairstyle Potion Q"
       },
       "pt_bi255": {
-        "name": "发型药水R"
+        "name": "Hairstyle Potion R"
       },
       "pt_bi256": {
-        "name": "发型药水S"
+        "name": "Hairstyle Potion S"
       },
       "pt_bi257": {
-        "name": "发型药水T"
+        "name": "Hairstyle Potion T"
       },
       "pt_bi258": {
-        "name": "复活节耳朵"
+        "name": "Easter Ears"
       },
       "pt_bi260": {
-        "name": "转职卷轴"
+        "name": "Class Change Scroll"
       },
       "pt_bi261": {
-        "name": "力量果实"
+        "name": "Strength Fruit"
       },
       "pt_bi262": {
-        "name": "精神果实"
+        "name": "Spirit Fruit"
       },
       "pt_bi263": {
-        "name": "才能果实"
+        "name": "Talent Fruit"
       },
       "pt_bi264": {
-        "name": "敏捷果实"
+        "name": "Agility Fruit"
       },
       "pt_bi265": {
-        "name": "体质果实"
+        "name": "Health Fruit"
       },
       "pt_bi266": {
-        "name": "烈火锻造石"
+        "name": "Flame Forge Stone"
       },
       "pt_bi267": {
-        "name": "寒冰锻造石"
+        "name": "Frost Forge Stone"
       },
       "pt_bi268": {
-        "name": "幽绿锻造石"
+        "name": "Verdant Forge Stone"
       },
       "pt_bi269": {
-        "name": "穿山甲之家"
+        "name": "Pangolin Home"
       },
       "pt_bi270": {
-        "name": "布马熊之家"
+        "name": "Poma Bear Home"
       },
       "pt_bi271": {
-        "name": "红独角兽之家"
+        "name": "Red Unicorn Home"
       },
       "pt_bi272": {
-        "name": "小绿人之家"
+        "name": "Little Green Man Home"
       },
       "pt_bi273": {
-        "name": "白兔之家"
+        "name": "White Rabbit Home"
       },
       "pt_bi274": {
-        "name": "红兔之家"
+        "name": "Red Rabbit Home"
       },
       "pt_bi275": {
-        "name": "生日帽子"
+        "name": "Birthday Hat"
       },
       "pt_bi276": {
-        "name": "圣诞帽子"
+        "name": "Christmas Hat"
       },
       "pt_bi277": {
-        "name": "驯鹿之家"
+        "name": "Reindeer Home"
       },
       "pt_bi278": {
-        "name": "黄水晶"
+        "name": "Yellow Crystal"
       },
       "pt_bi279": {
-        "name": "红水晶"
+        "name": "Red Crystal"
       },
       "pt_bi280": {
-        "name": "蓝水晶"
+        "name": "Blue Crystal"
       },
       "pt_bi281": {
-        "name": "绿水晶"
+        "name": "Green Crystal"
       },
       "pt_bi282": {
-        "name": "经验胶囊A"
+        "name": "EXP Capsule A"
       },
       "pt_bi283": {
-        "name": "经验胶囊B"
+        "name": "EXP Capsule B"
       },
       "pt_bi284": {
-        "name": "经验胶囊C"
+        "name": "EXP Capsule C"
       },
       "pt_bi285": {
-        "name": "经验胶囊D"
+        "name": "EXP Capsule D"
       },
       "pt_bi286": {
-        "name": "经验胶囊E"
+        "name": "EXP Capsule E"
       },
       "pt_bi287": {
-        "name": "经验胶囊F"
+        "name": "EXP Capsule F"
       },
       "pt_bi288": {
-        "name": "经验胶囊G"
+        "name": "EXP Capsule G"
       },
       "pt_bi289": {
-        "name": "经验胶囊H"
+        "name": "EXP Capsule H"
       },
       "pt_bi290": {
-        "name": "经验胶囊I"
+        "name": "EXP Capsule I"
       },
       "pt_bi291": {
-        "name": "经验胶囊J"
+        "name": "EXP Capsule J"
       },
       "pt_bi292": {
-        "name": "湛蓝锻造石"
+        "name": "Azure Forge Stone"
       },
       "pt_bi293": {
-        "name": "加10锻造分解石"
+        "name": "+10 Forge Dissolve Stone"
       },
       "pt_bi294": {
-        "name": "加15锻造分解石"
+        "name": "+15 Forge Dissolve Stone"
       },
       "pt_bi295": {
-        "name": "加20锻造分解石"
+        "name": "+20 Forge Dissolve Stone"
       },
       "pt_bi296": {
-        "name": "加24锻造分解石"
+        "name": "+24 Forge Dissolve Stone"
       },
       "pt_bi297": {
-        "name": "愤怒药水"
+        "name": "Anger Potion"
       },
       "pt_bi298": {
-        "name": "恐惧药水"
+        "name": "Fear Potion"
       },
       "pt_bi299": {
-        "name": "悲剧药水"
+        "name": "Tragedy Potion"
       },
       "pt_bi301": {
-        "name": "商城代金券A"
+        "name": "Shop Voucher A"
       },
       "pt_bi302": {
-        "name": "商城代金券B"
+        "name": "Shop Voucher B"
       },
       "pt_bi303": {
-        "name": "商城代金券C"
+        "name": "Shop Voucher C"
       },
       "pt_bi304": {
-        "name": "商城代金券D"
+        "name": "Shop Voucher D"
       },
       "pt_bi305": {
-        "name": "商城代金券E"
+        "name": "Shop Voucher E"
       },
       "pt_bi306": {
-        "name": "商城代金券F"
+        "name": "Shop Voucher F"
       },
       "pt_bi307": {
-        "name": "商城代金券G"
+        "name": "Shop Voucher G"
       },
       "pt_bi308": {
-        "name": "商城代金券H"
+        "name": "Shop Voucher H"
       },
       "pt_bi309": {
-        "name": "商城代金券I"
+        "name": "Shop Voucher I"
       },
       "pt_bi310": {
-        "name": "商城代金券J"
+        "name": "Shop Voucher J"
       },
       "pt_bi311": {
-        "name": "超级深造石"
+        "name": "Super Mastery Stone"
       },
       "pt_bi312": {
-        "name": "炫紫锻造石"
+        "name": "Violet Forge Stone"
       },
       "pt_bi313": {
-        "name": "烈焰锻造石"
+        "name": "Blaze Forge Stone"
       },
       "pt_bi314": {
-        "name": "道具组合石"
+        "name": "Item Combine Stone"
       },
       "pt_bi315": {
-        "name": "翡翠锻造石"
+        "name": "Jade Forge Stone"
       },
       "pt_bi316": {
-        "name": "占卜石"
+        "name": "Divination Stone"
       },
       "pt_bi317": {
-        "name": "通灵石"
+        "name": "Psychic Stone"
       },
       "pt_bi318": {
-        "name": "补天石"
+        "name": "Sky-Mend Stone"
       },
       "pt_bi319": {
-        "name": "封印符文"
+        "name": "Seal Rune"
       },
       "pt_bi320": {
-        "name": "转生羊皮书"
+        "name": "Rebirth Parchment"
       },
       "pt_bi321": {
-        "name": "转生卷轴(1转)"
+        "name": "Rebirth Scroll (Tier 1)"
       },
       "pt_bi322": {
-        "name": "转生卷轴(2转)"
+        "name": "Rebirth Scroll (Tier 2)"
       },
       "pt_bi323": {
-        "name": "转生卷轴(3转)"
+        "name": "Rebirth Scroll (Tier 3)"
       },
       "pt_bi324": {
-        "name": "转生卷轴(4转)"
+        "name": "Rebirth Scroll (Tier 4)"
       },
       "pt_bi325": {
-        "name": "转生卷轴(5转)"
+        "name": "Rebirth Scroll (Tier 5)"
       },
       "pt_bi326": {
-        "name": "转生卷轴(6转)"
+        "name": "Rebirth Scroll (Tier 6)"
       },
       "pt_bi327": {
-        "name": "转生卷轴(7转)"
+        "name": "Rebirth Scroll (Tier 7)"
       },
       "pt_bi328": {
-        "name": "转生卷轴(8转)"
+        "name": "Rebirth Scroll (Tier 8)"
       },
       "pt_bi329": {
-        "name": "转生卷轴(9转)"
+        "name": "Rebirth Scroll (Tier 9)"
       },
       "pt_bi330": {
-        "name": "转生卷轴(10转)"
+        "name": "Rebirth Scroll (Tier 10)"
       },
       "pt_bi331": {
-        "name": "登峰造极"
+        "name": "Pinnacle"
       },
       "pt_bi332": {
-        "name": "风云再起"
+        "name": "Storm Return"
       },
       "pt_bi333": {
-        "name": "最强王者"
+        "name": "Supreme King"
       },
       "pt_bi334": {
-        "name": "叱咤风云"
+        "name": "Storm Lord"
       },
       "pt_bi335": {
-        "name": "威震天下"
+        "name": "World Shaker"
       },
       "pt_bi336": {
-        "name": "锻造熟练石(礼服)"
+        "name": "Forge Mastery Stone (Dress)"
       },
       "pt_bi337": {
-        "name": "锻造熟练石(耳环)"
+        "name": "Forge Mastery Stone (Earring)"
       },
       "pt_bi338": {
-        "name": "锻造熟练石(腰带)"
+        "name": "Forge Mastery Stone (Belt)"
       },
       "pt_bi339": {
-        "name": "锻造熟练石(翅膀)"
+        "name": "Forge Mastery Stone (Wings)"
       },
       "pt_bi340": {
-        "name": "锻造熟练石(项链)"
+        "name": "Forge Mastery Stone (Necklace)"
       },
       "pt_bi341": {
-        "name": "锻造熟练石(戒指)"
+        "name": "Forge Mastery Stone (Ring)"
       },
       "pt_bi342": {
-        "name": "锻造熟练石(宝石)"
+        "name": "Forge Mastery Stone (Gem)"
       },
       "pt_bi343": {
-        "name": "锻造熟练石(坐骑)"
+        "name": "Forge Mastery Stone (Mount)"
       },
       "pt_bi401": {
-        "name": "坐骑封印水晶(1小时)"
+        "name": "Mount Seal Crystal (1 Hour)"
       },
       "pt_bi402": {
-        "name": "坐骑封印水晶(1天)"
+        "name": "Mount Seal Crystal (1 Day)"
       },
       "pt_bi403": {
-        "name": "坐骑封印水晶(7天)"
+        "name": "Mount Seal Crystal (7 Days)"
       },
       "pt_bi404": {
-        "name": "坐骑封印水晶(30天)"
+        "name": "Mount Seal Crystal (30 Days)"
       },
       "pt_bi405": {
-        "name": "坐骑守护符A"
+        "name": "Mount Guard Charm A"
       },
       "pt_bi406": {
-        "name": "坐骑守护符B"
+        "name": "Mount Guard Charm B"
       },
       "pt_bi407": {
-        "name": "坐骑守护符C"
+        "name": "Mount Guard Charm C"
       },
       "pt_bi408": {
-        "name": "坐骑守护符D"
+        "name": "Mount Guard Charm D"
       },
       "pt_bi409": {
-        "name": "坐骑守护符E"
+        "name": "Mount Guard Charm E"
       },
       "pt_bi410": {
-        "name": "坐骑守护符F"
+        "name": "Mount Guard Charm F"
       },
       "pt_bi411": {
-        "name": "坐骑进化水晶1"
+        "name": "Mount Evolution Crystal 1"
       },
       "pt_bi412": {
-        "name": "坐骑进化水晶2"
+        "name": "Mount Evolution Crystal 2"
       },
       "pt_bi413": {
-        "name": "坐骑进化水晶3"
+        "name": "Mount Evolution Crystal 3"
       },
       "pt_bi414": {
-        "name": "坐骑进化水晶4"
+        "name": "Mount Evolution Crystal 4"
       },
       "pt_bi415": {
-        "name": "坐骑进化水晶5"
+        "name": "Mount Evolution Crystal 5"
       },
       "pt_bi416": {
-        "name": "坐骑进化水晶6"
+        "name": "Mount Evolution Crystal 6"
       },
       "pt_bi417": {
-        "name": "坐骑进化水晶7"
+        "name": "Mount Evolution Crystal 7"
       },
       "pt_bi418": {
-        "name": "坐骑进化水晶8"
+        "name": "Mount Evolution Crystal 8"
       },
       "pt_bi419": {
-        "name": "坐骑进化水晶9"
+        "name": "Mount Evolution Crystal 9"
       },
       "pt_ca131": {
-        "name": "礼服"
+        "name": "Dress"
       },
       "pt_ca132": {
-        "name": "礼服"
+        "name": "Dress"
       },
       "pt_ca133": {
-        "name": "礼服"
+        "name": "Dress"
       },
       "pt_ca134": {
-        "name": "礼服"
+        "name": "Dress"
       },
       "pt_ca135": {
-        "name": "礼服"
+        "name": "Dress"
       },
       "pt_ca136": {
-        "name": "清凉装(男)"
+        "name": "Cool Outfit (M)"
       },
       "pt_ca137": {
-        "name": "清凉装(女)"
+        "name": "Cool Outfit (F)"
       },
       "pt_ca138": {
-        "name": "白色礼服(男)"
+        "name": "White Dress (M)"
       },
       "pt_ca139": {
-        "name": "白色礼服(女)"
+        "name": "White Dress (F)"
       },
       "pt_ca140": {
-        "name": "礼服"
+        "name": "Dress"
       },
       "pt_ca141": {
-        "name": "礼服"
+        "name": "Dress"
       },
       "pt_ca142": {
-        "name": "礼服"
+        "name": "Dress"
       },
       "pt_ca143": {
-        "name": "礼服"
+        "name": "Dress"
       },
       "pt_ca144": {
-        "name": "礼服"
+        "name": "Dress"
       },
       "pt_ca145": {
-        "name": "礼服"
+        "name": "Dress"
       },
       "pt_ca146": {
-        "name": "礼服"
+        "name": "Dress"
       },
       "pt_ca147": {
-        "name": "礼服"
+        "name": "Dress"
       },
       "pt_ca148": {
-        "name": "礼服"
+        "name": "Dress"
       },
       "pt_ca149": {
-        "name": "礼服"
+        "name": "Dress"
       },
       "pt_ca150": {
-        "name": "泳装(男)"
+        "name": "Swimsuit (M)"
       },
       "pt_ca151": {
-        "name": "泳装(女)"
+        "name": "Swimsuit (F)"
       },
       "pt_ca152": {
-        "name": "宫廷装(男)"
+        "name": "Court Outfit (M)"
       },
       "pt_ca153": {
-        "name": "宫廷装(女)"
+        "name": "Court Outfit (F)"
       },
       "pt_ca154": {
-        "name": "黄金宫廷装(男)"
+        "name": "Gold Court Outfit (M)"
       },
       "pt_ca155": {
-        "name": "黄金宫廷装(女)"
+        "name": "Gold Court Outfit (F)"
       },
       "pt_ca156": {
-        "name": "黑色礼服(男)"
+        "name": "Black Dress (M)"
       },
       "pt_ca157": {
-        "name": "黑色礼服(女)"
+        "name": "Black Dress (F)"
       },
       "pt_ca158": {
-        "name": "魔法礼服(男)"
+        "name": "Magic Dress (M)"
       },
       "pt_ca159": {
-        "name": "魔法礼服(女)"
+        "name": "Magic Dress (F)"
       },
       "pt_ca160": {
-        "name": "圣诞礼服(男)"
+        "name": "Christmas Dress (M)"
       },
       "pt_ca161": {
-        "name": "圣诞礼服(女)"
+        "name": "Christmas Dress (F)"
       },
       "pt_ca162": {
-        "name": "结婚礼服(男)"
+        "name": "Wedding Dress (M)"
       },
       "pt_ca163": {
-        "name": "结婚礼服(女)"
+        "name": "Wedding Dress (F)"
       },
       "pt_ca164": {
-        "name": "韩国学生装(男)"
+        "name": "Korean School Uniform (M)"
       },
       "pt_ca165": {
-        "name": "韩国学生装(女)"
+        "name": "Korean School Uniform (F)"
       },
       "pt_ca166": {
-        "name": "日本学生装(男)"
+        "name": "Japanese School Uniform (M)"
       },
       "pt_ca167": {
-        "name": "日本学生装(女)"
+        "name": "Japanese School Uniform (F)"
       },
       "pt_ca168": {
-        "name": "迷彩服(男)"
+        "name": "Camouflage Suit (M)"
       },
       "pt_ca169": {
-        "name": "迷彩服(女)"
+        "name": "Camouflage Suit (F)"
       },
       "pt_ca170": {
-        "name": "航空服(男)"
+        "name": "Aviation Suit (M)"
       },
       "pt_ca171": {
-        "name": "航空服(女)"
+        "name": "Aviation Suit (F)"
       },
       "pt_ca172": {
-        "name": "球衣"
+        "name": "Jersey"
       },
       "pt_ca173": {
-        "name": "球衣"
+        "name": "Jersey"
       },
       "pt_ca174": {
-        "name": "球衣"
+        "name": "Jersey"
       },
       "pt_ca175": {
-        "name": "球衣"
+        "name": "Jersey"
       },
       "pt_ca176": {
-        "name": "球衣"
+        "name": "Jersey"
       },
       "pt_ca177": {
-        "name": "球衣"
+        "name": "Jersey"
       },
       "pt_ca178": {
-        "name": "球衣"
+        "name": "Jersey"
       },
       "pt_ca179": {
-        "name": "球衣"
+        "name": "Jersey"
       },
       "pt_ca180": {
-        "name": "球衣"
+        "name": "Jersey"
       },
       "pt_ca181": {
-        "name": "球衣"
+        "name": "Jersey"
       },
       "pt_ca182": {
-        "name": "球衣"
+        "name": "Jersey"
       },
       "pt_ca183": {
-        "name": "球衣"
+        "name": "Jersey"
       },
       "pt_ca184": {
-        "name": "球衣"
+        "name": "Jersey"
       },
       "pt_ca185": {
-        "name": "球衣"
+        "name": "Jersey"
       },
       "pt_ca186": {
-        "name": "球衣"
+        "name": "Jersey"
       },
       "pt_ca187": {
-        "name": "球衣"
+        "name": "Jersey"
       },
       "pt_ca188": {
-        "name": "球衣"
+        "name": "Jersey"
       },
       "pt_ca189": {
-        "name": "球衣"
+        "name": "Jersey"
       },
       "pt_ca190": {
-        "name": "球衣"
+        "name": "Jersey"
       },
       "pt_ca191": {
-        "name": "黑色晚礼服(男)"
+        "name": "Black Evening Dress (M)"
       },
       "pt_ca192": {
-        "name": "黑色晚礼服(女)"
+        "name": "Black Evening Dress (F)"
       },
       "pt_ca193": {
-        "name": "海军制服(男)"
+        "name": "Navy Uniform (M)"
       },
       "pt_ca194": {
-        "name": "海军制服(女)"
+        "name": "Navy Uniform (F)"
       },
       "pt_ca195": {
-        "name": "独角兽卫衣(男)"
+        "name": "Unicorn Hoodie (M)"
       },
       "pt_ca196": {
-        "name": "独角兽卫衣(女)"
+        "name": "Unicorn Hoodie (F)"
       },
       "pt_cs101": {
-        "name": "低攻深造石"
+        "name": "Low Attack Mastery Stone"
       },
       "pt_cs102": {
-        "name": "高攻深造石"
+        "name": "High Attack Mastery Stone"
       },
       "pt_cs103": {
-        "name": "命中深造石"
+        "name": "Accuracy Mastery Stone"
       },
       "pt_cs104": {
-        "name": "防御之石"
+        "name": "Defense Stone"
       },
       "pt_cs105": {
-        "name": "吸收深造石"
+        "name": "Absorption Mastery Stone"
       },
       "pt_cs106": {
-        "name": "生命深造石"
+        "name": "Life Mastery Stone"
       },
       "pt_cs107": {
-        "name": "超级深造石"
+        "name": "Super Mastery Stone"
       },
       "pt_cs108": {
-        "name": "超级深造石"
+        "name": "Super Mastery Stone"
       },
       "pt_cs109": {
-        "name": "超级深造石"
+        "name": "Super Mastery Stone"
       },
       "pt_cs110": {
-        "name": "超级深造石"
+        "name": "Super Mastery Stone"
       },
       "pt_cw101": {
-        "name": "天使之翼"
+        "name": "Angel Wings"
       },
       "pt_cw102": {
-        "name": "王者之翼"
+        "name": "King Wings"
       },
       "pt_cw103": {
-        "name": "荣耀之翼"
+        "name": "Glory Wings"
       },
       "pt_cw104": {
-        "name": "精灵之翼"
+        "name": "Elf Wings"
       },
       "pt_cw105": {
-        "name": "恶魔之翼"
+        "name": "Demon Wings"
       },
       "pt_cw106": {
-        "name": "辉煌之翼"
+        "name": "Radiant Wings"
       },
       "pt_cw107": {
-        "name": "圣者之翼"
+        "name": "Saint Wings"
       },
       "pt_cw108": {
-        "name": "贤者之翼"
+        "name": "Sage Wings"
       },
       "pt_cw109": {
-        "name": "奔雷之翼"
+        "name": "Thunder Wings"
       },
       "pt_cw110": {
-        "name": "冰之翼"
+        "name": "Ice Wings"
       },
       "pt_cw111": {
-        "name": "冰之翼"
+        "name": "Ice Wings"
       },
       "pt_da101": {
-        "name": "布衣"
+        "name": "Nude"
       },
       "pt_da102": {
-        "name": "战斗服"
+        "name": "Battle Suit"
       },
       "pt_da103": {
-        "name": "皮甲"
+        "name": "Leather Armor"
       },
       "pt_da104": {
-        "name": "铠甲"
+        "name": "Brigandine"
       },
       "pt_da105": {
-        "name": "鱼鳞甲"
+        "name": "Steel Armor"
       },
       "pt_da106": {
-        "name": "索子甲"
+        "name": "Round Armor"
       },
       "pt_da107": {
-        "name": "全钢胸铠"
+        "name": "Breast Plate Armor"
       },
       "pt_da108": {
-        "name": "精制链铠"
+        "name": "Ring Armor"
       },
       "pt_da109": {
-        "name": "黄铜战铠"
+        "name": "Scale Armor"
       },
       "pt_da110": {
-        "name": "百裂铠"
+        "name": "Synthethic Armor"
       },
       "pt_da111": {
-        "name": "重装机铠"
+        "name": "Full Plate Armor"
       },
       "pt_da112": {
-        "name": "战神宝铠"
+        "name": "Full Metal Armor"
       },
       "pt_da113": {
-        "name": "虎刹魔铠"
+        "name": "Supreme Armor"
       },
       "pt_da114": {
-        "name": "星晨宝铠"
+        "name": "Spiked Armor"
       },
       "pt_da115": {
-        "name": "泰坦战铠"
+        "name": "Titan Armor"
       },
       "pt_da116": {
-        "name": "玄武战铠"
+        "name": "Extreme Armor"
       },
       "pt_da117": {
-        "name": "青龙战铠"
+        "name": "Ancient Armor"
       },
       "pt_da118": {
-        "name": "朱雀战铠"
+        "name": "Minotaur Armor"
       },
       "pt_da119": {
-        "name": "白虎战铠"
+        "name": "Doom Armor"
       },
       "pt_da120": {
-        "name": "炎帝神铠"
+        "name": "Salamander Armor"
       },
       "pt_da121": {
-        "name": "黄帝神铠"
+        "name": "Wyvern Armor"
       },
       "pt_da122": {
-        "name": "盘古圣铠"
+        "name": "Dragon Armor"
       },
       "pt_da123": {
-        "name": "凤凰铠甲"
+        "name": "PhoeniX Armor"
       },
       "pt_da124": {
-        "name": "圣龙战铠"
+        "name": "Frenzy Armor"
       },
       "pt_da125": {
-        "name": "凯萨战铠"
+        "name": "HighLander Armor"
       },
       "pt_da126": {
-        "name": "桀骜战铠"
+        "name": "Dark Armor"
       },
       "pt_da127": {
-        "name": "麒麟战铠"
+        "name": "pluto Armor"
       },
       "pt_da128": {
-        "name": "星云战铠"
+        "name": "Death Armor"
       },
       "pt_da129": {
-        "name": "梦幻战铠"
+        "name": "Emperor Armor"
       },
       "pt_da131": {
-        "name": "骑士装男(7天)"
+        "name": "Knight Outfit (M) (7 Days)"
       },
       "pt_da132": {
-        "name": "骑士装男(30天)"
+        "name": "Knight Outfit (M) (30 Days)"
       },
       "pt_da133": {
-        "name": "优雅装女(7天)"
+        "name": "Elegant Outfit (F) (7 Days)"
       },
       "pt_da134": {
-        "name": "优雅装女(30天)"
+        "name": "Elegant Outfit (F) (30 Days)"
       },
       "pt_da135": {
-        "name": "禁卫铠甲(7天)"
+        "name": "Royal Guard Armor (7 Days)"
       },
       "pt_da136": {
-        "name": "禁卫铠甲(30天)"
+        "name": "Royal Guard Armor (30 Days)"
       },
       "pt_da137": {
-        "name": "禁卫铠甲(7天)"
+        "name": "Royal Guard Armor (7 Days)"
       },
       "pt_da138": {
-        "name": "禁卫铠甲(30天)"
+        "name": "Royal Guard Armor (30 Days)"
       },
       "pt_da139": {
-        "name": "古朴装男(7天)"
+        "name": "Rustic Outfit (M) (7 Days)"
       },
       "pt_da140": {
-        "name": "古朴装男(30天)"
+        "name": "Rustic Outfit (M) (30 Days)"
       },
       "pt_da141": {
-        "name": "古朴装女(7天)"
+        "name": "Rustic Outfit (F) (7 Days)"
       },
       "pt_da142": {
-        "name": "古朴装女(30天)"
+        "name": "Rustic Outfit (F) (30 Days)"
       },
       "pt_da143": {
-        "name": "火龙战铠男(7天)"
+        "name": "Fire Dragon Armor (M) (7 Days)"
       },
       "pt_da144": {
-        "name": "火龙战铠男(30天)"
+        "name": "Fire Dragon Armor (M) (30 Days)"
       },
       "pt_da145": {
-        "name": "火龙战铠女(7天)"
+        "name": "Fire Dragon Armor (F) (7 Days)"
       },
       "pt_da146": {
-        "name": "火龙战铠女(30天)"
+        "name": "Fire Dragon Armor (F) (30 Days)"
       },
       "pt_da151": {
-        "name": "暗黑铠甲"
+        "name": "Dark Armor"
       },
       "pt_da152": {
-        "name": "暗黑铠甲"
+        "name": "Dark Armor"
       },
       "pt_da154": {
-        "name": "沙滩服男(30天)"
+        "name": "Beachwear (M) (30 Days)"
       },
       "pt_da155": {
-        "name": "游泳服女(30天)"
+        "name": "Swimsuit (F) (30 Days)"
       },
       "pt_da156": {
-        "name": "礼服女(30天)"
+        "name": "Dress (M) (30 Days)"
       },
       "pt_da158": {
-        "name": "奇异装男(30天)"
+        "name": "Odd Outfit (M) (30 Days)"
       },
       "pt_da159": {
-        "name": "古代装女(30天)"
+        "name": "Ancient Outfit (F) (30 Days)"
       },
       "pt_da160": {
-        "name": "帕克装(30天)"
+        "name": "Park Outfit (30 Days)"
       },
       "pt_da161": {
-        "name": "玛琪装(30天)"
+        "name": "Magi Outfit (30 Days)"
       },
       "pt_da162": {
-        "name": "圣诞装男"
+        "name": "Christmas Outfit (M)"
       },
       "pt_da163": {
-        "name": "圣诞装女"
+        "name": "Christmas Outfit (F)"
       },
       "pt_da164": {
-        "name": "男士韩服"
+        "name": "Men's Hanbok"
       },
       "pt_da165": {
-        "name": "女士韩服"
+        "name": "Women's Hanbok"
       },
       "pt_da171": {
-        "name": "露西汗铠"
+        "name": "Lucihan Armor"
       },
       "pt_da172": {
-        "name": "诺克斯铠"
+        "name": "Nox Armor"
       },
       "pt_da173": {
-        "name": "阿米尔汗铠"
+        "name": "Amirhan Armor"
       },
       "pt_da174": {
-        "name": "汗巴铠"
+        "name": "Hanba Armor"
       },
       "pt_da175": {
-        "name": "比尔汗铠"
+        "name": "Birhan Armor"
       },
       "pt_da201": {
-        "name": "布袍"
+        "name": "Nude"
       },
       "pt_da202": {
-        "name": "新手袍"
+        "name": "Faded Robe"
       },
       "pt_da203": {
-        "name": "长袍"
+        "name": "Enhanced Robe"
       },
       "pt_da204": {
-        "name": "常青袍"
+        "name": "Battle Robe"
       },
       "pt_da205": {
-        "name": "战斗袍"
+        "name": "Elven Robe"
       },
       "pt_da206": {
-        "name": "精灵袍"
+        "name": "Dryad Robe"
       },
       "pt_da207": {
-        "name": "紫电袍"
+        "name": "Nymph Robe"
       },
       "pt_da208": {
-        "name": "圣女袍"
+        "name": "Apperntice Robe"
       },
       "pt_da209": {
-        "name": "学徒披风"
+        "name": "Disciple Robe"
       },
       "pt_da210": {
-        "name": "信徒披风"
+        "name": "Master Robe"
       },
       "pt_da211": {
-        "name": "大法师袍"
+        "name": "Arch Robe"
       },
       "pt_da212": {
-        "name": "红莲战袍"
+        "name": "Saint Robe"
       },
       "pt_da213": {
-        "name": "幽绿之眼"
+        "name": "Royal Robe"
       },
       "pt_da214": {
-        "name": "绯红之眼"
+        "name": "Mystic Robe"
       },
       "pt_da215": {
-        "name": "玄冰法袍"
+        "name": "Devine Robe"
       },
       "pt_da216": {
-        "name": "祝福法袍"
+        "name": "Bishop"
       },
       "pt_da217": {
-        "name": "天使法袍"
+        "name": "Celestial Robe"
       },
       "pt_da218": {
-        "name": "撒旦披风"
+        "name": "Salvation Robe"
       },
       "pt_da219": {
-        "name": "幻彩羽袍"
+        "name": "Alchemist Robe"
       },
       "pt_da220": {
-        "name": "修罗圣衣"
+        "name": "Astral Robe"
       },
       "pt_da221": {
-        "name": "涅磐圣衣"
+        "name": "Archon Robe"
       },
       "pt_da222": {
-        "name": "雅典娜圣衣"
+        "name": "Angel Robe"
       },
       "pt_da223": {
-        "name": "凤凰法袍"
+        "name": "Ruah Robe"
       },
       "pt_da224": {
-        "name": "圣龙法袍"
+        "name": "Eternal Robe"
       },
       "pt_da225": {
-        "name": "凯萨法袍"
+        "name": "Archangel Robe"
       },
       "pt_da226": {
-        "name": "桀骜法袍"
+        "name": "Dark Robe"
       },
       "pt_da227": {
-        "name": "麒麟法袍"
+        "name": "pluto Robe"
       },
       "pt_da228": {
-        "name": "星云法袍"
+        "name": "Death Robe"
       },
       "pt_da229": {
-        "name": "梦幻法袍"
+        "name": "Emperor Robe"
       },
       "pt_da230": {
-        "name": "裁决法袍"
+        "name": "Judgement Robe"
       },
       "pt_da231": {
-        "name": "骑士装男(7天)"
+        "name": "Knight Outfit (M) (7 Days)"
       },
       "pt_da232": {
-        "name": "骑士装男(30天)"
+        "name": "Knight Outfit (M) (30 Days)"
       },
       "pt_da233": {
-        "name": "优雅装女(7天)"
+        "name": "Elegant Outfit (F) (7 Days)"
       },
       "pt_da234": {
-        "name": "优雅装女(30天)"
+        "name": "Elegant Outfit (F) (30 Days)"
       },
       "pt_da235": {
-        "name": "法神之袍(7天)"
+        "name": "Archmage Robe (7 Days)"
       },
       "pt_da236": {
-        "name": "法神之袍(30天)"
+        "name": "Archmage Robe (30 Days)"
       },
       "pt_da237": {
-        "name": "青霞长袍(7天)"
+        "name": "Mist Robe (7 Days)"
       },
       "pt_da238": {
-        "name": "青霞长袍(30天)"
+        "name": "Mist Robe (30 Days)"
       },
       "pt_da239": {
-        "name": "古朴装男(7天)"
+        "name": "Rustic Outfit (M) (7 Days)"
       },
       "pt_da240": {
-        "name": "古朴装男(30天)"
+        "name": "Rustic Outfit (M) (30 Days)"
       },
       "pt_da241": {
-        "name": "古朴装女(7天)"
+        "name": "Rustic Outfit (F) (7 Days)"
       },
       "pt_da242": {
-        "name": "古朴装女(30天)"
+        "name": "Rustic Outfit (F) (30 Days)"
       },
       "pt_da243": {
-        "name": "黑魔法袍男(7天)"
+        "name": "Dark Mage Robe (M) (7 Days)"
       },
       "pt_da244": {
-        "name": "黑魔法袍男(30天)"
+        "name": "Dark Mage Robe (M) (30 Days)"
       },
       "pt_da245": {
-        "name": "黑魔法袍女(7天)"
+        "name": "Dark Mage Robe (F) (7 Days)"
       },
       "pt_da246": {
-        "name": "黑魔法袍女(30天)"
+        "name": "Dark Mage Robe (F) (30 Days)"
       },
       "pt_da251": {
-        "name": "暗黑法袍男"
+        "name": "Dark Robe (M)"
       },
       "pt_da252": {
-        "name": "暗黑法袍女"
+        "name": "Dark Robe (F)"
       },
       "pt_da254": {
-        "name": "沙滩服男(30天)"
+        "name": "Beachwear (M) (30 Days)"
       },
       "pt_da255": {
-        "name": "游泳服女(30天)"
+        "name": "Swimsuit (F) (30 Days)"
       },
       "pt_da256": {
-        "name": "礼服男(30天)"
+        "name": "Dress (M) (30 Days)"
       },
       "pt_da257": {
-        "name": "礼服女(30天)"
+        "name": "Dress (F) (30 Days)"
       },
       "pt_da258": {
-        "name": "奇异装男(30天)"
+        "name": "Odd Outfit (M) (30 Days)"
       },
       "pt_da259": {
-        "name": "古代装女(30天)"
+        "name": "Ancient Outfit (F) (30 Days)"
       },
       "pt_da260": {
-        "name": "帕克装(30天)"
+        "name": "Park Outfit (30 Days)"
       },
       "pt_da261": {
-        "name": "玛琪装(30天)"
+        "name": "Magi Outfit (30 Days)"
       },
       "pt_da262": {
-        "name": "圣诞装男"
+        "name": "Christmas Outfit (M)"
       },
       "pt_da263": {
-        "name": "圣诞装女"
+        "name": "Christmas Outfit (F)"
       },
       "pt_da264": {
-        "name": "男士韩服"
+        "name": "Men's Hanbok"
       },
       "pt_da265": {
-        "name": "女士韩服"
+        "name": "Women's Hanbok"
       },
       "pt_da271": {
-        "name": "露西汗袍"
+        "name": "Lucihan Robe"
       },
       "pt_da272": {
-        "name": "诺克斯袍"
+        "name": "Nox Robe"
       },
       "pt_da273": {
-        "name": "阿米尔汗袍"
+        "name": "Amirhan Robe"
       },
       "pt_da274": {
-        "name": "汗巴袍"
+        "name": "Hanba Robe"
       },
       "pt_da275": {
-        "name": "比尔汗袍"
+        "name": "Birhan Robe"
       },
       "pt_da301": {
-        "name": "阿波罗战铠"
+        "name": "nNude"
       },
       "pt_da302": {
-        "name": "会员战铠"
+        "name": "nBattle Suit"
       },
       "pt_da303": {
-        "name": "裁决战铠"
+        "name": "nLeather Armor"
       },
       "pt_da304": {
-        "name": "雷霆战铠"
+        "name": "nBrigandine"
       },
       "pt_da305": {
-        "name": "幻影战铠"
+        "name": "nBrigandine"
       },
       "pt_da306": {
-        "name": "哈迪斯战铠"
+        "name": "nBrigandine"
       },
       "pt_da307": {
-        "name": "赫菲斯托斯战铠"
+        "name": "nBrigandine"
       },
       "pt_da308": {
-        "name": "波塞冬战铠"
+        "name": "nBrigandine"
       },
       "pt_da309": {
-        "name": "阿瑞斯战铠"
+        "name": "nBrigandine"
       },
       "pt_da310": {
-        "name": "得墨忒耳战铠"
+        "name": "nBrigandine"
       },
       "pt_da311": {
-        "name": "星尘战铠"
+        "name": "Stardust Armor"
       },
       "pt_da401": {
-        "name": "阿波罗战袍"
+        "name": "nNude"
       },
       "pt_da402": {
-        "name": "会员法袍"
+        "name": "nFaded Robe"
       },
       "pt_da403": {
-        "name": "裁决法袍"
+        "name": "nEnhanced Robe"
       },
       "pt_da404": {
-        "name": "雷霆法袍"
+        "name": "nBattle Robe"
       },
       "pt_da405": {
-        "name": "幻影法袍"
+        "name": "nBattle Robe"
       },
       "pt_da406": {
-        "name": "哈迪斯法袍"
+        "name": "nBattle Robe"
       },
       "pt_da407": {
-        "name": "赫菲斯托斯法袍"
+        "name": "nBattle Robe"
       },
       "pt_da408": {
-        "name": "波塞冬法袍"
+        "name": "nBattle Robe"
       },
       "pt_da409": {
-        "name": "阿瑞斯法袍"
+        "name": "nBattle Robe"
       },
       "pt_da410": {
-        "name": "得墨忒耳法袍"
+        "name": "nBattle Robe"
       },
       "pt_da501": {
-        "name": "破影战铠(男)"
+        "name": "nNude"
       },
       "pt_da502": {
-        "name": "破影战铠(女)"
+        "name": "nBattle Suit"
       },
       "pt_da503": {
-        "name": "礼服"
+        "name": "nLeather Armor"
       },
       "pt_da504": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da505": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da506": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da507": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da508": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da509": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da510": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da511": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da512": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da513": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da514": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da515": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da516": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da517": {
-        "name": "至尊战铠(男)"
+        "name": "nBrigandine"
       },
       "pt_da518": {
-        "name": "至尊战铠(女)"
+        "name": "nBrigandine"
       },
       "pt_da519": {
-        "name": "至尊魔铠(男)"
+        "name": "nBrigandine"
       },
       "pt_da520": {
-        "name": "至尊魔铠(女)"
+        "name": "nBrigandine"
       },
       "pt_da521": {
-        "name": "熔岩战铠"
+        "name": "nBrigandine"
       },
       "pt_da522": {
-        "name": "熔岩战铠"
+        "name": "nBrigandine"
       },
       "pt_da523": {
-        "name": "圣裁战铠"
+        "name": "nBrigandine"
       },
       "pt_da524": {
-        "name": "绯红战铠"
+        "name": "nBrigandine"
       },
       "pt_da601": {
-        "name": "破影战袍(男)"
+        "name": "nNude"
       },
       "pt_da602": {
-        "name": "破影战袍(女)"
+        "name": "nBattle Suit"
       },
       "pt_da603": {
-        "name": "礼服"
+        "name": "nLeather Armor"
       },
       "pt_da604": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da605": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da606": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da607": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da608": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da609": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da610": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da611": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da612": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da613": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da614": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da615": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da616": {
-        "name": "礼服"
+        "name": "nBrigandine"
       },
       "pt_da617": {
-        "name": "至尊法袍(男)"
+        "name": "nBrigandine"
       },
       "pt_da618": {
-        "name": "至尊法袍(女)"
+        "name": "nBrigandine"
       },
       "pt_da619": {
-        "name": "至尊魔袍(男)"
+        "name": "nBrigandine"
       },
       "pt_da620": {
-        "name": "至尊魔袍(女)"
+        "name": "nBrigandine"
       },
       "pt_da621": {
-        "name": "熔岩法袍"
+        "name": "nBrigandine"
       },
       "pt_da622": {
-        "name": "熔岩法袍"
+        "name": "nBrigandine"
       },
       "pt_da623": {
-        "name": "圣裁法袍"
+        "name": "nBrigandine"
       },
       "pt_da624": {
-        "name": "绯红法袍"
+        "name": "nBrigandine"
       },
       "pt_db101": {
-        "name": "皮靴"
+        "name": "Leather Boots"
       },
       "pt_db102": {
-        "name": "精灵靴"
+        "name": "Elven Boots"
       },
       "pt_db103": {
-        "name": "精钢靴"
+        "name": "Steel Boots"
       },
       "pt_db104": {
-        "name": "精铜靴"
+        "name": "Long Boots"
       },
       "pt_db105": {
-        "name": "百兽靴"
+        "name": "Chain Boots"
       },
       "pt_db106": {
-        "name": "黄金靴"
+        "name": "Plated Boots"
       },
       "pt_db107": {
-        "name": "冰火靴"
+        "name": "Brass Boots"
       },
       "pt_db108": {
-        "name": "百战靴"
+        "name": "War Boots"
       },
       "pt_db109": {
-        "name": "大地靴"
+        "name": "Metal Boots"
       },
       "pt_db110": {
-        "name": "地火战靴"
+        "name": "Chaos Boots"
       },
       "pt_db111": {
-        "name": "圣靴"
+        "name": "Holy Boots"
       },
       "pt_db112": {
-        "name": "破棘之靴"
+        "name": "Spiked Boots"
       },
       "pt_db113": {
-        "name": "遁地靴"
+        "name": "Grand Boots"
       },
       "pt_db114": {
-        "name": "鹏翅之靴"
+        "name": "Winged Boots"
       },
       "pt_db115": {
-        "name": "时空之靴"
+        "name": "Titan Boots"
       },
       "pt_db116": {
-        "name": "赤龙战靴"
+        "name": "Saint Boots"
       },
       "pt_db117": {
-        "name": "烈焰靴"
+        "name": "Wyvern Boots"
       },
       "pt_db118": {
-        "name": "符文之靴"
+        "name": "Rune Boots"
       },
       "pt_db119": {
-        "name": "死神战靴"
+        "name": "Royal Boots"
       },
       "pt_db120": {
-        "name": "炫金战靴"
+        "name": "Dragon Boots"
       },
       "pt_db121": {
-        "name": "幻影战靴"
+        "name": "Inferno Boots"
       },
       "pt_db122": {
-        "name": "圣龙战靴"
+        "name": "Phoenix Boots"
       },
       "pt_db123": {
-        "name": "凯撒战靴"
+        "name": "Frenzy Boots"
       },
       "pt_db124": {
-        "name": "桀骜战靴"
+        "name": "Frenzy Boots"
       },
       "pt_db125": {
-        "name": "麒麟战靴"
+        "name": "Frenzy Boots"
       },
       "pt_db126": {
-        "name": "星云战靴"
+        "name": "Frenzy Boots"
       },
       "pt_db127": {
-        "name": "梦幻战靴"
+        "name": "Frenzy Boots"
       },
       "pt_db128": {
-        "name": "得墨忒耳战靴"
+        "name": "Frenzy Boots"
       },
       "pt_db129": {
-        "name": "雷霆战靴"
+        "name": "Frenzy Boots"
       },
       "pt_db139": {
-        "name": "哈迪斯之靴"
+        "name": "Hades Boots"
       },
       "pt_db145": {
-        "name": "波塞冬之靴"
+        "name": "Poseidon Boots"
       },
       "pt_db146": {
-        "name": "赫菲斯托斯之靴"
+        "name": "Hephaestus Boots"
       },
       "pt_db147": {
-        "name": "圣裁之靴"
+        "name": "Holy Judgement Boots"
       },
       "pt_db148": {
-        "name": "绯红之靴"
+        "name": "Crimson Boots"
       },
       "pt_db150": {
-        "name": "阿瑞斯之靴"
+        "name": "Ares Boots"
       },
       "pt_db301": {
-        "name": "至尊之靴"
+        "name": "Speed Boots"
       },
       "pt_db302": {
-        "name": "熔岩之靴"
+        "name": "Speed Boots"
       },
       "pt_db303": {
-        "name": "裁决战靴"
+        "name": "Speed Boots"
       },
       "pt_db304": {
-        "name": "雷霆战靴"
+        "name": "Speed Boots"
       },
       "pt_db305": {
-        "name": "幻影之靴"
+        "name": "Speed Boots"
       },
       "pt_db306": {
-        "name": "阿波罗之靴"
+        "name": "Speed Boots"
       },
       "pt_db307": {
-        "name": "破影之靴"
+        "name": "Speed Boots"
       },
       "pt_db308": {
-        "name": "会员之靴"
+        "name": "Speed Boots"
       },
       "pt_db309": {
-        "name": "逍遥之靴"
+        "name": "Speed Boots"
       },
       "pt_db310": {
-        "name": "魔狱之靴"
+        "name": "Speed Boots"
       },
       "pt_db311": {
-        "name": "众神之靴"
+        "name": "Speed Boots"
       },
       "pt_de101": {
-        "name": "独角兽坐骑A"
+        "name": "Unicorn Mount A"
       },
       "pt_de102": {
-        "name": "独角兽坐骑B"
+        "name": "Unicorn Mount B"
       },
       "pt_de103": {
-        "name": "独角兽坐骑C"
+        "name": "Unicorn Mount C"
       },
       "pt_de104": {
-        "name": "独角兽坐骑D"
+        "name": "Unicorn Mount D"
       },
       "pt_de105": {
-        "name": "装备大师腰带"
+        "name": "Gear Master Belt"
       },
       "pt_de106": {
-        "name": "咕咕鸡坐骑"
+        "name": "Cuckoo Chicken Mount"
       },
       "pt_de107": {
-        "name": "先锋骑士腰带"
+        "name": "Vanguard Belt"
       },
       "pt_de108": {
-        "name": "百炼腰带"
+        "name": "Tempered Belt"
       },
       "pt_de109": {
-        "name": "飞翼腰带"
+        "name": "Wing Belt"
       },
       "pt_de110": {
-        "name": "百川流水腰带"
+        "name": "River Belt"
       },
       "pt_de111": {
-        "name": "精灵狼坐骑"
+        "name": "Spirit Wolf Mount"
       },
       "pt_de112": {
-        "name": "极地战狼坐骑"
+        "name": "Arctic Wolf Mount"
       },
       "pt_de113": {
-        "name": "百川流水腰带"
+        "name": "River Belt"
       },
       "pt_de114": {
-        "name": "百川流水腰带"
+        "name": "River Belt"
       },
       "pt_de115": {
-        "name": "百川流水腰带"
+        "name": "River Belt"
       },
       "pt_de116": {
-        "name": "百川流水腰带"
+        "name": "River Belt"
       },
       "pt_de117": {
-        "name": "百川流水腰带"
+        "name": "River Belt"
       },
       "pt_de118": {
-        "name": "百川流水腰带"
+        "name": "River Belt"
       },
       "pt_de119": {
-        "name": "百川流水腰带"
+        "name": "River Belt"
       },
       "pt_de120": {
-        "name": "百川流水腰带"
+        "name": "River Belt"
       },
       "pt_de121": {
-        "name": "百川流水腰带"
+        "name": "River Belt"
       },
       "pt_de122": {
-        "name": "百川流水腰带"
+        "name": "River Belt"
       },
       "pt_de123": {
-        "name": "会员腰带"
+        "name": "Member Belt"
       },
       "pt_de124": {
-        "name": "熔岩腰带"
+        "name": "Lava Belt"
       },
       "pt_df101": {
-        "name": "精灵使者腰带"
+        "name": "Leather Belt"
       },
       "pt_df102": {
-        "name": "头号粉丝腰带"
+        "name": "Leather Half Belt"
       },
       "pt_df103": {
-        "name": "卓然三星腰带"
+        "name": "Steel Half Belt"
       },
       "pt_df104": {
-        "name": "幸运天使腰带"
+        "name": "Clamshell Belt"
       },
       "pt_df105": {
-        "name": "装备大师腰带"
+        "name": "Finger Belt"
       },
       "pt_df106": {
-        "name": "创世勇者腰带"
+        "name": "Gothic Mitten Belt"
       },
       "pt_df107": {
-        "name": "先锋骑士腰带"
+        "name": "War Belt"
       },
       "pt_df108": {
-        "name": "百炼腰带"
+        "name": "Metal Belt"
       },
       "pt_df109": {
-        "name": "飞翼腰带"
+        "name": "Holy Belt"
       },
       "pt_df110": {
-        "name": "百川流水腰带"
+        "name": "Great Belt"
       },
       "pt_df123": {
-        "name": "会员腰带"
+        "name": "Frenzy Belt"
       },
       "pt_df124": {
-        "name": "熔岩腰带"
+        "name": "Frenzy Belt"
       },
       "pt_df125": {
-        "name": "至尊腰带"
+        "name": "Frenzy Belt"
       },
       "pt_df126": {
-        "name": "冥王腰带"
+        "name": "Frenzy Belt"
       },
       "pt_dg101": {
-        "name": "手套"
+        "name": "Leather Gloves"
       },
       "pt_dg102": {
-        "name": "拳套"
+        "name": "Leather Half Gauntlets"
       },
       "pt_dg103": {
-        "name": "铁拳套"
+        "name": "Steel Half Gauntlets"
       },
       "pt_dg104": {
-        "name": "银贝护手"
+        "name": "Clamshell Gauntlets"
       },
       "pt_dg105": {
-        "name": "钢指护手"
+        "name": "Finger Gauntlets"
       },
       "pt_dg106": {
-        "name": "白金护手"
+        "name": "Gothic Mitten Gauntlets"
       },
       "pt_dg107": {
-        "name": "百裂护手"
+        "name": "War Gauntlets"
       },
       "pt_dg108": {
-        "name": "大地护手"
+        "name": "Metal Gauntlets"
       },
       "pt_dg109": {
-        "name": "神力护手"
+        "name": "Holy Gauntlets"
       },
       "pt_dg110": {
-        "name": "火云护手"
+        "name": "Great Gauntlets"
       },
       "pt_dg111": {
-        "name": "黄铜护手"
+        "name": "Brass Gauntlets"
       },
       "pt_dg112": {
-        "name": "巨灵护手"
+        "name": "Giant Gauntlets"
       },
       "pt_dg113": {
-        "name": "鲲鹏护手"
+        "name": "Titan Gauntlets"
       },
       "pt_dg114": {
-        "name": "金刚护手"
+        "name": "Grand Gauntlets"
       },
       "pt_dg115": {
-        "name": "赤龙护手"
+        "name": "Ivory Gauntlets"
       },
       "pt_dg116": {
-        "name": "鎏金护手"
+        "name": "Saint Gauntlets"
       },
       "pt_dg117": {
-        "name": "炫钻护手"
+        "name": "Diamond Gauntlets"
       },
       "pt_dg118": {
-        "name": "泰坦护手"
+        "name": "Angel Gauntlets"
       },
       "pt_dg119": {
-        "name": "炫彩护手"
+        "name": "Relic Gauntlets"
       },
       "pt_dg120": {
-        "name": "炫金护手"
+        "name": "Dragon Gauntlets"
       },
       "pt_dg121": {
-        "name": "凤凰护手"
+        "name": "INferno Gauntlets"
       },
       "pt_dg122": {
-        "name": "圣龙护手"
+        "name": "Phoenix Gauntlets"
       },
       "pt_dg123": {
-        "name": "凯萨护手"
+        "name": "Frenzy Gauntlets"
       },
       "pt_dg124": {
-        "name": "桀骜护手"
+        "name": "Frenzy Gauntlets"
       },
       "pt_dg125": {
-        "name": "麒麟护手"
+        "name": "Frenzy Gauntlets"
       },
       "pt_dg126": {
-        "name": "星云护手"
+        "name": "Frenzy Gauntlets"
       },
       "pt_dg127": {
-        "name": "梦幻护手"
+        "name": "Frenzy Gauntlets"
       },
       "pt_dg128": {
-        "name": "得墨忒耳护手"
+        "name": "Frenzy Gauntlets"
       },
       "pt_dg129": {
-        "name": "雷霆护手"
+        "name": "Frenzy Gauntlets"
       },
       "pt_dg130": {
-        "name": "幻影护手"
+        "name": "Frenzy Gauntlets"
       },
       "pt_dg134": {
-        "name": "圣裁护手"
+        "name": "Holy Judgement Gauntlets"
       },
       "pt_dg135": {
-        "name": "绯红护手"
+        "name": "Crimson Gauntlets"
       },
       "pt_dg139": {
-        "name": "哈迪斯护手"
+        "name": "Hades Gauntlets"
       },
       "pt_dg145": {
-        "name": "波塞冬护手"
+        "name": "Poseidon Gauntlets"
       },
       "pt_dg146": {
-        "name": "赫菲斯托斯护手"
+        "name": "Hephaestus Gauntlets"
       },
       "pt_dg150": {
-        "name": "阿瑞斯护手"
+        "name": "Ares Gauntlets"
       },
       "pt_dg301": {
-        "name": "至尊护手"
+        "name": "Frenzy Gauntlets"
       },
       "pt_dg302": {
-        "name": "熔岩护手"
+        "name": "Frenzy Gauntlets"
       },
       "pt_dg303": {
-        "name": "裁决护手"
+        "name": "Frenzy Gauntlets"
       },
       "pt_dg304": {
-        "name": "雷霆护手"
+        "name": "Frenzy Gauntlets"
       },
       "pt_dg305": {
-        "name": "幻影护手"
+        "name": "Frenzy Gauntlets"
       },
       "pt_dg306": {
-        "name": "阿波罗护手"
+        "name": "Frenzy Gauntlets"
       },
       "pt_dg307": {
-        "name": "破影护手"
+        "name": "Frenzy Gauntlets"
       },
       "pt_dg308": {
-        "name": "会员护手"
+        "name": "Frenzy Gauntlets"
       },
       "pt_dg309": {
-        "name": "逍遥护手"
+        "name": "Frenzy Gauntlets"
       },
       "pt_dg310": {
-        "name": "魔狱护手"
+        "name": "Frenzy Gauntlets"
       },
       "pt_dg311": {
-        "name": "众神护手"
+        "name": "Frenzy Gauntlets"
       },
       "pt_dr101": {
-        "name": "玄武卷轴A"
+        "name": "Basalt Scroll A"
       },
       "pt_dr102": {
-        "name": "玄武卷轴B"
+        "name": "Basalt Scroll B"
       },
       "pt_dr103": {
-        "name": "玄武卷轴C"
+        "name": "Basalt Scroll C"
       },
       "pt_dr104": {
-        "name": "玄武卷轴D"
+        "name": "Basalt Scroll D"
       },
       "pt_dr105": {
-        "name": "玄武卷轴E"
+        "name": "Basalt Scroll E"
       },
       "pt_dr106": {
-        "name": "玄武卷轴F"
+        "name": "Basalt Scroll F"
       },
       "pt_dr107": {
-        "name": "玄武卷轴G"
+        "name": "Basalt Scroll G"
       },
       "pt_dr108": {
-        "name": "玄武卷轴H"
+        "name": "Basalt Scroll H"
       },
       "pt_dr109": {
-        "name": "玄武卷轴I"
+        "name": "Basalt Scroll I"
       },
       "pt_dr110": {
-        "name": "玄武卷轴J"
+        "name": "Basalt Scroll J"
       },
       "pt_dr111": {
-        "name": "玄武卷轴K"
+        "name": "Basalt Scroll K"
       },
       "pt_dr206": {
-        "name": "玄武卷轴(F)"
+        "name": "Basalt Scroll (F)"
       },
       "pt_dr207": {
-        "name": "玄武卷轴(G)"
+        "name": "Basalt Scroll (G)"
       },
       "pt_dr208": {
-        "name": "玄武卷轴玄武卷轴(H)"
+        "name": "Basalt Scroll (H)"
       },
       "pt_ds101": {
-        "name": "木盾"
+        "name": "Wood Shield"
       },
       "pt_ds102": {
-        "name": "钉盾"
+        "name": "Targe"
       },
       "pt_ds103": {
-        "name": "圆盾"
+        "name": "Steel Buckler"
       },
       "pt_ds104": {
-        "name": "轻盾"
+        "name": "Kite Shield"
       },
       "pt_ds105": {
-        "name": "罗塔盾"
+        "name": "Tower Shield"
       },
       "pt_ds106": {
-        "name": "百炼盾"
+        "name": "Metalic Shield"
       },
       "pt_ds107": {
-        "name": "金刚盾"
+        "name": "Scutum"
       },
       "pt_ds108": {
-        "name": "赤龙焰盾"
+        "name": "Great Shield"
       },
       "pt_ds109": {
-        "name": "圣盾"
+        "name": "Brass Shield"
       },
       "pt_ds110": {
-        "name": "宙斯盾"
+        "name": "Claw Shield"
       },
       "pt_ds111": {
-        "name": "苍穹之盾"
+        "name": "Winged Shield"
       },
       "pt_ds112": {
-        "name": "暗黑盾"
+        "name": "Spiked Shield"
       },
       "pt_ds113": {
-        "name": "龙纹盾"
+        "name": "Grand Shield"
       },
       "pt_ds114": {
-        "name": "泰坦之盾"
+        "name": "Titan Shield"
       },
       "pt_ds115": {
-        "name": "亢龙之盾"
+        "name": "Gladiator Shield"
       },
       "pt_ds116": {
-        "name": "远古之盾"
+        "name": "Fury Shield"
       },
       "pt_ds117": {
-        "name": "米诺之盾"
+        "name": "Titan Shield"
       },
       "pt_ds118": {
-        "name": "死神之盾"
+        "name": "Mystic Shield"
       },
       "pt_ds119": {
-        "name": "蛮狮之盾"
+        "name": "Vampire Shield"
       },
       "pt_ds120": {
-        "name": "炫金之盾"
+        "name": "Dragon Shield"
       },
       "pt_ds121": {
-        "name": "凤凰之盾"
+        "name": "Phoenix Shield"
       },
       "pt_ds122": {
-        "name": "圣龙之盾"
+        "name": "Dreadnaught Shield"
       },
       "pt_ds123": {
-        "name": "凯萨之盾"
+        "name": "Inferno Shield"
       },
       "pt_ds124": {
-        "name": "桀骜之盾"
+        "name": "Inferno Shield"
       },
       "pt_ds125": {
-        "name": "麒麟圣盾"
+        "name": "Inferno Shield"
       },
       "pt_ds126": {
-        "name": "星云之盾"
+        "name": "Inferno Shield"
       },
       "pt_ds127": {
-        "name": "梦幻之盾"
+        "name": "Inferno Shield"
       },
       "pt_ds128": {
-        "name": "众神之盾"
+        "name": "Inferno Shield"
       },
       "pt_ds129": {
-        "name": "波塞冬之盾"
+        "name": "Inferno Shield"
       },
       "pt_ds130": {
-        "name": "赫菲斯托斯之盾"
+        "name": "Hephaestus Shield"
       },
       "pt_ds136": {
-        "name": "圣裁之盾"
+        "name": "Holy Judgement Shield"
       },
       "pt_ds137": {
-        "name": "绯红之盾"
+        "name": "Crimson Shield"
       },
       "pt_ds302": {
-        "name": "熔岩之盾"
+        "name": "Inferno Shield"
       },
       "pt_ds303": {
-        "name": "裁决之盾"
+        "name": "Inferno Shield"
       },
       "pt_ds304": {
-        "name": "雷霆之盾"
+        "name": "Inferno Shield"
       },
       "pt_ds305": {
-        "name": "幻影之盾"
+        "name": "Inferno Shield"
       },
       "pt_ds306": {
-        "name": "阿波罗之盾"
+        "name": "Inferno Shield"
       },
       "pt_ds307": {
-        "name": "破影之盾"
+        "name": "Inferno Shield"
       },
       "pt_ds308": {
-        "name": "会员之盾"
+        "name": "Inferno Shield"
       },
       "pt_ds309": {
-        "name": "至尊之盾"
+        "name": "Inferno Shield"
       },
       "pt_ds310": {
-        "name": "至尊魔盾"
+        "name": "Inferno Shield"
       },
       "pt_ds311": {
-        "name": "魔狱之盾"
+        "name": "Inferno Shield"
       },
       "pt_ec101": {
-        "name": "回城卷"
+        "name": "Town Portal Scroll"
       },
       "pt_ec102": {
-        "name": "回城卷"
+        "name": "Town Portal Scroll"
       },
       "pt_ec103": {
-        "name": "回城卷"
+        "name": "Town Portal Scroll"
       },
       "pt_ec104": {
-        "name": "回城卷"
+        "name": "Town Portal Scroll"
       },
       "pt_ec105": {
-        "name": "公会卷轴"
+        "name": "Guild Scroll"
       },
       "pt_ec106": {
-        "name": "回城卷"
+        "name": "Town Portal Scroll"
       },
       "pt_ec107": {
-        "name": "恶魔广场入场券"
+        "name": "Devil Square Entry Ticket"
       },
       "pt_ec108": {
-        "name": "楼兰古城传送卷"
+        "name": "Loulan Ruins Teleport Scroll"
       },
       "pt_ec109": {
-        "name": "熔岩隧道传送卷"
+        "name": "Lava Tunnel Teleport Scroll"
       },
       "pt_ec110": {
-        "name": "风雪谷传送卷"
+        "name": "Windy Valley Teleport Scroll"
       },
       "pt_ec111": {
-        "name": "迷雾之海传送卷"
+        "name": "Misty Sea Teleport Scroll"
       },
       "pt_ec112": {
-        "name": "熔岩之心传送卷"
+        "name": "Lava Heart Teleport Scroll"
       },
       "pt_es101": {
-        "name": "火焰石"
+        "name": "Flame Stone"
       },
       "pt_es102": {
-        "name": "寒冰石"
+        "name": "Frost Stone"
       },
       "pt_es103": {
-        "name": "雷切石"
+        "name": "Thunder Stone"
       },
       "pt_fo101": {
-        "name": "星遗之力"
+        "name": "Lucidy Force"
       },
       "pt_fo102": {
-        "name": "流云之力"
+        "name": "Sereno Force"
       },
       "pt_fo103": {
-        "name": "海精之力"
+        "name": "Fadeo Force"
       },
       "pt_fo104": {
-        "name": "天仪之力"
+        "name": "Sparky Force"
       },
       "pt_fo105": {
-        "name": "冰晶之力"
+        "name": "Raident Force"
       },
       "pt_fo106": {
-        "name": "玄风之力"
+        "name": "Transparo Force"
       },
       "pt_fo107": {
-        "name": "水晶之力"
+        "name": "Murky Force"
       },
       "pt_fo108": {
-        "name": "虎翼之力"
+        "name": "Devine Force"
       },
       "pt_fo109": {
-        "name": "龙鳞之力"
+        "name": "Celesto Force"
       },
       "pt_fo110": {
-        "name": "钻晶之力"
+        "name": "Mirage Force"
       },
       "pt_fo111": {
-        "name": "龙睛之力"
+        "name": "Inferna Force"
       },
       "pt_fo112": {
-        "name": "圣晶之力"
+        "name": "Enigma Force"
       },
       "pt_fo113": {
-        "name": "恶魔之力"
+        "name": "Bellum Force"
       },
       "pt_fo114": {
-        "name": "荣誉之力"
+        "name": "Ordo Force"
       },
       "pt_fo115": {
-        "name": "蓝晶之力"
+        "name": "Aquam Force"
       },
       "pt_fo116": {
-        "name": "阿波罗之力"
+        "name": "Apollo Force"
       },
       "pt_gf101": {
-        "name": "星星礼物"
+        "name": "Star Gift"
       },
       "pt_gf102": {
-        "name": "巴别塔之角"
+        "name": "Babel Horn"
       },
       "pt_gf103": {
-        "name": "传说中的项链A"
+        "name": "Legendary Necklace A"
       },
       "pt_gf104": {
-        "name": "传说中的项链B"
+        "name": "Legendary Necklace B"
       },
       "pt_gf105": {
-        "name": "许愿粉末"
+        "name": "Wish Powder"
       },
       "pt_gf106": {
-        "name": "祈福粉末"
+        "name": "Prayer Powder"
       },
       "pt_gp101": {
-        "name": "独角兽水晶"
+        "name": "Unicorn Crystal"
       },
       "pt_gp102": {
-        "name": "魔兽兵水晶"
+        "name": "Orc Crystal"
       },
       "pt_gp103": {
-        "name": "浮灵水晶"
+        "name": "Wisp Crystal"
       },
       "pt_gp104": {
-        "name": "刀斧手水晶"
+        "name": "Axe Raider Crystal"
       },
       "pt_gp105": {
-        "name": "魔剑士水晶"
+        "name": "Magic Swordsman Crystal"
       },
       "pt_gp106": {
-        "name": "火灵王水晶"
+        "name": "Fire King Crystal"
       },
       "pt_gp107": {
-        "name": "独角兽王水晶"
+        "name": "Unicorn King Crystal"
       },
       "pt_gp108": {
-        "name": "绿巨人水晶"
+        "name": "Green Giant Crystal"
       },
       "pt_gp109": {
-        "name": "神秘水晶"
+        "name": "Mystic Crystal"
       },
       "pt_gp110": {
-        "name": "守护圣徒水晶"
+        "name": "Guardian Saint Crystal"
       },
       "pt_gp111": {
-        "name": "大头蜘蛛水晶"
+        "name": "Big Head Spider Crystal"
       },
       "pt_gp112": {
-        "name": "鬼影魔神水晶"
+        "name": "Phantom Demon Crystal"
       },
       "pt_gp113": {
-        "name": "铁甲狂魔水晶"
+        "name": "Iron Fiend Crystal"
       },
       "pt_gp114": {
-        "name": "祝福卫兵水晶"
+        "name": "Blessed Guard Crystal"
       },
       "pt_gp116": {
-        "name": "祝福骑士水晶"
+        "name": "Blessed Knight Crystal"
       },
       "pt_gp117": {
-        "name": "绿色神秘水晶"
+        "name": "Green Mystery Crystal"
       },
       "pt_gp118": {
-        "name": "红色神秘水晶"
+        "name": "Red Mystery Crystal"
       },
       "pt_gp119": {
-        "name": "黄色神秘水晶"
+        "name": "Yellow Mystery Crystal"
       },
       "pt_gp120": {
-        "name": "橙色神秘水晶"
+        "name": "Orange Mystery Crystal"
       },
       "pt_gp121": {
-        "name": "紫色神秘水晶"
+        "name": "Purple Mystery Crystal"
       },
       "pt_gp122": {
-        "name": "守护水晶"
+        "name": "Guardian Crystal"
       },
       "pt_gp123": {
-        "name": "冰甲魔兽兵水晶"
+        "name": "Ice Orc Crystal"
       },
       "pt_gp124": {
-        "name": "冰妖水晶"
+        "name": "Ice Demon Crystal"
       },
       "pt_gp125": {
-        "name": "冰甲无双水晶"
+        "name": "Ice Champion Crystal"
       },
       "pt_gp126": {
-        "name": "怪物箱子水晶"
+        "name": "Monster Box Crystal"
       },
       "pt_gp127": {
-        "name": "地狱猎犬水晶"
+        "name": "Hell Hound Crystal"
       },
       "pt_gp128": {
-        "name": "红岭蛛王水晶"
+        "name": "Spider King Crystal"
       },
       "pt_gp129": {
-        "name": "无息魔王水晶"
+        "name": "Silent Overlord Crystal"
       },
       "pt_gp130": {
-        "name": "米诺陶斯水晶"
+        "name": "Minotaur Crystal"
       },
       "pt_gp131": {
-        "name": "死神水晶"
+        "name": "Death Crystal"
       },
       "pt_gp132": {
-        "name": "氙谭水晶"
+        "name": "Zantan Crystal"
       },
       "pt_gp133": {
-        "name": "雷娜水晶"
+        "name": "Rena Crystal"
       },
       "pt_gp134": {
-        "name": "海龙水晶"
+        "name": "Sea Dragon Crystal"
       },
       "pt_gp135": {
-        "name": "爆破侵略者水晶"
+        "name": "Blast Invader Crystal"
       },
       "pt_gp136": {
-        "name": "希尔水晶"
+        "name": "Hill Crystal"
       },
       "pt_gp137": {
-        "name": "巨石魔人水晶"
+        "name": "Stone Golem Crystal"
       },
       "pt_gp138": {
-        "name": "水域守护者水晶"
+        "name": "Water Guardian Crystal"
       },
       "pt_gp140": {
-        "name": "挂机树水晶"
+        "name": "Idle Tree Crystal"
       },
       "pt_gp141": {
-        "name": "死亡骑士水晶"
+        "name": "Death Knight Crystal"
       },
       "pt_gp142": {
-        "name": "埃克斯水晶"
+        "name": "Aix Crystal"
       },
       "pt_gp143": {
-        "name": "恐惧魔王水晶"
+        "name": "Dreadlord Crystal"
       },
       "pt_gp144": {
-        "name": "巨灵泰坦水晶"
+        "name": "Titan Crystal"
       },
       "pt_gp145": {
-        "name": "凯尔维苏水晶"
+        "name": "Kelvesu Crystal"
       },
       "pt_gp146": {
-        "name": "挑战水晶"
+        "name": "Challenge Crystal"
       },
       "pt_gp147": {
-        "name": "挑战水晶"
+        "name": "Challenge Crystal"
       },
       "pt_gp148": {
-        "name": "挑战水晶"
+        "name": "Challenge Crystal"
       },
       "pt_gp149": {
-        "name": "挑战水晶"
+        "name": "Challenge Crystal"
       },
       "pt_gp150": {
-        "name": "挑战水晶"
+        "name": "Challenge Crystal"
       },
       "pt_gp151": {
-        "name": "挑战水晶"
+        "name": "Challenge Crystal"
       },
       "pt_gp152": {
-        "name": "挑战水晶"
+        "name": "Challenge Crystal"
       },
       "pt_ma101": {
-        "name": "瓶子"
+        "name": "Bottle"
       },
       "pt_ma201": {
-        "name": "蜂蜜"
+        "name": "Honey"
       },
       "pt_ma202": {
-        "name": "神秘之油"
+        "name": "Mystic Oil"
       },
       "pt_oa101": {
-        "name": "黄铜项链"
+        "name": "Round Amulet"
       },
       "pt_oa102": {
-        "name": "红玉项链"
+        "name": "Round Amulet #1"
       },
       "pt_oa103": {
-        "name": "多情环"
+        "name": "Round Amulet #2"
       },
       "pt_oa104": {
-        "name": "金项链"
+        "name": "Round Amulet #3"
       },
       "pt_oa105": {
-        "name": "梦之心链"
+        "name": "Gem Amulet"
       },
       "pt_oa106": {
-        "name": "碧云石链"
+        "name": "Gem Amulet #1"
       },
       "pt_oa107": {
-        "name": "水晶项链"
+        "name": "Gem Amulet #2"
       },
       "pt_oa108": {
-        "name": "靛青石链"
+        "name": "Gem Amulet #3"
       },
       "pt_oa109": {
-        "name": "海蓝石链"
+        "name": "Magic Amulet"
       },
       "pt_oa110": {
-        "name": "镇魂铃"
+        "name": "Magic Amulet #1"
       },
       "pt_oa111": {
-        "name": "圣者之链"
+        "name": "Magic Amulet #2"
       },
       "pt_oa112": {
-        "name": "魔龙之心"
+        "name": "Magic Amulet #3"
       },
       "pt_oa113": {
-        "name": "生命之链"
+        "name": "Rune Amulet"
       },
       "pt_oa114": {
-        "name": "神之庇护"
+        "name": "Rune Amulet #1"
       },
       "pt_oa115": {
-        "name": "暗印护符"
+        "name": "Rune Amulet #2"
       },
       "pt_oa116": {
-        "name": "苍穹之链"
+        "name": "Rune Amulet #3"
       },
       "pt_oa117": {
-        "name": "天眼护符"
+        "name": "Sealed Amulet"
       },
       "pt_oa118": {
-        "name": "圣光勋章"
+        "name": "Sealed Amulet #1"
       },
       "pt_oa119": {
-        "name": "逆天纹章"
+        "name": "Sealed Amulet #2"
       },
       "pt_oa120": {
-        "name": "九转护符"
+        "name": "Sealed Amulet #3"
       },
       "pt_oa121": {
-        "name": "圣龙之链"
+        "name": "Mystic Amulet"
       },
       "pt_oa122": {
-        "name": "凯萨之链"
+        "name": "Mystic Amulet +1"
       },
       "pt_oa123": {
-        "name": "桀骜之链"
+        "name": "Mystic Amulet +1"
       },
       "pt_oa124": {
-        "name": "麒麟项圈"
+        "name": "Mystic Amulet +1"
       },
       "pt_oa125": {
-        "name": "星云之链"
+        "name": "Mystic Amulet +1"
       },
       "pt_oa126": {
-        "name": "梦幻之链"
+        "name": "Mystic Amulet +1"
       },
       "pt_oa127": {
-        "name": "裁决之链"
+        "name": "Mystic Amulet +1"
       },
       "pt_oa128": {
-        "name": "雷霆之链"
+        "name": "Mystic Amulet +1"
       },
       "pt_oa129": {
-        "name": "幻影之链"
+        "name": "Mystic Amulet +1"
       },
       "pt_oa130": {
-        "name": "阿波罗之链"
+        "name": "Apollo Necklace"
       },
       "pt_oa131": {
-        "name": "破影之链"
+        "name": "Shadow-Break Necklace"
       },
       "pt_oa132": {
-        "name": "逍遥之链"
+        "name": "Santa Amulet"
       },
       "pt_oa133": {
-        "name": "魔狱之链"
+        "name": "Event Amulet"
       },
       "pt_oa134": {
-        "name": "永霜之链"
+        "name": "Event Amulet"
       },
       "pt_oa135": {
-        "name": "赤炎之链"
+        "name": "Event Amulet"
       },
       "pt_oa136": {
-        "name": "赤炎之链"
+        "name": "Snowflower Amulet"
       },
       "pt_oa137": {
-        "name": "赤炎之链"
+        "name": "Flame Necklace"
       },
       "pt_oa138": {
-        "name": "赤炎之链"
+        "name": "Flame Necklace"
       },
       "pt_oa139": {
-        "name": "会员之链"
+        "name": "Member Necklace"
       },
       "pt_oa140": {
-        "name": "熔岩之链"
+        "name": "Lava Necklace"
       },
       "pt_oa141": {
-        "name": "至尊之链"
+        "name": "Supreme Necklace"
       },
       "pt_oa142": {
-        "name": "会员之链"
+        "name": "Member Necklace"
       },
       "pt_oa143": {
-        "name": "会员之链"
+        "name": "Mystic Amulet +1"
       },
       "pt_oa144": {
-        "name": "会员之链"
+        "name": "Mystic Amulet +1"
       },
       "pt_oa145": {
-        "name": "测试之链"
+        "name": "Test Necklace"
       },
       "pt_oa146": {
-        "name": "测试之链"
+        "name": "Test Necklace"
       },
       "pt_oa147": {
-        "name": "测试之链"
+        "name": "Test Necklace"
       },
       "pt_oa161": {
-        "name": "埃辛诺斯之链"
+        "name": "Azzinoth Necklace"
       },
       "pt_oa201": {
-        "name": "皮制臂环"
+        "name": "Leather Armlets"
       },
       "pt_oa202": {
-        "name": "精铁臂环"
+        "name": "Long Armlets"
       },
       "pt_oa203": {
-        "name": "倒刃臂环"
+        "name": "Wide Armlets"
       },
       "pt_oa204": {
-        "name": "大力臂环"
+        "name": "Fold Armlets"
       },
       "pt_oa205": {
-        "name": "龙鳞臂环"
+        "name": "Scale Armlets"
       },
       "pt_oa206": {
-        "name": "精灵臂环"
+        "name": "Elven Armlets"
       },
       "pt_oa207": {
-        "name": "乌金臂环"
+        "name": "Solid Armlets"
       },
       "pt_oa208": {
-        "name": "百炼臂环"
+        "name": "Mechanic Armlets"
       },
       "pt_oa209": {
-        "name": "飞翼臂环"
+        "name": "Winged Armlets"
       },
       "pt_oa210": {
-        "name": "百川流水臂环"
+        "name": "Great Bracelet"
       },
       "pt_oa211": {
-        "name": "玄铁臂环"
+        "name": "Steel Bracelet"
       },
       "pt_oa212": {
-        "name": "紫焰臂环"
+        "name": "Magicial Bracelet"
       },
       "pt_oa213": {
-        "name": "璇彩臂环"
+        "name": "Spiked Bracelet"
       },
       "pt_oa214": {
-        "name": "金刚臂环"
+        "name": "Justice Bracelet"
       },
       "pt_oa215": {
-        "name": "赤龙臂环"
+        "name": "Minotaur Bracelet"
       },
       "pt_oa216": {
-        "name": "鎏金臂环"
+        "name": "Metal Bracelet"
       },
       "pt_oa217": {
-        "name": "炫钻臂环"
+        "name": "Titan Bracelet"
       },
       "pt_oa218": {
-        "name": "泰坦臂环"
+        "name": "Saint Bracelet"
       },
       "pt_oa219": {
-        "name": "兽神臂环"
+        "name": "Wyvern Bracelet"
       },
       "pt_oa220": {
-        "name": "炫金臂环"
+        "name": "Dragon Bracelet"
       },
       "pt_oa221": {
-        "name": "凤凰臂环"
+        "name": "Inferno Bracelets"
       },
       "pt_oa222": {
-        "name": "圣龙臂环"
+        "name": "Phoenix Bracelets"
       },
       "pt_oa223": {
-        "name": "凯萨臂环"
+        "name": "Frenzy Bracelets"
       },
       "pt_oa224": {
-        "name": "桀骜臂环"
+        "name": "Frenzy Bracelets"
       },
       "pt_oa225": {
-        "name": "麒麟臂环"
+        "name": "Frenzy Bracelets"
       },
       "pt_oa226": {
-        "name": "星云臂环"
+        "name": "Frenzy Bracelets"
       },
       "pt_oa227": {
-        "name": "梦幻臂环"
+        "name": "Frenzy Bracelets"
       },
       "pt_oa228": {
-        "name": "裁决臂环"
+        "name": "Frenzy Bracelets"
       },
       "pt_oa229": {
-        "name": "雷霆臂环"
+        "name": "Frenzy Bracelets"
       },
       "pt_oa230": {
-        "name": "幻影臂环"
+        "name": "Frenzy Bracelets"
       },
       "pt_oa231": {
-        "name": "哈迪斯臂环"
+        "name": "Super Armlets7"
       },
       "pt_oa239": {
-        "name": "星尘臂环"
+        "name": "Stardust Armlet"
       },
       "pt_oa240": {
-        "name": "圣裁臂环"
+        "name": "Holy Judgement Armlet"
       },
       "pt_oa241": {
-        "name": "绯红臂环"
+        "name": "Crimson Armlet"
       },
       "pt_oa245": {
-        "name": "波塞冬臂环"
+        "name": "Poseidon Armlet"
       },
       "pt_oa246": {
-        "name": "赫菲斯托斯臂环"
+        "name": "Hephaestus Armlet"
       },
       "pt_oa251": {
-        "name": "得墨忒耳臂环"
+        "name": "Demeter Armlet"
       },
       "pt_oa252": {
-        "name": "阿瑞斯臂环"
+        "name": "Ares Armlet"
       },
       "pt_oa301": {
-        "name": "至尊臂环"
+        "name": "Frenzy Bracelets"
       },
       "pt_oa302": {
-        "name": "熔岩臂环"
+        "name": "Frenzy Bracelets"
       },
       "pt_oa303": {
-        "name": "裁决臂环"
+        "name": "Frenzy Bracelets"
       },
       "pt_oa304": {
-        "name": "雷霆臂环"
+        "name": "Frenzy Bracelets"
       },
       "pt_oa305": {
-        "name": "幻影臂环"
+        "name": "Frenzy Bracelets"
       },
       "pt_oa306": {
-        "name": "阿波罗臂环"
+        "name": "Frenzy Bracelets"
       },
       "pt_oa307": {
-        "name": "破影臂环"
+        "name": "Frenzy Bracelets"
       },
       "pt_oa308": {
-        "name": "会员臂环"
+        "name": "Frenzy Bracelets"
       },
       "pt_oa309": {
-        "name": "逍遥臂环"
+        "name": "Frenzy Bracelets"
       },
       "pt_oa310": {
-        "name": "魔狱臂环"
+        "name": "Frenzy Bracelets"
       },
       "pt_oa311": {
-        "name": "众神臂环"
+        "name": "Frenzy Bracelets"
       },
       "pt_oe101": {
-        "name": "精灵使者耳环"
+        "name": "Earrings1"
       },
       "pt_oe102": {
-        "name": "头号粉丝耳环"
+        "name": "Earrings2"
       },
       "pt_oe103": {
-        "name": "卓然三星耳环"
+        "name": "Earrings3"
       },
       "pt_oe104": {
-        "name": "幸运天使耳环"
+        "name": "Earrings4"
       },
       "pt_oe105": {
-        "name": "装备大师耳环"
+        "name": "Earrings5"
       },
       "pt_oe106": {
-        "name": "创世勇者耳环"
+        "name": "Earrings6"
       },
       "pt_oe107": {
-        "name": "先锋骑士耳环"
+        "name": "Earrings7"
       },
       "pt_oe108": {
-        "name": "会员耳环"
+        "name": "Earrings8"
       },
       "pt_oe109": {
-        "name": "熔岩耳环"
+        "name": "Earrings9"
       },
       "pt_oe110": {
-        "name": "至尊耳环"
+        "name": "Earrings10"
       },
       "pt_oe111": {
-        "name": "冥王耳环"
+        "name": "Earrings11"
       },
       "pt_om101": {
-        "name": "念珠"
+        "name": "Pearl Beads"
       },
       "pt_om102": {
-        "name": "水晶球"
+        "name": "Crystal Sphere"
       },
       "pt_om103": {
-        "name": "淬角水晶"
+        "name": "Prizm Sphere"
       },
       "pt_om104": {
-        "name": "龙骨念珠"
+        "name": "Bone Beads"
       },
       "pt_om105": {
-        "name": "龙额念珠"
+        "name": "Skull Beads"
       },
       "pt_om106": {
-        "name": "水星"
+        "name": "Orb"
       },
       "pt_om107": {
-        "name": "火星"
+        "name": "Holy Orb"
       },
       "pt_om108": {
-        "name": "阳炎"
+        "name": "Arch Orb"
       },
       "pt_om109": {
-        "name": "暗月"
+        "name": "Dark Moon"
       },
       "pt_om110": {
-        "name": "蓝色星辰"
+        "name": "Ceremonial Sphere"
       },
       "pt_om111": {
-        "name": "淬火乌晶"
+        "name": "Orbital Beads"
       },
       "pt_om112": {
-        "name": "菱晶石"
+        "name": "Harmony Sphere"
       },
       "pt_om113": {
-        "name": "妖精的雕像"
+        "name": "Angel"
       },
       "pt_om114": {
-        "name": "堕天"
+        "name": "Lucifer"
       },
       "pt_om115": {
-        "name": "浩瀚之星"
+        "name": "Astral Orb"
       },
       "pt_om116": {
-        "name": "火之纹章"
+        "name": "Rune Beads"
       },
       "pt_om117": {
-        "name": "绿釉之眼"
+        "name": "Creation Orb"
       },
       "pt_om118": {
-        "name": "黑曜魔珠"
+        "name": "Mundane"
       },
       "pt_om119": {
-        "name": "伏龙魔珠"
+        "name": "Salamander Beads"
       },
       "pt_om120": {
-        "name": "金刚魔珠"
+        "name": "Cosmos"
       },
       "pt_om121": {
-        "name": "海洋之心"
+        "name": "Wyvern Orb"
       },
       "pt_om122": {
-        "name": "乌木灵魂"
+        "name": "Ebony Manes"
       },
       "pt_om123": {
-        "name": "凯萨魔晶"
+        "name": "Avernus Beads"
       },
       "pt_om124": {
-        "name": "桀骜圣珠"
+        "name": "Malice Rosary"
       },
       "pt_om125": {
-        "name": "麒麟圣珠"
+        "name": "Malice Rosary"
       },
       "pt_om126": {
-        "name": "星云圣珠"
+        "name": "Malice Rosary"
       },
       "pt_om127": {
-        "name": "梦幻圣珠"
+        "name": "Malice Rosary"
       },
       "pt_om128": {
-        "name": "裁决圣珠"
+        "name": "Malice Rosary"
       },
       "pt_om129": {
-        "name": "雷霆圣珠"
+        "name": "Malice Rosary"
       },
       "pt_om130": {
-        "name": "幻影圣珠"
+        "name": "Phantom Orb"
       },
       "pt_om302": {
-        "name": "熔岩法珠"
+        "name": "Malice Rosary"
       },
       "pt_om303": {
-        "name": "裁决圣珠"
+        "name": "Malice Rosary"
       },
       "pt_om304": {
-        "name": "雷霆圣珠"
+        "name": "Malice Rosary"
       },
       "pt_om305": {
-        "name": "幻影法珠"
+        "name": "Malice Rosary"
       },
       "pt_om306": {
-        "name": "阿波罗法珠"
+        "name": "Malice Rosary"
       },
       "pt_om307": {
-        "name": "破影法珠"
+        "name": "Malice Rosary"
       },
       "pt_om308": {
-        "name": "会员法珠"
+        "name": "Malice Rosary"
       },
       "pt_om309": {
-        "name": "至尊法珠"
+        "name": "Malice Rosary"
       },
       "pt_om310": {
-        "name": "至尊法珠"
+        "name": "Malice Rosary"
       },
       "pt_om311": {
-        "name": "魔狱法珠"
+        "name": "Malice Rosary"
       },
       "pt_or101": {
-        "name": "铁戒指"
+        "name": "Round Ring"
       },
       "pt_or102": {
-        "name": "铜戒指"
+        "name": "Round Ring #1"
       },
       "pt_or103": {
-        "name": "金戒指"
+        "name": "Round Ring #2"
       },
       "pt_or104": {
-        "name": "玉戒指"
+        "name": "Round Ring #3"
       },
       "pt_or105": {
-        "name": "蓝宝石戒指"
+        "name": "Gem RIng"
       },
       "pt_or106": {
-        "name": "红宝石戒指"
+        "name": "Gem RIng #1"
       },
       "pt_or107": {
-        "name": "法师戒指"
+        "name": "Gem RIng #2"
       },
       "pt_or108": {
-        "name": "翡翠戒指"
+        "name": "Gem RIng #3"
       },
       "pt_or109": {
-        "name": "黑暗之戒"
+        "name": "Magic Ring"
       },
       "pt_or110": {
-        "name": "伏魔戒指"
+        "name": "Magic Ring #1"
       },
       "pt_or111": {
-        "name": "封印之戒"
+        "name": "Magic Ring #2"
       },
       "pt_or112": {
-        "name": "王者戒指"
+        "name": "Magic Ring #3"
       },
       "pt_or113": {
-        "name": "灵魂之戒"
+        "name": "Rune Ring"
       },
       "pt_or114": {
-        "name": "帝王之戒"
+        "name": "Rune Ring #1"
       },
       "pt_or115": {
-        "name": "守护之戒"
+        "name": "Rune Ring #2"
       },
       "pt_or116": {
-        "name": "雅典娜之吻"
+        "name": "Rune Ring #3"
       },
       "pt_or117": {
-        "name": "封魔之戒"
+        "name": "Sealed Ring"
       },
       "pt_or118": {
-        "name": "封神之戒"
+        "name": "Sealed Ring #1"
       },
       "pt_or119": {
-        "name": "轮回之戒"
+        "name": "Sealed Ring #2"
       },
       "pt_or120": {
-        "name": "涅磐之戒"
+        "name": "Sealed Ring #3"
       },
       "pt_or121": {
-        "name": "圣龙之链"
+        "name": "Mystic Ring"
       },
       "pt_or122": {
-        "name": "凯萨之链"
+        "name": "Mystic Ring +1"
       },
       "pt_or123": {
-        "name": "桀骜之链"
+        "name": "Mystic Ring +1"
       },
       "pt_or124": {
-        "name": "埃辛诺斯之戒"
+        "name": "Mystic Ring +1"
       },
       "pt_or125": {
-        "name": "星云钻戒"
+        "name": "Mystic Ring +1"
       },
       "pt_or126": {
-        "name": "梦幻钻戒"
+        "name": "Mystic Ring +1"
       },
       "pt_or127": {
-        "name": "裁决之戒"
+        "name": "Mystic Ring +1"
       },
       "pt_or128": {
-        "name": "雷霆之戒"
+        "name": "Mystic Ring +1"
       },
       "pt_or129": {
-        "name": "幻影之戒"
+        "name": "Mystic Ring +1"
       },
       "pt_or130": {
-        "name": "阿波罗之链"
+        "name": "Mystic Ring +1"
       },
       "pt_or131": {
-        "name": "破影之戒"
+        "name": "Mystic Ring +1"
       },
       "pt_or132": {
-        "name": "阿波罗之戒"
+        "name": "Mystic Ring +1"
       },
       "pt_or133": {
-        "name": "阿波罗之戒"
+        "name": "Mystic Ring +1"
       },
       "pt_or134": {
-        "name": "阿波罗之戒"
+        "name": "Mystic Ring +1"
       },
       "pt_or135": {
-        "name": "阿波罗之戒"
+        "name": "Mystic Ring +1"
       },
       "pt_or136": {
-        "name": "阿波罗之戒"
+        "name": "Mystic Ring +1"
       },
       "pt_or137": {
-        "name": "阿波罗之戒"
+        "name": "Mystic Ring +1"
       },
       "pt_or138": {
-        "name": "阿波罗之戒"
+        "name": "Mystic Ring +1"
       },
       "pt_or139": {
-        "name": "会员之戒"
+        "name": "Mystic Ring +1"
       },
       "pt_or140": {
-        "name": "熔岩之戒"
+        "name": "Mystic Ring +1"
       },
       "pt_or141": {
-        "name": "至尊之戒"
+        "name": "Mystic Ring +1"
       },
       "pt_or142": {
-        "name": "会员之戒"
+        "name": "Mystic Ring +1"
       },
       "pt_or143": {
-        "name": "会员之戒"
+        "name": "Mystic Ring +1"
       },
       "pt_or144": {
-        "name": "会员之戒"
+        "name": "Mystic Ring +1"
       },
       "pt_or201": {
         "name": "OR201"
       },
       "pt_or202": {
-        "name": "贤者环"
+        "name": "Sage Ring"
       },
       "pt_or203": {
-        "name": "君主环"
+        "name": "Monarch Ring"
       },
       "pt_or204": {
-        "name": "中心环"
+        "name": "Center Ring"
       },
       "pt_or205": {
-        "name": "火神指环"
+        "name": "Fire God Ring"
       },
       "pt_or206": {
-        "name": "水神指环"
+        "name": "Water God Ring"
       },
       "pt_or207": {
         "name": "OR207"
@@ -18720,2566 +18720,2632 @@ export const ru_RU: EnTranslations = {
         "name": "OR228"
       },
       "pt_or242": {
-        "name": "破坏之环"
+        "name": "Destruction Ring"
       },
       "pt_or253": {
-        "name": "埃辛诺斯之戒"
+        "name": "Azzinoth Ring"
       },
       "pt_os101": {
-        "name": "星遗石"
+        "name": "Lucidy"
       },
       "pt_os102": {
-        "name": "流云石"
+        "name": "Sereno"
       },
       "pt_os103": {
-        "name": "海精石"
+        "name": "Fadeo"
       },
       "pt_os104": {
-        "name": "天仪石"
+        "name": "Sparky"
       },
       "pt_os105": {
-        "name": "冰晶石"
+        "name": "Raident"
       },
       "pt_os106": {
-        "name": "玄风石"
+        "name": "Transparo"
       },
       "pt_os107": {
-        "name": "水晶石"
+        "name": "Murky"
       },
       "pt_os108": {
-        "name": "虎翼石"
+        "name": "Devine"
       },
       "pt_os109": {
-        "name": "龙鳞石"
+        "name": "Celesto"
       },
       "pt_os110": {
-        "name": "钻晶石"
+        "name": "Mirage"
       },
       "pt_os111": {
-        "name": "龙睛石"
+        "name": "Inferna"
       },
       "pt_os112": {
-        "name": "圣晶石"
+        "name": "Enigma"
       },
       "pt_os113": {
-        "name": "恶魔石"
+        "name": "Bellum"
       },
       "pt_os114": {
-        "name": "荣誉石"
+        "name": "Ordo"
       },
       "pt_os115": {
-        "name": "蓝晶石"
+        "name": "Aquam"
       },
       "pt_os116": {
-        "name": "阿波罗石"
+        "name": "Apollo"
       },
       "pt_os117": {
-        "name": "辉煌石"
+        "name": "Genie"
       },
       "pt_os118": {
-        "name": "撒旦石"
+        "name": "Orichalcum"
       },
       "pt_os119": {
-        "name": "熔岩石"
+        "name": "Hell-gate's Flame"
       },
       "pt_os120": {
-        "name": "地狱火石"
+        "name": "Empyreal soul"
       },
       "pt_os121": {
-        "name": "星遗石(魔法)"
+        "name": "Star Sheltom (Magic)"
       },
       "pt_os122": {
-        "name": "流云石(魔法)"
+        "name": "Cloud Sheltom (Magic)"
       },
       "pt_os123": {
-        "name": "海精石(魔法)"
+        "name": "Sea Sheltom (Magic)"
       },
       "pt_os124": {
-        "name": "天仪石(魔法)"
+        "name": "Sky Sheltom (Magic)"
       },
       "pt_os125": {
-        "name": "冰晶石(魔法)"
+        "name": "Ice Sheltom (Magic)"
       },
       "pt_os126": {
-        "name": "玄风石(魔法)"
+        "name": "Storm Sheltom (Magic)"
       },
       "pt_os127": {
-        "name": "水晶石(魔法)"
+        "name": "Crystal Sheltom (Magic)"
       },
       "pt_os128": {
-        "name": "虎翼石(魔法)"
+        "name": "Tiger Sheltom (Magic)"
       },
       "pt_os129": {
-        "name": "龙鳞石(魔法)"
+        "name": "Scale Sheltom (Magic)"
       },
       "pt_os130": {
-        "name": "钻晶石(魔法)"
+        "name": "Diamond Sheltom (Magic)"
       },
       "pt_os131": {
-        "name": "龙睛石(魔法)"
+        "name": "Drake Sheltom (Magic)"
       },
       "pt_os132": {
-        "name": "圣晶石(魔法)"
+        "name": "Holy Sheltom (Magic)"
       },
       "pt_os133": {
-        "name": "恶魔石(魔法)"
+        "name": "Devil Sheltom (Magic)"
       },
       "pt_os134": {
-        "name": "荣誉石(魔法)"
+        "name": "Honor Sheltom (Magic)"
       },
       "pt_os160": {
-        "name": "熔岩宝石"
+        "name": "Gold"
       },
       "pt_os161": {
-        "name": "会员宝石"
+        "name": "Gold"
       },
       "pt_os162": {
-        "name": "至尊宝石"
+        "name": "Gold"
       },
       "pt_os163": {
-        "name": "冥王宝石"
+        "name": "Gold"
       },
       "pt_ow101": {
-        "name": "精灵使者勋章"
+        "name": "Title1"
       },
       "pt_ow102": {
-        "name": "头号粉丝勋章"
+        "name": "Title2"
       },
       "pt_ow103": {
-        "name": "卓然三星勋章"
+        "name": "Title3"
       },
       "pt_ow104": {
-        "name": "幸运天使勋章"
+        "name": "Title4"
       },
       "pt_ow105": {
-        "name": "装备大师勋章"
+        "name": "Title5"
       },
       "pt_ow106": {
-        "name": "创世勇者勋章"
+        "name": "Title6"
       },
       "pt_ow107": {
-        "name": "先锋骑士勋章"
+        "name": "Title7"
       },
       "pt_ow108": {
-        "name": "无双战神勋章"
+        "name": "Title8"
       },
       "pt_ow109": {
-        "name": "传说神勇士勋章"
+        "name": "Title9"
       },
       "pt_ow110": {
-        "name": "君临天下勋章"
+        "name": "Title10"
       },
       "pt_ow111": {
-        "name": "最强王者勋章"
+        "name": "Title11"
       },
       "pt_ow112": {
-        "name": "绝世武魂勋章"
+        "name": "Title12"
       },
       "pt_ow113": {
-        "name": "壕无人性勋章"
+        "name": "Title13"
       },
       "pt_ow114": {
-        "name": "夺命先锋勋章"
+        "name": "Title14"
       },
       "pt_ow115": {
-        "name": "威震天下勋章"
+        "name": "Title15"
       },
       "pt_ow116": {
-        "name": "至尊专署勋章"
+        "name": "Title16"
       },
       "pt_ow117": {
-        "name": "至尊专署勋章"
+        "name": "Title17"
       },
       "pt_ow118": {
-        "name": "至尊专署勋章"
+        "name": "Title18"
       },
       "pt_ow119": {
-        "name": "至尊专署勋章"
+        "name": "Title19"
       },
       "pt_ow120": {
-        "name": "至尊专署勋章"
+        "name": "Title20"
       },
       "pt_ow121": {
-        "name": "至尊专署勋章"
+        "name": "Title21"
       },
       "pt_ow122": {
-        "name": "至尊专署勋章"
+        "name": "Title22"
       },
       "pt_ow123": {
-        "name": "至尊专署勋章"
+        "name": "Title23"
       },
       "pt_ow124": {
-        "name": "至尊专署勋章"
+        "name": "Title24"
       },
       "pt_ow125": {
-        "name": "至尊专署勋章"
+        "name": "Title25"
       },
       "pt_ow126": {
-        "name": "至尊专署勋章"
+        "name": "Title26"
       },
       "pt_ow127": {
-        "name": "至尊专署勋章"
+        "name": "Title27"
       },
       "pt_ow128": {
-        "name": "至尊专署勋章"
+        "name": "Title28"
       },
       "pt_ow129": {
-        "name": "至尊专署勋章"
+        "name": "Title29"
       },
       "pt_ow130": {
-        "name": "至尊专署勋章"
+        "name": "Title30"
       },
       "pt_ow131": {
-        "name": "至尊专署勋章"
+        "name": "Title31"
       },
       "pt_ow132": {
-        "name": "至尊专署勋章"
+        "name": "Title32"
       },
       "pt_ow133": {
-        "name": "至尊专署勋章"
+        "name": "Title33"
       },
       "pt_ow134": {
-        "name": "至尊专署勋章"
+        "name": "Title34"
       },
       "pt_ow135": {
-        "name": "至尊专署勋章"
+        "name": "Title35"
       },
       "pt_ow136": {
-        "name": "至尊专署勋章"
+        "name": "Title36"
       },
       "pt_ow137": {
-        "name": "至尊专署勋章"
+        "name": "Title37"
       },
       "pt_ow138": {
-        "name": "至尊专署勋章"
+        "name": "Title38"
       },
       "pt_ow139": {
-        "name": "至尊专署勋章"
+        "name": "Title39"
       },
       "pt_ow140": {
-        "name": "至尊专署勋章"
+        "name": "Title40"
       },
       "pt_ow141": {
-        "name": "至尊专署勋章"
+        "name": "Title41"
       },
       "pt_ow142": {
-        "name": "至尊专署勋章"
+        "name": "Title42"
       },
       "pt_ow143": {
-        "name": "至尊专署勋章"
+        "name": "Title43"
       },
       "pt_ow144": {
-        "name": "至尊专署勋章"
+        "name": "Title44"
       },
       "pt_ow145": {
-        "name": "至尊专署勋章"
+        "name": "Title45"
       },
       "pt_ow146": {
-        "name": "至尊专署勋章"
+        "name": "Title46"
       },
       "pt_ow147": {
-        "name": "至尊专署勋章"
+        "name": "Title47"
       },
       "pt_ow148": {
-        "name": "至尊专署勋章"
+        "name": "Title48"
       },
       "pt_ow149": {
-        "name": "至尊专署勋章"
+        "name": "Title49"
       },
       "pt_ow150": {
-        "name": "至尊专署勋章"
+        "name": "Title50"
       },
       "pt_ow151": {
-        "name": "冥王专署勋章"
+        "name": "Title51"
       },
       "pt_ow152": {
-        "name": "冥王专署勋章"
+        "name": "Title52"
       },
       "pt_pl101": {
-        "name": "低级复生命药水"
+        "name": "Small Life Potion"
       },
       "pt_pl102": {
-        "name": "中级恢复生命药水"
+        "name": "Middle Life Potion"
       },
       "pt_pl103": {
-        "name": "高级恢复生命药水"
+        "name": "High Life Potion"
       },
       "pt_pl104": {
-        "name": "顶级恢复生命药水"
+        "name": "Greate Life Potion"
       },
       "pt_pl105": {
-        "name": "超级恢复生命药水"
+        "name": "Greate Life Potion"
       },
       "pt_pl106": {
-        "name": "终级恢复生命药水"
+        "name": "Greate Life Potion"
       },
       "pt_pm101": {
-        "name": "低级恢复魔法药水"
+        "name": "Small Mana Potion"
       },
       "pt_pm102": {
-        "name": "中级恢复魔法药水"
+        "name": "Middle Mana Potion"
       },
       "pt_pm103": {
-        "name": "高级恢复魔法药水"
+        "name": "High Mana Potion"
       },
       "pt_pm104": {
-        "name": "顶级恢复魔法药水"
+        "name": "Greate Mana Potion"
       },
       "pt_pm105": {
-        "name": "超级级恢复魔法药水"
+        "name": "Greate Mana Potion"
       },
       "pt_pm106": {
-        "name": "终级恢复魔法药水"
+        "name": "Greate Mana Potion"
       },
       "pt_pr101": {
-        "name": "紫色矿石"
+        "name": "Purple Ore"
       },
       "pt_pr102": {
-        "name": "银色矿石"
+        "name": "Silver Ore"
       },
       "pt_pr103": {
-        "name": "金色矿石"
+        "name": "Gold Ore"
       },
       "pt_pr104": {
-        "name": "天蓝矿石"
+        "name": "Azure Ore"
       },
       "pt_pr105": {
-        "name": "海蓝矿石"
+        "name": "Ocean Ore"
       },
       "pt_pr106": {
-        "name": "橙色矿石"
+        "name": "Orange Ore"
       },
       "pt_pr107": {
-        "name": "红色矿石"
+        "name": "Red Ore"
       },
       "pt_pr108": {
-        "name": "绿色矿石"
+        "name": "Green Ore"
       },
       "pt_pr201": {
-        "name": "紫色水晶"
+        "name": "Purple Crystal"
       },
       "pt_pr202": {
-        "name": "银色水晶"
+        "name": "Silver Crystal"
       },
       "pt_pr203": {
-        "name": "金色水晶"
+        "name": "Gold Crystal"
       },
       "pt_pr204": {
-        "name": "天蓝水晶"
+        "name": "Azure Crystal"
       },
       "pt_pr205": {
-        "name": "海蓝水晶"
+        "name": "Ocean Crystal"
       },
       "pt_pr206": {
-        "name": "橙色水晶"
+        "name": "Orange Crystal"
       },
       "pt_pr207": {
-        "name": "红色水晶"
+        "name": "Red Crystal"
       },
       "pt_pr208": {
-        "name": "绿色水晶"
+        "name": "Green Crystal"
       },
       "pt_pr209": {
-        "name": "雪银水晶"
+        "name": "Snow Silver Crystal"
       },
       "pt_pr210": {
-        "name": "雪花水晶"
+        "name": "Snowflake Crystal"
       },
       "pt_pr211": {
-        "name": "滴泪水晶"
+        "name": "Tear Crystal"
       },
       "pt_pr212": {
-        "name": "棕色水晶"
+        "name": "Brown Crystal"
       },
       "pt_pr213": {
-        "name": "油绿水晶"
+        "name": "Olive Crystal"
       },
       "pt_pr214": {
-        "name": "暗紫水晶"
+        "name": "Dark Purple Crystal"
       },
       "pt_pr301": {
-        "name": "紫色魔法石(A)"
+        "name": "Purple Magic Stone (A)"
       },
       "pt_pr302": {
-        "name": "银色魔法石(A)"
+        "name": "Silver Magic Stone (A)"
       },
       "pt_pr303": {
-        "name": "金色魔法石(A)"
+        "name": "Gold Magic Stone (A)"
       },
       "pt_pr304": {
-        "name": "天蓝魔法石(A)"
+        "name": "Azure Magic Stone (A)"
       },
       "pt_pr305": {
-        "name": "海蓝魔法石(A)"
+        "name": "Ocean Magic Stone (A)"
       },
       "pt_pr306": {
-        "name": "橙色魔法石(A)"
+        "name": "Orange Magic Stone (A)"
       },
       "pt_pr307": {
-        "name": "红色魔法石(A)"
+        "name": "Red Magic Stone (A)"
       },
       "pt_pr308": {
-        "name": "绿色魔法石(A)"
+        "name": "Green Magic Stone (A)"
       },
       "pt_pr309": {
-        "name": "雪银魔法石(A)"
+        "name": "Snow Silver Magic Stone (A)"
       },
       "pt_pr310": {
-        "name": "雪花魔法石(A)"
+        "name": "Snowflake Magic Stone (A)"
       },
       "pt_pr311": {
-        "name": "滴泪魔法石(A)"
+        "name": "Tear Magic Stone (A)"
       },
       "pt_pr312": {
-        "name": "棕色魔法石(A)"
+        "name": "Brown Magic Stone (A)"
       },
       "pt_pr313": {
-        "name": "油绿魔法石(A)"
+        "name": "Olive Magic Stone (A)"
       },
       "pt_pr314": {
-        "name": "暗紫魔法石(A)"
+        "name": "Dark Purple Magic Stone (A)"
       },
       "pt_pr401": {
-        "name": "紫色魔法石(B)"
+        "name": "Purple Magic Stone (B)"
       },
       "pt_pr402": {
-        "name": "银色魔法石(B)"
+        "name": "Silver Magic Stone (B)"
       },
       "pt_pr403": {
-        "name": "金色魔法石(B)"
+        "name": "Gold Magic Stone (B)"
       },
       "pt_pr404": {
-        "name": "天蓝魔法石(B)"
+        "name": "Azure Magic Stone (B)"
       },
       "pt_pr405": {
-        "name": "海蓝魔法石(B)"
+        "name": "Ocean Magic Stone (B)"
       },
       "pt_pr406": {
-        "name": "橙色魔法石(B)"
+        "name": "Orange Magic Stone (B)"
       },
       "pt_pr407": {
-        "name": "红色魔法石(B)"
+        "name": "Red Magic Stone (B)"
       },
       "pt_pr408": {
-        "name": "绿色魔法石(B)"
+        "name": "Green Magic Stone (B)"
       },
       "pt_pr409": {
-        "name": "雪银魔法石(B)"
+        "name": "Snow Silver Magic Stone (B)"
       },
       "pt_pr410": {
-        "name": "雪花魔法石(B)"
+        "name": "Snowflake Magic Stone (B)"
       },
       "pt_pr411": {
-        "name": "滴泪魔法石(B)"
+        "name": "Tear Magic Stone (B)"
       },
       "pt_pr412": {
-        "name": "棕色魔法石(B)"
+        "name": "Brown Magic Stone (B)"
       },
       "pt_pr413": {
-        "name": "油绿魔法石(B)"
+        "name": "Olive Magic Stone (B)"
       },
       "pt_pr414": {
-        "name": "暗紫魔法石(B)"
+        "name": "Dark Purple Magic Stone (B)"
       },
       "pt_pr501": {
-        "name": "力量之石(小)"
+        "name": "Strength Stone (Small)"
       },
       "pt_pr502": {
-        "name": "力量之石(中)"
+        "name": "Strength Stone (Medium)"
       },
       "pt_pr503": {
-        "name": "力量之石(大)"
+        "name": "Strength Stone (Large)"
       },
       "pt_pr504": {
-        "name": "精神之石(小)"
+        "name": "Spirit Stone (Small)"
       },
       "pt_pr505": {
-        "name": "精神之石(中)"
+        "name": "Spirit Stone (Medium)"
       },
       "pt_pr506": {
-        "name": "精神之石(大)"
+        "name": "Spirit Stone (Large)"
       },
       "pt_pr507": {
-        "name": "才能之石(小)"
+        "name": "Talent Stone (Small)"
       },
       "pt_pr508": {
-        "name": "才能之石(中)"
+        "name": "Talent Stone (Medium)"
       },
       "pt_pr509": {
-        "name": "才能之石(大)"
+        "name": "Talent Stone (Large)"
       },
       "pt_pr510": {
-        "name": "敏捷之石(小)"
+        "name": "Agility Stone (Small)"
       },
       "pt_pr511": {
-        "name": "敏捷之石(中)"
+        "name": "Agility Stone (Medium)"
       },
       "pt_pr512": {
-        "name": "敏捷之石(大)"
+        "name": "Agility Stone (Large)"
       },
       "pt_pr513": {
-        "name": "体质之石(小)"
+        "name": "Health Stone (Small)"
       },
       "pt_pr514": {
-        "name": "体质之石(中)"
+        "name": "Health Stone (Medium)"
       },
       "pt_pr515": {
-        "name": "体质之石(大)"
+        "name": "Health Stone (Large)"
       },
       "pt_ps101": {
-        "name": "低级恢复耐力药水"
+        "name": "Small Stamina Potion"
       },
       "pt_ps102": {
-        "name": "中级恢复耐力药水"
+        "name": "Middle Stamina Potion"
       },
       "pt_ps103": {
-        "name": "高级恢复耐力药水"
+        "name": "High Stamina Potion"
       },
       "pt_ps104": {
-        "name": "顶级恢复耐力药水"
+        "name": "Greate Stamina Potion"
       },
       "pt_ps105": {
-        "name": "超级恢复耐力药水"
+        "name": "Greate Stamina Potion"
       },
       "pt_ps106": {
-        "name": "终级恢复耐力药水"
+        "name": "Greate Stamina Potion"
       },
       "pt_pz101": {
-        "name": "拼图碎片 1"
+        "name": "Puzzle Piece 1"
       },
       "pt_pz102": {
-        "name": "拼图碎片 2"
+        "name": "Puzzle Piece 2"
       },
       "pt_pz103": {
-        "name": "拼图碎片 3"
+        "name": "Puzzle Piece 3"
       },
       "pt_pz104": {
-        "name": "拼图碎片 4"
+        "name": "Puzzle Piece 4"
       },
       "pt_pz105": {
-        "name": "拼图碎片 5"
+        "name": "Puzzle Piece 5"
       },
       "pt_pz106": {
-        "name": "拼图碎片 6"
+        "name": "Puzzle Piece 6"
       },
       "pt_pz107": {
-        "name": "拼图碎片 7"
+        "name": "Puzzle Piece 7"
       },
       "pt_pz108": {
-        "name": "拼图碎片 8"
+        "name": "Puzzle Piece 8"
       },
       "pt_pz201": {
-        "name": "拼图碎片 1"
+        "name": "Puzzle Piece 1"
       },
       "pt_pz202": {
-        "name": "拼图碎片 2"
+        "name": "Puzzle Piece 2"
       },
       "pt_pz203": {
-        "name": "拼图碎片 3"
+        "name": "Puzzle Piece 3"
       },
       "pt_pz204": {
-        "name": "拼图碎片 4"
+        "name": "Puzzle Piece 4"
       },
       "pt_pz205": {
-        "name": "拼图碎片 5"
+        "name": "Puzzle Piece 5"
       },
       "pt_pz206": {
-        "name": "拼图碎片 6"
+        "name": "Puzzle Piece 6"
       },
       "pt_pz207": {
-        "name": "拼图碎片 7"
+        "name": "Puzzle Piece 7"
       },
       "pt_pz208": {
-        "name": "拼图碎片 8"
+        "name": "Puzzle Piece 8"
       },
       "pt_qt101": {
-        "name": "狼毛"
+        "name": "Wolf Fur"
       },
       "pt_qt102": {
-        "name": "狼尾"
+        "name": "Wolf Tail"
       },
       "pt_qt103": {
-        "name": "狼角"
+        "name": "Wolf Horn"
       },
       "pt_qt104": {
-        "name": "蜂王浆"
+        "name": "Royal Jelly"
       },
       "pt_qt105": {
-        "name": "生发剂"
+        "name": "Hair Tonic"
       },
       "pt_qt106": {
-        "name": "神豆"
+        "name": "Magic Bean"
       },
       "pt_qt107": {
-        "name": "生命之石"
+        "name": "Life Stone"
       },
       "pt_qt108": {
-        "name": "恶魔的眼泪"
+        "name": "Demon's Tear"
       },
       "pt_qt109": {
-        "name": "金色戒指"
+        "name": "Gold Ring"
       },
       "pt_qt110": {
-        "name": "银色戒指"
+        "name": "Silver Ring"
       },
       "pt_qt111": {
-        "name": "青铜戒指"
+        "name": "Bronze Ring"
       },
       "pt_qt112": {
-        "name": "一封介绍信"
+        "name": "Letter of Introduction"
       },
       "pt_qt113": {
-        "name": "金刚项链"
+        "name": "Diamond Necklace"
       },
       "pt_qt114": {
-        "name": "糖块"
+        "name": "Sugar Cube"
       },
       "pt_qt115": {
-        "name": "奶油蛋糕"
+        "name": "Cream Cake"
       },
       "pt_qt116": {
-        "name": "锤子"
+        "name": "Hammer"
       },
       "pt_qt117": {
-        "name": "钱袋"
+        "name": "Money Bag"
       },
       "pt_qt118": {
-        "name": "守护水晶石"
+        "name": "Guardian Crystal"
       },
       "pt_qt119": {
-        "name": "恶魔凭信"
+        "name": "Demon Token"
       },
       "pt_qt120": {
-        "name": "亚特兰斯巨人凭信"
+        "name": "Atlantis Giant Token"
       },
       "pt_qt121": {
-        "name": "铁拳凭信"
+        "name": "Iron Fist Token"
       },
       "pt_qt122": {
-        "name": "冷眼魔凭信"
+        "name": "Cold Eye Token"
       },
       "pt_qt123": {
-        "name": "霸天龟凭信"
+        "name": "Sky Turtle Token"
       },
       "pt_qt124": {
-        "name": "地狱猎犬凭信"
+        "name": "Hell Hound Token"
       },
       "pt_qt125": {
-        "name": "银色徽章"
+        "name": "Silver Badge"
       },
       "pt_qt126": {
-        "name": "阿波罗徽章"
+        "name": "Apollo Badge"
       },
       "pt_qw101": {
-        "name": "金属之翼"
+        "name": "Metal Wings"
       },
       "pt_qw102": {
-        "name": "银色之翼"
+        "name": "Silver Wings"
       },
       "pt_qw103": {
-        "name": "黄金之翼"
+        "name": "Gold Wings"
       },
       "pt_qw104": {
-        "name": "大地之翼"
+        "name": "Earth Wings"
       },
       "pt_qw105": {
-        "name": "混乱之翼"
+        "name": "Chaos Wings"
       },
       "pt_qw106": {
-        "name": "迷失之翼"
+        "name": "Lost Wings"
       },
       "pt_sd201": {
-        "name": "炸弹封印"
+        "name": "Bomb Seal"
       },
       "pt_sd202": {
-        "name": "战锤封印"
+        "name": "Hammer Seal"
       },
       "pt_sd203": {
-        "name": "冰冻封印"
+        "name": "Freeze Seal"
       },
       "pt_sd204": {
-        "name": "兔宝宝封印"
+        "name": "Rabbit Seal"
       },
       "pt_sd205": {
-        "name": "幽灵封印"
+        "name": "Ghost Seal"
       },
       "pt_sd206": {
-        "name": "守护圣徒封印"
+        "name": "Guardian Saint Seal"
       },
       "pt_sd207": {
         "name": "+5000 PT UP"
       },
       "pt_se101": {
-        "name": "造化石"
+        "name": "Creation Stone"
       },
       "pt_se102": {
-        "name": "天工石"
+        "name": "Craft Stone"
       },
       "pt_se103": {
-        "name": "鬼斧石"
+        "name": "Cleave Stone"
       },
       "pt_se104": {
-        "name": "天星石"
+        "name": "Star Stone"
       },
       "pt_se105": {
-        "name": "祈祷石"
+        "name": "Prayer Stone"
       },
       "pt_se106": {
-        "name": "天佑石"
+        "name": "Bless Stone"
       },
       "pt_se107": {
-        "name": "如意石"
+        "name": "Wish Stone"
       },
       "pt_sp101": {
-        "name": "小月饼"
+        "name": "Small Mooncake"
       },
       "pt_sp102": {
-        "name": "中月饼"
+        "name": "Medium Mooncake"
       },
       "pt_sp103": {
-        "name": "大月饼"
+        "name": "Large Mooncake"
       },
       "pt_sp105": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp106": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp107": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp108": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp109": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp110": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp115": {
-        "name": "南瓜灯"
+        "name": "Pumpkin Lantern"
       },
       "pt_sp117": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp118": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp119": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp120": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp121": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp122": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp126": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp127": {
-        "name": "字母P"
+        "name": "Letter P"
       },
       "pt_sp128": {
-        "name": "字母R"
+        "name": "Letter R"
       },
       "pt_sp129": {
-        "name": "字母I"
+        "name": "Letter I"
       },
       "pt_sp130": {
-        "name": "字母S"
+        "name": "Letter S"
       },
       "pt_sp131": {
-        "name": "字母T"
+        "name": "Letter T"
       },
       "pt_sp132": {
-        "name": "字母O"
+        "name": "Letter O"
       },
       "pt_sp133": {
-        "name": "字母N"
+        "name": "Letter N"
       },
       "pt_sp134": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp135": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp136": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp137": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp138": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp139": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp140": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp142": {
-        "name": "宝箱"
+        "name": "Treasure Chest"
       },
       "pt_sp146": {
-        "name": "粽子"
+        "name": "Zongzi"
       },
       "pt_sp160": {
-        "name": "精"
+        "name": "Spirit"
       },
       "pt_sp161": {
-        "name": "灵"
+        "name": "Soul"
       },
       "pt_sp162": {
-        "name": "天"
+        "name": "Heaven"
       },
       "pt_sp163": {
-        "name": "下"
+        "name": "Below"
       },
       "pt_sp164": {
-        "name": "青铜"
+        "name": "Bronze"
       },
       "pt_sp165": {
-        "name": "白银"
+        "name": "Silver"
       },
       "pt_sp166": {
-        "name": "黄金"
+        "name": "Gold"
       },
       "pt_sp167": {
-        "name": "白金条"
+        "name": "Platinum Bar"
       },
       "pt_sp168": {
-        "name": "黄金条"
+        "name": "Gold Bar"
       },
       "pt_sr101": {
-        "name": "随机开孔石"
+        "name": "Random Socket Stone"
       },
       "pt_sr102": {
-        "name": "红色开孔石"
+        "name": "Red Socket Stone"
       },
       "pt_sr103": {
-        "name": "黄色开孔石"
+        "name": "Yellow Socket Stone"
       },
       "pt_sr104": {
-        "name": "绿色开孔石"
+        "name": "Green Socket Stone"
       },
       "pt_sr105": {
-        "name": "蓝色开孔石"
+        "name": "Blue Socket Stone"
       },
       "pt_sr106": {
-        "name": "紫色开孔石"
+        "name": "Purple Socket Stone"
       },
       "pt_sr107": {
-        "name": "镶嵌摘除石(保留石头)"
+        "name": "Socket Remove Stone (Keep Stone)"
       },
       "pt_sr108": {
-        "name": "镶嵌摘除石(不保留石头)"
+        "name": "Socket Remove Stone (Destroy Stone)"
       },
       "pt_sr201": {
-        "name": "小型红色镶嵌石"
+        "name": "Small Red Socket Stone"
       },
       "pt_sr202": {
-        "name": "中型红色镶嵌石"
+        "name": "Medium Red Socket Stone"
       },
       "pt_sr203": {
-        "name": "大型红色镶嵌石"
+        "name": "Large Red Socket Stone"
       },
       "pt_sr204": {
-        "name": "小型黄色镶嵌石"
+        "name": "Small Yellow Socket Stone"
       },
       "pt_sr205": {
-        "name": "中型黄色镶嵌石"
+        "name": "Medium Yellow Socket Stone"
       },
       "pt_sr206": {
-        "name": "大型黄色镶嵌石"
+        "name": "Large Yellow Socket Stone"
       },
       "pt_sr207": {
-        "name": "小型绿色镶嵌石"
+        "name": "Small Green Socket Stone"
       },
       "pt_sr208": {
-        "name": "中型绿色镶嵌石"
+        "name": "Medium Green Socket Stone"
       },
       "pt_sr209": {
-        "name": "大型绿色镶嵌石"
+        "name": "Large Green Socket Stone"
       },
       "pt_sr210": {
-        "name": "小型蓝色镶嵌石"
+        "name": "Small Blue Socket Stone"
       },
       "pt_sr211": {
-        "name": "中型蓝色镶嵌石"
+        "name": "Medium Blue Socket Stone"
       },
       "pt_sr212": {
-        "name": "大型蓝色镶嵌石"
+        "name": "Large Blue Socket Stone"
       },
       "pt_sr213": {
-        "name": "小型紫色镶嵌石"
+        "name": "Small Purple Socket Stone"
       },
       "pt_sr214": {
-        "name": "中型紫色镶嵌石"
+        "name": "Medium Purple Socket Stone"
       },
       "pt_sr215": {
-        "name": "大型紫色镶嵌石"
+        "name": "Large Purple Socket Stone"
       },
       "pt_sr216": {
-        "name": "超级红色镶嵌石"
+        "name": "Super Red Socket Stone"
       },
       "pt_sr217": {
-        "name": "超级黄色镶嵌石"
+        "name": "Super Yellow Socket Stone"
       },
       "pt_sr218": {
-        "name": "超级绿色镶嵌石"
+        "name": "Super Green Socket Stone"
       },
       "pt_sr219": {
-        "name": "超级蓝色镶嵌石"
+        "name": "Super Blue Socket Stone"
       },
       "pt_sr220": {
-        "name": "超级紫色镶嵌石"
+        "name": "Super Purple Socket Stone"
       },
       "pt_ss101": {
-        "name": "火风魔石"
+        "name": "Fire Wind Magic Stone"
       },
       "pt_ss102": {
-        "name": "冰风魔石"
+        "name": "Ice Wind Magic Stone"
       },
       "pt_ss103": {
-        "name": "雷风魔石"
+        "name": "Thunder Wind Magic Stone"
       },
       "pt_sw101": {
-        "name": "吸血附魂石"
+        "name": "Lifesteal Soul Stone"
       },
       "pt_sw102": {
-        "name": "吸魔附魂石"
+        "name": "Manasteal Soul Stone"
       },
       "pt_sw103": {
-        "name": "双倍附魂石"
+        "name": "Double Soul Stone"
       },
       "pt_sw104": {
-        "name": "无视附魂石"
+        "name": "Ignore Soul Stone"
       },
       "pt_sw201": {
-        "name": "附魂石A"
+        "name": "Soul Stone A"
       },
       "pt_sw202": {
-        "name": "附魂石B"
+        "name": "Soul Stone B"
       },
       "pt_sw203": {
-        "name": "附魂石C"
+        "name": "Soul Stone C"
       },
       "pt_sw204": {
-        "name": "附魂石D"
+        "name": "Soul Stone D"
       },
       "pt_sw205": {
-        "name": "附魂石E"
+        "name": "Soul Stone E"
       },
       "pt_sw206": {
-        "name": "附魂石F"
+        "name": "Soul Stone F"
       },
       "pt_tw101": {
-        "name": "鲜花"
+        "name": "Flowers"
       },
       "pt_tw102": {
-        "name": "神木剑"
+        "name": "Sacred Wood Sword"
       },
       "pt_tw103": {
-        "name": "肉腿"
+        "name": "Meat Leg"
       },
       "pt_tw104": {
-        "name": "扳手"
+        "name": "Wrench"
       },
       "pt_tw105": {
-        "name": "荧光"
+        "name": "Glow Stick"
       },
       "pt_tw106": {
-        "name": "铅笔"
+        "name": "Pencil"
       },
       "pt_tw107": {
-        "name": "手枪"
+        "name": "Pistol"
       },
       "pt_tw108": {
-        "name": "镐头"
+        "name": "Pickaxe"
       },
       "pt_tw109": {
-        "name": "吉他"
+        "name": "Guitar"
       },
       "pt_tw110": {
-        "name": "礼棍"
+        "name": "Festival Staff"
       },
       "pt_tw111": {
-        "name": "大扳手"
+        "name": "Big Wrench"
       },
       "pt_wa101": {
-        "name": "石斧"
+        "name": "Stone Axe"
       },
       "pt_wa102": {
-        "name": "铁斧"
+        "name": "Steel Axe"
       },
       "pt_wa103": {
-        "name": "板斧"
+        "name": "Battle Axe"
       },
       "pt_wa104": {
-        "name": "劈地斧"
+        "name": "War Axe"
       },
       "pt_wa105": {
-        "name": "双刃战斧"
+        "name": "DoubleSidedWarAxe"
       },
       "pt_wa106": {
-        "name": "喧哗斧"
+        "name": "Bat Axe"
       },
       "pt_wa107": {
-        "name": "刺脊斧"
+        "name": "Mechanic Axe"
       },
       "pt_wa108": {
-        "name": "空牙"
+        "name": "Double Head Axe"
       },
       "pt_wa109": {
-        "name": "破山斧"
+        "name": "Great Axe"
       },
       "pt_wa110": {
-        "name": "定神斧"
+        "name": "Diamond Axe"
       },
       "pt_wa111": {
-        "name": "天阙斧"
+        "name": "Jagged Axe"
       },
       "pt_wa112": {
-        "name": "奥丁斧"
+        "name": "Cleaver"
       },
       "pt_wa113": {
-        "name": "蝶花霹雳斧"
+        "name": "Gigantifc Axe"
       },
       "pt_wa114": {
-        "name": "残月斧"
+        "name": "ChaosAxe"
       },
       "pt_wa115": {
-        "name": "泰坦斧"
+        "name": "SinBaRam Axe"
       },
       "pt_wa116": {
-        "name": "轮回战斧"
+        "name": "Fury Axe"
       },
       "pt_wa117": {
-        "name": "远古战斧"
+        "name": "Ancient Axe"
       },
       "pt_wa118": {
-        "name": "雷神斧"
+        "name": "Chaos Axe"
       },
       "pt_wa119": {
-        "name": "幽月斧"
+        "name": "Relic Axe"
       },
       "pt_wa120": {
-        "name": "米诺陶斯斧"
+        "name": "Minotaur Axe"
       },
       "pt_wa121": {
-        "name": "苍红斧"
+        "name": "Wyvern Axe"
       },
       "pt_wa122": {
-        "name": "龙炎斧"
+        "name": "Zecram Axe"
       },
       "pt_wa123": {
-        "name": "龙之破坏者"
+        "name": "Dragon Axe"
       },
       "pt_wa124": {
-        "name": "凯萨战斧"
+        "name": "Fury Axe"
       },
       "pt_wa125": {
-        "name": "桀骜战斧"
+        "name": "Legend Axe"
       },
       "pt_wa127": {
-        "name": "麒麟战斧"
+        "name": "Mythology Axe"
       },
       "pt_wa128": {
-        "name": "星云战斧"
+        "name": "Deadly Axe"
       },
       "pt_wa129": {
-        "name": "梦幻战斧"
+        "name": "Deadly2 Axe"
       },
       "pt_wa131": {
-        "name": "众神战斧"
+        "name": "Abyss Axe"
       },
       "pt_wa135": {
-        "name": "圣裁战斧"
+        "name": "Abyss Axe"
       },
       "pt_wa136": {
-        "name": "绯红战斧"
+        "name": "Abyss Axe"
       },
       "pt_wa301": {
-        "name": "南瓜之斧"
+        "name": "GearB Axe"
       },
       "pt_wa302": {
-        "name": "熔岩战斧"
+        "name": "GearB Axe"
       },
       "pt_wa303": {
-        "name": "裁决战斧"
+        "name": "GearB Axe"
       },
       "pt_wa304": {
-        "name": "雷霆战斧"
+        "name": "GearB Axe"
       },
       "pt_wa305": {
-        "name": "幻影之斧"
+        "name": "GearB Axe"
       },
       "pt_wa306": {
-        "name": "阿波罗之斧"
+        "name": "GearB Axe"
       },
       "pt_wa307": {
-        "name": "破影之斧"
+        "name": "GearB Axe"
       },
       "pt_wa308": {
-        "name": "会员战斧"
+        "name": "GearB Axe"
       },
       "pt_wa309": {
-        "name": "逍遥战斧"
+        "name": "GearB Axe"
       },
       "pt_wa310": {
-        "name": "至尊魔斧"
+        "name": "GearB Axe"
       },
       "pt_wa311": {
-        "name": "至尊战斧"
+        "name": "GearB Axe"
       },
       "pt_wa312": {
-        "name": "魔狱战斧"
+        "name": "GearB Axe"
       },
       "pt_wa313": {
-        "name": "波塞冬战斧"
+        "name": "Poseidon Battle Axe"
       },
       "pt_wa314": {
-        "name": "赫菲斯托斯战斧"
+        "name": "Hephaestus Battle Axe"
       },
       "pt_wa315": {
-        "name": "哈迪斯战斧"
+        "name": "Hades Battle Axe"
       },
       "pt_wc101": {
-        "name": "爪"
+        "name": "Eagle Claw"
       },
       "pt_wc102": {
-        "name": "虎爪"
+        "name": "Tiger Claw"
       },
       "pt_wc103": {
-        "name": "鱼镰刺"
+        "name": "Griffin Claw"
       },
       "pt_wc104": {
-        "name": "蛇牙刺"
+        "name": "Eagle Claw"
       },
       "pt_wc105": {
-        "name": "玄电爪"
+        "name": "Eagle Claw"
       },
       "pt_wc106": {
-        "name": "狼牙刃"
+        "name": "Fingered Edge"
       },
       "pt_wc107": {
-        "name": "平手刃"
+        "name": "Hand Blade"
       },
       "pt_wc108": {
-        "name": "黄金双面刃"
+        "name": "Pharaoh"
       },
       "pt_wc109": {
-        "name": "兽之斧刃"
+        "name": "Brutal Claw"
       },
       "pt_wc110": {
-        "name": "九头刺蛇爪"
+        "name": "Hydra Claw"
       },
       "pt_wc111": {
-        "name": "利维坦"
+        "name": "Leviathan"
       },
       "pt_wc112": {
-        "name": "飞龙爪"
+        "name": "Wyvern Claw"
       },
       "pt_wc113": {
-        "name": "魔星爪"
+        "name": "Chaos Claw"
       },
       "pt_wc114": {
-        "name": "天狼爪"
+        "name": "Titan Claw"
       },
       "pt_wc115": {
-        "name": "逆天爪"
+        "name": "SinBaRam Claw"
       },
       "pt_wc116": {
-        "name": "泰坦爪"
+        "name": "Titan Talon"
       },
       "pt_wc117": {
-        "name": "冰魄爪"
+        "name": "Salamander Talon"
       },
       "pt_wc118": {
-        "name": "星刺爪"
+        "name": "Phoenix Talon"
       },
       "pt_wc119": {
-        "name": "修罗爪"
+        "name": "Chimera Talon"
       },
       "pt_wc120": {
-        "name": "寂灭龙爪"
+        "name": "Extreme Talon"
       },
       "pt_wc121": {
-        "name": "灭牙爪"
+        "name": "Viper Talon"
       },
       "pt_wc122": {
-        "name": "黑虹爪"
+        "name": "Injustice Talon"
       },
       "pt_wc123": {
-        "name": "红蛛之牙"
+        "name": "Heretic Talon"
       },
       "pt_wc124": {
-        "name": "凯萨之爪"
+        "name": "Legend Talon"
       },
       "pt_wc125": {
-        "name": "桀骜之爪"
+        "name": "Legend Talon"
       },
       "pt_wc126": {
-        "name": "麒麟之爪"
+        "name": "Mythology Talon"
       },
       "pt_wc127": {
-        "name": "星云之爪"
+        "name": "Deadly Talon"
       },
       "pt_wc128": {
-        "name": "梦幻之爪"
+        "name": "Deadly Talon2"
       },
       "pt_wc130": {
-        "name": "熔岩之爪"
+        "name": "Abyss Talon"
       },
       "pt_wc134": {
-        "name": "圣裁之爪"
+        "name": "Holy Judgement Claw"
       },
       "pt_wc135": {
-        "name": "绯红之爪"
+        "name": "Crimson Claw"
       },
       "pt_wc301": {
-        "name": "南瓜之爪"
+        "name": "Mythology Talon"
       },
       "pt_wc302": {
-        "name": "熔岩之爪"
+        "name": "Mythology Talon"
       },
       "pt_wc303": {
-        "name": "裁决之爪"
+        "name": "Mythology Talon"
       },
       "pt_wc304": {
-        "name": "雷霆之爪"
+        "name": "Mythology Talon"
       },
       "pt_wc305": {
-        "name": "幻影之爪"
+        "name": "Mythology Talon"
       },
       "pt_wc306": {
-        "name": "阿波罗之爪"
+        "name": "Mythology Talon"
       },
       "pt_wc307": {
-        "name": "破影之爪"
+        "name": "Mythology Talon"
       },
       "pt_wc308": {
-        "name": "会员之爪"
+        "name": "Mythology Talon"
       },
       "pt_wc309": {
-        "name": "逍遥之爪"
+        "name": "Mythology Talon"
       },
       "pt_wc310": {
-        "name": "至尊魔爪"
+        "name": "Mythology Talon"
       },
       "pt_wc311": {
-        "name": "至尊之爪"
+        "name": "Mythology Talon"
       },
       "pt_wc312": {
-        "name": "魔狱之爪"
+        "name": "Mythology Talon"
       },
       "pt_wc313": {
-        "name": "波塞冬之爪"
+        "name": "Poseidon Claw"
       },
       "pt_wc314": {
-        "name": "赫菲斯托斯之爪"
+        "name": "Hephaestus Claw"
       },
       "pt_wc315": {
-        "name": "哈迪斯之爪"
+        "name": "Hades Claw"
       },
       "pt_wd101": {
-        "name": "普通匕首"
+        "name": "Normal Dagger"
       },
       "pt_wd102": {
-        "name": "铁匕首"
+        "name": "Iron Dagger"
       },
       "pt_wd103": {
-        "name": "猎刀"
+        "name": "Hunter Blade"
       },
       "pt_wd104": {
-        "name": "弯刀"
+        "name": "Scimitar"
       },
       "pt_wd105": {
-        "name": "双刃灵剑"
+        "name": "Twin Spirit Sword"
       },
       "pt_wd106": {
-        "name": "钢铁之刃"
+        "name": "Steel Blade"
       },
       "pt_wd107": {
-        "name": "混乱之刃"
+        "name": "Chaos Blade"
       },
       "pt_wd108": {
-        "name": "圣刃"
+        "name": "Holy Blade"
       },
       "pt_wd109": {
-        "name": "巨型弯刀"
+        "name": "Giant Scimitar"
       },
       "pt_wd110": {
-        "name": "霜冻之刃"
+        "name": "Frost Blade"
       },
       "pt_wd111": {
-        "name": "深邃之刃"
+        "name": "Deep Blade"
       },
       "pt_wd112": {
-        "name": "决斗之刃"
+        "name": "Duel Blade"
       },
       "pt_wd113": {
-        "name": "渴望之刃"
+        "name": "Desire Blade"
       },
       "pt_wd114": {
-        "name": "焰型刃"
+        "name": "Flame Blade"
       },
       "pt_wd115": {
-        "name": "制式之刃"
+        "name": "Standard Blade"
       },
       "pt_wd116": {
-        "name": "拉巴之刃"
+        "name": "Rabba Blade"
       },
       "pt_wd117": {
-        "name": "神秘之刃"
+        "name": "Mystic Blade"
       },
       "pt_wd118": {
-        "name": "月长石之刃"
+        "name": "Moonstone Blade"
       },
       "pt_wd119": {
-        "name": "混沌之刃"
+        "name": "Chaos Blade"
       },
       "pt_wd120": {
-        "name": "掠夺之刃"
+        "name": "Ravage Blade"
       },
       "pt_wd121": {
-        "name": "谜之刃"
+        "name": "Riddle Blade"
       },
       "pt_wd122": {
-        "name": "龙之刃"
+        "name": "Dragon Blade"
       },
       "pt_wd123": {
-        "name": "毁灭狮子之刃"
+        "name": "Lion Destroyer Blade"
       },
       "pt_wd124": {
-        "name": "华丽暗黑之刃"
+        "name": "Dark Glory Blade"
       },
       "pt_wd125": {
-        "name": "凯萨之刃"
+        "name": "Kaiser Blade"
       },
       "pt_wd126": {
-        "name": "桀骜之刃"
+        "name": "Rebel Blade"
       },
       "pt_wd127": {
-        "name": "麒麟之刃"
+        "name": "Qilin Blade"
       },
       "pt_wd128": {
-        "name": "星云之刃"
+        "name": "Nebula Blade"
       },
       "pt_wd129": {
-        "name": "梦幻之刃"
+        "name": "Dream Blade"
       },
       "pt_wd130": {
-        "name": "众神之刃"
+        "name": "Divine Blade"
       },
       "pt_wd134": {
-        "name": "圣裁之刃"
+        "name": "Holy Judgement Blade"
       },
       "pt_wd135": {
-        "name": "绯红之刃"
+        "name": "Crimson Blade"
       },
       "pt_wd301": {
-        "name": "南瓜之刃"
+        "name": "Mythology Javelin"
       },
       "pt_wd302": {
-        "name": "熔岩之刃"
+        "name": "Mythology Javelin"
       },
       "pt_wd303": {
-        "name": "裁决之刃"
+        "name": "Mythology Javelin"
       },
       "pt_wd304": {
-        "name": "雷霆之刃"
+        "name": "Mythology Javelin"
       },
       "pt_wd305": {
-        "name": "幻影之刃"
+        "name": "Mythology Javelin"
       },
       "pt_wd306": {
-        "name": "阿波罗之刃"
+        "name": "Mythology Javelin"
       },
       "pt_wd307": {
-        "name": "破影之刃"
+        "name": "Mythology Javelin"
       },
       "pt_wd308": {
-        "name": "会员之刃"
+        "name": "Mythology Javelin"
       },
       "pt_wd309": {
-        "name": "逍遥之刃"
+        "name": "Mythology Javelin"
       },
       "pt_wd310": {
-        "name": "至尊魔刃"
+        "name": "Mythology Javelin"
       },
       "pt_wd311": {
-        "name": "至尊之刃"
+        "name": "Mythology Javelin"
       },
       "pt_wd312": {
-        "name": "魔狱之刃"
+        "name": "Mythology Javelin"
       },
       "pt_wd313": {
-        "name": "波塞冬之刃"
+        "name": "Poseidon Blade"
       },
       "pt_wd314": {
-        "name": "赫菲斯托斯之刃"
+        "name": "Hephaestus Blade"
       },
       "pt_wd315": {
-        "name": "哈迪斯之刃"
+        "name": "Hades Blade"
       },
       "pt_wh101": {
-        "name": "狼牙棒"
+        "name": "Club"
       },
       "pt_wh102": {
-        "name": "星刺锤"
+        "name": "War Mac"
       },
       "pt_wh103": {
-        "name": "长锤"
+        "name": "Pole Mace"
       },
       "pt_wh104": {
-        "name": "巨灵锤"
+        "name": "Gothic Mace"
       },
       "pt_wh105": {
-        "name": "破天锤"
+        "name": "War Hammer"
       },
       "pt_wh106": {
-        "name": "浑元金锤"
+        "name": "Metal Hammer"
       },
       "pt_wh107": {
-        "name": "十字锤"
+        "name": "Cross Hammer"
       },
       "pt_wh108": {
-        "name": "圣光锤"
+        "name": "Holy Hammer"
       },
       "pt_wh109": {
-        "name": "玄星战锤"
+        "name": "Star"
       },
       "pt_wh110": {
-        "name": "轩辕巨锤"
+        "name": "Maximum"
       },
       "pt_wh111": {
-        "name": "赤冥之锤"
+        "name": "Meditaition"
       },
       "pt_wh112": {
-        "name": "碎星锤"
+        "name": "Rune Hammer"
       },
       "pt_wh113": {
-        "name": "破日锤"
+        "name": "Solar"
       },
       "pt_wh114": {
-        "name": "鬼眼锤"
+        "name": "War Maul"
       },
       "pt_wh115": {
-        "name": "雷公槌"
+        "name": "Titan Maul"
       },
       "pt_wh116": {
-        "name": "轰天锤"
+        "name": "SinBaRam Mace"
       },
       "pt_wh117": {
-        "name": "兽神锤"
+        "name": "Brutal Hammer"
       },
       "pt_wh118": {
-        "name": "灭神锤"
+        "name": "Gladiator Hammer"
       },
       "pt_wh119": {
-        "name": "弑神"
+        "name": "Archon Hammer"
       },
       "pt_wh120": {
-        "name": "无畏"
+        "name": "Justice Hammer"
       },
       "pt_wh121": {
-        "name": "轰雷战锤"
+        "name": "Dragon Bone Hammer"
       },
       "pt_wh122": {
-        "name": "魁伐折罗"
+        "name": "Guardian Hammer"
       },
       "pt_wh123": {
-        "name": "大鎚伊武岐"
+        "name": "Bane Hammer"
       },
       "pt_wh124": {
-        "name": "龙王之锤"
+        "name": "Dragon Hammer"
       },
       "pt_wh125": {
-        "name": "凯萨战锤"
+        "name": "Phoenix Hammer"
       },
       "pt_wh126": {
-        "name": "桀骜战锤"
+        "name": "Legend Hammer"
       },
       "pt_wh128": {
-        "name": "麒麟战锤"
+        "name": "Mythology Hammer"
       },
       "pt_wh129": {
-        "name": "星云战锤"
+        "name": "Deadly Hammer"
       },
       "pt_wh130": {
-        "name": "梦幻战锤"
+        "name": "Deadly Hammer2"
       },
       "pt_wh132": {
-        "name": "众神战锤"
+        "name": "Abyss Hammer"
       },
       "pt_wh136": {
-        "name": "圣裁战锤"
+        "name": "Holy Judgement War Hammer"
       },
       "pt_wh137": {
-        "name": "绯红战锤"
+        "name": "Crimson War Hammer"
       },
       "pt_wh301": {
-        "name": "南瓜战锤"
+        "name": "Mythology Hammer"
       },
       "pt_wh302": {
-        "name": "熔岩战锤"
+        "name": "Mythology Hammer"
       },
       "pt_wh303": {
-        "name": "裁决战锤"
+        "name": "Mythology Hammer"
       },
       "pt_wh304": {
-        "name": "雷霆战锤"
+        "name": "Mythology Hammer"
       },
       "pt_wh305": {
-        "name": "幻影之锤"
+        "name": "Mythology Hammer"
       },
       "pt_wh306": {
-        "name": "阿波罗之锤"
+        "name": "Mythology Hammer"
       },
       "pt_wh307": {
-        "name": "破影之锤"
+        "name": "Mythology Hammer"
       },
       "pt_wh308": {
-        "name": "会员战锤"
+        "name": "Mythology Hammer"
       },
       "pt_wh309": {
-        "name": "逍遥战锤"
+        "name": "Mythology Hammer"
       },
       "pt_wh310": {
-        "name": "至尊魔锤"
+        "name": "Mythology Hammer"
       },
       "pt_wh311": {
-        "name": "至尊战锤"
+        "name": "Mythology Hammer"
       },
       "pt_wh312": {
-        "name": "魔狱战锤"
+        "name": "Mythology Hammer"
       },
       "pt_wh313": {
-        "name": "波塞冬之锤"
+        "name": "Poseidon Hammer"
       },
       "pt_wh314": {
-        "name": "赫菲斯托斯之锤"
+        "name": "Hephaestus Hammer"
       },
       "pt_wh315": {
-        "name": "哈迪斯之锤"
+        "name": "Hades Hammer"
       },
       "pt_wm101": {
-        "name": "沉默之杖"
+        "name": "Wand"
       },
       "pt_wm102": {
-        "name": "执着之杖"
+        "name": "Sphere Wand"
       },
       "pt_wm103": {
-        "name": "暗杀之杖"
+        "name": "Obi Wand"
       },
       "pt_wm104": {
-        "name": "涤荡之杖"
+        "name": "Root Staff"
       },
       "pt_wm105": {
-        "name": "旋风之杖"
+        "name": "Poly Staff"
       },
       "pt_wm106": {
-        "name": "抗拒之杖"
+        "name": "Elven Wand"
       },
       "pt_wm107": {
-        "name": "天魔杖"
+        "name": "Dryad Wand"
       },
       "pt_wm108": {
-        "name": "公正之杖"
+        "name": "Meditaion Staff"
       },
       "pt_wm109": {
-        "name": "贤者杖"
+        "name": "Skull Staff"
       },
       "pt_wm110": {
-        "name": "圣者杖"
+        "name": "Mage Staff"
       },
       "pt_wm111": {
-        "name": "王者杖"
+        "name": "Faith Wand"
       },
       "pt_wm112": {
-        "name": "审判之杖"
+        "name": "Lofty Staff"
       },
       "pt_wm113": {
-        "name": "魔蜓杖"
+        "name": "Arch Wand"
       },
       "pt_wm114": {
-        "name": "混沌之杖"
+        "name": "Chaos Staff"
       },
       "pt_wm115": {
-        "name": "五彩凤翼"
+        "name": "Dragon Staff"
       },
       "pt_wm116": {
-        "name": "诸神的黄昏"
+        "name": "SinBaRam Staff"
       },
       "pt_wm117": {
-        "name": "神圣之光"
+        "name": "Apostle Wand"
       },
       "pt_wm118": {
-        "name": "日月同辉"
+        "name": "Relic Staff"
       },
       "pt_wm119": {
-        "name": "末日辉煌"
+        "name": "Dragon Staff"
       },
       "pt_wm120": {
-        "name": "灭绝"
+        "name": "Wyvern Wand"
       },
       "pt_wm121": {
-        "name": "雅典娜之光"
+        "name": "Gothic Staff"
       },
       "pt_wm122": {
-        "name": "流泉月花"
+        "name": "Oracle Wand"
       },
       "pt_wm123": {
-        "name": "螺钿三日星"
+        "name": "Celestial Staff"
       },
       "pt_wm124": {
-        "name": "双龙阿修罗"
+        "name": "Astral Staff"
       },
       "pt_wm125": {
-        "name": "凯萨之杖"
+        "name": "Freyja Staff"
       },
       "pt_wm126": {
-        "name": "桀骜之杖"
+        "name": "Freyja Wand"
       },
       "pt_wm128": {
-        "name": "麒麟之杖"
+        "name": "Mythology Staff"
       },
       "pt_wm129": {
-        "name": "星云之杖"
+        "name": "Deadly Staff"
       },
       "pt_wm130": {
-        "name": "梦幻法杖"
+        "name": "Deadly Staff1"
       },
       "pt_wm132": {
-        "name": "众神法杖"
+        "name": "Abyss Staff"
       },
       "pt_wm136": {
-        "name": "圣裁法杖"
+        "name": "Abyss Staff"
       },
       "pt_wm137": {
-        "name": "绯红法杖"
+        "name": "Abyss Staff"
       },
       "pt_wm301": {
-        "name": "南瓜之仗"
+        "name": "Mythology Staff"
       },
       "pt_wm302": {
-        "name": "熔岩法杖"
+        "name": "Mythology Staff"
       },
       "pt_wm303": {
-        "name": "裁决法杖"
+        "name": "Mythology Staff"
       },
       "pt_wm304": {
-        "name": "雷霆法杖"
+        "name": "Mythology Staff"
       },
       "pt_wm305": {
-        "name": "幻影之仗"
+        "name": "Mythology Staff"
       },
       "pt_wm306": {
-        "name": "阿波罗之仗"
+        "name": "Mythology Staff"
       },
       "pt_wm307": {
-        "name": "破影之仗"
+        "name": "Mythology Staff"
       },
       "pt_wm308": {
-        "name": "会员法杖"
+        "name": "Mythology Staff"
       },
       "pt_wm309": {
-        "name": "逍遥法杖"
+        "name": "Mythology Staff"
       },
       "pt_wm310": {
-        "name": "至尊魔杖"
+        "name": "Mythology Staff"
       },
       "pt_wm311": {
-        "name": "至尊法杖"
+        "name": "Mythology Staff"
       },
       "pt_wm312": {
-        "name": "魔狱法杖"
+        "name": "Mythology Staff"
       },
       "pt_wm313": {
-        "name": "波塞冬之仗"
+        "name": "Poseidon Staff"
       },
       "pt_wm314": {
-        "name": "赫菲斯托斯之仗"
+        "name": "Hephaestus Staff"
       },
       "pt_wm315": {
-        "name": "哈迪斯之仗"
+        "name": "Hades Staff"
       },
       "pt_wn101": {
-        "name": "护盾法珠"
+        "name": "Shield Orb"
       },
       "pt_wn102": {
-        "name": "克里克法珠"
+        "name": "Creek Orb"
       },
       "pt_wn103": {
-        "name": "图钉法珠"
+        "name": "Thumbtack Orb"
       },
       "pt_wn104": {
-        "name": "反向法珠"
+        "name": "Reverse Orb"
       },
       "pt_wn105": {
-        "name": "晚生法珠"
+        "name": "Late Orb"
       },
       "pt_wn106": {
-        "name": "汪卡拉法珠"
+        "name": "Wankara Orb"
       },
       "pt_wn107": {
-        "name": "薄荷法珠"
+        "name": "Mint Orb"
       },
       "pt_wn108": {
-        "name": "佩斯坎法珠"
+        "name": "Pescan Orb"
       },
       "pt_wn109": {
-        "name": "塔坦卡法珠"
+        "name": "Tatanka Orb"
       },
       "pt_wn110": {
-        "name": "索肖法珠"
+        "name": "Sochaux Orb"
       },
       "pt_wn111": {
-        "name": "韵尼法珠"
+        "name": "Yuni Orb"
       },
       "pt_wn112": {
-        "name": "希哈法珠"
+        "name": "Xiha Orb"
       },
       "pt_wn113": {
-        "name": "卫法珠"
+        "name": "Wei Orb"
       },
       "pt_wn114": {
-        "name": "罗安法珠"
+        "name": "Roan Orb"
       },
       "pt_wn115": {
-        "name": "坎库法珠"
+        "name": "Kanku Orb"
       },
       "pt_wn116": {
-        "name": "奥瓦法珠"
+        "name": "Owa Orb"
       },
       "pt_wn117": {
-        "name": "恩客得法珠"
+        "name": "Enkede Orb"
       },
       "pt_wn118": {
-        "name": "菲祖拉法珠"
+        "name": "Fizula Orb"
       },
       "pt_wn120": {
-        "name": "纳坦法珠"
+        "name": "Natan Orb"
       },
       "pt_wn121": {
-        "name": "卡塞塔法珠"
+        "name": "Caserta Orb"
       },
       "pt_wn122": {
-        "name": "尼亚哈法珠"
+        "name": "Nyaha Orb"
       },
       "pt_wn123": {
-        "name": "阿奇拉法珠"
+        "name": "Achira Orb"
       },
       "pt_wn124": {
-        "name": "瓦沁阳法珠"
+        "name": "Waqinyang Orb"
       },
       "pt_wn125": {
-        "name": "凯萨法珠"
+        "name": "Kaiser Orb"
       },
       "pt_wn126": {
-        "name": "桀骜法珠"
+        "name": "Rebel Orb"
       },
       "pt_wn127": {
-        "name": "麒麟法珠"
+        "name": "Qilin Orb"
       },
       "pt_wn128": {
-        "name": "星云法珠"
+        "name": "Nebula Orb"
       },
       "pt_wn129": {
-        "name": "梦幻法珠"
+        "name": "Dream Orb"
       },
       "pt_wn130": {
-        "name": "众神法珠"
+        "name": "Divine Orb"
       },
       "pt_wn134": {
-        "name": "圣裁法珠"
+        "name": "Holy Judgement Orb"
       },
       "pt_wn135": {
-        "name": "绯红法珠"
+        "name": "Crimson Orb"
       },
       "pt_wn301": {
-        "name": "南瓜法珠"
+        "name": "Mythology Javelin"
       },
       "pt_wn302": {
-        "name": "熔岩法珠"
+        "name": "Mythology Javelin"
       },
       "pt_wn303": {
-        "name": "裁决法珠"
+        "name": "Mythology Javelin"
       },
       "pt_wn304": {
-        "name": "雷霆法珠"
+        "name": "Mythology Javelin"
       },
       "pt_wn305": {
-        "name": "幻影法珠"
+        "name": "Mythology Javelin"
       },
       "pt_wn306": {
-        "name": "阿波罗法珠"
+        "name": "Mythology Javelin"
       },
       "pt_wn307": {
-        "name": "破影法珠"
+        "name": "Mythology Javelin"
       },
       "pt_wn308": {
-        "name": "会员法珠"
+        "name": "Mythology Javelin"
       },
       "pt_wn309": {
-        "name": "逍遥法珠"
+        "name": "Mythology Javelin"
       },
       "pt_wn310": {
-        "name": "至尊魔珠"
+        "name": "Mythology Javelin"
       },
       "pt_wn311": {
-        "name": "至尊法珠"
+        "name": "Mythology Javelin"
       },
       "pt_wn312": {
-        "name": "熔岩法珠"
+        "name": "Mythology Javelin"
       },
       "pt_wn313": {
-        "name": "波塞冬法珠"
+        "name": "Poseidon Orb"
       },
       "pt_wn314": {
-        "name": "赫菲斯托斯法珠"
+        "name": "Hephaestus Orb"
       },
       "pt_wn315": {
-        "name": "哈迪斯法珠"
+        "name": "Hades Orb"
       },
       "pt_wp101": {
-        "name": "精制木杖"
+        "name": "Pole"
       },
       "pt_wp102": {
-        "name": "点钢蛇矛"
+        "name": "Spear"
       },
       "pt_wp103": {
-        "name": "鹰嘴矛"
+        "name": "Bill"
       },
       "pt_wp104": {
-        "name": "方天战戟"
+        "name": "Halberd"
       },
       "pt_wp105": {
-        "name": "鸠牙战镰"
+        "name": "Horn Scythe"
       },
       "pt_wp106": {
-        "name": "三叉戟"
+        "name": "Trident"
       },
       "pt_wp107": {
-        "name": "战神之镰"
+        "name": "Enriched Scythe"
       },
       "pt_wp108": {
-        "name": "血烟长矛"
+        "name": "Double Scythe"
       },
       "pt_wp109": {
-        "name": "嗜血魔镰"
+        "name": "Evil Scythe"
       },
       "pt_wp110": {
-        "name": "白银之枪"
+        "name": "Silver Bird"
       },
       "pt_wp111": {
-        "name": "屠龙枪"
+        "name": "Chaos Spear"
       },
       "pt_wp112": {
-        "name": "傲天枪"
+        "name": "Titan Spear"
       },
       "pt_wp113": {
-        "name": "冥河战镰"
+        "name": "Styx Scythe"
       },
       "pt_wp114": {
-        "name": "龙翼枪"
+        "name": "Dragon's Wing"
       },
       "pt_wp115": {
-        "name": "狂暴之枪"
+        "name": "Rage"
       },
       "pt_wp116": {
-        "name": "末日审判"
+        "name": "SinBaRam Darkness"
       },
       "pt_wp117": {
-        "name": "银河战镰"
+        "name": "Hyper Scythe"
       },
       "pt_wp118": {
-        "name": "月影神矛"
+        "name": "Oracle Spear"
       },
       "pt_wp119": {
-        "name": "棲羽亚陀"
+        "name": "Immortal Scythe"
       },
       "pt_wp120": {
-        "name": "炎枪素戋鸣"
+        "name": "Extreme Spear"
       },
       "pt_wp121": {
-        "name": "灵犀之镰"
+        "name": "Hellfire Scythe"
       },
       "pt_wp122": {
-        "name": "天之琼侔"
+        "name": "Dreadnaught Spear"
       },
       "pt_wp123": {
-        "name": "卡厄斯"
+        "name": "Reaper Scythe"
       },
       "pt_wp124": {
-        "name": "烈枪降阎魔"
+        "name": "Dragon Scythe"
       },
       "pt_wp125": {
-        "name": "凯萨之枪"
+        "name": "Phoenix Spear"
       },
       "pt_wp126": {
-        "name": "桀骜之枪"
+        "name": "Phoenix Spear"
       },
       "pt_wp127": {
-        "name": "麒麟之枪"
+        "name": "Mythology Spear"
       },
       "pt_wp128": {
-        "name": "星云战枪"
+        "name": "Deadly Spear"
       },
       "pt_wp129": {
-        "name": "梦幻之枪"
+        "name": "Deadly Spear2"
       },
       "pt_wp131": {
-        "name": "众神之枪"
+        "name": "Abyss Spear"
       },
       "pt_wp135": {
-        "name": "圣裁之枪"
+        "name": "Abyss Spear"
       },
       "pt_wp136": {
-        "name": "绯红之枪"
+        "name": "Abyss Spear"
       },
       "pt_wp301": {
-        "name": "南瓜之枪"
+        "name": "Mythology Spear"
       },
       "pt_wp302": {
-        "name": "熔岩之枪"
+        "name": "Mythology Spear"
       },
       "pt_wp303": {
-        "name": "裁决之枪"
+        "name": "Mythology Spear"
       },
       "pt_wp304": {
-        "name": "雷霆之枪"
+        "name": "Mythology Spear"
       },
       "pt_wp305": {
-        "name": "幻影之枪"
+        "name": "Mythology Spear"
       },
       "pt_wp306": {
-        "name": "阿波罗之枪"
+        "name": "Mythology Spear"
       },
       "pt_wp307": {
-        "name": "破影之枪"
+        "name": "Mythology Spear"
       },
       "pt_wp308": {
-        "name": "会员之枪"
+        "name": "Mythology Spear"
       },
       "pt_wp309": {
-        "name": "逍遥之枪"
+        "name": "Mythology Spear"
       },
       "pt_wp310": {
-        "name": "至尊魔枪"
+        "name": "Mythology Spear"
       },
       "pt_wp311": {
-        "name": "至尊之枪"
+        "name": "Mythology Spear"
       },
       "pt_wp312": {
-        "name": "魔狱之枪"
+        "name": "Mythology Spear"
       },
       "pt_wp313": {
-        "name": "波塞冬之枪"
+        "name": "Poseidon Spear"
       },
       "pt_wp314": {
-        "name": "赫菲斯托斯之枪"
+        "name": "Hephaestus Spear"
       },
       "pt_wp315": {
-        "name": "哈迪斯之枪"
+        "name": "Hades Spear"
       },
       "pt_wr101": {
-        "name": "风魔卷轴A"
+        "name": "Wind Scroll A"
       },
       "pt_wr102": {
-        "name": "风魔卷轴B"
+        "name": "Wind Scroll B"
       },
       "pt_wr103": {
-        "name": "风魔卷轴C"
+        "name": "Wind Scroll C"
       },
       "pt_wr104": {
-        "name": "风魔卷轴D"
+        "name": "Wind Scroll D"
       },
       "pt_wr105": {
-        "name": "风魔卷轴E"
+        "name": "Wind Scroll E"
       },
       "pt_wr106": {
-        "name": "风魔卷轴F"
+        "name": "Wind Scroll F"
       },
       "pt_wr107": {
-        "name": "风魔卷轴G"
+        "name": "Wind Scroll G"
       },
       "pt_wr108": {
-        "name": "风魔卷轴H"
+        "name": "Wind Scroll H"
       },
       "pt_wr109": {
-        "name": "风魔卷轴I"
+        "name": "Wind Scroll I"
       },
       "pt_wr110": {
-        "name": "风魔卷轴J"
+        "name": "Wind Scroll J"
       },
       "pt_wr111": {
-        "name": "风魔卷轴K"
+        "name": "Wind Scroll K"
       },
       "pt_wr112": {
-        "name": "风魔卷轴M"
+        "name": "Wind Scroll M"
       },
       "pt_wr113": {
-        "name": "风魔卷轴N"
+        "name": "Wind Scroll N"
       },
       "pt_wr114": {
-        "name": "风魔卷轴O"
+        "name": "Wind Scroll O"
       },
       "pt_wr206": {
-        "name": "风魔卷轴(F)"
+        "name": "Wind Scroll (F)"
       },
       "pt_wr207": {
-        "name": "风魔卷轴(G)"
+        "name": "Wind Scroll (G)"
       },
       "pt_wr208": {
-        "name": "风魔卷轴(H)"
+        "name": "Wind Scroll (H)"
       },
       "pt_ws101": {
-        "name": "短弓"
+        "name": "Short Bow"
       },
       "pt_ws102": {
-        "name": "羊角弓"
+        "name": "Horned Bow"
       },
       "pt_ws103": {
-        "name": "手弩"
+        "name": "Hand CrossBow"
       },
       "pt_ws104": {
-        "name": "十字弩"
+        "name": "CrossBow"
       },
       "pt_ws105": {
-        "name": "战弓"
+        "name": "Battle Bow"
       },
       "pt_ws106": {
-        "name": "长弓"
+        "name": "Great Bow"
       },
       "pt_ws107": {
-        "name": "射日弓"
+        "name": "War Bow"
       },
       "pt_ws108": {
-        "name": "巨弩"
+        "name": "Great CrossBow"
       },
       "pt_ws109": {
-        "name": "点金手弩"
+        "name": "MetalHandCrossBow"
       },
       "pt_ws110": {
-        "name": "连环弩"
+        "name": "Double CrossBow"
       },
       "pt_ws111": {
-        "name": "龙骨战弓"
+        "name": "Bone Bow"
       },
       "pt_ws112": {
-        "name": "人马之辉"
+        "name": "Sagittarius"
       },
       "pt_ws113": {
-        "name": "猛犸巨弩"
+        "name": "Ancient CrossBow"
       },
       "pt_ws114": {
-        "name": "爱神之翼"
+        "name": "Titan Bow"
       },
       "pt_ws115": {
-        "name": "精灵之翼"
+        "name": "Chaos Bow"
       },
       "pt_ws116": {
-        "name": "圣灵弓"
+        "name": "Dragon Bow"
       },
       "pt_ws117": {
-        "name": "破鹫"
+        "name": "SinBaRam CrossBow"
       },
       "pt_ws118": {
-        "name": "风切"
+        "name": "Minotaur Bow"
       },
       "pt_ws119": {
-        "name": "丘比特之弓"
+        "name": "Wave Bow"
       },
       "pt_ws120": {
-        "name": "羽裂"
+        "name": "Grande Bow"
       },
       "pt_ws121": {
-        "name": "亚罗栖"
+        "name": "Dragon Bow"
       },
       "pt_ws122": {
-        "name": "凤舞九天"
+        "name": "Revenge Bow"
       },
       "pt_ws123": {
-        "name": "红羽"
+        "name": "Wyvern Bow"
       },
       "pt_ws124": {
-        "name": "天之麻迦古弓"
+        "name": "Immortal Bow"
       },
       "pt_ws125": {
-        "name": "潘多拉之弓"
+        "name": "Salamander Bow"
       },
       "pt_ws126": {
-        "name": "凯萨之弓"
+        "name": "Cronus Bow"
       },
       "pt_ws127": {
-        "name": "桀骜之弓"
+        "name": "Cronus Bow"
       },
       "pt_ws128": {
-        "name": "麒麟之弓"
+        "name": "Mythology Bow"
       },
       "pt_ws129": {
-        "name": "星云之弓"
+        "name": "Deadly Bow"
       },
       "pt_ws130": {
-        "name": "梦幻之弓"
+        "name": "Deadly Bow2"
       },
       "pt_ws136": {
-        "name": "圣裁之弓"
+        "name": "Holy Judgement Bow"
       },
       "pt_ws137": {
-        "name": "绯红之弓"
+        "name": "Crimson Bow"
       },
       "pt_ws201": {
-        "name": "神木剑"
+        "name": "Dagger"
       },
       "pt_ws202": {
-        "name": "蛇行匕首"
+        "name": "Celtic Dagger"
       },
       "pt_ws203": {
-        "name": "断剑"
+        "name": "SwordBreaker"
       },
       "pt_ws204": {
-        "name": "短剑"
+        "name": "Short Sword"
       },
       "pt_ws205": {
-        "name": "长剑"
+        "name": "Long Sword"
       },
       "pt_ws206": {
-        "name": "阔剑"
+        "name": "Broad Sword"
       },
       "pt_ws207": {
-        "name": "长刀"
+        "name": "Blade"
       },
       "pt_ws208": {
-        "name": "圣殿武士剑"
+        "name": "Templar Sword"
       },
       "pt_ws209": {
-        "name": "镇妖剑"
+        "name": "Shield Sword"
       },
       "pt_ws210": {
-        "name": "封魔剑"
+        "name": "Plated Sword"
       },
       "pt_ws211": {
-        "name": "斩马刀"
+        "name": "Claymore"
       },
       "pt_ws212": {
-        "name": "嗜血屠魔剑"
+        "name": "Slayer"
       },
       "pt_ws213": {
-        "name": "双截刃"
+        "name": "Gigantic Sword"
       },
       "pt_ws214": {
-        "name": "金刚伏魔剑"
+        "name": "HighLander"
       },
       "pt_ws215": {
-        "name": "诅咒之剑"
+        "name": "Bastard Sword"
       },
       "pt_ws216": {
-        "name": "破军"
+        "name": "TItan Sword"
       },
       "pt_ws217": {
-        "name": "鬼切"
+        "name": "Chaos Sword"
       },
       "pt_ws218": {
-        "name": "天裂"
+        "name": "SinBaRam Sword"
       },
       "pt_ws219": {
-        "name": "龙焰"
+        "name": "Salamanger Sword"
       },
       "pt_ws220": {
-        "name": "龙牙"
+        "name": "Avenger Sword"
       },
       "pt_ws221": {
-        "name": "烈风"
+        "name": "Titan Sword"
       },
       "pt_ws222": {
-        "name": "赤焰流星"
+        "name": "Wyvern Sword"
       },
       "pt_ws223": {
-        "name": "创世之剑"
+        "name": "Immortal Sword"
       },
       "pt_ws224": {
-        "name": "暗牙黄泉津"
+        "name": "Justice Sword"
       },
       "pt_ws225": {
-        "name": "龙神梵天"
+        "name": "Extreme Sword"
       },
       "pt_ws226": {
-        "name": "真龙神啸"
+        "name": "Mirage Sword"
       },
       "pt_ws227": {
-        "name": "凯萨之剑"
+        "name": "Tirbing Sword"
       },
       "pt_ws228": {
-        "name": "桀骜之剑"
+        "name": "Legend Sword"
       },
       "pt_ws230": {
-        "name": "麒麟之剑"
+        "name": "Mythology Sword"
       },
       "pt_ws231": {
-        "name": "星云之剑"
+        "name": "Deadly Sword"
       },
       "pt_ws232": {
-        "name": "梦幻之剑"
+        "name": "Deadly Sword"
       },
       "pt_ws233": {
-        "name": "裁决之剑"
+        "name": "Deadly Sword"
       },
       "pt_ws234": {
-        "name": "众神之剑"
+        "name": "Abyss Sword"
       },
       "pt_ws238": {
-        "name": "圣裁之剑"
+        "name": "Holy Judgement Sword"
       },
       "pt_ws239": {
-        "name": "绯红之剑"
+        "name": "Crimson Sword"
       },
       "pt_ws301": {
-        "name": "南瓜之弓"
+        "name": "Mythology Bow"
       },
       "pt_ws302": {
-        "name": "熔岩之弓"
+        "name": "Mythology Bow"
       },
       "pt_ws303": {
-        "name": "裁决之弓"
+        "name": "Mythology Bow"
       },
       "pt_ws304": {
-        "name": "雷霆之弓"
+        "name": "Mythology Bow"
       },
       "pt_ws305": {
-        "name": "幻影之弓"
+        "name": "Mythology Bow"
       },
       "pt_ws306": {
-        "name": "阿波罗之弓"
+        "name": "Mythology Bow"
       },
       "pt_ws307": {
-        "name": "破影之弓"
+        "name": "Mythology Bow"
       },
       "pt_ws308": {
-        "name": "会员之弓"
+        "name": "Mythology Bow"
       },
       "pt_ws309": {
-        "name": "逍遥之弓"
+        "name": "Mythology Bow"
       },
       "pt_ws310": {
-        "name": "至尊魔弓"
+        "name": "Mythology Bow"
       },
       "pt_ws311": {
-        "name": "至尊之弓"
+        "name": "Mythology Bow"
       },
       "pt_ws312": {
-        "name": "魔狱之弓"
+        "name": "Mythology Bow"
       },
       "pt_ws313": {
-        "name": "波塞冬之弓"
+        "name": "Poseidon Bow"
       },
       "pt_ws314": {
-        "name": "赫菲斯托斯之弓"
+        "name": "Hephaestus Bow"
       },
       "pt_ws315": {
-        "name": "哈迪斯之弓"
+        "name": "Hades Bow"
       },
       "pt_ws401": {
-        "name": "南瓜之剑"
+        "name": "Mythology Sword"
       },
       "pt_ws402": {
-        "name": "熔岩之剑"
+        "name": "Mythology Sword"
       },
       "pt_ws403": {
-        "name": "裁决之剑"
+        "name": "Mythology Sword"
       },
       "pt_ws404": {
-        "name": "雷霆之剑"
+        "name": "Mythology Sword"
       },
       "pt_ws405": {
-        "name": "幻影之剑"
+        "name": "Mythology Sword"
       },
       "pt_ws406": {
-        "name": "阿波罗之剑"
+        "name": "Mythology Sword"
       },
       "pt_ws407": {
-        "name": "破影之剑"
+        "name": "Mythology Sword"
       },
       "pt_ws408": {
-        "name": "会员之剑"
+        "name": "Mythology Sword"
       },
       "pt_ws409": {
-        "name": "逍遥之剑"
+        "name": "Mythology Sword"
       },
       "pt_ws410": {
-        "name": "至尊魔剑"
+        "name": "Mythology Sword"
       },
       "pt_ws411": {
-        "name": "至尊之剑"
+        "name": "Mythology Sword"
       },
       "pt_ws412": {
-        "name": "魔狱之剑"
+        "name": "Mythology Sword"
       },
       "pt_ws413": {
-        "name": "波塞冬之剑"
+        "name": "Poseidon Sword"
       },
       "pt_ws414": {
-        "name": "赫菲斯托斯之剑"
+        "name": "Hephaestus Sword"
       },
       "pt_ws415": {
-        "name": "哈迪斯之剑"
+        "name": "Hades Sword"
       },
       "pt_wt101": {
-        "name": "标枪"
+        "name": "Javelin"
       },
       "pt_wt102": {
-        "name": "战标"
+        "name": "War Javelin"
       },
       "pt_wt103": {
-        "name": "长牙标"
+        "name": "Edged Javelin"
       },
       "pt_wt104": {
-        "name": "铁标"
+        "name": "Steel Javelin"
       },
       "pt_wt105": {
-        "name": "双刺标"
+        "name": "Double Javelin"
       },
       "pt_wt106": {
-        "name": "精灵标"
+        "name": "Elven Javelin"
       },
       "pt_wt107": {
-        "name": "天命标"
+        "name": "Fatal Javelin"
       },
       "pt_wt108": {
-        "name": "金标"
+        "name": "Metal Javelin"
       },
       "pt_wt109": {
-        "name": "毒牙标"
+        "name": "Cobra"
       },
       "pt_wt110": {
-        "name": "飞云标"
+        "name": "Winged Javelin"
       },
       "pt_wt111": {
-        "name": "神标"
+        "name": "Holy Javelin"
       },
       "pt_wt112": {
-        "name": "鸩尾标"
+        "name": "Throwing Trident"
       },
       "pt_wt113": {
-        "name": "魔龙标"
+        "name": "Wyvern Javelin"
       },
       "pt_wt114": {
-        "name": "追月标"
+        "name": "Twisted Javelin"
       },
       "pt_wt115": {
-        "name": "惊鸿"
+        "name": "Linked Javelin"
       },
       "pt_wt116": {
-        "name": "裂空"
+        "name": "SinBaRam Javelin"
       },
       "pt_wt117": {
-        "name": "夜叉"
+        "name": "Mystic Javelin"
       },
       "pt_wt118": {
-        "name": "噬月"
+        "name": "Extreme Javelin"
       },
       "pt_wt119": {
-        "name": "流星"
+        "name": "Dragon Javelin"
       },
       "pt_wt120": {
-        "name": "天妒"
+        "name": "Spike Javelin"
       },
       "pt_wt121": {
-        "name": "龙翔标枪"
+        "name": "Salamander Javelin"
       },
       "pt_wt122": {
-        "name": "暗破"
+        "name": "Immortal Javelin"
       },
       "pt_wt123": {
-        "name": "天严云"
+        "name": "Heretic Javelin"
       },
       "pt_wt124": {
-        "name": "皓月谙晓"
+        "name": "Salamander Javelin"
       },
       "pt_wt125": {
-        "name": "凯萨标枪"
+        "name": "Cronus Javelin"
       },
       "pt_wt126": {
-        "name": "桀骜标枪"
+        "name": "Cronus Javelin"
       },
       "pt_wt127": {
-        "name": "麒麟标枪"
+        "name": "Mythology Javelin"
       },
       "pt_wt128": {
-        "name": "星云标枪"
+        "name": "Deadly Javelin"
       },
       "pt_wt129": {
-        "name": "梦幻标枪"
+        "name": "Deadly Javelin2"
       },
       "pt_wt131": {
-        "name": "众神标枪"
+        "name": "Abyss Javelin"
       },
       "pt_wt135": {
-        "name": "圣裁标枪"
+        "name": "Holy Judgement Javelin"
       },
       "pt_wt136": {
-        "name": "绯红标枪"
+        "name": "Crimson Javelin"
       },
       "pt_wt301": {
-        "name": "南瓜标枪"
+        "name": "Mythology Javelin"
       },
       "pt_wt302": {
-        "name": "熔岩标枪"
+        "name": "Mythology Javelin"
       },
       "pt_wt303": {
-        "name": "裁决标枪"
+        "name": "Mythology Javelin"
       },
       "pt_wt304": {
-        "name": "雷霆标枪"
+        "name": "Mythology Javelin"
       },
       "pt_wt305": {
-        "name": "幻影标枪"
+        "name": "Mythology Javelin"
       },
       "pt_wt306": {
-        "name": "阿波罗标枪"
+        "name": "Mythology Javelin"
       },
       "pt_wt307": {
-        "name": "破影标枪"
+        "name": "Mythology Javelin"
       },
       "pt_wt308": {
-        "name": "会员标枪"
+        "name": "Mythology Javelin"
       },
       "pt_wt309": {
-        "name": "逍遥标枪"
+        "name": "Mythology Javelin"
       },
       "pt_wt310": {
-        "name": "至尊魔标"
+        "name": "Mythology Javelin"
       },
       "pt_wt311": {
-        "name": "至尊战标"
+        "name": "Mythology Javelin"
       },
       "pt_wt312": {
-        "name": "魔狱标枪"
+        "name": "Mythology Javelin"
       },
       "pt_wt313": {
-        "name": "波塞冬标枪"
+        "name": "Poseidon Javelin"
       },
       "pt_wt314": {
-        "name": "赫菲斯托斯标枪"
+        "name": "Hephaestus Javelin"
       },
       "pt_wt315": {
-        "name": "哈迪斯标枪"
+        "name": "Hades Javelin"
       },
       "pt_wv101": {
-        "name": "拳套"
+        "name": "Gauntlets"
       },
       "pt_wv102": {
-        "name": "铁拳套"
+        "name": "Iron Gauntlets"
       },
       "pt_wv103": {
-        "name": "狩猎拳套"
+        "name": "Hunting Gauntlets"
       },
       "pt_wv104": {
-        "name": "巨灵拳套"
+        "name": "Titan Gauntlets"
       },
       "pt_wv105": {
-        "name": "双灵拳套"
+        "name": "Twin Spirit Gauntlets"
       },
       "pt_wv106": {
-        "name": "钢铁拳套"
+        "name": "Steel Gauntlets"
       },
       "pt_wv107": {
-        "name": "混乱拳套"
+        "name": "Chaos Gauntlets"
       },
       "pt_wv108": {
-        "name": "圣灵拳套"
+        "name": "Holy Spirit Gauntlets"
       },
       "pt_wv109": {
-        "name": "巨型拳套"
+        "name": "Giant Gauntlets"
       },
       "pt_wv110": {
-        "name": "霜冻拳套"
+        "name": "Frost Gauntlets"
       },
       "pt_wv111": {
-        "name": "深邃拳套"
+        "name": "Deep Gauntlets"
       },
       "pt_wv112": {
-        "name": "决斗拳套"
+        "name": "Duel Gauntlets"
       },
       "pt_wv113": {
-        "name": "渴望拳套"
+        "name": "Desire Gauntlets"
       },
       "pt_wv114": {
-        "name": "焰型拳套"
+        "name": "Flame Gauntlets"
       },
       "pt_wv115": {
-        "name": "制式拳套"
+        "name": "Standard Gauntlets"
       },
       "pt_wv116": {
-        "name": "拉巴拳套"
+        "name": "Rabba Gauntlets"
       },
       "pt_wv117": {
-        "name": "神秘拳套"
+        "name": "Mystic Gauntlets"
       },
       "pt_wv118": {
-        "name": "月长石拳套"
+        "name": "Moonstone Gauntlets"
       },
       "pt_wv119": {
-        "name": "混沌拳套"
+        "name": "Chaos Gauntlets"
       },
       "pt_wv120": {
-        "name": "掠夺拳套"
+        "name": "Ravage Gauntlets"
       },
       "pt_wv121": {
-        "name": "谜之拳套"
+        "name": "Riddle Gauntlets"
       },
       "pt_wv122": {
-        "name": "龙之拳套"
+        "name": "Dragon Gauntlets"
       },
       "pt_wv123": {
-        "name": "毁灭狮子拳套"
+        "name": "Lion Destroyer Gauntlets"
       },
       "pt_wv124": {
-        "name": "华丽暗黑拳套"
+        "name": "Dark Glory Gauntlets"
       },
       "pt_wv125": {
-        "name": "凯萨拳套"
+        "name": "Kaiser Gauntlets"
       },
       "pt_wv126": {
-        "name": "桀骜拳套"
+        "name": "Rebel Gauntlets"
       },
       "pt_wv127": {
-        "name": "星云拳套"
+        "name": "Nebula Gauntlets"
       },
       "pt_wv128": {
-        "name": "梦幻拳套"
+        "name": "Dream Gauntlets"
       },
       "pt_wv129": {
-        "name": "裁决拳套"
+        "name": "Judgement Gauntlets"
       },
       "pt_wv130": {
-        "name": "众神拳套"
+        "name": "Divine Gauntlets"
       },
       "pt_wv131": {
-        "name": "熔岩拳套"
+        "name": "Lava Gauntlets"
       },
       "pt_wv132": {
-        "name": "至尊拳套"
+        "name": "Supreme Gauntlets"
       },
       "pt_wv133": {
-        "name": "至尊魔套"
+        "name": "Supreme Magic Gauntlets"
       },
       "pt_wv134": {
-        "name": "圣裁拳套"
+        "name": "Holy Judgement Gauntlets"
       },
       "pt_wv135": {
-        "name": "绯红拳套"
+        "name": "Crimson Gauntlets"
       },
       "pt_wv301": {
-        "name": "南瓜拳套"
+        "name": "Pumpkin Gauntlets"
+      },
+      "pt_da157": {
+        "name": "Dress (F) (30 Days)"
+      },
+      "pt_db130": {
+        "name": "Inferno Boots"
+      },
+      "pt_qwa108": {
+        "name": "Double Head Axe"
+      },
+      "pt_qwa120": {
+        "name": "Minotaur Axe"
+      },
+      "pt_qwc108": {
+        "name": "Pharaoh"
+      },
+      "pt_qwc120": {
+        "name": "Extreme Talon"
+      },
+      "pt_qwd109": {
+        "name": "Giant Scimitar"
+      },
+      "pt_qwd121": {
+        "name": "Riddle Sword"
+      },
+      "pt_qwh109": {
+        "name": "Star"
+      },
+      "pt_qwh121": {
+        "name": "Dragon Bone Hammer"
+      },
+      "pt_qwm109": {
+        "name": "Skull Staff"
+      },
+      "pt_qwm121": {
+        "name": "Gothic Staff"
+      },
+      "pt_qwn109": {
+        "name": "Tatanka Orb"
+      },
+      "pt_qwn121": {
+        "name": "Caserta Orb"
+      },
+      "pt_qwp109": {
+        "name": "Evil Scythe"
+      },
+      "pt_qwp121": {
+        "name": "Hellfire Scythe"
+      },
+      "pt_qws110": {
+        "name": "Double CrossBow"
+      },
+      "pt_qws122": {
+        "name": "Revenge Bow"
+      },
+      "pt_qws210": {
+        "name": "Plated Sword"
+      },
+      "pt_qws223": {
+        "name": "Immortal Sword"
+      },
+      "pt_qwt109": {
+        "name": "Cobra"
+      },
+      "pt_qwt121": {
+        "name": "Salamander Javelin"
       },
       "conjured_water4": {
         "name": "Сотворённая родниковая вода"

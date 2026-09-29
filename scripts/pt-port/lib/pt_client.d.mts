@@ -8,5 +8,6 @@ export function ptSourceDir(): string;
 export function ptServerDir(): string;
 export function ptClientPath(rel: string): string;
 export function ptClientExists(rel: string): boolean;
+export function ptSourcePath(rel: string): string;
 export function ptServerPath(rel: string): string;
 export function ptServerExists(rel: string): boolean;
