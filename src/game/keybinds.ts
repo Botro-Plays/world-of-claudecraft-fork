@@ -62,19 +62,19 @@ const SLOT_DEFAULTS = [
   'Digit0',
   'Minus',
   'Equal',
-  // Secondary bar (slots 12..22): defaults to the numpad so it never collides
-  // with the primary number row. Fully rebindable like any other slot, and
-  // laptops without a numpad can simply assign their own keys.
-  'Numpad1',
-  'Numpad2',
-  'Numpad3',
-  'Numpad4',
-  'Numpad5',
-  'Numpad6',
-  'Numpad7',
-  'Numpad8',
-  'Numpad9',
-  'Numpad0',
+  // Secondary bar (slots 12..21): F1-F10, with the numpad as a fallback so a
+  // laptop without function keys (or a player who already uses them) can still
+  // reach the row. Slot 22 is the hidden 11th seat and stays on NumpadDecimal.
+  'F1',
+  'F2',
+  'F3',
+  'F4',
+  'F5',
+  'F6',
+  'F7',
+  'F8',
+  'F9',
+  'F10',
   'NumpadDecimal',
   // Third bar (slots 23..33): shifted numpad bindings keep the row distinct
   // while preserving the same physical layout as the secondary bar.
@@ -450,10 +450,16 @@ export const BIND_ACTIONS: BindAction[] = [
               : `Third Bar ${i - 22}`,
       category: 'Action Bar',
       kind: 'edge',
-      defaults: [code],
+      defaults: slotDefaultCodes(i, code),
     }),
   ),
 ];
+
+/** Primary code plus, for the F-row, the matching numpad fallback. */
+function slotDefaultCodes(i: number, code: string): string[] {
+  if (i < 12 || i > 21) return [code];
+  return [code, i === 21 ? 'Numpad0' : `Numpad${i - 11}`];
+}
 
 const ACTION_BY_ID = new Map(BIND_ACTIONS.map((a) => [a.id, a]));
 export const BIND_CATEGORIES = [...new Set(BIND_ACTIONS.map((a) => a.category))];
@@ -483,6 +489,23 @@ const REPAIR_MARKER = '__repaired';
 // REPAIR_MARKER so the migration runs for profiles that already had REPAIR_MARKER
 // set by an earlier repair.
 const AUTORUN_R_MIGRATED = '__autorun_r_migrated';
+// Marks a stored profile as already migrated off the old numpad-only F-row
+// defaults (slot12..21 primary Numpad1..Numpad0) onto F1-F10 with numpad as
+// the secondary. Separate from REPAIR_MARKER so profiles that already saved
+// after a repair still pick up the new F-row.
+const F_ROW_MIGRATED = '__f_row_migrated';
+const F_ROW_OLD_NUMPAD = [
+  'Numpad1',
+  'Numpad2',
+  'Numpad3',
+  'Numpad4',
+  'Numpad5',
+  'Numpad6',
+  'Numpad7',
+  'Numpad8',
+  'Numpad9',
+  'Numpad0',
+] as const;
 
 export function actionKind(id: string): BindKind | null {
   return ACTION_BY_ID.get(id)?.kind ?? null;
@@ -738,6 +761,26 @@ export class Keybinds {
       }
       obj[AUTORUN_R_MIGRATED] = true;
     }
+    // One-time migration: the F-row moved from Numpad1..Numpad0 to F1-F10
+    // (numpad stays the secondary). A profile saved on the old defaults has
+    // slot12: ['Numpad1', null] and that stored primary wins over the new F1
+    // default, so F1 would do nothing. Dropping those exact old primaries
+    // re-seeds F1-F10 + numpad. A deliberate remap of a slot off the numpad
+    // is left alone. Gated so a later remap back onto Numpad1 is preserved.
+    if (obj[F_ROW_MIGRATED] !== true) {
+      for (let i = 0; i < F_ROW_OLD_NUMPAD.length; i++) {
+        const id = `slot${12 + i}`;
+        const entry = obj[id];
+        if (
+          Array.isArray(entry) &&
+          entry[0] === F_ROW_OLD_NUMPAD[i] &&
+          (entry[1] === null || entry[1] === undefined)
+        ) {
+          delete obj[id];
+        }
+      }
+      obj[F_ROW_MIGRATED] = true;
+    }
     this.applyBlob(obj);
   }
 
@@ -819,6 +862,7 @@ export class Keybinds {
     const obj: Record<string, (string | null)[] | boolean> = {};
     for (const [id, codes] of this.map) obj[id] = codes;
     obj[REPAIR_MARKER] = true;
+    obj[F_ROW_MIGRATED] = true;
     try {
       localStorage.setItem(this.storeKey, JSON.stringify(obj));
     } catch {

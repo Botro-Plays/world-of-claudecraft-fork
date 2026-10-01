@@ -130,7 +130,6 @@ import { Input } from './game/input';
 import { InputActivityMeter, installInputActivityTracking } from './game/input_activity';
 import { createGatherEffectConfirm, interactKeyGatherOptions } from './game/interact_key_gather';
 import { stopAutorunForInteraction } from './game/interaction_autorun';
-import { loadGaitMode, saveGaitMode, toggleGaitMode, type GaitMode } from './game/run_walk_toggle';
 import {
   activePvpOpponentIds,
   HoverPickGate,
@@ -193,7 +192,9 @@ import { initPerfNudge } from './game/perf_nudge';
 import { startPerfReporter } from './game/perf_reporter';
 import { kickCharacterPreloadStream, runPostEntryWarmups } from './game/post_entry_warmups_core';
 import { newPresentationGateInput, presentationGate } from './game/presentation_gate';
+import { ptMouseSkillSlot } from './game/pt_mouse_skills';
 import { startRealmBuilderRollLoad } from './game/realm_builder_boot';
+import { type GaitMode, loadGaitMode, saveGaitMode, toggleGaitMode } from './game/run_walk_toggle';
 import { adaptiveSelfAlphaLead } from './game/self_alpha_lead';
 import { SelfMotionFrameBuffer } from './game/self_motion_frame_buffer';
 import {
@@ -3577,6 +3578,17 @@ async function startGame(
     const clickToMoveButton = normalizeClickMoveButton(settings.get('clickToMoveButton'));
     const isClickMoveButton = clickToMove && button === clickToMoveButton;
     if (id === null) {
+      // PT cast first while a live target still exists, then classic clear may
+      // run. Without that order, default stickyTarget=off would clear on LMB
+      // ground and the circle skills would never fire off-entity. See
+      // pt_mouse_skills.ts.
+      const hadTarget = world.player.targetId !== null;
+      const groundPtSlot = ptMouseSkillSlot(button, {
+        pickedEntityId: null,
+        worldUiConsumed: false,
+        hasTarget: hadTarget,
+      });
+      if (groundPtSlot !== null) hud.castSlot(groundPtSlot);
       // Classic behavior clears the target on a ground left-click; the opt-in
       // stickyTarget setting keeps it (only the clear is skipped, click-to-move
       // below is untouched). Decision table: src/game/target_click.ts.
@@ -3598,6 +3610,13 @@ async function startGame(
     const e = world.entities.get(id);
     const interactionOutcome = handlePickedEntity(world, hud, id, button, x, y);
     const didInteractImmediately = interactionOutcome === true;
+    // PT: LMB/RMB -> slots 0/1 via castSlot (same path as Digit1/Digit2).
+    const ptSlot = ptMouseSkillSlot(button, {
+      pickedEntityId: id,
+      worldUiConsumed: interactionOutcome !== false,
+      hasTarget: world.player.targetId !== null,
+    });
+    if (ptSlot !== null) hud.castSlot(ptSlot);
     if (e && e.id !== world.player.id) {
       // Mark the entity when you engage it: a left-click target, or the click-to-move
       // button that walks you to it, so both routes read the same (red on a hostile,
@@ -5954,9 +5973,12 @@ function showTribeFormation(tribeId: PtTribeId): void {
   if (!characterPreview) return;
   offlineSelectedTribe = tribeId;
   // Build the persistent stage: all classes in the tribe at their HOME
-  // positions, no automatic selection.
+  // positions, then select the first so Enter World is unlocked without a
+  // mandatory canvas click (player can still click another class to switch).
   const entries = tribeStageEntries(tribeId);
   characterPreview.setStageFormation(entries);
+  const firstCls = entries[0]?.cls as PlayerClass | undefined;
+  if (firstCls) selectStageClass(firstCls);
 }
 
 /**
@@ -5993,6 +6015,8 @@ function showOnlineTribeFormation(tribeId: PtTribeId): void {
   onlineSelectedTribe = tribeId;
   const entries = tribeStageEntries(tribeId);
   characterPreview.setStageFormation(entries);
+  const firstCls = entries[0]?.cls as PlayerClass | undefined;
+  if (firstCls) selectOnlineStageClass(firstCls);
 }
 
 /**
@@ -6305,12 +6329,15 @@ function switchMainView(targetId: string): void {
     if (backdrop) backdrop.classList.toggle('trailer-off', !onPlayPage);
 
     if (targetId === '#hero-view') {
-      const activePlayPanel = ['#charselect-panel', '#charcreate-panel', '#offline-select', '#pt-tribe-select'].find(
-        (id) => {
-          const el = $(id);
-          return el && !el.hasAttribute('hidden');
-        },
-      );
+      const activePlayPanel = [
+        '#charselect-panel',
+        '#charcreate-panel',
+        '#offline-select',
+        '#pt-tribe-select',
+      ].find((id) => {
+        const el = $(id);
+        return el && !el.hasAttribute('hidden');
+      });
       if (activePlayPanel) {
         updatePreviewContainer(activePlayPanel);
       }
@@ -7261,9 +7288,10 @@ async function refreshCharacters(): Promise<void> {
       // PT classes use fixed GLBs, not the WoC modular body the redesign
       // editor composes over, so the button is hidden for them regardless of
       // the token state.
-      const rerollBtn = c.appearanceRerollAvailable && !isPtClass(c.class)
-        ? `<button type="button" class="btn reroll-char-btn" title="${esc(t('character.redesignHint'))}" aria-label="${esc(t('character.redesignTitle', { name: c.name }))}">${esc(t('character.redesign'))}</button>`
-        : '';
+      const rerollBtn =
+        c.appearanceRerollAvailable && !isPtClass(c.class)
+          ? `<button type="button" class="btn reroll-char-btn" title="${esc(t('character.redesignHint'))}" aria-label="${esc(t('character.redesignTitle', { name: c.name }))}">${esc(t('character.redesign'))}</button>`
+          : '';
       // The chip draws the character's REAL body: their authored modular look
       // (or the mech cosmetic), matching the 3D stage and the world.
       const chipHtml = () =>
@@ -7703,10 +7731,8 @@ function renderClassDetails(
   // disappear.
   if (characterPreview) {
     if (preview) characterPreview.setAppearance(preview);
-    else if (
-      currentlyRenderedClass[panelId] !== className &&
-      !characterPreview.isStageActive()
-    ) previewClassBody(className);
+    else if (currentlyRenderedClass[panelId] !== className && !characterPreview.isStageActive())
+      previewClassBody(className);
   }
 
   // Show the part/colour pickers for a composed body, hide them for a fixed
@@ -8201,10 +8227,7 @@ function refreshLocalizedDynamicShell(): void {
   if (activePanel === 'charcreate-panel') {
     if (onlineCreationActive) {
       // Online creation uses the 3D stage; read the selected class from stage state.
-      const stageCls = characterPreview?.getStageSelectedClass() as
-        | PlayerClass
-        | null
-        | undefined;
+      const stageCls = characterPreview?.getStageSelectedClass() as PlayerClass | null | undefined;
       if (stageCls) {
         currentlyRenderedClass['charcreate-class-details'] = null;
         renderClassDetails('charcreate-class-details', stageCls);
@@ -8219,10 +8242,7 @@ function refreshLocalizedDynamicShell(): void {
     return;
   }
   if (activePanel === 'offline-select') {
-    const stageCls = characterPreview?.getStageSelectedClass() as
-      | PlayerClass
-      | null
-      | undefined;
+    const stageCls = characterPreview?.getStageSelectedClass() as PlayerClass | null | undefined;
     if (stageCls) {
       currentlyRenderedClass['offline-class-details'] = null;
       renderClassDetails('offline-class-details', stageCls);
@@ -10211,7 +10231,14 @@ function wireStartScreens(): void {
     music.init();
     sfx.init();
     const name = sanitizeOfflineName(rawName);
-    void startOffline(cls, name, selectedSkin('#offline-skin-row', offlineSkin), undefined, undefined, offlinePtHair);
+    void startOffline(
+      cls,
+      name,
+      selectedSkin('#offline-skin-row', offlineSkin),
+      undefined,
+      undefined,
+      offlinePtHair,
+    );
   };
 
   const handleOfflineSelect = () => {
@@ -10390,14 +10417,18 @@ function wireStartScreens(): void {
 
   if (btnStartOffline) {
     btnStartOffline.addEventListener('click', () => {
-      // The selected class now lives on the persistent 3D stage, not in a
-      // .mini-class.sel card. Read it from the preview's stage state.
-      const stageCls = characterPreview?.getStageSelectedClass() as
-        | PlayerClass
-        | null
-        | undefined;
-      if (stageCls) {
-        handleOfflineStart(stageCls);
+      // Prefer the 3D stage selection; if the canvas never got a click (or the
+      // stage was blank during a preview boot race), fall back to the tribe's
+      // first implemented class so Enter World is not a dead end.
+      const stageCls = characterPreview?.getStageSelectedClass() as PlayerClass | null | undefined;
+      const tribeFallback = offlineSelectedTribe
+        ? (PT_TRIBES.find((t) => t.id === offlineSelectedTribe)?.implementedClassIds[0] as
+            | PlayerClass
+            | undefined)
+        : undefined;
+      const cls = stageCls ?? tribeFallback;
+      if (cls) {
+        handleOfflineStart(cls);
       } else {
         offlineError.textContent = t('errors.selectClass');
       }
@@ -10427,10 +10458,7 @@ function wireStartScreens(): void {
       });
       // Rebuild the selected stage member's visual with the new hair. The
       // member stays at its current position (presentation or home).
-      const selCls = characterPreview?.getStageSelectedClass() as
-        | PlayerClass
-        | null
-        | undefined;
+      const selCls = characterPreview?.getStageSelectedClass() as PlayerClass | null | undefined;
       if (selCls && characterPreview) {
         const vk = ptVisualKey(selCls, hair);
         if (vk) characterPreview.rebuildSelectedStageVisual(vk);
@@ -10455,10 +10483,7 @@ function wireStartScreens(): void {
         b.setAttribute('aria-pressed', sel ? 'true' : 'false');
       });
       // Rebuild the selected stage member's visual with the new hair.
-      const selCls = characterPreview?.getStageSelectedClass() as
-        | PlayerClass
-        | null
-        | undefined;
+      const selCls = characterPreview?.getStageSelectedClass() as PlayerClass | null | undefined;
       if (selCls && characterPreview) {
         const vk = ptVisualKey(selCls, hair);
         if (vk) characterPreview.rebuildSelectedStageVisual(vk);
@@ -10497,6 +10522,7 @@ function wireStartScreens(): void {
       if (onlineCreationActive) {
         // Online creation: hide the mini-class chips (the 3D stage is the
         // authoritative class selector) and build the filtered stage.
+        onlineSelectedTribe = tribeId;
         const charcreatePanel = $('#charcreate-panel') as HTMLElement | null;
         if (charcreatePanel) {
           charcreatePanel.querySelectorAll<HTMLElement>('.pt-tribe-section').forEach((sec) => {
@@ -10510,17 +10536,19 @@ function wireStartScreens(): void {
           showOnlineTribeFormation(tribeId);
         }
       } else {
+        // Record tribe even if CharacterPreview is still booting - otherwise a
+        // fast tribe click before charactersReady() resolves permanently blanks
+        // the stage (showTribeFormation no-ops when preview is null).
+        offlineSelectedTribe = tribeId;
         filterOfflineSelectForTribe($('#offline-select') as HTMLElement | null, tribeId);
         show('#offline-select');
         if (first) {
           renderClassDetails('offline-class-details', first as PlayerClass);
           btnStartOffline.removeAttribute('disabled');
           refreshOfflineSkins(first as PlayerClass);
-          // Build the persistent 3D stage: all implemented classes stand at
-          // their HOME positions. No character is automatically selected —
-          // the player must click a 3D character to start walking forward.
-          // The info panel above shows the first class as a default preview,
-          // but that is separate from the 3D stage selection state.
+          // Build the 3D stage and select the first implemented class so Enter
+          // World works even when the player never clicks the canvas (and so a
+          // late-ready preview can rebuild from offlineSelectedTribe).
           showTribeFormation(tribeId);
         } else {
           // No implemented classes for this tribe yet.
@@ -11064,10 +11092,7 @@ function wireStartScreens(): void {
     const name = newCharNameInput.value.trim();
     // The selected class now lives on the persistent 3D stage, not in a
     // .mini-class.sel card. Read it from the preview's stage state.
-    const stageCls = characterPreview?.getStageSelectedClass() as
-      | PlayerClass
-      | null
-      | undefined;
+    const stageCls = characterPreview?.getStageSelectedClass() as PlayerClass | null | undefined;
     loginError('');
     charselectError.textContent = '';
 
@@ -11877,10 +11902,12 @@ function wireStartScreens(): void {
   charactersReady()
     .then(() => {
       // Resolve each panel defensively: play.html (online-only) has no #offline-select.
-      const activePanelId = ['#charselect-panel', '#charcreate-panel', '#offline-select'].find((id) => {
-        const panel = $(id) as HTMLElement | null;
-        return panel !== null && !panel.hasAttribute('hidden');
-      });
+      const activePanelId = ['#charselect-panel', '#charcreate-panel', '#offline-select'].find(
+        (id) => {
+          const panel = $(id) as HTMLElement | null;
+          return panel !== null && !panel.hasAttribute('hidden');
+        },
+      );
       const containerId =
         activePanelId === '#offline-select'
           ? '#offline-preview-container'
@@ -11917,14 +11944,13 @@ function wireStartScreens(): void {
         if (charselectSelected) {
           showCharselectCharacter(charselectSelected);
         } else if (activePanelId === '#offline-select') {
-          // The offline-select uses the persistent 3D stage; the stage is
-          // built when a tribe is selected. Until then, show the default
-          // fighter body so the canvas isn't blank.
-          previewClassBody('tempskron_fighter');
+          // If the player already picked a tribe before assets finished, rebuild
+          // the stage now - showTribeFormation is a no-op while preview is null.
+          if (offlineSelectedTribe) showTribeFormation(offlineSelectedTribe);
+          else previewClassBody('tempskron_fighter');
         } else if (activePanelId === '#charcreate-panel' && onlineCreationActive) {
-          // Online creation uses the 3D stage; the stage is built when a
-          // tribe is selected. Until then, show the default fighter body.
-          previewClassBody('tempskron_fighter');
+          if (onlineSelectedTribe) showOnlineTribeFormation(onlineSelectedTribe);
+          else previewClassBody('tempskron_fighter');
         } else {
           const selEl = document.querySelector(
             '#charcreate-panel .mini-class.sel',

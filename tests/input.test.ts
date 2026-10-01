@@ -309,6 +309,7 @@ describe('Input autorun', () => {
       jump: false,
       dive: false,
       surface: false,
+      walkMode: false,
     });
     expect(cb.onAbilityUp).toHaveBeenCalledWith(0);
   });
@@ -1764,6 +1765,56 @@ describe('Input swim steer from the camera', () => {
     const mi = input.readMoveInput();
     expect(mi.dive).toBe(true);
     expect(mi.swimSteer).toBe(1);
+  });
+});
+
+describe('Input F-row slots suppress browser accelerators', () => {
+  it('F1 fires bottom slot 1 and preventDefault so the browser help page does not open', () => {
+    const { cb, windowListeners } = makeInput();
+    const preventDefault = vi.fn();
+    windowListeners.get('keydown')!({ code: 'F1', repeat: false, preventDefault });
+    expect(cb.onAbilityDown).toHaveBeenCalledWith(12);
+    expect(preventDefault).toHaveBeenCalled();
+  });
+
+  it('F5 and F10 cancel reload and Firefox menu-bar focus', () => {
+    const { cb, windowListeners } = makeInput();
+    for (const code of ['F5', 'F10'] as const) {
+      const preventDefault = vi.fn();
+      windowListeners.get('keydown')!({ code, repeat: false, preventDefault });
+      expect(preventDefault).toHaveBeenCalled();
+    }
+    expect(cb.onAbilityDown).toHaveBeenCalledWith(16);
+    expect(cb.onAbilityDown).toHaveBeenCalledWith(21);
+  });
+
+  it('leaves F11 alone and does not cancel F-keys while a modal owns the keyboard', () => {
+    const { cb, windowListeners, setGameKeysAllowed } = makeInput();
+    const f11 = vi.fn();
+    windowListeners.get('keydown')!({ code: 'F11', repeat: false, preventDefault: f11 });
+    expect(f11).not.toHaveBeenCalled();
+    expect(cb.onAbilityDown).not.toHaveBeenCalled();
+
+    setGameKeysAllowed(false);
+    const f1 = vi.fn();
+    windowListeners.get('keydown')!({ code: 'F1', repeat: false, preventDefault: f1 });
+    expect(f1).not.toHaveBeenCalled();
+    expect(cb.onAbilityDown).not.toHaveBeenCalled();
+  });
+
+  it('Numpad1 still fires the same F-row slot as F1', () => {
+    const { cb, windowListeners } = makeInput();
+    windowListeners.get('keydown')!({ code: 'Numpad1', repeat: false, preventDefault: vi.fn() });
+    expect(cb.onAbilityDown).toHaveBeenCalledWith(12);
+  });
+
+  it('does not cancel F1 while typing in an input', () => {
+    const { cb, windowListeners } = makeInput();
+    (document as any).activeElement = { tagName: 'INPUT' };
+    const preventDefault = vi.fn();
+    windowListeners.get('keydown')!({ code: 'F1', repeat: false, preventDefault });
+    expect(preventDefault).not.toHaveBeenCalled();
+    expect(cb.onAbilityDown).not.toHaveBeenCalled();
   });
 });
 

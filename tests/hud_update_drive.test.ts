@@ -390,6 +390,13 @@ const HUD_UPDATE_DRIVES: readonly DriveRow[] = [
     why: 'the player unit frame, facet-routed',
   },
   {
+    call: 'this.playerVitalsHud.paint',
+    band: 'frame',
+    gate: '',
+    surface: 'chrome',
+    why: 'PT stamina bar + three potion seats under the player frame',
+  },
+  {
     call: 'this.updateLowHealthVignette',
     band: 'frame',
     gate: '',
@@ -402,6 +409,13 @@ const HUD_UPDATE_DRIVES: readonly DriveRow[] = [
     gate: '',
     surface: 'chrome',
     why: 'the low-resource pulse on the player resource bar',
+  },
+  {
+    call: 'this.autoPlay.tick',
+    band: 'medium',
+    gate: '',
+    surface: 'chrome',
+    why: 'PT Auto Play hunt loop: potions, nearest hostile, auto-attack, assigned skills',
   },
   {
     call: 'this.setDisplay',
@@ -1779,7 +1793,8 @@ describe('Hud.update() drives exactly the registered set, on the registered band
       // chrome 88 -> 89 at the aura-tracks sync (PR #3925): this branch adds
       // the aura tracks' one chrome call on top of the release's 88; the
       // release's window 48 carries over untouched.
-    ).toEqual({ window: 49, chrome: 89, none: 17 });
+      // chrome 89 -> 91: PT vitals paint + Auto Play hunt tick.
+    ).toEqual({ window: 49, chrome: 91, none: 17 });
     const windows = HUD_UPDATE_DRIVES.filter((r) => r.surface === 'window');
     expect(windows.map((r) => r.call)).toContain('this.spellbookWindow.tickOpen');
     expect(windows.map((r) => r.call)).toContain('this.refreshOpenTownFocusIfChanged');

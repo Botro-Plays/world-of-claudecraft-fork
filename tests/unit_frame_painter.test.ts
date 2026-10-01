@@ -115,7 +115,7 @@ function paint(
 describe('UnitFramePainter: the player instance routes every write through the elided writers', () => {
   it('paints level, hp, absorb, resource type/fill/text and NOTHING else (byte-faithful)', () => {
     const calls = paint(playerDescriptor());
-    // absorb { hp: 300, maxHp: 600, auras: [] } -> fillFrac = 300/600 = 0.5 (no shield).
+    // absorb { hp: 300, maxHp: 600, auras: [] } -> sizeFrac 0, overlay hidden.
     // No setDisplay (CSS owns it), no name (static, set at login), no dead/oor
     // (player frame never carries them): exactly the inline block + the absorb /
     // resource-type folds.
@@ -123,7 +123,7 @@ describe('UnitFramePainter: the player instance routes every write through the e
       { m: 'setText', args: [LEVEL, '60'] },
       { m: 'setTransform', args: [HP_FILL, 'scaleX(0.5)'] },
       { m: 'setText', args: [HP_TEXT, '300 / 600'] },
-      { m: 'setTransform', args: [ABSORB, 'scaleX(0.5)'] },
+      { m: 'setTransform', args: [ABSORB, 'scaleX(0)'] },
       { m: 'toggleClass', args: [ABSORB, 'overshield', false] },
       { m: 'toggleClass', args: [RES_CONTAINER, 'rage', false] },
       { m: 'toggleClass', args: [RES_CONTAINER, 'energy', false] },
@@ -174,7 +174,10 @@ describe('UnitFramePainter: the player instance routes every write through the e
         },
       }),
     );
-    expect(calls).toContainEqual({ m: 'setTransform', args: [ABSORB, 'scaleX(1)'] });
+    expect(calls).toContainEqual({
+      m: 'setTransform',
+      args: [ABSORB, `translateX(${(1 - 50 / 600) * 100}%) scaleX(${50 / 600})`],
+    });
     expect(calls).toContainEqual({ m: 'toggleClass', args: [ABSORB, 'overshield', true] });
   });
 });

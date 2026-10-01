@@ -165,6 +165,7 @@ describe('settings_transfer_core', () => {
       'woc_perf_nudge_dismissed',
       'woc_keyboard_layout',
       'woc_keyboard_legends',
+      'woc_pt_auto_play',
     ]) {
       expect(transferKeyAllowed('full', key), key).toBe(true);
       expect(transferKeyAllowed('settings', key), key).toBe(false);
@@ -381,6 +382,7 @@ describe('settings_transfer_core', () => {
       'woc_perf_nudge_dismissed',
       'woc_keyboard_layout',
       'woc_keyboard_legends',
+      'woc_pt_auto_play',
       'woc.tutorial.v1',
       'woc.ferrybellhint.v1',
       'wocc.charSort',

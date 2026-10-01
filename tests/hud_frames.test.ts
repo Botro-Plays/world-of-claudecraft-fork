@@ -186,4 +186,10 @@ describe('hud.ts unit-frame text sites route through unitFrameCurrentMaxText', (
     expect(src).not.toMatch(/\$\{[\w.()]*\.hp\}\s*\/\s*\$\{[\w.()]*\.maxHp\}/);
     expect(src).not.toMatch(/\$\{[\w.()]*resource[\w.()]*\}\s*\/\s*\$\{[\w.()]*maxResource\}/i);
   });
+
+  it('keeps player resource text as amounts only, with no power-name prefix', () => {
+    expect(src).not.toMatch(
+      /resText = `\$\{resourceDisplayName\([^)]+\)\} \$\{unitFrameCurrentMaxText/,
+    );
+  });
 });

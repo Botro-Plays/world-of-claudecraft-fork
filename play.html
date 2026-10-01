@@ -253,6 +253,8 @@
     <div id="aura-track-shields"></div>
 
     <div id="ctx-menu" class="panel"></div>
+    <div id="pt-mouse-skill-picker" class="pt-mouse-skill-picker"></div>
+    <div id="pt-auto-play" class="pt-auto-play" style="display: none"></div>
     <div id="prompt-stack"></div>
     <div id="trade-window" class="window panel"></div>
 
@@ -353,17 +355,6 @@
             </div>
           </div>
           <div id="player-frame" class="unitframe" role="group" tabindex="0" aria-haspopup="menu" data-i18n-aria="hudChrome.unitFrame.playerLabel" aria-label="Your Hero">
-            <div class="portrait-wrap" id="pf-portrait-wrap">
-              <div class="portrait"><canvas id="pf-portrait" width="54" height="54"></canvas></div>
-              <span class="deed-heraldry-seal" aria-hidden="true">
-                <svg class="deed-heraldry-seal-art" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
-                  <path id="pf-heraldry-seal-motif"></path>
-                </svg>
-              </span>
-              <div class="level-chip" id="pf-level">1</div>
-              <div class="combat-flash" id="pf-combat" role="status" data-i18n-title="hud.social.status.combat" data-i18n-aria="hud.social.status.combat" title="In Combat" aria-label="In Combat"><img src="/ui/crests/status/combat.webp" data-crest-fallback-id="status_combat" data-crest-fallback-size="32" alt="" aria-hidden="true" /></div>
-              <div class="rest-indicator" id="pf-rest" role="status" data-i18n-title="hudChrome.rest.resting" data-i18n-aria="hudChrome.rest.resting" title="Resting" aria-label="Resting">z</div>
-            </div>
             <div class="uf-bars">
               <div class="uf-name-header deed-heraldry-plaque" id="pf-name-header">
                 <svg class="deed-heraldry-pattern" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
@@ -372,16 +363,73 @@
                 <div class="uf-name" id="pf-name"></div>
               </div>
               <div class="combo-row" id="combo-row" role="meter" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0"></div>
-              <div class="bar hp"><div class="bar-fill" id="pf-hp"></div><div class="bar-absorb" id="pf-absorb"></div><div class="bar-text" id="pf-hp-text"></div></div>
-              <div class="bar mana" id="pf-resource"><div class="bar-fill" id="pf-res"></div><div class="bar-text" id="pf-res-text"></div><div class="low-resource-label" id="pf-low-resource"></div></div>
+              <div id="pt-vital-row">
+                <div id="pt-mouse-l" class="pt-mouse-well-host"></div>
+                <div class="pt-vitals" aria-label="Vitals">
+                <div class="bar hp">
+                  <div class="bar-fill" id="pf-hp"></div>
+                  <div class="bar-absorb" id="pf-absorb"></div>
+                  <span class="pt-vital-label" data-i18n="hudChrome.vitals.hp">HP</span>
+                  <div class="bar-text" id="pf-hp-text"></div>
+                </div>
+                <div class="portrait-wrap" id="pf-portrait-wrap">
+                  <div class="portrait"><canvas id="pf-portrait" width="54" height="54"></canvas></div>
+                  <span class="deed-heraldry-seal" aria-hidden="true">
+                    <svg class="deed-heraldry-seal-art" viewBox="0 0 24 24" focusable="false" aria-hidden="true">
+                      <path id="pf-heraldry-seal-motif"></path>
+                    </svg>
+                  </span>
+                  <div class="level-chip" id="pf-level">1</div>
+                  <div class="combat-flash" id="pf-combat" role="status" data-i18n-title="hud.social.status.combat" data-i18n-aria="hud.social.status.combat" title="In Combat" aria-label="In Combat"><img src="/ui/crests/status/combat.webp" data-crest-fallback-id="status_combat" data-crest-fallback-size="32" alt="" aria-hidden="true" /></div>
+                  <div class="rest-indicator" id="pf-rest" role="status" data-i18n-title="hudChrome.rest.resting" data-i18n-aria="hudChrome.rest.resting" title="Resting" aria-label="Resting">z</div>
+                </div>
+                <div class="bar mana" id="pf-resource">
+                  <div class="bar-fill" id="pf-res"></div>
+                  <span class="pt-vital-label" data-i18n="hudChrome.vitals.mp">MP</span>
+                  <div class="bar-text" id="pf-res-text"></div>
+                  <div class="low-resource-label" id="pf-low-resource"></div>
+                </div>
+                <div class="bar stamina" id="pf-stamina" data-i18n-title="hudChrome.vitals.stm" title="STM">
+                  <div class="bar-fill" id="pf-stm" style="transform: scaleX(1)"></div>
+                  <div class="bar-text" id="pf-stm-text"></div>
+                  <span class="pt-vital-label pt-vital-label-end" data-i18n="hudChrome.vitals.stm">STM</span>
+                </div>
+                </div>
+                <div id="pt-mouse-r" class="pt-mouse-well-host"></div>
+              </div>
+              <div id="pt-potion-wells" class="pt-potion-wells" role="toolbar">
+                <button type="button" class="pt-potion-slot" id="pt-potion-hp" data-i18n-aria="hudChrome.vitals.hp" data-i18n-title="hudChrome.vitals.hp" aria-label="HP">
+                  <img alt="" draggable="false" />
+                  <span class="pt-potion-count"></span>
+                  <span class="pt-slot-pill" data-i18n="hudChrome.vitals.hp">HP</span>
+                </button>
+                <button type="button" class="pt-potion-slot" id="pt-potion-mp" data-i18n-aria="hudChrome.vitals.mp" data-i18n-title="hudChrome.vitals.mp" aria-label="MP">
+                  <img alt="" draggable="false" />
+                  <span class="pt-potion-count"></span>
+                  <span class="pt-slot-pill" data-i18n="hudChrome.vitals.mp">MP</span>
+                </button>
+                <button type="button" class="pt-potion-slot" id="pt-potion-stm" data-i18n-aria="hudChrome.vitals.stm" data-i18n-title="hudChrome.vitals.stm" aria-label="STM">
+                  <img alt="" draggable="false" />
+                  <span class="pt-potion-count"></span>
+                  <span class="pt-slot-pill" data-i18n="hudChrome.vitals.stm">STM</span>
+                </button>
+              </div>
             </div>
           </div>
           <div id="stancebar"></div>
           <div id="actionbar-group">
             <div id="actionbar3" class="panel"></div>
-            <div id="actionbar2" class="panel"></div>
+            <div id="pt-combat-deck">
+              <div id="pt-auto-cluster">
+                <button type="button" id="pt-auto-btn" class="pt-auto-btn" data-i18n-aria="hudChrome.autoPlay.auto" aria-label="AUTO" aria-pressed="false"></button>
+                <button type="button" id="pt-auto-settings" class="pt-auto-settings" data-i18n-aria="hudChrome.autoPlay.settings" aria-label="Settings"></button>
+              </div>
+              <div id="pt-skill-deck">
+                <div id="actionbar2" class="panel"></div>
+                <div id="actionbar" class="panel"></div>
+              </div>
+            </div>
             <div id="cross-hotbar" class="xhb" style="display: none"></div>
-            <div id="actionbar" class="panel"></div>
           </div>
           <div id="xpbar"><div class="fill"></div><div class="rested"></div><div class="ticks"></div><div class="label"></div></div>
         </div>

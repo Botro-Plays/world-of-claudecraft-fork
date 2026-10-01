@@ -114,6 +114,9 @@ const CONTAINERS: Record<string, string> = {
   'pet-cluster': 'the one-row pet bar + pet frame pairing; both halves are frames',
   'aura-stack': 'the flex column seating the buff and debuff rows; the rows are the frames',
   'actionbar-group': 'the combined-bars block, itself the actionBarGroup frame content host',
+  'pt-combat-deck':
+    'PT skill grid plus the mouse/AUTO cluster; docks in actionbar-group, the bars inside are the frames',
+  'pt-skill-deck': 'pairs the 1-0 primary row and the F-row; the bars are the frames',
 };
 
 /** Standing surfaces governed by a movement mechanism OTHER than the
@@ -138,6 +141,9 @@ const FRAME_EXEMPT: Record<string, string> = {
   'perf-overlay': 'dev-only diagnostics readout with its own placing mode (perf_overlay.ts)',
   'click-move-marker': 'transient world-anchored click ping, positioned per click',
   'ctx-menu': 'transient right-click menu, positioned at the cursor per open',
+  'pt-mouse-skill-picker': 'transient L/R mouse-skill assign popup, anchored above the combat bar',
+  'pt-auto-play': 'Auto Play settings overlay, opened from the AUTO gear',
+  'pt-auto-cluster': 'AUTO toggle and settings gear; docks in the PT combat deck',
   'prompt-stack': 'transient modal prompt host (prompt_dialog.ts), centered by design',
   'cross-hotbar': 'mobile cross-hotbar input cluster; frame editing is desktop-only',
   tooltip: 'hover tooltip, positioned at the cursor per hover',

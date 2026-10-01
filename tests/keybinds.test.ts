@@ -36,6 +36,8 @@ beforeEach(() => installStorage());
 describe('keyLabel', () => {
   it('maps codes to short keycaps', () => {
     expect(keyLabel('Digit1')).toBe('1');
+    expect(keyLabel('F1')).toBe('F1');
+    expect(keyLabel('F10')).toBe('F10');
     expect(keyLabel('Minus')).toBe('-');
     expect(keyLabel('Equal')).toBe('=');
     expect(keyLabel('KeyR')).toBe('R');
@@ -80,8 +82,10 @@ describe('registry', () => {
     expect(BIND_CATEGORIES).toContain('Action Bar');
     expect(ACTION_BAR_SLOTS).toBe(34);
     expect(BIND_ACTIONS.filter((a) => a.category === 'Action Bar').length).toBe(34);
-    // The secondary bar's slots exist and default to the numpad row.
-    expect(BIND_ACTIONS.find((a) => a.id === 'slot12')?.defaults).toEqual(['Numpad1']);
+    // The secondary bar's slots exist and default to F1-F10, with the numpad
+    // as a fallback so a board without function keys still reaches the row.
+    expect(BIND_ACTIONS.find((a) => a.id === 'slot12')?.defaults).toEqual(['F1', 'Numpad1']);
+    expect(BIND_ACTIONS.find((a) => a.id === 'slot21')?.defaults).toEqual(['F10', 'Numpad0']);
     expect(BIND_ACTIONS.find((a) => a.id === 'slot22')?.defaults).toEqual(['NumpadDecimal']);
     // The third row uses shifted numpad bindings so it remains distinct.
     const thirdRowDefaults = [
@@ -201,6 +205,10 @@ describe('Keybinds defaults', () => {
     expect(kb.actionForCode('KeyX')).toBe('emoteWheel');
     expect(kb.actionForCode('Digit1')).toBe('slot0'); // Attack
     expect(kb.actionForCode('Equal')).toBe('slot11');
+    expect(kb.actionForCode('F1')).toBe('slot12');
+    expect(kb.actionForCode('Numpad1')).toBe('slot12');
+    expect(kb.actionForCode('F10')).toBe('slot21');
+    expect(kb.actionForCode('Numpad0')).toBe('slot21');
     expect(kb.actionForCode('KeyH')).toBe('targetFriendly');
     expect(kb.actionForCode('KeyJ')).toBe('targetFriendlyNext');
     expect(kb.actionForCode('KeyU')).toBe('discord');
@@ -222,6 +230,8 @@ describe('Keybinds defaults', () => {
     expect(kb.codeAt('forward', 1)).toBe('ArrowUp');
     expect(kb.codesForAction('forward')).toEqual(['KeyW', 'ArrowUp']);
     expect(kb.primaryLabel('slot0')).toBe('1');
+    expect(kb.primaryLabel('slot12')).toBe('F1');
+    expect(kb.labelAt('slot12', 1)).toBe('Num1');
     expect(kb.labelAt('forward', 1)).toBe('↑');
   });
 });
@@ -421,7 +431,9 @@ describe('snapshot / importBindings (hotkey setup export + import)', () => {
       unknown
     >;
     expect(saved.__repaired).toBe(true);
+    expect(saved.__f_row_migrated).toBe(true);
     delete saved.__repaired;
+    delete saved.__f_row_migrated;
     expect(snap).toEqual(saved);
     snap.slot0[0] = 'KeyZ';
     expect(kb.codeAt('slot0', 0)).toBe('KeyR');
@@ -778,7 +790,11 @@ describe('per-character scope', () => {
     const stored = JSON.parse(localStorage.getItem('woc_keybinds:char:alice')!);
     expect(stored.__repaired).toBe(true);
     const actionIds = new Set(BIND_ACTIONS.map((a) => a.id));
-    expect(Object.keys(stored).filter((k) => !actionIds.has(k))).toEqual(['__repaired']);
+    expect(
+      Object.keys(stored)
+        .filter((k) => !actionIds.has(k))
+        .sort(),
+    ).toEqual(['__f_row_migrated', '__repaired']);
   });
 
   it('leaves a Signature-A-shaped blob alone once it is already marked repaired', () => {
@@ -1091,7 +1107,7 @@ describe('every bind action has a localized label key', () => {
 describe('Keybinds.findBindConflict', () => {
   it('reports nothing for a key no other action holds', () => {
     const kb = new Keybinds();
-    expect(kb.findBindConflict('interact', 0, 'F9')).toBeNull();
+    expect(kb.findBindConflict('interact', 0, 'F12')).toBeNull();
   });
 
   it('names the action a rebind would steal the key from, and its slot', () => {
@@ -1140,5 +1156,62 @@ describe('Keybinds.findBindConflict', () => {
     kb.bind('interact', 0, 'KeyP');
     expect(kb.findBindConflict('nosuchaction', 0, 'KeyP')).toBeNull();
     expect(kb.findBindConflict('map', 9, 'KeyP')).toBeNull();
+  });
+});
+
+describe('F-row migration', () => {
+  it('reseeds stored numpad-only F-row defaults onto F1-F10 with numpad fallback', () => {
+    localStorage.setItem(
+      'woc_keybinds:char:alice',
+      JSON.stringify({
+        slot12: ['Numpad1', null],
+        slot21: ['Numpad0', null],
+        jump: ['Space', null],
+      }),
+    );
+    const kb = new Keybinds('char:alice');
+    expect(kb.codeAt('slot12', 0)).toBe('F1');
+    expect(kb.codeAt('slot12', 1)).toBe('Numpad1');
+    expect(kb.codeAt('slot21', 0)).toBe('F10');
+    expect(kb.codeAt('slot21', 1)).toBe('Numpad0');
+    expect(kb.codeAt('jump', 0)).toBe('Space');
+  });
+
+  it('leaves a deliberate F-row remap on the numpad alone once migrated', () => {
+    localStorage.setItem(
+      'woc_keybinds:char:alice',
+      JSON.stringify({
+        slot12: ['Numpad1', null],
+        __f_row_migrated: true,
+      }),
+    );
+    const kb = new Keybinds('char:alice');
+    expect(kb.codeAt('slot12', 0)).toBe('Numpad1');
+    expect(kb.codeAt('slot12', 1)).toBeNull();
+  });
+
+  it('does not rewrite a slot that the player moved off the old numpad default', () => {
+    localStorage.setItem(
+      'woc_keybinds:char:alice',
+      JSON.stringify({
+        slot12: ['KeyG', null],
+      }),
+    );
+    const kb = new Keybinds('char:alice');
+    expect(kb.codeAt('slot12', 0)).toBe('KeyG');
+  });
+
+  it('persists the F-row marker so a later numpad remap survives relogin', () => {
+    const first = new Keybinds('char:alice');
+    first.bind('jump', 0, 'KeyT');
+    const stored = JSON.parse(localStorage.getItem('woc_keybinds:char:alice')!) as Record<
+      string,
+      unknown
+    >;
+    expect(stored.__f_row_migrated).toBe(true);
+    stored.slot12 = ['Numpad1', null];
+    localStorage.setItem('woc_keybinds:char:alice', JSON.stringify(stored));
+    const relogin = new Keybinds('char:alice');
+    expect(relogin.codeAt('slot12', 0)).toBe('Numpad1');
   });
 });

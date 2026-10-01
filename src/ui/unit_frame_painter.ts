@@ -27,6 +27,7 @@
 // are never touched here, so folding the resource-type class into toggleClass does
 // not clobber the low-power pulse.
 
+import { absorbOverlayTransform } from './absorb_bar';
 import {
   type BorderAccent,
   borderAccent,
@@ -218,7 +219,10 @@ export class UnitFramePainter {
   private paintAbsorb(view: UnitFrameView): void {
     const absorb = this.el.absorb;
     if (!absorb) return;
-    this.writers.setTransform(absorb, this.barScaleX(view.absorbFrac));
+    this.writers.setTransform(
+      absorb,
+      absorbOverlayTransform(view.absorbStartFrac, view.absorbSizeFrac),
+    );
     this.writers.toggleClass(absorb, OVERSHIELD_CLASS, view.absorbOvershield);
   }
 

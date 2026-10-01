@@ -115,6 +115,7 @@ const FULL_KEYS = [
   'woc_perf_nudge_dismissed',
   'woc_keyboard_layout',
   'woc_keyboard_legends',
+  'woc_pt_auto_play',
 ] as const;
 
 /** Whether `key` belongs to `kind`'s allowlist (each kind is a superset of

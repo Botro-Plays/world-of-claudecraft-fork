@@ -171,13 +171,13 @@ describe('keyboard overview painter', () => {
     expect(r.cap('KeyW').classList.contains('capturing')).toBe(true);
     expect(r.actionButtons()).toEqual([t('hudChrome.actionBar.cancel')]);
     expect(r.detail()).toBe(t('hudChrome.keyboardMap.pressKey', { action: 'name:forward' }));
-    r.latest()('F9');
+    r.latest()('F12');
     expect(r.dialogs).toHaveLength(0);
-    expect(r.keybinds.codeAt('forward', 0)).toBe('F9');
-    const status = t('hudChrome.keyboardMap.boundTo', { action: 'name:forward', key: 'F9' });
+    expect(r.keybinds.codeAt('forward', 0)).toBe('F12');
+    const status = t('hudChrome.keyboardMap.boundTo', { action: 'name:forward', key: 'F12' });
     expect(r.changed).toEqual([status]);
     expect(r.detail()).toBe(status);
-    expect(r.cap('F9').classList.contains('in-use')).toBe(true);
+    expect(r.cap('F12').classList.contains('in-use')).toBe(true);
     expect(r.root.querySelector('.kbm-key.capturing')).toBeNull();
   });
 
@@ -223,9 +223,9 @@ describe('keyboard overview painter', () => {
     r.cap('KeyW').click();
     const first = r.latest();
     r.cap('KeyS').click();
-    first('F10');
+    first('F11');
     expect(r.keybinds.codeAt('forward', 0)).toBe('KeyW');
-    expect(r.keybinds.actionForCode('F10')).toBeNull();
+    expect(r.keybinds.actionForCode('F11')).toBeNull();
   });
 
   it('an empty key opens the picker; the action lands on its free primary, else its alternate', async () => {
@@ -276,7 +276,7 @@ describe('keyboard overview painter', () => {
     w.focus();
     expect(document.activeElement).toBe(w);
     w.click();
-    r.latest()('F9');
+    r.latest()('F12');
     // The board was rebuilt; focus stayed on the W cap rather than dropping to body.
     expect(document.activeElement).toBe(r.cap('KeyW'));
     // Roving tabindex: the focused cap is the block's stop, the rest are -1.
@@ -310,7 +310,7 @@ describe('keyboard overview painter', () => {
     // A quiet repaint keeps the last status line.
     const q = await rig();
     q.cap('KeyW').click();
-    q.latest()('F9');
+    q.latest()('F12');
     const status = q.detail();
     q.handle.repaint();
     expect(q.detail()).toBe(status);
@@ -324,7 +324,7 @@ describe('keyboard overview painter', () => {
     expect(r.root.querySelectorAll('.kbm-block')).toHaveLength(3);
     const hidden = r.root.querySelector<HTMLElement>('.kbm-hidden');
     expect(hidden?.hidden).toBe(false);
-    expect(hidden?.textContent).toContain('name:slot12'); // Numpad1 by default
+    expect(hidden?.textContent).toContain('name:slot12'); // Numpad1 F-row fallback
     r.pressOption(t('hudChrome.keyboardMap.formGroup'), t('hudChrome.keyboardMap.form60'));
     expect(r.root.querySelector('[data-code="F1"]')).toBeNull();
     expect(hidden?.textContent).toContain('name:forward'); // the arrow alternate

@@ -1667,6 +1667,53 @@ export const hudChromeStrings = {
     resetConfirmBody:
       'The first bar returns to its default keys. The second and third bars become unbound. This cannot be undone.',
   },
+  // Rising-style vital bar end-caps. Short abbreviations (non-wordy).
+  vitals: {
+    hp: 'HP',
+    mp: 'MP',
+    stm: 'STM',
+  },
+  // PT mouse-skill wells (LMB / RMB): Rising-style picker over our gold-dark chrome.
+  // Wordy (M16): the five non-Latin fills land in this same change. `auto` is short.
+  mouseSkills: {
+    leftButton: 'Left Button',
+    rightButton: 'Right Button',
+    skills: 'Skills {count}',
+    noActiveSkills: 'No active skills learned.',
+    clearSlot: 'Clear Slot',
+    auto: 'AUTO',
+  },
+  autoPlay: {
+    title: 'Auto Play',
+    hunt: 'Auto-hunt',
+    loot: 'Auto-loot',
+    behavior: 'Auto Mode Behavior',
+    modeWander: 'Wander',
+    modeStationary: 'Stationary',
+    prioritizeBoss: 'Prioritize Boss Target',
+    leash: 'Leash Distance',
+    recovery: 'Recovery',
+    autoHp: 'Auto HP',
+    autoMp: 'Auto MP',
+    autoStm: 'Auto STM',
+    hpBelow: 'HP below',
+    mpBelow: 'MP below',
+    stmBelow: 'STM below',
+    range: 'Range',
+    maxRange: 'Max range',
+    yards: '{n} yd',
+    support: 'Support',
+    attack: 'Attack',
+    auto: 'AUTO',
+    stop: 'STOP',
+    settings: 'Settings',
+    close: 'Close',
+    pickSkill: 'Choose a skill',
+    startBot: 'Start',
+    stopBot: 'Stop',
+    running: 'On',
+    stopped: 'Off',
+  },
   // The character sheet's mount picker (mount_picker.ts; the old Mounts window
   // is retired, its keys stay per the retired-but-translated chrome precedent).
   // Names and descriptions come from the reference cards

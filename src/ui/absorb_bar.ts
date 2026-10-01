@@ -68,3 +68,10 @@ export function absorbBarViewInto(out: AbsorbBarView, input: AbsorbBarInput): Ab
   out.overshield = overshield;
   return out;
 }
+
+/** CSS transform for the shield overlay. sizeFrac 0 (no shield) collapses the
+ *  layer; a live shield is a segment from startFrac, never a full-bar cover. */
+export function absorbOverlayTransform(startFrac: number, sizeFrac: number): string {
+  if (sizeFrac <= 0) return 'scaleX(0)';
+  return `translateX(${startFrac * 100}%) scaleX(${sizeFrac})`;
+}

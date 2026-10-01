@@ -582,6 +582,8 @@ const HOT_PAINTERS: ReadonlyArray<ScannedPainter> = [
   { file: 'hud/quest/quest_strip_painter.ts', allow: {}, reflowAllow: {} },
   { file: 'hud/cross_hotbar/cross_hotbar_painter.ts', allow: {}, reflowAllow: {} },
   { file: 'hud/warlock/doom_meter_painter.ts', allow: {}, reflowAllow: {} },
+  { file: 'hud/vitals/stamina_bar_painter.ts', allow: {}, reflowAllow: {} },
+  { file: 'hud/vitals/potion_bar_painter.ts', allow: {}, reflowAllow: {} },
   // target_dots is the tracker-painter contract on the same budget as the deed
   // and reliquary strips: ONE constructor innerHTML write for the whole row pool,
   // the frame's role + aria-label set once in that same constructor, and every

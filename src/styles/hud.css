@@ -2702,14 +2702,6 @@
     pointer-events: none;
     transition: transform 0.12s linear;
   }
-  .bar-absorb.overshield {
-    background: repeating-linear-gradient(
-      115deg,
-      rgba(255, 236, 160, 0.55) 0 5px,
-      rgba(255, 214, 90, 0.24) 5px 10px
-    );
-    box-shadow: inset 0 0 7px rgba(255, 225, 140, 0.6);
-  }
   /* Low-mana/energy warning: the resource fill pulses brighter and a short
      caption appears at the end of the bar. Driven by --lr-opacity / --lr-pulse
      set from the HUD (intensity scales as the bar nears empty). */
@@ -3889,50 +3881,343 @@
     text-align: center;
   }
 
-  /* PT in-game HUD slice 1 (Quay): bronze/stone chrome on the bottom cluster.
-     Refs: _ui-refs/pt-desktop/12-combat-hud.jpg, 13-town.jpg. Layout ids and
-     bar logic stay; only edge/fill materiality moves toward classic PC. */
+  /* PT in-game HUD: circular portrait in the vitals centre, HP on its own
+     row above so it never covers the face. L/R wells flank the bars. */
+  #player-frame.unitframe {
+    align-items: flex-end;
+    gap: 8px;
+  }
   #player-frame .uf-bars {
-    border-color: #8a6e3a;
-    background: linear-gradient(180deg, #2a2418f2 0%, #15110cf5 55%, #0c0a08f5 100%);
-    box-shadow:
-      0 2px 10px #000a,
-      inset 0 1px 0 rgba(255, 220, 160, 0.16),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+    border: none;
+    outline: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    align-self: flex-end;
   }
   #player-frame .portrait {
-    border-color: #9a7a40;
-    background: radial-gradient(circle at 35% 30%, #3a3428, #14110c);
+    border: 3px solid #d4b060;
+    background: radial-gradient(circle at 35% 30%, #4a3c28, #14100c);
     box-shadow:
-      0 2px 8px #000c,
-      inset 0 1px 0 rgba(255, 230, 180, 0.22),
+      0 2px 10px #000c,
+      inset 0 1px 0 rgba(255, 236, 190, 0.35),
       inset 0 0 12px #0009;
   }
-  #player-frame .bar {
-    background: #120e0a;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  }
-  #player-frame .bar-fill {
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  #player-frame .uf-name-header {
+    width: fit-content;
+    max-width: 100%;
+    padding: 2px 8px;
+    border: 1px solid #000;
+    outline: 1px solid rgba(180, 150, 70, 0.45);
+    border-radius: 2px;
+    background: linear-gradient(180deg, #2a2418f0 0%, #12100cf5 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 230, 170, 0.16);
   }
 
+  #pt-vital-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    overflow: visible;
+  }
+  #player-frame .pt-vitals {
+    --pt-vital-h: 15px;
+    --pt-jewel: 64px;
+    --pt-vital-gap: 3px;
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr var(--pt-jewel) 1fr;
+    grid-template-rows: var(--pt-vital-h) var(--pt-vital-h);
+    align-items: center;
+    align-content: center;
+    column-gap: 4px;
+    row-gap: var(--pt-vital-gap);
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
+    min-height: var(--pt-jewel);
+    height: auto;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    box-shadow: none;
+    overflow: visible;
+  }
+  #player-frame .pt-vitals > .bar.hp {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    background: #3a0c0c;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+  }
+  #player-frame .pt-vitals > #pf-portrait-wrap {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 4;
+    width: var(--pt-jewel);
+    height: var(--pt-jewel);
+    margin: 0;
+    transform: translate(-50%, -50%);
+  }
+  #player-frame .pt-vitals > #pf-resource {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  #player-frame .pt-vitals > #pf-stamina {
+    grid-column: 3;
+    grid-row: 2;
+  }
+  #player-frame .pt-vitals > .bar {
+    position: relative;
+    flex: 0 0 var(--pt-vital-h);
+    width: 100%;
+    height: var(--pt-vital-h);
+    margin: 0;
+    border: 1px solid #1a1210;
+    outline: none;
+    border-radius: 7px;
+    overflow: hidden;
+    /* Default dark metal track (HP / STM). */
+    background: linear-gradient(180deg, #2a241c 0%, #17130f 55%, #10100e 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.45);
+  }
+  /* Empty tracks by REAL resource type. Never paint rage/energy/focus as
+     navy "empty MP" (the old #pf-resource.bar catch-all did that). */
+  #player-frame .pt-vitals > .bar.mana,
+  #player-frame .pt-vitals > #pf-resource.mana {
+    background: linear-gradient(180deg, #1a2a48 0%, #0e182c 50%, #0a1020 100%);
+    outline-color: rgba(90, 140, 200, 0.45);
+    box-shadow:
+      inset 0 1px 0 rgba(140, 180, 255, 0.12),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+      inset 0 0 8px rgba(20, 40, 80, 0.65);
+  }
+  #player-frame .pt-vitals > #pf-resource.rage {
+    background: linear-gradient(180deg, #3a1814 0%, #1c0c0a 50%, #120808 100%);
+    outline-color: rgba(200, 90, 70, 0.5);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 140, 120, 0.12),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+      inset 0 0 8px rgba(60, 16, 12, 0.65);
+  }
+  #player-frame .pt-vitals > #pf-resource.energy {
+    background: linear-gradient(180deg, #2a2a14 0%, #18180c 50%, #101008 100%);
+    outline-color: rgba(180, 170, 70, 0.45);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 230, 140, 0.1),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+      inset 0 0 8px rgba(40, 40, 12, 0.55);
+  }
+  #player-frame .pt-vitals > #pf-resource.focus {
+    background: linear-gradient(180deg, #241834 0%, #140c20 50%, #0c0814 100%);
+    outline-color: rgba(150, 110, 200, 0.45);
+    box-shadow:
+      inset 0 1px 0 rgba(200, 160, 255, 0.1),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+      inset 0 0 8px rgba(40, 20, 60, 0.55);
+  }
+  #player-frame .pt-vitals > .bar > .bar-fill,
+  #player-frame .pt-vitals > .bar > .bar-absorb {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform-origin: left center;
+  }
+  /* Kill stock wash / hatch; typed fills own an opaque vertical gloss. */
+  #player-frame .pt-vitals > .bar > .bar-fill {
+    background-color: transparent;
+    background-image: none;
+    opacity: 1;
+    filter: none;
+    mix-blend-mode: normal;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+  /* Glossy HP red, same construction as MP: opaque vertical gradient plus a
+     faint top-edge highlight. No tiles, no hatch, no wash overlay. */
+  #player-frame .pt-vitals > .bar.hp > .bar-fill {
+    background: linear-gradient(180deg, #ff6b5c 0%, #d4181c 50%, #8a0a0a 100%);
+    opacity: 1;
+    filter: none;
+    mix-blend-mode: normal;
+  }
+  /* Glossy MP blue (mana only, never a bare #pf-resource catch-all). */
+  #player-frame .pt-vitals > .bar.mana > .bar-fill,
+  #player-frame .pt-vitals > #pf-resource.mana > .bar-fill {
+    background: linear-gradient(180deg, #9ad0ff 0%, #2f8fff 38%, #1a64d4 70%, #0d3a8a 100%);
+  }
+  /* Glossy STM green (Rising SP) */
+  #player-frame .pt-vitals > .bar.stamina > .bar-fill {
+    background: linear-gradient(180deg, #c8ff9a 0%, #5ed84a 38%, #2aa81e 70%, #146010 100%);
+  }
+  /* Glossy Rage red */
+  #player-frame .pt-vitals > #pf-resource.rage > .bar-fill {
+    background: linear-gradient(180deg, #ff8a7a 0%, #e03535 40%, #8a1818 100%);
+  }
+  /* Energy: yellow-green */
+  #player-frame .pt-vitals > #pf-resource.energy > .bar-fill {
+    background: linear-gradient(180deg, #e8ff8a 0%, #b8d42a 40%, #6a8a12 100%);
+  }
+  /* Focus: purple */
+  #player-frame .pt-vitals > #pf-resource.focus > .bar-fill {
+    background: linear-gradient(180deg, #c9a0ff 0%, #9b6bff 40%, #5a38a8 100%);
+  }
+  #player-frame .pt-vitals > .bar > .bar-text {
+    z-index: 2;
+    font-size: 10px;
+    line-height: var(--pt-vital-h);
+    padding: 0 6px;
+    display: block;
+    writing-mode: horizontal-tb;
+    transform: none;
+    text-align: right;
+    pointer-events: none;
+    color: #f4f0e4;
+    text-shadow:
+      0 0 3px #000,
+      1px 1px 1px #000;
+  }
+  #player-frame .pt-vitals > #pf-stamina > .bar-text {
+    text-align: left;
+  }
+  #player-frame .pt-vitals > .bar > .pt-vital-label {
+    position: absolute;
+    left: 6px;
+    top: 0;
+    z-index: 3;
+    font-size: 10px;
+    line-height: var(--pt-vital-h);
+    letter-spacing: 0.4px;
+    color: #f4f0e4;
+    pointer-events: none;
+    text-shadow:
+      0 0 3px #000,
+      1px 1px 1px #000;
+  }
+  #player-frame .pt-vitals > .bar > .pt-vital-label-end {
+    left: auto;
+    right: 6px;
+  }
+  #player-frame .pt-vitals > .bar > .low-resource-label {
+    z-index: 3;
+    writing-mode: horizontal-tb;
+    transform: none;
+    font-size: 8px;
+  }
+
+  /* Three square potion seats under the vital bars, matching the L/R well
+     chrome: dark fill, bronze edge, overlapping bottom pill. */
+  #player-frame #pt-potion-wells.pt-potion-wells {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    flex: 0 0 auto;
+    width: 100%;
+    height: 58px;
+    padding: 4px 0 8px;
+    box-sizing: border-box;
+    overflow: visible;
+  }
+  #player-frame #pt-potion-wells .pt-potion-slot {
+    position: relative;
+    width: 50px;
+    height: 50px;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+    border: 1px solid rgba(212, 176, 96, 0.45);
+    border-radius: 10px;
+    cursor: var(--cursor-arrow);
+    background: linear-gradient(180deg, #1c1812 0%, #0c0a08 100%);
+    box-shadow:
+      0 3px 10px #000c,
+      0 0 0 1px rgba(212, 176, 96, 0.35),
+      inset 0 0 12px #0009;
+    overflow: visible;
+    appearance: none;
+    color: inherit;
+    font: inherit;
+  }
+  #player-frame #pt-potion-wells .pt-potion-slot.filled {
+    cursor: var(--cursor-point);
+  }
+  #player-frame #pt-potion-wells .pt-potion-slot img {
+    display: none;
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    pointer-events: none;
+    image-rendering: pixelated;
+  }
+  #player-frame #pt-potion-wells .pt-potion-slot.filled img {
+    display: block;
+  }
+  #player-frame #pt-potion-wells .pt-potion-count {
+    display: none;
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    z-index: 2;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    color: #fff;
+    text-shadow:
+      0 0 3px #000,
+      0 1px 2px #000;
+    pointer-events: none;
+  }
+  #player-frame #pt-potion-wells .pt-potion-slot.filled .pt-potion-count:not(:empty) {
+    display: block;
+  }
+  #player-frame #pt-potion-wells .pt-potion-slot:hover.filled {
+    filter: brightness(1.12);
+  }
+  #player-frame #pt-potion-wells .pt-potion-slot:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+
+  /* Classic PT: thin cyan EXP strip */
   #xpbar {
     width: 612px;
-    height: 10px;
-    background: linear-gradient(180deg, #1a1610, #0e0c0a);
+    height: 12px;
+    background: #0a0a0c;
     border: 1px solid #000;
-    outline: 1px solid #7a6238;
-    margin: 4px auto 0;
+    outline: 1px solid #6a6a72;
+    margin: 6px auto 0;
     position: relative;
-    border-radius: 2px;
+    border-radius: 1px;
     overflow: hidden;
-    box-shadow: inset 0 1px 0 rgba(255, 220, 160, 0.1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
   #xpbar .fill {
     height: 100%;
     width: 0%;
-    /* Classic PT EXP is a thin cyan strip on the bottom shell. */
-    background: linear-gradient(#6ad4f0, #2a8ab8);
+    background: linear-gradient(180deg, #b8f7ff 0%, #3ad4f0 42%, #1280a8 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
     transition: background 0.3s;
   }
   /* Rested XP overlay (classic inn-rested bonus): a blue segment ahead of the fill. */
@@ -3953,6 +4238,7 @@
     position: absolute;
     inset: 0;
     display: flex;
+    opacity: 0.55;
   }
   #xpbar .ticks i {
     flex: 1;
@@ -3964,7 +4250,7 @@
     font-size: 10px;
     color: #fff;
     text-align: center;
-    line-height: 10px;
+    line-height: 12px;
     text-shadow: 1px 1px 1px #000;
     opacity: 0;
     transition: opacity 0.15s;
@@ -3985,7 +4271,7 @@
     font-size: 10px;
     color: #fff;
     text-align: right;
-    line-height: 10px;
+    line-height: 12px;
     text-shadow: 1px 1px 1px #000;
     pointer-events: none;
     opacity: 1;
@@ -4090,7 +4376,7 @@
       outline-offset: -5px;
     }
     .pet-btn.autocast::after {
-      content: "↻";
+      content: "\21BB";
       position: absolute;
       right: 1px;
       bottom: 0;
@@ -4208,65 +4494,259 @@
     gap: 3px;
     padding: 5px;
   }
-  /* PT bottom-shell material on the action rows (same bronze language as
-     #player-frame / #xpbar). Slice 2: chamfered octagon slots like classic
-     PC skill wells (pt-desktop/13-town.jpg). Desktop bars only; mobile uses
-     the paged action ring. */
+
+  /* PT combat deck: numbered skills stay together (1-0 on #actionbar, F-row
+     on #actionbar2). The skill grid is a full-width wrap row centred with
+     justify-content: center, the same method #pt-potion-wells uses, so vitals,
+     potions, and the hotbar share one center line. AUTO is taken out of that
+     flow and parked 12px left of the grid. L/R wells flank the vital bars;
+     slots 10/11 are re-parented into those hosts at HUD init
+     (mouse_skill_picker_window.dockWell). */
   #actionbar.panel,
   #actionbar2.panel,
   #actionbar3.panel {
-    border-color: #8a6e3a;
-    background: linear-gradient(180deg, #2a2418ee 0%, #12100cf5 100%);
-    box-shadow:
-      0 2px 12px #000a,
-      inset 0 1px 0 rgba(255, 220, 160, 0.14),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.45);
+    border: none;
+    outline: none;
+    background: transparent;
+    box-shadow: none;
+    padding: 4px 6px;
   }
   #actionbar,
   #actionbar2,
   #actionbar3 {
-    --pt-slot-clip: polygon(18% 0%, 82% 0%, 100% 18%, 100% 82%, 82% 100%, 18% 100%, 0% 82%, 0% 18%);
+    --pt-slot-clip: none;
   }
-  #actionbar .action-btn,
-  #actionbar2 .action-btn,
-  #actionbar3 .action-btn {
-    border: 1px solid #9a7a40;
-    border-radius: 0;
-    background:
-      linear-gradient(145deg, rgba(255, 230, 180, 0.14), transparent 42%),
-      radial-gradient(circle at 35% 30%, #3a3428, #15110c);
-    clip-path: var(--pt-slot-clip);
+  #pt-combat-deck {
+    order: 3;
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 0;
+    width: auto;
+    /* .uf-bars keeps margin-left: -8px, so the vitals/potion column sits 4px
+       left of the 612px player-frame center. Shift this row to match. */
+    left: -4px;
+  }
+  #pt-skill-deck {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 6px;
+    width: fit-content;
+    background: #15130f;
+    border: 1px solid #6b5a3a;
+    border-radius: 6px;
+    box-shadow: inset 0 1px 0 #ffffff0d;
+  }
+  #pt-skill-deck > #actionbar.panel {
+    order: 1;
+    display: grid;
+    grid-template-columns: repeat(10, 42px);
+    align-items: center;
+    column-gap: 4px;
+    row-gap: 4px;
+    width: fit-content;
+    margin: 0;
+    padding: 0;
+    flex: 0 0 auto;
+  }
+  #pt-skill-deck > #actionbar2.panel {
+    order: 2;
+    display: grid;
+    grid-template-columns: repeat(10, 42px);
+    align-items: center;
+    column-gap: 4px;
+    width: fit-content;
+    margin: 0;
+    padding: 0;
+    flex: 0 0 auto;
+  }
+  #pt-skill-deck .action-btn {
+    border: 1px solid #3d3529;
+    border-radius: 6px;
+    background: linear-gradient(180deg, #2a2622 0%, #1c1a17 100%);
+    clip-path: none;
     box-shadow:
-      inset 0 1px 0 rgba(255, 230, 180, 0.22),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.55),
-      0 2px 4px #0009;
+      inset 0 1px 2px #00000099,
+      inset 0 -1px 0 #ffffff0d;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 auto;
+  }
+  #pt-skill-deck .bar-toggle {
+    display: none;
+  }
+  #pt-auto-cluster {
+    position: absolute;
+    /* Skill deck is 10*42px slots + 9*4px gaps + 6px padding * 2 + 1px border * 2. */
+    right: calc(50% + (10 * 42px + 9 * 4px + 12px + 2px) / 2 + 12px);
+    top: 50%;
+    z-index: 2;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    flex: 0 0 auto;
+    margin: 0;
+    transform: translateY(-50%);
+  }
+  .pt-mouse-well-host {
+    width: 62px;
+    height: 62px;
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+  .pt-mouse-well-host .action-btn {
+    width: 62px;
+    height: 62px;
+    border: none;
+    border-radius: 50%;
+    overflow: visible;
+    background: url("/ui/pt-hud/skill-slot-circle.png") center / 100% 100% no-repeat;
+    box-shadow:
+      0 3px 10px #000c,
+      0 0 0 1px rgba(212, 176, 96, 0.35);
+  }
+  .pt-slot-pill,
+  .pt-mouse-well-host .action-btn::after {
+    position: absolute;
+    left: 50%;
+    bottom: -6px;
+    z-index: 3;
+    transform: translateX(-50%);
+    box-sizing: border-box;
+    min-width: 18px;
+    height: 14px;
+    padding: 0 5px;
+    border: 1px solid rgba(212, 176, 96, 0.55);
+    border-radius: 999px;
+    background: linear-gradient(180deg, #2a2218 0%, #12100c 100%);
+    color: #f3df9a;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 12px;
+    text-align: center;
+    text-shadow: 0 1px 2px #000;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  #pt-mouse-l .action-btn::after {
+    content: "L";
+  }
+  #pt-mouse-r .action-btn::after {
+    content: "R";
+  }
+  .pt-mouse-well-host .action-btn .icon-label {
+    inset: 18%;
+    border-radius: 50%;
+    clip-path: none;
+  }
+  .pt-mouse-well-host .action-btn .cd-overlay,
+  .pt-mouse-well-host .action-btn .recharge-overlay {
+    inset: 18%;
+    border-radius: 50%;
+    clip-path: none;
+  }
+  .pt-mouse-well-host .action-btn .keybind {
+    display: none;
   }
   #actionbar .action-btn .icon-label,
-  #actionbar2 .action-btn .icon-label,
-  #actionbar3 .action-btn .icon-label {
+  #pt-skill-deck #actionbar2 .action-btn .icon-label {
     inset: 2px;
-    border-radius: 0;
-    clip-path: var(--pt-slot-clip);
+    border-radius: 4px;
+    clip-path: none;
   }
   #actionbar .action-btn .cd-overlay,
-  #actionbar2 .action-btn .cd-overlay,
-  #actionbar3 .action-btn .cd-overlay,
   #actionbar .action-btn .recharge-overlay,
-  #actionbar2 .action-btn .recharge-overlay,
+  #pt-skill-deck #actionbar2 .action-btn .cd-overlay,
+  #pt-skill-deck #actionbar2 .action-btn .recharge-overlay {
+    clip-path: none;
+    inset: 2px;
+    border-radius: 4px;
+  }
+  #pt-skill-deck .action-btn .keybind {
+    inset: auto;
+    top: 2px;
+    left: 3px;
+    right: auto;
+    display: block;
+    padding: 0;
+    border: none;
+    background: none;
+    box-shadow: none;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #cfc6b0;
+    text-transform: uppercase;
+    text-shadow: 0 1px 2px #000;
+    z-index: 3;
+    pointer-events: none;
+  }
+  #pt-skill-deck .action-btn.empty .keybind {
+    display: block;
+    align-items: unset;
+    justify-content: unset;
+  }
+  #actionbar .action-btn:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+  #pt-skill-deck .action-btn.empty {
+    background: linear-gradient(180deg, #2a2622 0%, #1c1a17 100%);
+    box-shadow:
+      inset 0 1px 2px #00000099,
+      inset 0 -1px 0 #ffffff0d;
+    opacity: 1;
+  }
+  body.hide-unused-action-slots #pt-skill-deck .action-btn.empty {
+    background: linear-gradient(180deg, #2a2622 0%, #1c1a17 100%);
+    border-color: #3d3529;
+    box-shadow:
+      inset 0 1px 2px #00000099,
+      inset 0 -1px 0 #ffffff0d;
+  }
+  body.hide-unused-action-slots #pt-skill-deck .action-btn.empty .keybind {
+    display: block;
+  }
+  .pt-mouse-well-host .action-btn.empty {
+    background: url("/ui/pt-hud/skill-slot-circle.png") center / 100% 100% no-repeat;
+  }
+  #actionbar .action-btn.used {
+    filter: brightness(1.15);
+    box-shadow:
+      0 0 12px #ffd100aa,
+      0 2px 6px #000a;
+  }
+  /* Bar 2's 11th seat stays in DOM for keybinds; the F-row shows ten slots. */
+  #pt-skill-deck #actionbar2 .action-btn[data-hotbar-slot="22"] {
+    display: none;
+  }
+  /* Optional rows 2/3 keep square chrome when undocked; not the PT strip. */
+  #actionbar3 .action-btn {
+    border: none;
+    border-radius: 0;
+    background: url("/ui/pt-hud/skill-slot.png") center / 100% 100% no-repeat;
+    clip-path: none;
+    box-shadow: 0 2px 6px #000a;
+  }
+  #actionbar3 .action-btn .icon-label,
+  #actionbar3 .action-btn .cd-overlay,
   #actionbar3 .action-btn .recharge-overlay {
-    clip-path: var(--pt-slot-clip);
+    clip-path: none;
+    inset: 16%;
+    border-radius: 3px;
   }
-  #actionbar .action-btn:focus-visible,
-  #actionbar2 .action-btn:focus-visible,
   #actionbar3 .action-btn:focus-visible {
-    outline: none;
-    filter: drop-shadow(0 0 0 2px var(--color-border-focus, #ffd100));
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
   }
-  #actionbar .action-btn.empty,
-  #actionbar2 .action-btn.empty,
   #actionbar3 .action-btn.empty {
-    background: linear-gradient(145deg, rgba(255, 220, 160, 0.06), transparent 40%), #0e0c0a;
-    box-shadow: inset 0 0 12px #000;
+    background: url("/ui/pt-hud/skill-slot.png") center / 100% 100% no-repeat;
+    box-shadow: inset 0 0 10px #0008;
+    opacity: 0.92;
   }
   @media (prefers-reduced-motion: reduce) {
     #actionbar .action-btn:active,
@@ -4275,12 +4755,452 @@
       transform: none;
     }
   }
-  /* The optional rows stack above the primary action bar. Tighter bottom padding
-     keeps the group compact. Both are off by default; Interface options add
-     body.show-actionbar2 and body.show-actionbar3. The third-row option depends
-     on the secondary row, so the visible order is always primary, secondary,
-     then third from bottom to top. Hidden slots remain keybind-reachable.
-     Mobile uses the paged action ring regardless of these desktop options. */
+
+  /* Pet / stance / xp / PT hotbar each take a full wrap row. Player-frame
+     stays a centred row above the hotbar so the skill grid can share the
+     vitals/potion center line. */
+  #actionbar-stack {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-end;
+    column-gap: 10px;
+    row-gap: 4px;
+  }
+  #pet-cluster,
+  #stancebar,
+  #xpbar,
+  #pt-combat-deck {
+    flex: 1 0 100%;
+  }
+  #player-frame {
+    order: 2;
+  }
+  #pt-combat-deck {
+    order: 3;
+  }
+  #stancebar {
+    order: 1;
+  }
+  #pet-cluster {
+    order: 0;
+  }
+  #xpbar {
+    order: 10;
+  }
+  #actionbar2,
+  #actionbar3 {
+    order: 4;
+    flex: 1 0 100%;
+    justify-content: center;
+  }
+  #pt-auto-btn {
+    position: relative;
+    flex: 0 0 auto;
+    width: 92px;
+    height: 92px;
+    min-width: 92px;
+    min-height: 92px;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background-color: transparent;
+    background-image: url("/ui/pt-hud/auto-icon.png");
+    background-position: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+    cursor: var(--cursor-point);
+    overflow: visible;
+  }
+  #pt-auto-btn:hover {
+    filter: brightness(1.08);
+  }
+  #pt-auto-btn:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+  #pt-auto-btn.is-on,
+  body:has(.action-btn[data-hotbar-slot="0"].queued) #pt-auto-btn {
+    filter: drop-shadow(0 0 8px rgba(232, 196, 48, 0.9));
+  }
+  #pt-auto-btn.is-on:hover,
+  body:has(.action-btn[data-hotbar-slot="0"].queued) #pt-auto-btn:hover {
+    filter: brightness(1.08) drop-shadow(0 0 8px rgba(232, 196, 48, 0.9));
+  }
+  #pt-auto-settings {
+    position: absolute;
+    left: -4px;
+    bottom: 6px;
+    z-index: 2;
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    min-height: 26px;
+    padding: 0;
+    border: none;
+    background-color: transparent;
+    background-image: url("/ui/pt-hud/gear-icon.png");
+    background-position: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+    cursor: var(--cursor-point);
+  }
+  #pt-auto-settings:hover {
+    filter: brightness(1.2);
+  }
+  #pt-auto-settings:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+  #pt-mouse-skill-picker {
+    display: none;
+    position: absolute;
+    left: 50%;
+    bottom: 128px;
+    z-index: 40;
+    width: min(320px, 92%);
+    transform: translateX(-50%);
+    padding: 12px 14px 10px;
+    border: 1px solid #000;
+    outline: 1px solid rgba(180, 150, 70, 0.65);
+    border-radius: 10px;
+    background: linear-gradient(180deg, #2a2418f5 0%, #12100cf8 100%);
+    box-shadow:
+      0 8px 24px #000c,
+      inset 0 1px 0 rgba(255, 230, 170, 0.12);
+    color: #f3df9a;
+  }
+  #pt-mouse-skill-picker[data-well="left"] {
+    transform: translateX(-72%);
+  }
+  #pt-mouse-skill-picker[data-well="right"] {
+    transform: translateX(-28%);
+  }
+  .pt-msp-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .pt-msp-title {
+    margin: 0;
+    font-family: var(--title-font);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .pt-msp-count {
+    flex: 0 0 auto;
+    padding: 3px 10px;
+    border: 1px solid rgba(180, 150, 70, 0.55);
+    border-radius: 999px;
+    background: #1a160ff0;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .pt-msp-empty {
+    margin: 8px 0 14px;
+    font-size: 13px;
+    text-align: center;
+    opacity: 0.8;
+  }
+  .pt-msp-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 220px;
+    margin: 0 0 10px;
+    padding: 0;
+    overflow: auto;
+    list-style: none;
+  }
+  .pt-msp-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 40px;
+    padding: 4px 8px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    cursor: var(--cursor-point);
+    text-align: left;
+  }
+  .pt-msp-row:hover,
+  .pt-msp-row.is-selected {
+    border-color: rgba(180, 150, 70, 0.55);
+    background: #1a160ff0;
+  }
+  .pt-msp-row:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 1px;
+  }
+  .pt-msp-icon {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    background: #0c0a07 center / cover no-repeat;
+    box-shadow: inset 0 0 0 1px #0008;
+  }
+  .pt-msp-icon-attack {
+    background: radial-gradient(circle at 50% 45%, #f0d78a 0%, #b8862a 40%, #3a2a12 100%);
+  }
+  .pt-msp-name {
+    font-size: 13px;
+  }
+  .pt-msp-clear {
+    width: 100%;
+    min-height: 40px;
+    border: 1px solid rgba(180, 150, 70, 0.45);
+    border-radius: 8px;
+    background: #1a160ff0;
+    color: inherit;
+    font-family: var(--title-font);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: var(--cursor-point);
+  }
+  .pt-msp-clear:hover {
+    border-color: var(--gold, #d4b060);
+  }
+  .pt-msp-clear:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 1px;
+  }
+  #pt-auto-play {
+    display: none;
+    position: absolute;
+    left: 50%;
+    bottom: 140px;
+    z-index: 41;
+    width: min(720px, 94%);
+    transform: translateX(-50%);
+    padding: 14px 16px 12px;
+    border: 1px solid #000;
+    outline: 1px solid rgba(180, 150, 70, 0.65);
+    border-radius: 10px;
+    background: linear-gradient(180deg, #2a2418f5 0%, #12100cf8 100%);
+    box-shadow:
+      0 8px 24px #000c,
+      inset 0 1px 0 rgba(255, 230, 170, 0.12);
+    color: #f3df9a;
+  }
+  .pt-ap-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .pt-ap-title {
+    margin: 0;
+    font-family: var(--title-font);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .pt-ap-close {
+    min-width: 28px;
+    min-height: 28px;
+    border: 1px solid rgba(180, 150, 70, 0.45);
+    border-radius: 4px;
+    background: #1a160ff0;
+    color: inherit;
+    cursor: var(--cursor-point);
+  }
+  .pt-ap-close:focus-visible,
+  .pt-ap-tab:focus-visible,
+  .pt-ap-switch:focus-visible,
+  .pt-ap-mode-btn:focus-visible,
+  .pt-ap-bot:focus-visible,
+  .pt-ap-slot:focus-visible,
+  .pt-ap-pick-row:focus-visible,
+  .pt-ap-clear-slot:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 1px;
+  }
+  .pt-ap-mode {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .pt-ap-mode-btn {
+    flex: 1 1 auto;
+    min-height: 32px;
+    padding: 4px 8px;
+    border: 1px solid rgba(180, 150, 70, 0.45);
+    border-radius: 4px;
+    background: #1a160ff0;
+    color: inherit;
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: var(--cursor-point);
+    opacity: 0.75;
+  }
+  .pt-ap-mode-btn.is-on {
+    border-color: #d4b060;
+    background: #2d6a4f;
+    opacity: 1;
+  }
+  .pt-ap-tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(180, 150, 70, 0.25);
+  }
+  .pt-ap-tab {
+    padding: 6px 2px 8px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: inherit;
+    font-family: var(--title-font);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: var(--cursor-point);
+    opacity: 0.7;
+  }
+  .pt-ap-tab.is-on {
+    border-bottom-color: #d4b060;
+    opacity: 1;
+  }
+  .pt-ap-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 24px;
+  }
+  .pt-ap-body-loot {
+    grid-template-columns: 1fr;
+  }
+  .pt-ap-h {
+    margin: 0 0 8px;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .pt-ap-toggle,
+  .pt-ap-slider {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .pt-ap-toggle span,
+  .pt-ap-slider span:first-child {
+    flex: 1 1 auto;
+  }
+  .pt-ap-switch {
+    width: 40px;
+    height: 22px;
+    flex: 0 0 auto;
+    border: 1px solid #000;
+    border-radius: 999px;
+    background: #2a2418;
+    cursor: var(--cursor-point);
+  }
+  .pt-ap-switch.is-on {
+    background: #2d6a4f;
+  }
+  .pt-ap-slider input[type="range"] {
+    flex: 1 1 auto;
+    min-width: 80px;
+  }
+  .pt-ap-pct {
+    flex: 0 0 48px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .pt-ap-slots {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .pt-ap-slot {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    min-height: 42px;
+    padding: 0;
+    border: 1px solid rgba(180, 150, 70, 0.55);
+    border-radius: 6px;
+    background: #1a160ff0;
+    color: #d4b060;
+    font-size: 18px;
+    cursor: var(--cursor-point);
+  }
+  .pt-ap-slot.is-picked {
+    outline: 2px solid var(--color-border-focus);
+  }
+  .pt-ap-slot-icon {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+  }
+  .pt-ap-pick-list {
+    max-height: 140px;
+    margin: 0 0 8px;
+    padding: 0;
+    overflow: auto;
+    list-style: none;
+  }
+  .pt-ap-pick-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 36px;
+    padding: 4px 6px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: inherit;
+    cursor: var(--cursor-point);
+  }
+  .pt-ap-pick-row .pt-ap-slot-icon {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 auto;
+  }
+  .pt-ap-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .pt-ap-bot {
+    min-height: 36px;
+    padding: 6px 16px;
+    border: 1px solid #000;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #5a3a28 0%, #2a1810 100%);
+    color: #f3df9a;
+    font-family: var(--title-font);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: var(--cursor-point);
+  }
+
+  /* Optional row 3 stays off until Interface options add body.show-actionbar3.
+     The PT F-row (#actionbar2 inside #pt-skill-deck) stays on; the later
+     display:none here loses to that deck rule. Hidden slots remain
+     keybind-reachable. Mobile uses the paged action ring regardless. */
   #actionbar2,
   #actionbar3 {
     padding-bottom: 2px;

@@ -5,6 +5,8 @@ const hudCss = readFileSync(new URL('../src/styles/hud.css', import.meta.url), '
   /\r\n/g,
   '\n',
 );
+const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+const playHtml = readFileSync(new URL('../play.html', import.meta.url), 'utf8');
 
 function ruleBlock(selector: string): string {
   const start = hudCss.indexOf(selector);
@@ -124,5 +126,124 @@ describe('player frame buff-row placement (auraBarBelowFrame)', () => {
       'body.auras-on-frame.auras-below-frame #player-frame.pf-detached > #buff-bar {',
     );
     expect(detached).toContain('pointer-events: auto;');
+  });
+});
+
+describe('Rising vital cluster', () => {
+  it('paints HP as an opaque glossy red fill, matching MP construction', () => {
+    const hp = ruleBlock('#player-frame .pt-vitals > .bar.hp > .bar-fill {');
+    expect(hp).toContain('linear-gradient(180deg, #ff6b5c 0%, #d4181c 50%, #8a0a0a 100%)');
+    expect(hp).toContain('opacity: 1;');
+    expect(hp).not.toContain('repeating-linear-gradient');
+    expect(hp).not.toContain('hp-ornate');
+    expect(ruleBlock('#player-frame .pt-vitals > .bar.hp {')).toContain('background: #3a0c0c;');
+    expect(hudCss).not.toContain('#player-frame .pt-vitals > .bar.hp > .bar-absorb');
+  });
+
+  it('keeps MP and STM 3px under HP, with the portrait overlapping both rows', () => {
+    const vitals = ruleBlock('#player-frame .pt-vitals {');
+    expect(vitals).toContain('--pt-vital-gap: 3px;');
+    expect(vitals).toContain('grid-template-rows: var(--pt-vital-h) var(--pt-vital-h);');
+    expect(vitals).toContain('min-height: var(--pt-jewel);');
+    expect(ruleBlock('#player-frame .pt-vitals > .bar.hp {')).toContain('grid-column: 1 / -1;');
+    const jewel = ruleBlock('#player-frame .pt-vitals > #pf-portrait-wrap {');
+    expect(jewel).toContain('position: absolute;');
+    expect(jewel).toContain('transform: translate(-50%, -50%);');
+    expect(jewel).not.toContain('grid-row: 2;');
+    expect(ruleBlock('#player-frame .pt-vitals > #pf-resource {')).toContain('grid-row: 2;');
+    expect(ruleBlock('#player-frame .pt-vitals > #pf-stamina {')).toContain('grid-column: 3;');
+    expect(indexHtml).toContain('id="pf-portrait-wrap"');
+    expect(playHtml).toContain('id="pf-portrait-wrap"');
+    expect(indexHtml).toContain('id="pf-stm-text"');
+    expect(playHtml).toContain('id="pf-stm-text"');
+    expect(indexHtml).not.toContain('id="pt-vital-jewel"');
+    expect(indexHtml.indexOf('id="pt-mouse-l"')).toBeLessThan(
+      indexHtml.indexOf('class="pt-vitals"'),
+    );
+    expect(indexHtml.indexOf('class="pt-vitals"')).toBeLessThan(
+      indexHtml.indexOf('id="pt-mouse-r"'),
+    );
+  });
+
+  it('paints three square labelled potion seats, empty until a flask is carried', () => {
+    const wells = ruleBlock('#player-frame #pt-potion-wells.pt-potion-wells {');
+    expect(wells).toContain('justify-content: center;');
+    expect(wells).toContain('gap: 5px;');
+    const slot = ruleBlock('#player-frame #pt-potion-wells .pt-potion-slot {');
+    expect(slot).toContain('width: 50px;');
+    expect(slot).toContain('height: 50px;');
+    expect(slot).toContain('border-radius: 10px;');
+    expect(slot).not.toContain('rotate(45deg)');
+    expect(hudCss).toContain('image-rendering: pixelated;');
+    expect(ruleBlock('#player-frame #pt-potion-wells .pt-potion-slot img {')).toContain(
+      'width: 44px;',
+    );
+    expect(hudCss).toContain('.pt-slot-pill,');
+    for (const html of [indexHtml, playHtml]) {
+      expect(html).toContain('id="pt-potion-hp"');
+      expect(html).toContain('id="pt-potion-mp"');
+      expect(html).toContain('id="pt-potion-stm"');
+      expect(html).toContain('data-i18n="hudChrome.vitals.hp"');
+      expect(html).not.toContain('/ui/pt-hud/icon-hp-potion.png');
+      expect(html).not.toContain('Potion shortcuts');
+    }
+  });
+});
+
+describe('PT combat deck', () => {
+  it('keeps 1-0 and the F-row in one skill deck and parks AUTO to their left', () => {
+    expect(hudCss).toContain('#pt-skill-deck > #actionbar.panel {');
+    expect(hudCss).toContain('grid-template-columns: repeat(10, 42px);');
+    expect(hudCss).toContain('#pt-skill-deck > #actionbar2.panel {');
+    expect(hudCss).toContain('#pt-auto-cluster {');
+    expect(hudCss).toContain('.pt-mouse-well-host {');
+    expect(ruleBlock('#pt-auto-cluster {')).toContain('flex-direction: row;');
+    expect(ruleBlock('#pt-auto-cluster {')).toContain('position: absolute;');
+    expect(ruleBlock('#pt-auto-cluster {')).toContain('+ 12px');
+    expect(ruleBlock('#pt-combat-deck {')).toContain('justify-content: center;');
+    expect(hudCss).toMatch(/#xpbar,\n {2}#pt-combat-deck \{\n {4}flex: 1 0 100%;/);
+    expect(ruleBlock('#pt-skill-deck {')).toContain('flex-direction: column;');
+    expect(indexHtml).toContain('id="pt-combat-deck"');
+    expect(indexHtml).toContain('id="pt-mouse-l"');
+    expect(indexHtml).toContain('id="pt-mouse-r"');
+    expect(playHtml).toContain('id="pt-combat-deck"');
+    expect(playHtml).toContain('id="pt-auto-btn"');
+    expect(indexHtml.indexOf('id="pt-auto-cluster"')).toBeLessThan(
+      indexHtml.indexOf('id="pt-skill-deck"'),
+    );
+    expect(ruleBlock('#pt-auto-btn {')).toContain('url("/ui/pt-hud/auto-icon.png")');
+    expect(ruleBlock('#pt-auto-btn {')).toContain('background-size: contain');
+    expect(ruleBlock('#pt-auto-btn {')).not.toContain('border: 3px solid #e8c430');
+    expect(ruleBlock('#pt-auto-settings {')).toContain('url("/ui/pt-hud/gear-icon.png")');
+    expect(ruleBlock('#pt-auto-settings {')).toContain('background-size: contain');
+    expect(ruleBlock('#pt-auto-settings {')).toContain('width: 26px;');
+    expect(
+      ruleBlock(
+        '#pt-auto-btn.is-on,\n  body:has(.action-btn[data-hotbar-slot="0"].queued) #pt-auto-btn {',
+      ),
+    ).toContain('drop-shadow');
+    expect(indexHtml).not.toContain('pt-auto-sword');
+    expect(indexHtml).not.toContain('pt-auto-label');
+    expect(playHtml).not.toContain('pt-auto-sword');
+  });
+
+  it('paints both skill rows as dark CSS slots inside one bronze panel', () => {
+    const deck = ruleBlock('#pt-skill-deck {');
+    expect(deck).toContain('background: #15130f;');
+    expect(deck).toContain('border: 1px solid #6b5a3a;');
+    const slot = ruleBlock('#pt-skill-deck .action-btn {');
+    expect(slot).toContain('width: 42px;');
+    expect(slot).toContain('height: 42px;');
+    expect(slot).toContain('border-radius: 6px;');
+    expect(slot).toContain('border: 1px solid #3d3529;');
+    expect(slot).toContain('linear-gradient(180deg, #2a2622 0%, #1c1a17 100%)');
+    expect(slot).not.toContain('skill-slot.png');
+    expect(slot).not.toContain('clip-path: polygon');
+    expect(ruleBlock('#pt-skill-deck > #actionbar.panel {')).toContain('column-gap: 4px;');
+    expect(ruleBlock('#pt-skill-deck > #actionbar.panel {')).toContain('order: 1;');
+    expect(ruleBlock('#pt-skill-deck > #actionbar2.panel {')).toContain('order: 2;');
+    expect(ruleBlock('#pt-skill-deck .action-btn .keybind {')).toContain('color: #cfc6b0;');
+    expect(ruleBlock('#pt-skill-deck .action-btn .keybind {')).toContain('left: 3px;');
+    expect(ruleBlock('#pt-skill-deck .action-btn.empty {')).not.toContain('skill-slot.png');
   });
 });

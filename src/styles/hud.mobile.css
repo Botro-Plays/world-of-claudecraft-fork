@@ -2722,6 +2722,14 @@
   body.mobile-touch #actionbar {
     display: none;
   }
+  body.mobile-touch #pt-auto-cluster,
+  body.mobile-touch #pt-mouse-l,
+  body.mobile-touch #pt-mouse-r,
+  body.mobile-touch #pt-skill-deck,
+  body.mobile-touch #pt-skill-deck > #actionbar.panel,
+  body.mobile-touch #pt-skill-deck > #actionbar2.panel {
+    display: none;
+  }
   /* The action ring above owns the touch action-bar band, so the cross
      hotbar overlay stands down here to avoid drawing its bar across the ring
      and shoving the touch seats around -- UNLESS a pad is actively driving it

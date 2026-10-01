@@ -27,3 +27,7 @@ src/ui/i18n.catalog/translation_keys.generated.ts linguist-generated
 *.ogg filter=lfs diff=lfs merge=lfs -text
 *.tga filter=lfs diff=lfs merge=lfs -text
 *.bmp filter=lfs diff=lfs merge=lfs -text
+
+# Small PT HUD chrome icons: keep as normal git blobs so a branch push does not
+# require Git LFS write access for teammate testing of the Auto Play HUD.
+public/ui/pt-hud/*.png -filter -diff -merge -text

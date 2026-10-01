@@ -29,6 +29,13 @@ function detectPointerLockNeedsSyncGesture(): boolean {
   }
 }
 
+/** Bare F1-F10: the browser's own help, reload, and menu-bar accelerators. */
+function isBareFunctionRowKey(e: KeyboardEvent): boolean {
+  if (e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return false;
+  const n = Number(e.code.startsWith('F') ? e.code.slice(1) : Number.NaN);
+  return n >= 1 && n <= 10;
+}
+
 const BASE_LOOK_SENS = 0.0045;
 const TOUCH_LOOK_YAW_RATE = 3.2;
 const TOUCH_LOOK_PITCH_RATE = 2.2;
@@ -335,7 +342,7 @@ export class Input {
     private cb: InputCallbacks,
     private keybinds: Keybinds,
   ) {
-    window.addEventListener('keydown', (e) => this.onKeyDown(e));
+    window.addEventListener('keydown', (e) => this.onKeyDown(e), true);
     window.addEventListener('keyup', (e) => this.onKeyUp(e));
     window.addEventListener('blur', () => this.releaseCapture('blur'));
     window.addEventListener('pointerup', (e) => this.onMouseUp(e));
@@ -979,6 +986,13 @@ export class Input {
   }
 
   private onKeyDown(e: KeyboardEvent): void {
+    // Capture-phase listener (constructor) so F1 help, F5 reload, and Firefox
+    // F10 menu-bar focus never win over the F-row slots. Repeat still needs
+    // the cancel: a held F5 would otherwise reload after the first press.
+    const typingTag = (document.activeElement?.tagName ?? '').toLowerCase();
+    const typing = typingTag === 'input' || typingTag === 'textarea';
+    const gameKeysBlocked = Boolean(this.cb.canUseGameKeys && !this.cb.canUseGameKeys());
+    if (!typing && !gameKeysBlocked && isBareFunctionRowKey(e)) e.preventDefault();
     if (e.repeat) return;
     if (this.captureCb) {
       e.preventDefault();
@@ -1639,7 +1653,8 @@ export class Input {
         walkMode: this.gaitMode === 'walk',
       };
     }
-    if (this.controllerMoveInput) return { ...this.controllerMoveInput, walkMode: this.gaitMode === 'walk' };
+    if (this.controllerMoveInput)
+      return { ...this.controllerMoveInput, walkMode: this.gaitMode === 'walk' };
     const held = (id: string) => this.heldAction(id);
     const bothButtons = this.leftDown && this.rightDown;
     const forward =

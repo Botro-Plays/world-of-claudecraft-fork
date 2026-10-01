@@ -187,3 +187,6 @@ _ui-refs/
 
 # Local vendor dumps: never commit
 source files/
+
+# Local PT client UI proof art (not for commit)
+public/ui-pt/

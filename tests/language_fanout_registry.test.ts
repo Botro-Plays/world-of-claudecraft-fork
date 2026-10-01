@@ -231,6 +231,7 @@ const FANOUT_ARMS: readonly string[] = [
   'this.cardDuelWindow.relocalize|',
   'this.spellbookWindow.relocalize|',
   'this.barEditorWindow.relocalize|',
+  'this.mouseSkillPicker.relocalize|',
   'this.lockpickController.relocalize|',
   'this.tutorial.relocalize|',
   'this.bootcamp.relocalize|',
@@ -429,6 +430,18 @@ const ANSWERED: readonly AnsweredSurface[] = [
     why: 'the view core signature (queue state, role counts and party ids) joined with the open pane name',
   },
   {
+    file: 'hud/action_bar/mouse_skill_picker_window.ts',
+    memos: ['lastSig'],
+    answer: 'this.mouseSkillPicker.relocalize',
+    why: 'the open well, assigned skill and known-id list; names resolve through t() at paint so a locale flip alone never moves the signature',
+  },
+  {
+    file: 'hud/action_bar/auto_play_window.ts',
+    memos: ['lastSig'],
+    answer: 'this.mouseSkillPicker.relocalize',
+    why: 'the Auto Play overlay tab, sliders and assigned seats; picker.relocalize forwards into autoPlay.relocalize',
+  },
+  {
     file: 'hud/action_bar/mobile_action_ring_painter.ts',
     memos: ['lastPage', 'lastPageCount'],
     answer: 'this.mobileActionRingPainter.relocalize',
@@ -536,7 +549,7 @@ const ANSWERED: readonly AnsweredSurface[] = [
       'lastPlayerFrameMaxResource',
     ],
     answer: 'this.relocalizeCoordinatorMemos',
-    why: "the player unit frame's raw hp and resource pair, current and max. All four are bare numbers a locale cannot move, while the health and resource TEXT they gate is built by unitFrameCurrentMaxText, whose digits route through formatNumber against the active language; the arm clears all four to NaN, which no live value can equal, so the next painted frame re-resolves both strings (and the absorb suffix, which is elided on the health text) in the new locale",
+    why: "the player unit frame's raw hp and resource pair, current and max. The four amounts are bare numbers a locale cannot move, while the health and resource TEXT they gate is built by unitFrameHealthText / unitFrameCurrentMaxText (digits via formatNumber); the arm clears the amounts to NaN, which no live value can equal, so the next painted frame re-resolves both strings (and the absorb suffix, which is elided on the health text) in the new locale",
   },
   {
     file: 'hud.ts',

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Aura } from '../src/sim/types';
-import { absorbBarView, absorbTotal } from '../src/ui/absorb_bar';
+import { absorbBarView, absorbOverlayTransform, absorbTotal } from '../src/ui/absorb_bar';
 
 function shield(value: number): Aura {
   return {
@@ -81,5 +81,15 @@ describe('absorb_bar view', () => {
     const v = absorbBarView({ hp: 0, maxHp: 0, auras: [shield(10)] });
     expect(Number.isFinite(v.fillFrac)).toBe(true);
     expect(v.overshield).toBe(true);
+  });
+});
+
+describe('absorbOverlayTransform', () => {
+  it('collapses to scaleX(0) when there is no shield', () => {
+    expect(absorbOverlayTransform(0.6, 0)).toBe('scaleX(0)');
+  });
+
+  it('places a live shield as a segment, not a full-bar cover', () => {
+    expect(absorbOverlayTransform(0.5, 0.3)).toBe('translateX(50%) scaleX(0.3)');
   });
 });

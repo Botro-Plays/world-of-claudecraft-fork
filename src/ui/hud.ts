@@ -368,6 +368,7 @@ import {
   hasAutoAttackTarget,
   isPvpHostileTarget,
 } from './hud/action_bar/attack_on_ability';
+import { AutoPlayController } from './hud/action_bar/auto_play_controller';
 import { BarEditorWindow } from './hud/action_bar/bar_editor';
 import {
   buildMobileConsumableSeat,
@@ -414,6 +415,11 @@ import {
 } from './hud/action_bar/mobile_action_page_view';
 import { buildMobileActionRing } from './hud/action_bar/mobile_action_ring_controller';
 import type { MobileActionRingPainter } from './hud/action_bar/mobile_action_ring_painter';
+import {
+  MouseSkillPickerWindow,
+  mouseWellActionIndex,
+  mouseWellBarSlot,
+} from './hud/action_bar/mouse_skill_picker_window';
 import { playerStealthed } from './hud/action_bar/player_stealthed';
 import { RADIAL_DIRECTIONS, type RadialDirection } from './hud/action_bar/radial_action_core';
 import { AuraTrackFamily, auraTrackForFrameId } from './hud/aura_tracks';
@@ -589,6 +595,7 @@ import {
 import { renderVendorWindow } from './hud/vendor/vendor_window';
 import { buildWarfareVendorView, warfareShopViewer } from './hud/vendor/warfare_vendor_view';
 import { renderWarfareVendorWindow } from './hud/vendor/warfare_vendor_window';
+import { buildPlayerVitalsHud } from './hud/vitals';
 import { afflictionFateThreadCount, createDoomMeter, destructionRuinPips } from './hud/warlock';
 import { WocTradeController } from './hud/woc_trade';
 import { healthTextMode, unitFrameCurrentMaxText, unitFrameHealthText } from './hud_frames';
@@ -2543,6 +2550,11 @@ export class Hud {
     this.emoteWheelSlots = this.loadEmoteWheelSlots();
     this.actionBarController.init();
     this.buildActionBar();
+    this.mouseSkillPicker.attach(
+      this.abilityButtons[mouseWellBarSlot('left')]?.btn ?? null,
+      this.abilityButtons[mouseWellBarSlot('right')]?.btn ?? null,
+      document.querySelector('#pt-auto-btn'),
+    );
     this.initMailIndicator();
     this.initMarketIndicator();
     this.refreshKeybindLabels();
@@ -2592,10 +2604,7 @@ export class Hud {
       // player frame uses drawVisualOverride for the override, so a capture
       // landing for the override visual key must also repaint the frame.
       const override = this.sim.player?.visualKeyOverride ?? null;
-      if (
-        visualKey === override &&
-        skin === (this.sim.player?.skin ?? 0)
-      ) {
+      if (visualKey === override && skin === (this.sim.player?.skin ?? 0)) {
         this.drawPlayerFramePortrait();
       }
       if (playerClass === this.sim.cfg.playerClass && skin === (this.sim.player.skin ?? 0)) {
@@ -2608,8 +2617,7 @@ export class Hud {
       const framed = (subject: Entity | null): boolean =>
         subject?.kind === 'player' &&
         (subject.skin ?? 0) === skin &&
-        (subject.templateId === playerClass ||
-          subject.visualKeyOverride === visualKey);
+        (subject.templateId === playerClass || subject.visualKeyOverride === visualKey);
       if (framed(this.targetPortraitSubject)) this.targetFramePainter.invalidatePortrait();
       if (framed(this.totPortraitSubject)) this.totFramePainter.invalidatePortrait();
     });
@@ -4754,6 +4762,9 @@ export class Hud {
       text: this.pfResTextEl,
     },
   });
+  private readonly playerVitalsHud = buildPlayerVitalsHud(this.writerFacet, (id) => {
+    if (!this.tradeOpen) this.useHotbarItem(id);
+  });
   // The two cast bars are ONE instance-parameterized painter, over the
   // castBarState core. Both instances localize cast ids: the PLAYER instance
   // resolves through castDisplayName, layers the eat/drink overlay
@@ -5983,6 +5994,47 @@ export class Hud {
     clearActionDropTargets: () => this.clearActionDropTargets(),
     openBarEditor: (abilityId) => this.openBarEditor(abilityId),
   });
+  private readonly mouseSkillPicker = new MouseSkillPickerWindow({
+    root: () => $('#pt-mouse-skill-picker'),
+    autoPlayRoot: () => $('#pt-auto-play'),
+    knownIds: () =>
+      this.sim.known.filter((k) => isAbilityActionBarEligible(k.def)).map((k) => k.def.id),
+    assigned: (well) => {
+      const action = this.actionForSlot(mouseWellBarSlot(well));
+      return { isAttack: false, abilityId: action?.type === 'ability' ? action.id : null };
+    },
+    editAllowed: () => isActionBarEditAllowed(this.actionBarsLocked(), 'drop'),
+    walkByAutoloot: () => !!this.optionsHooks?.settings.get('walkByAutoloot'),
+    setWalkByAutoloot: (on) => void this.optionsHooks?.settings.set('walkByAutoloot', on),
+    onAssignAbility: (well, id) =>
+      this.commitHotbarActions(
+        placeAbilityOnSlot(this.hotbarActions, id, mouseWellActionIndex(well)),
+      ),
+    onClear: (well) =>
+      this.commitHotbarActions(clearHotbarSlot(this.hotbarActions, mouseWellActionIndex(well))),
+    isAutoRunning: () => this.autoPlay.isRunning,
+    onToggleAuto: () => this.autoPlay.toggle(),
+  });
+  private readonly autoPlay = new AutoPlayController({
+    world: () => this.sim,
+    abilityReady: (id) => this.autoPlayAbilityReady(id),
+    useItem: (id) => this.useHotbarItem(id),
+    setRunningUi: (running) => {
+      const btn = document.querySelector('#pt-auto-btn');
+      if (!(btn instanceof HTMLElement)) return;
+      btn.classList.toggle('is-on', running);
+      btn.setAttribute('aria-pressed', running ? 'true' : 'false');
+    },
+  });
+  private autoPlayAbilityReady(id: string): boolean {
+    const resolved = this.sim.resolvedAbility(id);
+    if (!resolved) return false;
+    const p = this.sim.player;
+    if (p.dead) return false;
+    if ((p.cooldowns.get(id) ?? 0) > 0.05) return false;
+    if (resolved.cost > 0 && p.resource < resolved.cost) return false;
+    return true;
+  }
   // Shared so a swap or clear also refreshes the spellbook's hotbar toggles.
   private commitHotbarActions(actions: HotbarAction[]): void {
     this.hotbarActions = actions;
@@ -6048,8 +6100,7 @@ export class Hud {
     if (self && mech) this.portraits.drawMech(canvas, skin, cls);
     else if (self && look)
       this.portraits.drawModularPlayer(canvas, modularKeyFor(self), look, cls, skin);
-    else if (self && override)
-      this.portraits.drawVisualOverride(canvas, override, cls, skin);
+    else if (self && override) this.portraits.drawVisualOverride(canvas, override, cls, skin);
     else this.portraits.drawClass(canvas, cls, skin);
   }
 
@@ -7129,6 +7180,7 @@ export class Hud {
     this.cardDuelWindow.relocalize();
     this.spellbookWindow.relocalize();
     this.barEditorWindow.relocalize();
+    this.mouseSkillPicker.relocalize();
     this.lockpickController.relocalize();
     this.tutorial.relocalize(this.sim, this.keybinds);
     this.bootcamp.relocalize(this.sim, this.keybinds);
@@ -9045,8 +9097,10 @@ export class Hud {
     playerFrame.borderSlug = deedBorderSlug(sim.activeBorder);
     playerFrame.absorb = p;
     this.playerFramePainter.paint(unitFrameViewInto(this.playerFrameBuffer, playerFrame));
+    this.playerVitalsHud.paint(p.stats.sta, sim.inventory);
     this.updateLowHealthVignette(p.hp, p.maxHp);
     this.updateLowResource(p);
+    if (mediumHud) this.autoPlay.tick();
     const fateThreads = this.updateWarlockDoomMeter(p);
 
     // Energy users keep combo points on the character frame. Class resources
@@ -18470,6 +18524,7 @@ export class Hud {
 
   // Closes the topmost UI. Returns true if something was closed.
   closeAll(): boolean {
+    if (this.mouseSkillPicker.closeTop()) return true;
     if (clearOpenStoreResult()) return true;
     if (closeMaterialSourcesDialog()) return true;
     if (closeOpenTouchMenu()) return true;
