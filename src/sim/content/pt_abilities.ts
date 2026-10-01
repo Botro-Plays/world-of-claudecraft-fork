@@ -30,10 +30,12 @@
 //   * cooldown derives from the PT per-skill recast delay (RequireMastery
 //     base + perRank*(rank-1), the pre-use-count value; the use-count
 //     reduction lands with the mastery hook). PT delay units map /60 -> sec.
-//   * Summons (a `*_Life`+`*_Hit` stat block: golem, hawk, elementals, ...) are
-//     recognized but emit no summon effect yet - PT pet templates do not
-//     exist in WoC. Weapon whitelists (`UseWeaponCode`) and stamina costs are
-//     carried in the catalog, not yet enforced at cast time.
+//   * Summons (a `*_Life`+`*_Hit`/`*_Defense` stat block - golem, wolverine,
+//     elementals, Divine Inhalation - or a summon SkillFunction for the pets
+//     whose ini holds no Life table: Scout Hawk, Muspell, the Advents, the
+//     Bloody Knight) are recognized but emit no summon effect yet - PT pet
+//     templates do not exist in WoC. Weapon whitelists (`UseWeaponCode`) and
+//     stamina costs are carried in the catalog, not yet enforced at cast time.
 //
 // Everything here is data-as-code (no engine logic): a pure transform of the
 // generated catalog into AbilityDef records merged into ABILITIES by
@@ -89,7 +91,13 @@ const TIME_KEY = /_(?:Use)?Time$/i;
 const DEC_DAMAGE_KEY = /_(?:DecDamage|Dec_Damage)$/i;
 const DEFENSE_KEY = /_(?:Defense|Defanse)$/i;
 const HP_KEY = /_(?:HP|AddLife)$/i;
-const SUMMON_STAT_KEY = /_(?:Life|Hit|Defense)$/i;
+const SUMMON_LIFE_KEY = /_Life$/i;
+const SUMMON_STAT_KEY = /_(?:Hit|Defense|Defanse)$/i;
+// PT summons that carry no *_Life stat block (their ini holds only the pet's
+// attack/duration rows) - identified by the SkillFunction name instead.
+// Deliberately tight: Elemental Shot (F_E_Shot) and the martial artist's
+// H_Hawk damage skill are NOT summons.
+const SUMMON_FUNC = /^F_(?:Recall_|Summon_|Advent_|Spirit_Elemental|Fire_Elemental|Scout_Hawk|Metal_Golem|D_Inhalation|Crimson_Knight)/i;
 
 function isPairTable(v: unknown): v is [number, number][] {
   return Array.isArray(v) && Array.isArray(v[0]);
@@ -112,16 +120,22 @@ function pairAt(v: (number | [number, number])[] | undefined, i: number): [numbe
 const PT_RANGED_WEAPONS = new Set(['sinWS1', 'sinWT1']);
 const PT_CASTER_WEAPONS = new Set(['sinWM1', 'sinWN1']);
 
-// Element[0] is the PT element tag (1 fire, 2 ice, 3 lightning, 4 poison;
-// element skills also bypass mastery). Everything else falls back to a
-// per-class school so caster bolts are not `physical`.
-const PT_ELEMENT_SCHOOL: Record<string, AbilityDef['school']> = {
-  '1': 'fire',
-  '2': 'frost',
-  '3': 'nature',
-  '4': 'nature',
-};
-
+// The catalog's `element` field is NOT a damage element: it is PT's tier
+// marker (every class splits 12/4/4 across tiers 1-3 / 4 / 5 and the client
+// only reads Element[0] as a "different mastery gage" flag). A skill's school
+// therefore comes from its name/function keywords - a "Fire Ball" is fire
+// even though its row says {0,0,0} - then the class's caster school so bolts
+// are not `physical`, then physical.
+const PT_NAME_SCHOOL: [RegExp, AbilityDef['school']][] = [
+  [/fire|flam|burn|blaze|meteor|inferno|ignis|pyro|hell|muspell/i, 'fire'],
+  [/ice|frost|chill|blizzard|frozen|glaci|cold/i, 'frost'],
+  [/lightning|thunder|shock|storm|volt|electric|typhoon|cyclone/i, 'nature'],
+  [/venom|poison|toxic|acid|pollut/i, 'nature'],
+  [/holy|saint|divine|god|bless|sacred|valor|miracle|heal|revive|resur|benedic/i, 'holy'],
+  [/dark|shadow|curse|ghost|phantom|demon|soul|evil|mourn|drain|nightmare|chosty/i, 'shadow'],
+];
+// PT lightning/poison have no WoC school of their own; `nature` is the
+// storm/venom read in this codebase's school vocabulary.
 const PT_CLASS_SCHOOL: Partial<Record<PlayerClass, AbilityDef['school']>> = {
   morion_priestess: 'holy',
   morion_magician: 'arcane',
@@ -149,10 +163,12 @@ interface PtIniScan {
   range: (number | [number, number])[] | undefined;
   defBuff: (number | [number, number])[] | undefined;
   hpBuff: (number | [number, number])[] | undefined;
+  summonLife: boolean;
+  summonStat: boolean;
   summon: boolean;
 }
 
-function scanIni(ini: PtCatalogSkill['ini']): PtIniScan {
+function scanIni(row: PtCatalogSkill): PtIniScan {
   const out: PtIniScan = {
     dmgPairs: undefined,
     healPairs: undefined,
@@ -163,9 +179,11 @@ function scanIni(ini: PtCatalogSkill['ini']): PtIniScan {
     range: undefined,
     defBuff: undefined,
     hpBuff: undefined,
+    summonLife: false,
+    summonStat: false,
     summon: false,
   };
-  for (const [key, v] of Object.entries(ini)) {
+  for (const [key, v] of Object.entries(row.ini)) {
     if (DAMAGE_KEY.test(key)) {
       if (isPairTable(v)) out.dmgPairs ??= v;
       else out.dmgPct ??= v;
@@ -177,10 +195,13 @@ function scanIni(ini: PtCatalogSkill['ini']): PtIniScan {
     else if (DEC_DAMAGE_KEY.test(key)) out.decPct ??= v;
     else if (DEFENSE_KEY.test(key)) out.defBuff ??= v;
     else if (HP_KEY.test(key)) out.hpBuff ??= v;
-    if (SUMMON_STAT_KEY.test(key)) out.summon = true;
+    if (SUMMON_LIFE_KEY.test(key)) out.summonLife = true;
+    else if (SUMMON_STAT_KEY.test(key)) out.summonStat = true;
   }
-  // A stat block with Life+Hit+Defense is a summoned creature, not a self
-  // buff: demote the caught tables so they never fold into caster stats.
+  // A *_Life HP pool beside a *_Hit/*_Defense stat is a summoned creature's
+  // block, not caster stats - a lone _Hit table on a combat skill (T_Impact's
+  // hit count, G_Coup's hit rating) must not flag the skill as a summon.
+  out.summon = (out.summonLife && out.summonStat) || SUMMON_FUNC.test(row.func);
   if (out.summon) {
     out.defBuff = undefined;
     out.hpBuff = undefined;
@@ -239,7 +260,7 @@ function buildEffects(row: PtCatalogSkill, scan: PtIniScan, i: number): AbilityE
 }
 
 function buildDef(row: PtCatalogSkill): AbilityDef {
-  const scan = scanIni(row.ini);
+  const scan = scanIni(row);
   const passive = row.hand === 'passive';
   const effects = passive || scan.summon ? [] : buildEffects(row, scan, 0);
   const hasOffense = effects.some(
@@ -261,8 +282,11 @@ function buildDef(row: PtCatalogSkill): AbilityDef {
       ? 30
       : Math.min(35, Math.max(0, Math.round(scalarAt(scan.range, 0) / 10)))
     : 0;
+  const schoolText = `${row.name} ${row.func} ${row.fileName}`;
   const school =
-    PT_ELEMENT_SCHOOL[row.element[0]] ?? PT_CLASS_SCHOOL[row.class] ?? 'physical';
+    PT_NAME_SCHOOL.find(([re]) => re.test(schoolText))?.[1] ??
+    PT_CLASS_SCHOOL[row.class] ??
+    'physical';
   const mana0 = row.mana?.[0] ?? 0;
   const cooldown = ptCooldownSec(row.mastery, 1);
 
@@ -303,6 +327,13 @@ function buildDef(row: PtCatalogSkill): AbilityDef {
   };
   return def;
 }
+
+/** PT skills that conjure a creature (ini stat blocks + SkillFunction names). */
+export const PT_SUMMON_SKILLS: ReadonlySet<string> = new Set(
+  Object.values(SKILLS)
+    .filter((row) => scanIni(row).summon)
+    .map((row) => row.id),
+);
 
 /** All 220 extracted PT skills as AbilityDefs, keyed by `pt_*` id. */
 export const PT_ABILITIES: Record<string, AbilityDef> = Object.fromEntries(

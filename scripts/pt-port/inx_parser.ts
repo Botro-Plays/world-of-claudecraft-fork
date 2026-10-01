@@ -74,6 +74,13 @@ export interface PTMotionInfo {
   motionFrame: number; // 1-based index into SMB TmFrame array
   eventFrames: number[];
   mapPosition: number; // bitfield: 1=village, 2=field, 3=server
+  /** SkillDataCode[] indexes (fileread.cpp): which skills play this motion.
+   *  Only populated on SKILL-state rows; [] = the generic/none row. */
+  skillCodes: number[];
+  /** Item codes that use this motion (weapon-type whitelists on ATTACK rows). */
+  itemCodes: number[];
+  /** Job bitmask this motion applies to (0 = all jobs). */
+  jobCodeBit: number;
 }
 
 export interface PTModelGroup {
@@ -178,6 +185,20 @@ export function parseInx(buf: Buffer): PTModelInfo {
       eventFrames.push(readUInt32(buf, off + MOFF_EventFrame + j * 4));
     }
 
+    const skillCodes: number[] = [];
+    for (let j = 0; j < 8; j++) {
+      const b = buf.readUInt8(off + MOFF_SkillCodeList + j);
+      if (b === 0) break;
+      skillCodes.push(b);
+    }
+    const itemCodes: number[] = [];
+    for (let j = 0; j < 26; j++) {
+      const w = buf.readUInt16LE(off + MOFF_ItemCodeList + j * 2);
+      if (w === 0) break;
+      itemCodes.push(w);
+    }
+    const jobCodeBit = readUInt32(buf, off + MOFF_dwJobCodeBit);
+
     // Decode frame ranges (entries before CHRMOTION_EXT are not encoded)
     let startFrame: number;
     let endFrame: number;
@@ -203,6 +224,9 @@ export function parseInx(buf: Buffer): PTModelInfo {
       motionFrame,
       eventFrames,
       mapPosition,
+      skillCodes,
+      itemCodes,
+      jobCodeBit,
     });
   }
 

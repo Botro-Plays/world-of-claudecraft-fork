@@ -48,6 +48,7 @@ import {
 } from '../professions/corpse_harvest_session';
 import { effectiveFishingBand, fishReelWindowSecFor } from '../professions/fishing';
 import { bestOwnedGatherToolFor } from '../professions/tools';
+import { PT_SKILL_RELEASE_SEC } from '../content/pt_skill_anims';
 import { scheduleProjectile } from '../projectile_travel';
 import type { PlayerMeta, ResolvedAbility } from '../sim';
 import type { SimContext } from '../sim_context';
@@ -2834,41 +2835,48 @@ function applyAbility(
   ) {
     spendAbilityCost(ctx, p, meta, res, target);
     armAbilityCooldownWithReflection(ctx, p, meta, res, togglingOff);
-    // A friendly-target completion (heals, ally blessings, dispels) resolves
-    // right here: no damage event, no projectile, no castFx - the heal2/aura
-    // events that follow only feed numbers and the small legacy glow, so
-    // without a cue the per-ability VFX layer is blind to the cast that just
-    // happened (Last Rite healed with no ceremony at all). Emit the same
-    // renderer-only 'selfCast' cue the other silent completions get, carrying
-    // the ALLY so the painter can anchor the ceremony's landing on them.
-    if (!ability.castFx && !togglingOff) {
-      ctx.emit({
-        type: 'spellfx',
-        sourceId: p.id,
-        targetId: (target ?? p).id,
-        school: ability.school,
-        fx: 'selfCast',
-        ability: ability.id,
-      });
-    }
-    // Stonehearth 2pc: the Stormcast-while-Stonebound Mending Waters heals 25
-    // percent more, scoped to THIS cast (the non-null reservation marks it).
-    // The multiplier reaches the WHOLE resolved heal (authored roll plus the
-    // Spell Power rider) through runEffects' cast-scoped heal multiplier; it
-    // is 1 for every other friendly cast, so nothing else moves (the
-    // ability.id short-circuit keeps the posture scan off every other cast).
-    const castHealMult =
-      ability.id === 'healing_wave'
-        ? stonehearthStormcastMendingHealMult(
-            ctx,
-            p,
-            ability.id,
-            warspiritPosture(p),
-            stormcastReservation !== null,
-          )
-        : 1;
-    ctx.runEffects(p, meta, target, res, false, castHealMult);
-    completeStormcastReservation(ctx, p, stormcastReservation);
+    const release = () => {
+      // A friendly-target completion (heals, ally blessings, dispels) resolves
+      // right here: no damage event, no projectile, no castFx - the heal2/aura
+      // events that follow only feed numbers and the small legacy glow, so
+      // without a cue the per-ability VFX layer is blind to the cast that just
+      // happened (Last Rite healed with no ceremony at all). Emit the same
+      // renderer-only 'selfCast' cue the other silent completions get, carrying
+      // the ALLY so the painter can anchor the ceremony's landing on them.
+      if (!ability.castFx && !togglingOff) {
+        ctx.emit({
+          type: 'spellfx',
+          sourceId: p.id,
+          targetId: (target ?? p).id,
+          school: ability.school,
+          fx: 'selfCast',
+          ability: ability.id,
+        });
+      }
+      // Stonehearth 2pc: the Stormcast-while-Stonebound Mending Waters heals 25
+      // percent more, scoped to THIS cast (the non-null reservation marks it).
+      // The multiplier reaches the WHOLE resolved heal (authored roll plus the
+      // Spell Power rider) through runEffects' cast-scoped heal multiplier; it
+      // is 1 for every other friendly cast, so nothing else moves (the
+      // ability.id short-circuit keeps the posture scan off every other cast).
+      const castHealMult =
+        ability.id === 'healing_wave'
+          ? stonehearthStormcastMendingHealMult(
+              ctx,
+              p,
+              ability.id,
+              warspiritPosture(p),
+              stormcastReservation !== null,
+            )
+          : 1;
+      ctx.runEffects(p, meta, target, res, false, castHealMult);
+      completeStormcastReservation(ctx, p, stormcastReservation);
+    };
+    // PT skills release at the gesture clip's authored EventFrame: emit the
+    // windup cue now (the rig starts its SKILL one-shot) and run the effect
+    // when the motion reaches its release point. A caster who dies mid-gesture
+    // never releases (guard on the delayed event).
+    if (!deferPtSkillRelease(ctx, p, ability, togglingOff, target, release)) release();
     // 'spellCast' means SPELLS: a physical friendly ability never rolls.
     if (p.kind === 'player' && ability.school !== 'physical')
       ctx.applySetProcs(p, target, 'spellCast');
@@ -2892,71 +2900,78 @@ function applyAbility(
     if (res.effects.some((effect) => effect.type === 'afflictionNeedle')) {
       completeNeedleOfFateCast(ctx, p, target);
     }
-    ctx.emit({
-      type: 'spellfx',
-      sourceId: p.id,
-      targetId: target.id,
-      school: ability.school,
-      // A spell may override the flying-bolt visual (e.g. Lightning Bolt draws a
-      // jagged electric strike); the projectile MECHANIC below is unchanged.
-      fx: ability.projectileFx ?? 'projectile',
-      ...(ability.id === 'sunward_disc'
-        ? {
-            ability: ability.id,
-            level: 0,
-            count:
-              1 +
-              res.effects.reduce(
-                (jumps, effect) => (effect.type === 'chainDamage' ? effect.jumps : jumps),
-                0,
-              ),
-          }
-        : {}),
-      ability: ability.id,
-      ...(isSpell ? {} : { attackAnimation: 'ranged-shot' as const }),
-    });
-    // The bolt is now in flight: its hit roll and effects resolve when it reaches the
-    // target (projectile_travel), not this tick. A target that dies before impact
-    // takes nothing (the fizzle is handled by scheduleProjectile). Spells never "miss"
-    // like a physical attack; a target can only fully RESIST them (classic-era
-    // semantics), so a spell's on-impact roll uses isSpellResisted and emits a 'resist'.
-    // A physical shot has no resist roll; its hit/crit resolve inside runEffects.
-    // Taunts (e.g. Sacred Goad) ALWAYS land: a resisted taunt would silently break
-    // tanking, so a taunt ability skips the resist roll entirely (physical taunts like
-    // Goad / Menace already never roll, since they resolve instantly below).
     const isTaunt = res.effects.some((eff) => eff.type === 'taunt');
-    scheduleProjectile(
-      ctx,
-      p,
-      target,
-      (src, tgt) => {
-        if (ability.id === 'sunward_disc') {
-          ctx.emit({
-            type: 'spellfx',
-            sourceId: src.id,
-            targetId: tgt.id,
-            school: ability.school,
-            fx: 'paladinSunwardDiscImpact',
-            ability: ability.id,
-            level: 0,
-            count:
-              1 +
-              res.effects.reduce(
-                (jumps, effect) => (effect.type === 'chainDamage' ? effect.jumps : jumps),
-                0,
-              ),
-          });
-        }
-        if (isSpell && !isTaunt && resolveHostileSpellResist(ctx, src, tgt, ability)) {
-          restoreStormcastReservation(ctx, src, stormcastReservation);
-          return;
-        }
-        ctx.runEffects(src, meta, tgt, res, !isSpell);
-        completeStormcastReservation(ctx, src, stormcastReservation);
-      },
-      p.pos,
-      () => restoreStormcastReservation(ctx, p, stormcastReservation),
-    );
+    // The bolt's launch + scheduled landing, moved wholesale so a PT skill can
+    // run it at the gesture's authored EventFrame instead of the cast tick
+    // (deferPtSkillRelease): press plays the SKILL clip, and the bolt leaves
+    // the hand when the motion reaches its release pose.
+    const release = () => {
+      ctx.emit({
+        type: 'spellfx',
+        sourceId: p.id,
+        targetId: target.id,
+        school: ability.school,
+        // A spell may override the flying-bolt visual (e.g. Lightning Bolt draws a
+        // jagged electric strike); the projectile MECHANIC below is unchanged.
+        fx: ability.projectileFx ?? 'projectile',
+        ...(ability.id === 'sunward_disc'
+          ? {
+              ability: ability.id,
+              level: 0,
+              count:
+                1 +
+                res.effects.reduce(
+                  (jumps, effect) => (effect.type === 'chainDamage' ? effect.jumps : jumps),
+                  0,
+                ),
+            }
+          : {}),
+        ability: ability.id,
+        ...(isSpell ? {} : { attackAnimation: 'ranged-shot' as const }),
+      });
+      // The bolt is now in flight: its hit roll and effects resolve when it reaches the
+      // target (projectile_travel), not this tick. A target that dies before impact
+      // takes nothing (the fizzle is handled by scheduleProjectile). Spells never "miss"
+      // like a physical attack; a target can only fully RESIST them (classic-era
+      // semantics), so a spell's on-impact roll uses isSpellResisted and emits a 'resist'.
+      // A physical shot has no resist roll; its hit/crit resolve inside runEffects.
+      // Taunts (e.g. Sacred Goad) ALWAYS land: a resisted taunt would silently break
+      // tanking, so a taunt ability skips the resist roll entirely (physical taunts like
+      // Goad / Menace already never roll, since they resolve instantly below).
+      scheduleProjectile(
+        ctx,
+        p,
+        target,
+        (src, tgt) => {
+          if (ability.id === 'sunward_disc') {
+            ctx.emit({
+              type: 'spellfx',
+              sourceId: src.id,
+              targetId: tgt.id,
+              school: ability.school,
+              fx: 'paladinSunwardDiscImpact',
+              ability: ability.id,
+              level: 0,
+              count:
+                1 +
+                res.effects.reduce(
+                  (jumps, effect) => (effect.type === 'chainDamage' ? effect.jumps : jumps),
+                  0,
+                ),
+            });
+          }
+          if (isSpell && !isTaunt && resolveHostileSpellResist(ctx, src, tgt, ability)) {
+            restoreStormcastReservation(ctx, src, stormcastReservation);
+            return;
+          }
+          ctx.runEffects(src, meta, tgt, res, !isSpell);
+          completeStormcastReservation(ctx, src, stormcastReservation);
+        },
+        p.pos,
+        () => restoreStormcastReservation(ctx, p, stormcastReservation),
+      );
+    };
+    if (!deferPtSkillRelease(ctx, p, ability, togglingOff, target, release)) release();
     // 'spellCast' set procs (Clearcasting) roll at CAST COMPLETION, matching the
     // trigger name: the cast is done even though the bolt is still in flight (a
     // resisted or fizzled bolt was still a cast). Physical projectile shots
@@ -2969,55 +2984,96 @@ function applyAbility(
   spendAbilityCost(ctx, p, meta, res, target);
   armAbilityCooldownWithReflection(ctx, p, meta, res, togglingOff);
   res = reserveRuinousBrandCopy(ctx, p, meta, target, res);
-  // A shout announces itself: world-visible cue so the caster roars and the
-  // shockwave ring reads for everyone nearby (renderer-only; no mechanic).
-  if (ability.castFx && !togglingOff) {
-    ctx.emit({
-      type: 'spellfx',
-      sourceId: p.id,
-      targetId: p.id,
-      school: ability.school,
-      fx: ability.castFx,
-      ability: ability.id,
-    });
-  } else if (
-    !togglingOff &&
-    (!target || target === p || !res.effects.some((eff) => SELF_ANNOUNCING_EFFECTS.has(eff.type)))
-  ) {
-    // An untargeted/self completion (Shadewolf, summon rites, forms, aspects)
-    // otherwise emits nothing at all, leaving the per-ability VFX layer blind
-    // to the cast that just happened. The same blindness hits hostile-targeted
-    // pure-utility completions (Armor Shear's sunder, Jawcrack's interrupt,
-    // Goad's taunt, stuns/saps/finisher buffs): no damage event, no castFx,
-    // nothing. Emit the cue for both, carrying the victim so the painter can
-    // anchor the utility read at the target. Renderer-only; no mechanic.
-    ctx.emit({
-      type: 'spellfx',
-      sourceId: p.id,
-      targetId: (target ?? p).id,
-      school: ability.school,
-      fx: 'selfCast',
-      ability: ability.id,
-    });
-  }
-  // An instant hostile spell (`projectile: false`) rolls the SAME resist a bolt
-  // rolls on impact; only the delivery differs. Taunts are exempt here for the
-  // reason they are exempt there: a resisted taunt silently breaks tanking.
-  const instantResisted =
-    target !== null &&
-    ability.school !== 'physical' &&
-    ctx.isHostileTo(p, target) &&
-    !res.effects.some((eff) => eff.type === 'taunt') &&
-    resolveHostileSpellResist(ctx, p, target, ability);
-  if (instantResisted) {
-    restoreStormcastReservation(ctx, p, stormcastReservation);
-  } else {
-    ctx.runEffects(p, meta, target, res);
-    completeStormcastReservation(ctx, p, stormcastReservation);
-  }
+  const release = () => {
+    // A shout announces itself: world-visible cue so the caster roars and the
+    // shockwave ring reads for everyone nearby (renderer-only; no mechanic).
+    if (ability.castFx && !togglingOff) {
+      ctx.emit({
+        type: 'spellfx',
+        sourceId: p.id,
+        targetId: p.id,
+        school: ability.school,
+        fx: ability.castFx,
+        ability: ability.id,
+      });
+    } else if (
+      !togglingOff &&
+      (!target || target === p || !res.effects.some((eff) => SELF_ANNOUNCING_EFFECTS.has(eff.type)))
+    ) {
+      // An untargeted/self completion (Shadewolf, summon rites, forms, aspects)
+      // otherwise emits nothing at all, leaving the per-ability VFX layer blind
+      // to the cast that just happened. The same blindness hits hostile-targeted
+      // pure-utility completions (Armor Shear's sunder, Jawcrack's interrupt,
+      // Goad's taunt, stuns/saps/finisher buffs): no damage event, no castFx,
+      // nothing. Emit the cue for both, carrying the victim so the painter can
+      // anchor the utility read at the target. Renderer-only; no mechanic.
+      ctx.emit({
+        type: 'spellfx',
+        sourceId: p.id,
+        targetId: (target ?? p).id,
+        school: ability.school,
+        fx: 'selfCast',
+        ability: ability.id,
+      });
+    }
+    // An instant hostile spell (`projectile: false`) rolls the SAME resist a bolt
+    // rolls on impact; only the delivery differs. Taunts are exempt here for the
+    // reason they are exempt there: a resisted taunt silently breaks tanking.
+    const instantResisted =
+      target !== null &&
+      ability.school !== 'physical' &&
+      ctx.isHostileTo(p, target) &&
+      !res.effects.some((eff) => eff.type === 'taunt') &&
+      resolveHostileSpellResist(ctx, p, target, ability);
+    if (instantResisted) {
+      restoreStormcastReservation(ctx, p, stormcastReservation);
+    } else {
+      ctx.runEffects(p, meta, target, res);
+      completeStormcastReservation(ctx, p, stormcastReservation);
+    }
+  };
+  if (!deferPtSkillRelease(ctx, p, ability, togglingOff, target, release)) release();
   // 'spellCast' means SPELLS: physical specials (a cat/bear weapon strike from a
   // cloth-capable druid) and toggle-offs fall through here and must not roll.
   if (p.kind === 'player' && ability.school !== 'physical' && !togglingOff)
     ctx.applySetProcs(p, target, 'spellCast');
   if (p.kind === 'player' && !togglingOff) onCastCompleted(ctx, p, ability.id, target);
+}
+
+// PT skill gestures release their effect at the clip's authored EventFrame
+// (generated/pt-maps pt_skill_anims: the bolt leaves the hand mid-swing, not
+// at button press). For a pt_* ability with a bound motion, emit the 'windup'
+// cue NOW - the renderer starts the rig's SKILL one-shot from it, exactly like
+// the petSpell telegraph - and queue the cast's outcome (projectile emit,
+// damage/heal resolution) on the release tick through the delayedEvents drain.
+// weaponStrike skills defer too: their hit lands on the motion's strike frame
+// instead of the button press. Returns false only when the caller should
+// resolve inline: no bound motion or a toggle-off.
+function deferPtSkillRelease(
+  ctx: SimContext,
+  p: Entity,
+  ability: AbilityDef,
+  togglingOff: boolean,
+  target: Entity | null,
+  release: () => void,
+): boolean {
+  const delaySec = togglingOff ? 0 : (PT_SKILL_RELEASE_SEC[ability.id] ?? 0);
+  if (delaySec <= 0) return false;
+  ctx.emit({
+    type: 'spellfx',
+    sourceId: p.id,
+    targetId: (target ?? p).id,
+    school: ability.school,
+    fx: 'windup',
+    ability: ability.id,
+  });
+  // The committed cast still releases when the windup finishes even if the
+  // caster is rooted/feared in between - PT fires the committed motion's event
+  // - but a dead caster's gesture never reaches its frame.
+  ctx.delayedEvents.push({
+    at: ctx.time + delaySec,
+    guard: () => !p.dead,
+    resolve: release,
+  });
+  return true;
 }

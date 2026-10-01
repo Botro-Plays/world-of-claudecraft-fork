@@ -7702,6 +7702,7 @@ export class Renderer {
           this.sim.entities.get(ev.sourceId),
           sourceView ? this.activeVisual(sourceView) : null,
           ev.attackAnimationStarted,
+          attackAbilityId(ev.ability),
         );
         if (ev.school === 'physical' && ev.sourceId !== -1 && startsAttackAnimation)
           this.triggerAttack(ev.sourceId, attackAbilityId(ev.ability));

@@ -1,6 +1,7 @@
 import type { AbilityVfxFullSpec, AbilityVfxSpec } from './ability_vfx_core';
 import { ABILITY_VFX_FULL_SPECS } from './ability_vfx_full_specs';
 import { ABILITY_VFX_SPECS } from './ability_vfx_specs';
+import { PT_VFX_SPECS } from '../../generated/pt-maps/pt_vfx_specs.generated';
 import {
   BURNING_PACT_VFX_FULL_SPEC,
   BURNING_PACT_VFX_SPEC,
@@ -70,7 +71,10 @@ export function abilityVfxSpec(abilityId: string): AbilityVfxSpec | undefined {
   if (abilityId === 'reaping_command') return REAPING_COMMAND_VFX_SPEC;
   if (abilityId === 'army_of_the_dead') return ARMY_OF_THE_DEAD_VFX_SPEC;
   if (abilityId === 'abyssal_rift') return ABYSSAL_RIFT_VFX_SPEC;
-  return ABILITY_VFX_SPECS[abilityId];
+  // The generated pt_* table layers between the bespoke ids and the gallery:
+  // every non-passive PT skill owns a compact spec so it never falls through
+  // to the renderer's undifferentiated school comet.
+  return (PT_VFX_SPECS as Record<string, AbilityVfxSpec>)[abilityId] ?? ABILITY_VFX_SPECS[abilityId];
 }
 
 export function abilityVfxFullSpec(abilityId: string): AbilityVfxFullSpec | undefined {

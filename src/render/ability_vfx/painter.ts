@@ -1561,9 +1561,13 @@ export class AbilityVfx {
   // player caster whose ability authors a bespoke clip (Cast_Bolt, Cast_Shock,
   // Cast_Quake, ...) now plays it here too, on every client that sees the
   // cue, the same authored-clip gate selfCast already uses.
+  // A PT skill defers this cue to the gesture clip's EventFrame via a windup
+  // that already started the one-shot at cast: restarting it at release would
+  // snap the rig back to frame 0 mid-motion, so a clip still playing keeps it.
   private playerGestureRelease(sourceId: number, abilityId: string): void {
     const d = this.deps;
     if (d.isMob?.(sourceId)) return;
+    if (d.isMidOneShot?.(sourceId)) return;
     if (!d.hasGestureClip?.(sourceId, abilityId)) return;
     d.triggerAttack(sourceId, abilityId);
   }

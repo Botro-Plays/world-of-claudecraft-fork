@@ -645,6 +645,84 @@ export async function buildGlb(opts: GlbBuildOptions): Promise<void> {
   console.log(`Written GLB: ${opts.outputPath} (${stats.length} bytes)`);
 }
 
+// ---------------------------------------------------------------------------
+// Mesh-free animation-donor GLB (per-skill clips)
+// ---------------------------------------------------------------------------
+
+export interface AnimGlbBuildOptions {
+  smbPath: string;
+  inxPath: string;
+  outputPath: string;
+  /** Decides the exported clip name for each INX motion row (row order, after
+   *  the CHRMOTION_EXT header rows the parser already skips). Return null to
+   *  skip the row. Names must be unique per call. */
+  clipNameFor: (motion: PTMotionInfo, rowIndex: number) => string | null;
+}
+
+/** Exports a skeleton-only GLB carrying caller-selected INX motions as named
+ *  clips. Used for the per-skill donor GLBs wired through VisualDef.animUrls:
+ *  the renderer merges donor animations into the body rig's clip pool by NAME,
+ *  and track node names match because both files come out of this assembler. */
+export async function buildSkeletonAnimGlb(opts: AnimGlbBuildOptions): Promise<void> {
+  const smb = parseSmd(readFileSync(opts.smbPath));
+  const inx = parseInx(readFileSync(opts.inxPath));
+
+  const bones = smb.objects;
+  const boneIndexMap = new Map<string, number>();
+  bones.forEach((b, i) => boneIndexMap.set(b.nodeName, i));
+  const tmGltf = bones.map((b) => {
+    const ptM = ptMatrixToFloat(b.tm);
+    return mat4Multiply(mat4Multiply(CONV_MATRIX, ptM), CONV_MATRIX_INV);
+  });
+
+  const doc = new Document();
+  const buffer = doc.createBuffer('bin');
+
+  // Bone nodes (same names the body GLB ships, so donor tracks rebind by name).
+  const boneNodeMap = new Map<string, Node>();
+  for (let i = 0; i < bones.length; i++) {
+    const trs = mat4ToTRS(
+      bones[i].nodeParent && boneIndexMap.has(bones[i].nodeParent)
+        ? mat4Multiply(tmGltf[i], mat4Inverse(tmGltf[boneIndexMap.get(bones[i].nodeParent)!]))
+        : tmGltf[i],
+    );
+    boneNodeMap.set(
+      bones[i].nodeName,
+      doc.createNode(bones[i].nodeName)
+        .setTranslation(trs.translation)
+        .setRotation(trs.rotation)
+        .setScale(trs.scale),
+    );
+  }
+  for (let i = 0; i < bones.length; i++) {
+    const parent = bones[i].nodeParent;
+    if (parent && boneNodeMap.has(parent)) boneNodeMap.get(parent)!.addChild(boneNodeMap.get(bones[i].nodeName)!);
+  }
+  const rootNode = doc.createNode('root');
+  for (let i = 0; i < bones.length; i++) {
+    if (!bones[i].nodeParent || !boneNodeMap.has(bones[i].nodeParent)) rootNode.addChild(boneNodeMap.get(bones[i].nodeName)!);
+  }
+  doc.createScene('scene').addChild(rootNode);
+
+  let exported = 0;
+  for (let i = 0; i < inx.motions.length; i++) {
+    const motion = inx.motions[i];
+    const clipName = opts.clipNameFor(motion, i);
+    if (!clipName) continue;
+    buildAnimation(
+      doc, buffer,
+      { ...motion, stateName: clipName },
+      bones, boneNodeMap, smb.tmFrames, boneIndexMap, tmGltf,
+    );
+    exported++;
+  }
+
+  const io = new NodeIO();
+  await io.write(opts.outputPath, doc);
+  const stats = readFileSync(opts.outputPath);
+  console.log(`Written anim GLB: ${opts.outputPath} (${stats.length} bytes, ${exported} clips)`);
+}
+
 // Reverse the order of keyframes in both times and values arrays (values has
 // `stride` elements per keyframe). Used to create reversed clips where the
 // keyframe times are mirrored (t' = duration - t), which puts them in

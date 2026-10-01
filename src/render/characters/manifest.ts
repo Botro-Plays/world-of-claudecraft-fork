@@ -3,6 +3,7 @@
 // Pure data + dispatch — no three.js imports, no loading.
 
 import { MECH_CHROMAS, type MechChroma } from '../../sim/content/skins';
+import { PT_SKILL_ANIMS } from '../../sim/content/pt_skill_anims';
 import { offhandMirrorsWeaponSkin } from '../../sim/content/weapon_skin_rules';
 import { WEAPON_SKINS } from '../../sim/content/weapon_skins';
 import { ITEMS, MOBS } from '../../sim/data';
@@ -1983,10 +1984,9 @@ export const VISUALS: Record<string, VisualDef> = {
       attack: ['ATTACK'],
       death: 'DEAD',
       hit: ['DAMAGE'],
-      // The PT Fighter reuses the warrior's ability kit (CLASSES.tempskron_fighter
-      // spreads CLASSES.warrior). Without attackByAbility overrides the renderer
-      // falls back to the default attack[] clip, so every warrior ability plays
-      // the PT ATTACK swing. That is the intended POC behavior.
+      // Per-skill gestures come from the PT_SKILL_ANIMS post-pass below the
+      // manifest (generated from the authentic INX SkillCodeList bindings);
+      // pt_* ids without a bound SKILL row keep this generic ATTACK swing.
     },
     // walkRef is tuned so the WALK clip plays at a natural pace at the player's
     // movement speed (RUN_SPEED=7 yd/s). The default walkRef (2.2) would clamp
@@ -4464,6 +4464,36 @@ export const VISUALS: Record<string, VisualDef> = {
     clips: STATIC_PROP,
   },
 };
+
+// ---------------------------------------------------------------------------
+// PT per-skill gestures (generated/pt-maps/pt_skill_anims.generated.ts, built
+// by scripts/pt-port/build_pt_skill_anims.ts). The authentic MagicPT INX
+// SkillCodeList table binds each skill's play code to an authored SKILL
+// motion row inside the class's shared m*.smb rig; those rows are exported as
+// named clips in a mesh-free donor GLB per rig family and merged onto the
+// body rig's clip pool through animUrls. attackByAbility then routes each
+// pt_* id to its own gesture (all PT skills are instant castTime:0, so the
+// one-shot attack lane is the right channel, not the looping cast slot).
+// PT skills with no bound SKILL row (bow shots, spear throws, Raving's plain
+// double swing) keep the generic ATTACK clip - which is what PT plays for
+// them too. Covers every PT class key including the _hair2/_hair3 variants:
+// same rig, same clips. The Morion Monk is a fork class with no PT catalog,
+// so it is absent from the generated map on purpose.
+for (const [ptClass, anims] of Object.entries(PT_SKILL_ANIMS)) {
+  for (const suffix of ['', '_hair2', '_hair3']) {
+    const def = VISUALS[`player_${ptClass}${suffix}`];
+    if (!def) continue;
+    def.animUrls = [...(def.animUrls ?? []), anims.donor];
+    def.clips.attackByAbility = { ...anims.clips };
+    // Skill clips play at the authored 30fps rate (not the 1.3x melee-swing
+    // speedup): PT_SKILL_RELEASE_SEC times a cast's release to a frame of the
+    // clip, and that stays exact only while clip time is wall time.
+    def.clips.attackTimeScaleByAbility = {
+      ...(def.clips.attackTimeScaleByAbility ?? {}),
+      ...Object.fromEntries(Object.keys(anims.clips).map((id) => [id, 1])),
+    };
+  }
+}
 
 // ---------------------------------------------------------------------------
 // PT player world scale. PT players render on the same visual baseline as
