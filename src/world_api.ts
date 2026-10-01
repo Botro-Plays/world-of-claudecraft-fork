@@ -841,6 +841,15 @@ export const COMMAND_NAMES = [
   // authoritative position right now instead of its next tick. Appended at
   // the END because wire tokens are never reordered.
   'pt_transition',
+  // PT skill-point investment (MagicPT port): invest_pt_skill carries only
+  // the catalog skill id - the sim re-runs every gate (pool budget, tier
+  // extent, previous-skill chain, requireLevel + rank*2, the rank-10 cap) so
+  // there is nothing on the wire to forge; reset_pt_skills is the data-free
+  // refund (Sim.investPtSkill/resetPtSkills via src/sim/progression/
+  // pt_skills.ts). Appended at the END because wire tokens are never
+  // reordered.
+  'invest_pt_skill',
+  'reset_pt_skills',
 ] as const;
 
 // The union both the send path (`online.ts`) and the dispatch switch
@@ -986,6 +995,10 @@ export const COMMAND_FACETS = {
   saveLoadout: 'IWorldTalents',
   switchLoadout: 'IWorldTalents',
   deleteLoadout: 'IWorldTalents',
+  // PT skill-point investment commands (ptSkills/ptSkillInfo are snapshot
+  // reads with no send).
+  invest_pt_skill: 'IWorldTalents',
+  reset_pt_skills: 'IWorldTalents',
   // IWorldCosmetics: skin + mech-chroma equips (snake_case wire strings, by design).
   change_skin: 'IWorldCosmetics',
   claim_event_skin: 'IWorldCosmetics',

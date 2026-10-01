@@ -30,13 +30,24 @@ const manifestPath = path.join(repoRoot, 'tests/fixtures/spell_icon_freeze.sha25
 // The frozen surface, spelled out rather than derived: a new class directory
 // must be added HERE (and its icons minted into the manifest) deliberately.
 const FROZEN_CLASS_DIRS = [
+  'atlanteon_assassin',
+  'atlanteon_martial_artist',
+  'atlanteon_shaman',
   'druid',
   'hunter',
   'mage',
+  'morion_atalanta',
+  'morion_knight',
+  'morion_magician',
+  'morion_priestess',
   'paladin',
   'priest',
   'rogue',
   'shaman',
+  'tempskron_archer',
+  'tempskron_fighter',
+  'tempskron_mechanician',
+  'tempskron_pikeman',
   'warlock',
   'warrior',
 ] as const;

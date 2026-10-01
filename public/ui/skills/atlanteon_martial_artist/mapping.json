@@ -1,0 +1,128 @@
+{
+  "license": "Priston Tale client artwork, converted for the Botro fork. The source bitmaps ship in the MagicPT-Chinese client image tree; provenance rows here record the exact source file per icon.",
+  "generatedSource": "MagicPT-Chinese client skill button bitmaps",
+  "iconSize": 128,
+  "converter": "scripts/pt-port/convert_pt_skill_icons.mjs",
+  "abilities": [
+    {
+      "abilityId": "pt_b_check",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Martial/Button/TMA66 B_Check.bmp",
+      "output": "pt_b_check.webp"
+    },
+    {
+      "abilityId": "pt_combination",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Martial/Button/TMA60 Combination.bmp",
+      "output": "pt_combination.webp"
+    },
+    {
+      "abilityId": "pt_d_mastery",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Martial/Button/TMA80 D_Mastery.bmp",
+      "output": "pt_d_mastery.webp"
+    },
+    {
+      "abilityId": "pt_dbblow",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Martial/Button/TMA14 DBBlow.bmp",
+      "output": "pt_dbblow.webp"
+    },
+    {
+      "abilityId": "pt_h_hawk",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Martial/Button/TMA83 H_Hawk.bmp",
+      "output": "pt_h_hawk.webp"
+    },
+    {
+      "abilityId": "pt_h_straight",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Martial/Button/TMA17 H_Straight.bmp",
+      "output": "pt_h_straight.webp"
+    },
+    {
+      "abilityId": "pt_h_traning",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Martial/Button/TMA90 H_Training.bmp",
+      "output": "pt_h_traning.webp"
+    },
+    {
+      "abilityId": "pt_i_bulkup",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Martial/Button/TMA40 I_Bulkup.bmp",
+      "output": "pt_i_bulkup.webp"
+    },
+    {
+      "abilityId": "pt_j_heelkick",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Martial/Button/TMA50 J_Heelkick.bmp",
+      "output": "pt_j_heelkick.webp"
+    },
+    {
+      "abilityId": "pt_l_breaking",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Martial/Button/TMA86 L_Breaking.bmp",
+      "output": "pt_l_breaking.webp"
+    },
+    {
+      "abilityId": "pt_lowkick",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Martial/Button/TMA10 Lowkick.bmp",
+      "output": "pt_lowkick.webp"
+    },
+    {
+      "abilityId": "pt_partiot",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Martial/Button/TMA23 Patriot.bmp",
+      "output": "pt_partiot.webp"
+    },
+    {
+      "abilityId": "pt_r_elbow",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Martial/Button/TMA26 R_Elbow.bmp",
+      "output": "pt_r_elbow.webp"
+    },
+    {
+      "abilityId": "pt_rage_up",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Martial/Button/TMA20 Rage Up.bmp",
+      "output": "pt_rage_up.webp"
+    },
+    {
+      "abilityId": "pt_sr_mastery",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Martial/Button/TMA12 S_Mastery.bmp",
+      "output": "pt_sr_mastery.webp"
+    },
+    {
+      "abilityId": "pt_st_mastery",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Martial/Button/TMA30 S_Mastery.bmp",
+      "output": "pt_st_mastery.webp"
+    },
+    {
+      "abilityId": "pt_steelers",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Martial/Button/TMA63 Steelers.bmp",
+      "output": "pt_steelers.webp"
+    },
+    {
+      "abilityId": "pt_t_cannon",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Martial/Button/TMA43 T_Cannon.bmp",
+      "output": "pt_t_cannon.webp"
+    },
+    {
+      "abilityId": "pt_typhoon",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Martial/Button/TMA70 Typhoon.bmp",
+      "output": "pt_typhoon.webp"
+    },
+    {
+      "abilityId": "pt_war_cry",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Martial/Button/TMA46 War Cry.bmp",
+      "output": "pt_war_cry.webp"
+    }
+  ]
+}

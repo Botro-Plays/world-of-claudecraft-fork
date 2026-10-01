@@ -1,0 +1,128 @@
+{
+  "license": "Priston Tale client artwork, converted for the Botro fork. The source bitmaps ship in the MagicPT-Chinese client image tree; provenance rows here record the exact source file per icon.",
+  "generatedSource": "MagicPT-Chinese client skill button bitmaps",
+  "iconSize": 128,
+  "converter": "scripts/pt-port/convert_pt_skill_icons.mjs",
+  "abilities": [
+    {
+      "abilityId": "pt_amplified",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Pikeman/Button/TP86 Amplified.bmp",
+      "output": "pt_amplified.webp"
+    },
+    {
+      "abilityId": "pt_assassin_eye",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Pikeman/Button/TP60 A_Eye.bmp",
+      "output": "pt_assassin_eye.webp"
+    },
+    {
+      "abilityId": "pt_chain_lance",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Pikeman/Button/TP50 C_Lance.bmp",
+      "output": "pt_chain_lance.webp"
+    },
+    {
+      "abilityId": "pt_charging_strike",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Pikeman/Button/TP63 C_Strike.bmp",
+      "output": "pt_charging_strike.webp"
+    },
+    {
+      "abilityId": "pt_critical_hit",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Pikeman/Button/TP14 Cri_hit.bmp",
+      "output": "pt_critical_hit.webp"
+    },
+    {
+      "abilityId": "pt_critical_mastery",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Pikeman/Button/TP46 C_Mastery.bmp",
+      "output": "pt_critical_mastery.webp"
+    },
+    {
+      "abilityId": "pt_d_reaper",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Pikeman/Button/TP80 D_Reaper.bmp",
+      "output": "pt_d_reaper.webp"
+    },
+    {
+      "abilityId": "pt_expansion",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Pikeman/Button/TP30 Expasion.bmp",
+      "output": "pt_expansion.webp"
+    },
+    {
+      "abilityId": "pt_f_spear",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Pikeman/Button/TP83 F_Spear.bmp",
+      "output": "pt_f_spear.webp"
+    },
+    {
+      "abilityId": "pt_ground_pike",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Pikeman/Button/TP20 G_Pike.bmp",
+      "output": "pt_ground_pike.webp"
+    },
+    {
+      "abilityId": "pt_ice_attribute",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Pikeman/Button/TP12 I_attribute.bmp",
+      "output": "pt_ice_attribute.webp"
+    },
+    {
+      "abilityId": "pt_jumping_crash",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Pikeman/Button/TP17 J_Crash.bmp",
+      "output": "pt_jumping_crash.webp"
+    },
+    {
+      "abilityId": "pt_pike_wind",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Pikeman/Button/TP10 P_wind.bmp",
+      "output": "pt_pike_wind.webp"
+    },
+    {
+      "abilityId": "pt_shadow_master",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Pikeman/Button/TP70 S_Master.bmp",
+      "output": "pt_shadow_master.webp"
+    },
+    {
+      "abilityId": "pt_ss_attack",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Pikeman/Button/TP90 SS_Attack.bmp",
+      "output": "pt_ss_attack.webp"
+    },
+    {
+      "abilityId": "pt_tornado",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Pikeman/Button/TP23 Tornado.bmp",
+      "output": "pt_tornado.webp"
+    },
+    {
+      "abilityId": "pt_vague",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Pikeman/Button/TP66 Vague.bmp",
+      "output": "pt_vague.webp"
+    },
+    {
+      "abilityId": "pt_vanish",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Pikeman/Button/TP43 Vanish.bmp",
+      "output": "pt_vanish.webp"
+    },
+    {
+      "abilityId": "pt_venom_spear",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Pikeman/Button/TP40 V_Spear.bmp",
+      "output": "pt_venom_spear.webp"
+    },
+    {
+      "abilityId": "pt_weapone_defence_mastery",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Pikeman/Button/TP26 W_D_Mastery.bmp",
+      "output": "pt_weapone_defence_mastery.webp"
+    }
+  ]
+}

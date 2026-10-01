@@ -744,9 +744,9 @@ const HUD_UPDATE_DRIVES: readonly DriveRow[] = [
     guard: {
       kind: 'module',
       module: 'spellbook_window.ts',
-      proof: 'if (this.knownChanged(this.deps.world().known)) {',
+      proof: 'this.knownChanged(world.known)',
     },
-    why: 'the ONLY window on the per-frame band, and since #2519 BOTH of its halves are gated: the guard proved below (knownChanged, an in-place walk of the resolved-ability numbers, no signature string built per frame) gates the rebuild, and the fall-through hotbar-control refresh takes its own change check (takeControlChange) over the three bar inputs its toggles render, so an unchanged frame makes no lookup, no allocation and no DOM write',
+    why: 'the ONLY window on the per-frame band, and since #2519 BOTH of its halves are gated: the guard proved below (a scalar ptSkillSignature compare for PT investment state plus knownChanged, an in-place walk of the resolved-ability numbers, no signature string built per frame) gates the rebuild, and the fall-through hotbar-control refresh takes its own change check (takeControlChange) over the three bar inputs its toggles render, so an unchanged frame makes no lookup, no allocation and no DOM write',
   },
   {
     call: 'this.actionBarPainter.paint',
@@ -1897,7 +1897,7 @@ describe('Hud.update() drives exactly the registered set, on the registered band
         // #2519 replaced the joined signature string this used to build every frame with
         // an in-place comparison against the retained numbers; same guard, same place, no
         // per-frame allocation.
-        'spellbook_window.ts: if (this.knownChanged(this.deps.world().known)) {',
+        'spellbook_window.ts: this.knownChanged(world.known)',
         'target_auras_window.ts: if (this.cleared) return;',
         'woc_market_window.ts: if (sig === this.lastSig && !this.walletRepaintDue) return;',
       ].sort(),

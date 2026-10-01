@@ -6,6 +6,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { ABILITIES, abilitiesKnownAt, CLASSES } from '../src/sim/content/classes';
+import { isPtSkillClass } from '../src/sim/progression/pt_skills';
 import { isAttackAbility, startingAttackFor } from '../src/sim/tutorial/starting_attack';
 import type { PlayerClass } from '../src/sim/types';
 
@@ -18,9 +19,20 @@ describe('startingAttackFor', () => {
     // all) and warrior (rage it does not have). Paladin was fixed at the
     // source; if any class ever regresses to nothing, the ability drill
     // silently degrades to pointing at the autoattack, so pin it here.
+    //
+    // PT classes are the deliberate exception: authentic Priston Tale
+    // characters learn NOTHING at level 1 - the first skill unlocks at level
+    // 10 and needs an invested skill point (progression/pt_skills.ts), so the
+    // island correctly teaches them the autoattack toggle.
     expect(CLASS_IDS.length).toBeGreaterThanOrEqual(9);
     for (const cls of CLASS_IDS) {
       const s = startingAttackFor(cls);
+      if (isPtSkillClass(cls)) {
+        expect(s.abilityId, `${cls} (PT) should fall back to autoattack`).toBeNull();
+        expect(s.isAutoAttack, cls).toBe(true);
+        expect(s.slot, cls).toBe('slot0');
+        continue;
+      }
       expect(s.abilityId, `${cls} has no level-1 attack`).not.toBeNull();
       expect(s.isAutoAttack, cls).toBe(false);
       expect(s.slot, cls).toBe('slot1');
@@ -33,7 +45,11 @@ describe('startingAttackFor', () => {
       if (!id) continue;
       const known = abilitiesKnownAt(cls, 1).map((k) => k.def.id);
       expect(known, `${cls} does not know ${id} at level 1`).toContain(id);
-      expect(ABILITIES[id].class, `${id} is not a ${cls} ability`).toBe(cls);
+      // morion_monk is a fork-original class that borrows the warrior kit, so
+      // its taught press resolves to a warrior-owned ability by design.
+      if (cls !== 'morion_monk') {
+        expect(ABILITIES[id].class, `${id} is not a ${cls} ability`).toBe(cls);
+      }
     }
   });
 

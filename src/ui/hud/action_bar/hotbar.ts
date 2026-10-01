@@ -345,10 +345,14 @@ export function loadoutKnownAbilityIds(
   cls: PlayerClass,
   alloc: TalentAllocation,
   level: number,
+  // PT skill-point investment (IWorld.ptSkills): a pt_* id is eligible only
+  // while it holds an invested rank - a loadout swap never strips a bar slot
+  // for an ability the player still has points in.
+  ptRanks?: Readonly<Record<string, number>>,
 ): Set<string> {
   const mods = computeTalentModifiers(cls, alloc, level);
   return new Set(
-    abilitiesKnownAt(cls, level, mods)
+    abilitiesKnownAt(cls, level, mods, undefined, ptRanks)
       .filter((known) => isAbilityActionBarEligible(known.def))
       .map((known) => known.def.id),
   );

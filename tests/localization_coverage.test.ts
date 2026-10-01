@@ -426,6 +426,8 @@ describe('i18n Localization Key Coverage', () => {
     needed: 400,
     perCombo: 7,
     percent: 30,
+    // The PT spellbook pool counts (abilityUi.spellbook.ptPoints*).
+    points: 7,
     position: 3,
     price: '1g 20s',
     proceeds: '95s',
@@ -434,6 +436,8 @@ describe('i18n Localization Key Coverage', () => {
     rating: 1513,
     range: 30,
     rank: 2,
+    // The locked-row reason on a PT spellbook entry (abilityUi.spellbook.ptLockedAria).
+    reason: 'Learn the previous skill first',
     realm: 'Eastbrook',
     requirement: 'Requires Mining 40',
     resource: 'Mana',

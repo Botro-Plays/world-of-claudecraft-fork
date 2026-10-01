@@ -419,7 +419,7 @@ export function applyTalentAllocation(
 // matches the live pet keeps it; no match, no pet.
 function dismissSpecLockedPet(ctx: SimContext, e: Entity, meta: PlayerMeta): void {
   const primaryPet = petOf(ctx, e.id, true);
-  const known = abilitiesKnownAt(meta.cls, e.level, ctx.playerMods(meta));
+  const known = abilitiesKnownAt(meta.cls, e.level, ctx.playerMods(meta), undefined, meta.ptSkills);
   const summons = (def: (typeof ABILITIES)[string], pet: Entity) =>
     def.effects.some(
       (eff) =>

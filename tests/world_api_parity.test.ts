@@ -462,6 +462,11 @@ export const IWORLD_MEMBERS = [
   { name: 'saveLoadout', kind: 'method' },
   { name: 'switchLoadout', kind: 'method' },
   { name: 'deleteLoadout', kind: 'method' },
+  // --- PT skill-point investment (IWorldTalents) ---
+  { name: 'ptSkills', kind: 'data' },
+  { name: 'ptSkillInfo', kind: 'method' }, // read-returning
+  { name: 'investPtSkill', kind: 'method' },
+  { name: 'resetPtSkills', kind: 'method' },
   // --- rideable ground mounts (IWorldMounts) ---
   { name: 'ownedMounts', kind: 'method' }, // read-returning
   { name: 'ridingTrained', kind: 'method' }, // read-returning
@@ -861,9 +866,9 @@ describe('IWORLD_MEMBERS is the pinned IWorld contract (anti-loosening)', () => 
     // tests/world_api_parity.test.ts` before merge lands to confirm the
     // facet-file exhaustiveness checks (AssertNever) also pass on the fully
     // resolved production tree.
-    expect(IWORLD_MEMBERS.length).toBe(373);
-    expect(DATA_MEMBERS.length).toBe(104);
-    expect(METHOD_MEMBERS.length).toBe(269);
+    expect(IWORLD_MEMBERS.length).toBe(377);
+    expect(DATA_MEMBERS.length).toBe(105);
+    expect(METHOD_MEMBERS.length).toBe(272);
   });
   it('has no duplicate member names', () => {
     const names = IWORLD_MEMBERS.map((m) => m.name);
@@ -1057,6 +1062,7 @@ describe('IWORLD_MEMBERS is the pinned IWorld contract (anti-loosening)', () => 
       'ignoreRemove',
       'interact',
       'inventory',
+      'investPtSkill',
       'joinCardDuelQueue',
       'known',
       'lastCraftResult',
@@ -1136,6 +1142,8 @@ describe('IWORLD_MEMBERS is the pinned IWorld contract (anti-loosening)', () => 
       'prestigeRank',
       'professionsState',
       'ptField',
+      'ptSkillInfo',
+      'ptSkills',
       'questLog',
       'questState',
       'questsDone',
@@ -1160,6 +1168,7 @@ describe('IWORLD_MEMBERS is the pinned IWorld contract (anti-loosening)', () => 
       'renown',
       'reportTelemetry',
       'requestPtFieldTransition',
+      'resetPtSkills',
       'resolvedAbility',
       'respec',
       'respondToResurrection',
@@ -1331,6 +1340,7 @@ describe('IWORLD_MEMBERS is the pinned IWorld contract (anti-loosening)', () => 
       'prestigeRank',
       'professionsState',
       'ptField',
+      'ptSkills',
       'questLog',
       'questsDone',
       'realm',
@@ -1489,6 +1499,7 @@ describe('IWORLD_MEMBERS is the pinned IWorld contract (anti-loosening)', () => 
       'ignoreAdd',
       'ignoreRemove',
       'interact',
+      'investPtSkill',
       'joinCardDuelQueue',
       'leaderboard',
       'learnRiding',
@@ -1544,6 +1555,7 @@ describe('IWORLD_MEMBERS is the pinned IWorld contract (anti-loosening)', () => 
       'playCardInDuel',
       'playEmote',
       'prestige',
+      'ptSkillInfo',
       'questState',
       'raidLockouts',
       'reactiveAbilityWindowRemaining',
@@ -1559,6 +1571,7 @@ describe('IWORLD_MEMBERS is the pinned IWorld contract (anti-loosening)', () => 
       'renamePet',
       'reportTelemetry',
       'requestPtFieldTransition',
+      'resetPtSkills',
       'resolvedAbility',
       'respec',
       'respondToResurrection',
@@ -1884,6 +1897,10 @@ const FACET_TALENTS = [
   'saveLoadout',
   'switchLoadout',
   'deleteLoadout',
+  'ptSkills',
+  'ptSkillInfo',
+  'investPtSkill',
+  'resetPtSkills',
 ] as const satisfies readonly (keyof IWorldTalents)[];
 type _ExhaustTalents = AssertNever<Exclude<keyof IWorldTalents, (typeof FACET_TALENTS)[number]>>;
 
@@ -2388,8 +2405,8 @@ describe('W1: aggregate IWorld member set equals the disjoint union of the facet
     // tests/world_api_parity.test.ts` before merge lands to confirm the
     // facet arrays actually reconstruct IWORLD_MEMBERS with no gaps or
     // collisions; this pin and the one above must always agree.
-    expect(union.length, 'union size before dedup (catches a duplicated member)').toBe(373);
-    expect(new Set(union).size, 'union size after dedup (catches a duplicated member)').toBe(373);
+    expect(union.length, 'union size before dedup (catches a duplicated member)').toBe(377);
+    expect(new Set(union).size, 'union size after dedup (catches a duplicated member)').toBe(377);
     const sortedUnion = [...union].sort();
     const pinned = IWORLD_MEMBERS.map((m) => m.name).sort();
     expect(sortedUnion).toEqual(pinned);

@@ -1,0 +1,128 @@
+{
+  "license": "Priston Tale client artwork, converted for the Botro fork. The source bitmaps ship in the MagicPT-Chinese client image tree; provenance rows here record the exact source file per icon.",
+  "generatedSource": "MagicPT-Chinese client skill button bitmaps",
+  "iconSize": 128,
+  "converter": "scripts/pt-port/convert_pt_skill_icons.mjs",
+  "abilities": [
+    {
+      "abilityId": "pt_brandish",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Knight/Button/MN23 Brandish.bmp",
+      "output": "pt_brandish.webp"
+    },
+    {
+      "abilityId": "pt_c_moon",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Knight/Button/MN83 C_Moon.bmp",
+      "output": "pt_c_moon.webp"
+    },
+    {
+      "abilityId": "pt_divine_inhalation",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Knight/Button/MN43 D_Inhalation.bmp",
+      "output": "pt_divine_inhalation.webp"
+    },
+    {
+      "abilityId": "pt_divine_piercing",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Knight/Button/MN70 D_Piercing.bmp",
+      "output": "pt_divine_piercing.webp"
+    },
+    {
+      "abilityId": "pt_double_crash",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Knight/Button/MN17 D_Crash.bmp",
+      "output": "pt_double_crash.webp"
+    },
+    {
+      "abilityId": "pt_drastic_spirit",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Knight/Button/MN30 D_Spirit.bmp",
+      "output": "pt_drastic_spirit.webp"
+    },
+    {
+      "abilityId": "pt_god_bless",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Knight/Button/MN66 G_Bless.bmp",
+      "output": "pt_god_bless.webp"
+    },
+    {
+      "abilityId": "pt_godly_shield",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Knight/Button/MN63 G_Shield.bmp",
+      "output": "pt_godly_shield.webp"
+    },
+    {
+      "abilityId": "pt_grand_cross",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Knight/Button/MN50 G_Cross.bmp",
+      "output": "pt_grand_cross.webp"
+    },
+    {
+      "abilityId": "pt_h_benedic",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Knight/Button/MN90 H_Benedic.bmp",
+      "output": "pt_h_benedic.webp"
+    },
+    {
+      "abilityId": "pt_holy_body",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Knight/Button/MN12 H_Body.bmp",
+      "output": "pt_holy_body.webp"
+    },
+    {
+      "abilityId": "pt_holy_incantation",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Knight/Button/MN46 H_Incantation.bmp",
+      "output": "pt_holy_incantation.webp"
+    },
+    {
+      "abilityId": "pt_holy_valor",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Knight/Button/MN20 H_Valor.bmp",
+      "output": "pt_holy_valor.webp"
+    },
+    {
+      "abilityId": "pt_physical_traning",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Knight/Button/MN14 P_Traning.bmp",
+      "output": "pt_physical_traning.webp"
+    },
+    {
+      "abilityId": "pt_piercing",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Knight/Button/MN26 Piercing.bmp",
+      "output": "pt_piercing.webp"
+    },
+    {
+      "abilityId": "pt_s_blade",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Knight/Button/MN86 S_Blade.bmp",
+      "output": "pt_s_blade.webp"
+    },
+    {
+      "abilityId": "pt_s_breaker",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Knight/Button/MN80 S_Breaker.bmp",
+      "output": "pt_s_breaker.webp"
+    },
+    {
+      "abilityId": "pt_sword_blast",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Knight/Button/MN10 S_Blast.bmp",
+      "output": "pt_sword_blast.webp"
+    },
+    {
+      "abilityId": "pt_sword_mastery",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Knight/Button/MN40 S_Mastery.bmp",
+      "output": "pt_sword_mastery.webp"
+    },
+    {
+      "abilityId": "pt_sword_of_justice",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Knight/Button/MN60 S_O_Justice.bmp",
+      "output": "pt_sword_of_justice.webp"
+    }
+  ]
+}

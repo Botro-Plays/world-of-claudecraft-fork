@@ -1,0 +1,128 @@
+{
+  "license": "Priston Tale client artwork, converted for the Botro fork. The source bitmaps ship in the MagicPT-Chinese client image tree; provenance rows here record the exact source file per icon.",
+  "generatedSource": "MagicPT-Chinese client skill button bitmaps",
+  "iconSize": 128,
+  "converter": "scripts/pt-port/convert_pt_skill_icons.mjs",
+  "abilities": [
+    {
+      "abilityId": "pt_automation",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Mecha/Button/TM26 Automation.bmp",
+      "output": "pt_automation.webp"
+    },
+    {
+      "abilityId": "pt_compulsion",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Mecha/Button/TM63 Compulsion.bmp",
+      "output": "pt_compulsion.webp"
+    },
+    {
+      "abilityId": "pt_extreme_shield",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Mecha/Button/TM10 Ex_shield.bmp",
+      "output": "pt_extreme_shield.webp"
+    },
+    {
+      "abilityId": "pt_grand_smash",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Mecha/Button/TM43 Grand_Smash.bmp",
+      "output": "pt_grand_smash.webp"
+    },
+    {
+      "abilityId": "pt_great_smash",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Mecha/Button/TM20 G_Smash.bmp",
+      "output": "pt_great_smash.webp"
+    },
+    {
+      "abilityId": "pt_h_sonic",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Mecha/Button/TM83 H_Sonic.bmp",
+      "output": "pt_h_sonic.webp"
+    },
+    {
+      "abilityId": "pt_impulsion",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Mecha/Button/TM60 Impulsion.bmp",
+      "output": "pt_impulsion.webp"
+    },
+    {
+      "abilityId": "pt_landminning",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Mecha/Button/TM80 landminning.bmp",
+      "output": "pt_landminning.webp"
+    },
+    {
+      "abilityId": "pt_magnetic_sphere",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Mecha/Button/TM66 M_Sphere.bmp",
+      "output": "pt_magnetic_sphere.webp"
+    },
+    {
+      "abilityId": "pt_maximize",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Mecha/Button/TM23 Maximize.bmp",
+      "output": "pt_maximize.webp"
+    },
+    {
+      "abilityId": "pt_mechanic_bomb",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Mecha/Button/TM12 M_bomb.bmp",
+      "output": "pt_mechanic_bomb.webp"
+    },
+    {
+      "abilityId": "pt_mechanic_weapon",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Mecha/Button/TM44 M_Weapon.bmp",
+      "output": "pt_mechanic_weapon.webp"
+    },
+    {
+      "abilityId": "pt_metal_armor",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Mecha/Button/TM40 M_Armor.bmp",
+      "output": "pt_metal_armor.webp"
+    },
+    {
+      "abilityId": "pt_metal_golem",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Mecha/Button/TM70 M_Golem.bmp",
+      "output": "pt_metal_golem.webp"
+    },
+    {
+      "abilityId": "pt_p_enhence",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Mecha/Button/TM90 P_Enhence.bmp",
+      "output": "pt_p_enhence.webp"
+    },
+    {
+      "abilityId": "pt_physical_absorb",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Mecha/Button/TM17 Ph_absorb.bmp",
+      "output": "pt_physical_absorb.webp"
+    },
+    {
+      "abilityId": "pt_poison_attribute",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Mecha/Button/TM14 P_attribute.bmp",
+      "output": "pt_poison_attribute.webp"
+    },
+    {
+      "abilityId": "pt_r_smash",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Mecha/Button/TM86 R_Smash.bmp",
+      "output": "pt_r_smash.webp"
+    },
+    {
+      "abilityId": "pt_spark",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Mecha/Button/TM30 Spark.bmp",
+      "output": "pt_spark.webp"
+    },
+    {
+      "abilityId": "pt_spark_shield",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Mecha/Button/TM50 S_Shield.bmp",
+      "output": "pt_spark_shield.webp"
+    }
+  ]
+}

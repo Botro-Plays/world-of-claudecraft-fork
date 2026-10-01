@@ -76,7 +76,12 @@ const SECOND_PASS_RECORD_SHA256 =
   // candidate's arm (78, its two disjoint reins items on the shared 76 base)
   // are additive, so 76 + 3 + 2 = 81. Substituted the two hotbarItems lines
   // by hand again, never a JSON round trip. No capture or asset was retaken.
-  '08348fb39f90a7074a3c9201811cb4bfd0905ec8b4bc534a3302e3e0e0a6a93e';
+  // RE-MINTED for the PT skill catalog: the generated 220-entry pt_* ability
+  // set ships converted MagicPT client button art for every row
+  // (scripts/pt-port/convert_pt_skill_icons.mjs), so the live ability census
+  // moves 405 to 625 and painted moves with it. Substituted the two
+  // runtimeClosure.abilities lines by hand, never a JSON round trip.
+  '24713ed4b54d18134b0768658e53cd36aef0077d35ac53f6d519494ff8321da1';
 const EVIDENCE = {
   'icon-art-before-after-desktop.png': {
     sha256: '61d19fb321f2b30eb3749e0966f26efea0fa4df53edae4b253cfd70edb82cd7a',
@@ -468,7 +473,9 @@ describe('release v0.39 icon-art second-pass lineage', () => {
     expect(new Set(liveAbilityIds).size, 'live ability ids remain unique').toBe(
       liveAbilityIds.length,
     );
-    expect(liveAbilityIds, 'live production ability inventory').toHaveLength(405);
+    // 405 WoC abilities + the 220 generated pt_* skill defs (each with
+    // converted MagicPT button art committed under public/ui/skills/).
+    expect(liveAbilityIds, 'live production ability inventory').toHaveLength(625);
     expect(
       liveAbilityIds.filter((id) => !paintedAbilityIds.has(id)),
       'every live ability resolves through production to committed painted art',

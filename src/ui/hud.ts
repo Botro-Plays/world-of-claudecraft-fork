@@ -17389,7 +17389,12 @@ export class Hud {
   // runs (see the talentsWindow dropdown handler, which calls switchLoadout and
   // applyLoadoutBar back to back).
   private applyLoadoutBar(bar: (string | null)[], alloc: TalentAllocation): void {
-    const known = loadoutKnownAbilityIds(this.sim.cfg.playerClass, alloc, this.sim.player.level);
+    const known = loadoutKnownAbilityIds(
+      this.sim.cfg.playerClass,
+      alloc,
+      this.sim.player.level,
+      this.sim.ptSkills,
+    );
     this.actionBarController.replaceActionsForLoadout(
       applyLoadoutBarActions(this.hotbarActions, bar, Hud.BAR_ABILITY_SLOTS, (id) => known.has(id)),
       known,

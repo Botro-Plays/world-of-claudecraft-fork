@@ -1,0 +1,128 @@
+{
+  "license": "Priston Tale client artwork, converted for the Botro fork. The source bitmaps ship in the MagicPT-Chinese client image tree; provenance rows here record the exact source file per icon.",
+  "generatedSource": "MagicPT-Chinese client skill button bitmaps",
+  "iconSize": 128,
+  "converter": "scripts/pt-port/convert_pt_skill_icons.mjs",
+  "abilities": [
+    {
+      "abilityId": "pt_alas",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Assassin/Button/TA23 Alas.bmp",
+      "output": "pt_alas.webp"
+    },
+    {
+      "abilityId": "pt_attack_mastery",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Assassin/Button/TA30 A_Mastery.bmp",
+      "output": "pt_attack_mastery.webp"
+    },
+    {
+      "abilityId": "pt_beat_up",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Assassin/Button/TA43 B_Up.bmp",
+      "output": "pt_beat_up.webp"
+    },
+    {
+      "abilityId": "pt_blind",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Assassin/Button/TA50 Blind.bmp",
+      "output": "pt_blind.webp"
+    },
+    {
+      "abilityId": "pt_fatal_mastery",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Assassin/Button/TA63 F_Mastery.bmp",
+      "output": "pt_fatal_mastery.webp"
+    },
+    {
+      "abilityId": "pt_frost_wind",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Assassin/Button/TA60 F_Wind.bmp",
+      "output": "pt_frost_wind.webp"
+    },
+    {
+      "abilityId": "pt_inpes",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Assassin/Button/TA46 Inpes.bmp",
+      "output": "pt_inpes.webp"
+    },
+    {
+      "abilityId": "pt_pasting_shadow",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Assassin/Button/TA70 P_Shadow.bmp",
+      "output": "pt_pasting_shadow.webp"
+    },
+    {
+      "abilityId": "pt_polluted",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Assassin/Button/TA66 Polluted.bmp",
+      "output": "pt_polluted.webp"
+    },
+    {
+      "abilityId": "pt_rising_shash",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Assassin/Button/TS83 R_Slash.bmp",
+      "output": "pt_rising_shash.webp"
+    },
+    {
+      "abilityId": "pt_running_hit",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Assassin/Button/TA12 R_Hit.bmp",
+      "output": "pt_running_hit.webp"
+    },
+    {
+      "abilityId": "pt_shadow_bomb",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Assassin/Button/TS80 J_Bomb.bmp",
+      "output": "pt_shadow_bomb.webp"
+    },
+    {
+      "abilityId": "pt_sore_sword",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Assassin/Button/TA40 S_Sword.bmp",
+      "output": "pt_sore_sword.webp"
+    },
+    {
+      "abilityId": "pt_soul_shock",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Assassin/Button/TA26 S_Shock.bmp",
+      "output": "pt_soul_shock.webp"
+    },
+    {
+      "abilityId": "pt_storm",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Assassin/Button/TS90 Storm.bmp",
+      "output": "pt_storm.webp"
+    },
+    {
+      "abilityId": "pt_stringer",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Assassin/Button/TA10 Stingger.bmp",
+      "output": "pt_stringer.webp"
+    },
+    {
+      "abilityId": "pt_swordmastery",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Assassin/Button/TA14 D_Mastery.bmp",
+      "output": "pt_swordmastery.webp"
+    },
+    {
+      "abilityId": "pt_venom_thorn",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Assassin/Button/TA20 V_Throne.bmp",
+      "output": "pt_venom_thorn.webp"
+    },
+    {
+      "abilityId": "pt_violence_stab",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Assassin/Button/TS86 V_Stab.bmp",
+      "output": "pt_violence_stab.webp"
+    },
+    {
+      "abilityId": "pt_wisp",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Assassin/Button/TA17 Wisp.bmp",
+      "output": "pt_wisp.webp"
+    }
+  ]
+}

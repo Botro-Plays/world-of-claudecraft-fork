@@ -230,6 +230,12 @@ const NON_PROFESSIONS_BLOB_FIELDS = [
   'vcupBetLosses',
   'vcupBetNet',
   'talents',
+  // PT character state: the field identity row (ptField) landed in an earlier
+  // PT commit without this guard's row; ptSkills/ptSkillMastery are the
+  // investment rank and use-count maps from the PT skill port.
+  'ptField',
+  'ptSkills',
+  'ptSkillMastery',
   'loadouts',
   'activeLoadout',
   'raidLockouts',

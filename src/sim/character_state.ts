@@ -143,6 +143,12 @@ export interface CharacterState {
   // Talents & Specializations (JSONB). All optional so characters saved before
   // talents existed load cleanly; contentRevision owns point-tree -> row migration.
   talents?: TalentAllocation;
+  // PT skill-point investment (JSONB, PT classes only): skill id -> invested
+  // rank 1..10, and skill id -> PT mastery use-count. Absent-when-empty so
+  // WoC-class and pre-feature saves stay byte-equal; the load path re-clamps
+  // both through progression/pt_skills.ts (record.cpp RestoreSkill semantics).
+  ptSkills?: Record<string, number>;
+  ptSkillMastery?: Record<string, number>;
   loadouts?: SavedLoadout[];
   activeLoadout?: number;
   raidLockouts?: Record<string, number>;

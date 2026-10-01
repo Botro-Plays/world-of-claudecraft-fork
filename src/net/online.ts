@@ -33,6 +33,10 @@ import {
   type TalentModifiers,
   type TalentRowLevel,
 } from '../sim/content/talents';
+import {
+  ptSkillView,
+  type PtSkillInfoView,
+} from '../sim/progression/pt_skills';
 import { resolveActiveWeaponSkin, withWeaponSkinApplied } from '../sim/content/weapon_skin_rules';
 import { WEAPON_SKINS } from '../sim/content/weapon_skins';
 import {
@@ -1298,6 +1302,10 @@ export class ClientWorld extends ReconWireState implements IWorld {
   talentRole: Role | null = null;
   loadouts: SavedLoadout[] = [];
   activeLoadout = -1;
+  // PT skill-point investment (PT classes only), mirrored from the `tal`
+  // heavy block: skill id -> invested rank, and skill id -> mastery use-count.
+  ptSkills: Record<string, number> = {};
+  ptSkillMastery: Record<string, number> = {};
   questLog = new Map<string, QuestProgress>();
   questsDone = new Set<string>();
   // --- IWorldParty: party/raid roster, mirrored from the snapshot self (`party`).
@@ -3298,6 +3306,10 @@ export class ClientWorld extends ReconWireState implements IWorld {
       this.talentSpec = presentation.mods.spec;
       this.talentRole = presentation.mods.role;
       this.known = presentation.known;
+      // PT investment mirrors (absent keys keep the prior mirror; an empty
+      // sanitized map is what a wiped/reset build wires as).
+      this.ptSkills = presentation.ptSkills;
+      this.ptSkillMastery = presentation.ptSkillMastery;
       // --- IWorldParty: party roster + raid markers, delta-omitted self-decode
       // (keep the prior value when absent; `marks: null` clears on disband). ---
       if (s.party !== undefined) this.partyInfo = s.party;
@@ -5547,6 +5559,19 @@ export class ClientWorld extends ReconWireState implements IWorld {
   }
   deleteLoadout(index: number): void {
     this.cmd({ cmd: 'deleteLoadout', index });
+  }
+  // --- IWorldTalents PT skill investment: ptSkillInfo is a local view compute
+  // over the `tal` mirror (same pure resolver the sim runs); every mutation is
+  // sent to the authoritative server and mirrors only from a later snapshot. ---
+  ptSkillInfo(): PtSkillInfoView | null {
+    const level = this.entities.get(this.playerId)?.level ?? 1;
+    return ptSkillView(this.cfg.playerClass, level, this.ptSkills, this.questsDone);
+  }
+  investPtSkill(skillId: string): void {
+    this.cmd({ cmd: 'invest_pt_skill', skill: skillId });
+  }
+  resetPtSkills(): void {
+    this.cmd({ cmd: 'reset_pt_skills' });
   }
   // legacy aliases kept for older scripts
   enterCrypt(): void {

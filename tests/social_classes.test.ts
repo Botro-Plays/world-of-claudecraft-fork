@@ -13,6 +13,7 @@ import {
   instanceOrigin,
   MOBS,
 } from '../src/sim/data';
+import { isPtSkillClass } from '../src/sim/progression/pt_skills';
 import { Sim } from '../src/sim/sim';
 import { ALL_CLASSES, MAX_LEVEL, type WorldContent } from '../src/sim/types';
 import { face, makeWorld, mustEntity, nearestMob, teleport } from './social_shared';
@@ -40,7 +41,10 @@ describe('twenty-one classes', () => {
       const sim = new Sim({ seed: 42, playerClass: cls, world: CLASS_TEST_WORLD });
       const p = sim.player;
       expect(p.maxHp).toBeGreaterThan(30);
-      expect(sim.known.length).toBeGreaterThan(0);
+      // PT classes authentically know NOTHING at level 1: every pt_* ability is
+      // hidden until a skill point is invested (the first pool point lands at
+      // level 10). WoC classes still spawn knowing their kit.
+      if (!isPtSkillClass(cls)) expect(sim.known.length).toBeGreaterThan(0);
       // Expanded kits can exceed the 12 action-bar slots; overflow remains
       // available from the spellbook and can be dragged onto the bar.
       expect(CLASSES[cls].abilities.length).toBeGreaterThan(0);
@@ -54,7 +58,17 @@ describe('twenty-one classes', () => {
           .map((id) => ABILITIES[id]?.requiresQuest)
           .filter((questId): questId is string => questId !== undefined),
       );
-      const kit = abilitiesKnownAt(cls, MAX_LEVEL, undefined, questUnlocks);
+      // PT skills resolve only through invested ranks, so the resolvable-kit
+      // check feeds the resolver a maxed investment map (rank 10 on every
+      // catalog skill) instead of relying on level alone.
+      const ptInvest = isPtSkillClass(cls)
+        ? Object.fromEntries(
+            CLASSES[cls].abilities
+              .filter((id) => id.startsWith('pt_'))
+              .map((id) => [id, 10]),
+          )
+        : undefined;
+      const kit = abilitiesKnownAt(cls, MAX_LEVEL, undefined, questUnlocks, ptInvest);
       const sharedKit = CLASSES[cls].abilities.filter(
         (id) =>
           !ABILITIES[id]?.specs &&

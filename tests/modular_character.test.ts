@@ -60,6 +60,7 @@ import {
   stubbleDecalKey,
   stubbleDecals,
 } from '../src/render/characters/modular';
+import { isPtClass } from '../src/render/characters/player_look_core';
 import { UNDERHAIR } from '../src/render/characters/underhair.generated';
 import type { PlayerClass } from '../src/sim/types';
 import { ALL_CLASSES, isMechWearer } from '../src/sim/types';
@@ -1295,7 +1296,11 @@ function referencedClips(clips: ClipMap): string[] {
 describe('per-class modular defs', () => {
   // ALL_CLASSES, not a local copy: the defs are generated from that same list,
   // so a tenth class arrives in this suite instead of quietly skipping it.
-  const PLAYER_CLASSES: PlayerClass[] = ALL_CLASSES;
+  // PT classes are the deliberate exception: they ride fixed Bip01 GLBs whose
+  // clips cannot bind to the KayKit modular part library, so manifest.ts's
+  // generator loop skips them (see the comment above the loop) and
+  // isPtClass/modularLookForClass never compose a modular body for them.
+  const PLAYER_CLASSES: PlayerClass[] = ALL_CLASSES.filter((cls) => !isPtClass(cls));
 
   it.each(PLAYER_CLASSES)('player_%s_modular mirrors its class def', (cls) => {
     const key = modularVisualKey(cls);

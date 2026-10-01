@@ -1,0 +1,128 @@
+{
+  "license": "Priston Tale client artwork, converted for the Botro fork. The source bitmaps ship in the MagicPT-Chinese client image tree; provenance rows here record the exact source file per icon.",
+  "generatedSource": "MagicPT-Chinese client skill button bitmaps",
+  "iconSize": 128,
+  "converter": "scripts/pt-port/convert_pt_skill_icons.mjs",
+  "abilities": [
+    {
+      "abilityId": "pt_avanging_crash",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Fighter/Button/TF43 A_Crash.bmp",
+      "output": "pt_avanging_crash.webp"
+    },
+    {
+      "abilityId": "pt_b_berserker",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Fighter/Button/TF90 B_Berserker.bmp",
+      "output": "pt_b_berserker.webp"
+    },
+    {
+      "abilityId": "pt_berserker",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Fighter/Button/TF63 Berserker.bmp",
+      "output": "pt_berserker.webp"
+    },
+    {
+      "abilityId": "pt_bone_crash",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Fighter/Button/TF50 B_Crash.bmp",
+      "output": "pt_bone_crash.webp"
+    },
+    {
+      "abilityId": "pt_boost_health",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Fighter/Button/TF70 B_Health.bmp",
+      "output": "pt_boost_health.webp"
+    },
+    {
+      "abilityId": "pt_brutal_swing",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Fighter/Button/TF23 B_Swing.bmp",
+      "output": "pt_brutal_swing.webp"
+    },
+    {
+      "abilityId": "pt_concentration",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Fighter/Button/TF40 Concentration.bmp",
+      "output": "pt_concentration.webp"
+    },
+    {
+      "abilityId": "pt_cyclone_strike",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Fighter/Button/TF66 C_Strike.bmp",
+      "output": "pt_cyclone_strike.webp"
+    },
+    {
+      "abilityId": "pt_d_hit",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Fighter/Button/TF80 D_Hit.bmp",
+      "output": "pt_d_hit.webp"
+    },
+    {
+      "abilityId": "pt_detoryer",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Fighter/Button/TF60 Destoryer.bmp",
+      "output": "pt_detoryer.webp"
+    },
+    {
+      "abilityId": "pt_fire_attribute",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Fighter/Button/TF12 F_attribute.bmp",
+      "output": "pt_fire_attribute.webp"
+    },
+    {
+      "abilityId": "pt_impact",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Fighter/Button/TF17 impact.bmp",
+      "output": "pt_impact.webp"
+    },
+    {
+      "abilityId": "pt_m_blow",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Fighter/Button/TF86 M_Blow.bmp",
+      "output": "pt_m_blow.webp"
+    },
+    {
+      "abilityId": "pt_melee_mastery",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Fighter/Button/TF10 M_mastery.bmp",
+      "output": "pt_melee_mastery.webp"
+    },
+    {
+      "abilityId": "pt_p_dash",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Fighter/Button/TF83 P_Dash.bmp",
+      "output": "pt_p_dash.webp"
+    },
+    {
+      "abilityId": "pt_rage_of_zecram",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Fighter/Button/TF30 R_Zecram.bmp",
+      "output": "pt_rage_of_zecram.webp"
+    },
+    {
+      "abilityId": "pt_raving",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Fighter/Button/TF14 raving.bmp",
+      "output": "pt_raving.webp"
+    },
+    {
+      "abilityId": "pt_roar",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Fighter/Button/TF26 Roar.bmp",
+      "output": "pt_roar.webp"
+    },
+    {
+      "abilityId": "pt_swift_axe",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Fighter/Button/TF46 S_Axe.bmp",
+      "output": "pt_swift_axe.webp"
+    },
+    {
+      "abilityId": "pt_triple_impact",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Fighter/Button/TF20 T_Impact.bmp",
+      "output": "pt_triple_impact.webp"
+    }
+  ]
+}

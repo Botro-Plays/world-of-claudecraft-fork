@@ -10,15 +10,12 @@ import { CLASS_DETAILS, SIGNATURE_ABILITIES, SPEC_CARD_INFO } from '../src/ui/cl
 
 const classIds = Object.keys(CLASSES) as PlayerClass[];
 
-// The PT Tempskron Fighter, Mechanician, Pikeman, and Archer POCs, the
-// Morion Knight, Atalanta, Priestess, Magician, and Monk POCs, and the Atlanteon
-// Assassin, Martial Artist, and Shaman POCs reuse the warrior's ability kit,
-// so their signature and spec-card example abilities are authored with
-// class: 'warrior'. The drift guard accepts the reused source class.
+// The eleven real PT classes ship their own extracted skill kits (pt_abilities),
+// so their signature and spec-card example abilities are authored with their own
+// class id. The fork-added Morion Monk has no MagicPT source and still reuses the
+// warrior's ability kit, so its showcase data stays class: 'warrior'.
 function abilityOwnerClass(cls: PlayerClass): PlayerClass {
-  return cls === 'tempskron_fighter' || cls === 'tempskron_mechanician' || cls === 'tempskron_pikeman' || cls === 'tempskron_archer' || cls === 'morion_knight' || cls === 'morion_atalanta' || cls === 'morion_priestess' || cls === 'morion_magician' || cls === 'atlanteon_assassin' || cls === 'atlanteon_martial_artist' || cls === 'atlanteon_shaman' || cls === 'morion_monk'
-    ? 'warrior'
-    : cls;
+  return cls === 'morion_monk' ? 'warrior' : cls;
 }
 
 describe('character-select class details parity', () => {

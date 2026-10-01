@@ -237,7 +237,11 @@ describe('spellbook_window: tooltip/summary reflect talent changes (tooltip pari
     // talent dropping Wicked Slash cost 45 -> 40) rebuilds the row summaries; an
     // unchanged frame falls through to the gated toggle refresh.
     expect(code).toContain('tickOpen()');
-    expect(code).toContain('if (this.knownChanged(this.deps.world().known)) {');
+    // Two-condition gate: the PT signature catches investment/pool flips that
+    // leave every resolved field unchanged, and knownChanged still compares the
+    // resolved numbers themselves (see below).
+    expect(code).toContain('ptSkillSignature(');
+    expect(code).toContain('this.knownChanged(world.known)');
     expect(code).toContain('this.captureKnown(world.known)');
     // The comparison carries every number a row summary paints, so a cost/cooldown
     // change flips it (a bare id/rank check would miss a same-rank talent cost cut).

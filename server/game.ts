@@ -7565,6 +7565,14 @@ export class GameServer {
         if (index !== null) sim.deleteLoadout(index, pid);
         break;
       }
+      // PT skill-point investment - `skill` is a catalog pt_* id; every gate
+      // (pool, chain, level, cap) re-runs inside Sim.investPtSkill.
+      case 'invest_pt_skill':
+        if (typeof msg.skill === 'string') sim.investPtSkill(msg.skill, pid);
+        break;
+      case 'reset_pt_skills':
+        sim.resetPtSkills(pid);
+        break;
       // World Market (the Merchant's auction house)
       case 'market_search':
         sim.marketSearch(
@@ -9044,10 +9052,17 @@ export class GameServer {
       // comparisons are unchanged across the swap.
       maybeRaw('reliq', reliquaryWireJson(meta.reliquary));
       // talents/spec/loadouts: the client recomputes its known abilities from this.
+      // PT skill investment (pt_* id -> rank, plus the mastery use-count) rides
+      // the same heavy build block; omit-when-empty so WoC-class selves stay
+      // byte-identical to before.
       maybe('tal', {
         alloc: meta.talents,
         loadouts: meta.loadouts,
         activeLoadout: meta.activeLoadout,
+        ...(Object.keys(meta.ptSkills).length > 0 ? { ptSkills: meta.ptSkills } : {}),
+        ...(Object.keys(meta.ptSkillMastery).length > 0
+          ? { ptMastery: meta.ptSkillMastery }
+          : {}),
       });
       // IWorldActionBar login restore (self-scoped, never a broadcast/entity
       // field): the VIEWER's own stored layout, or an explicit null meaning "the

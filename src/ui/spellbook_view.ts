@@ -23,6 +23,11 @@
 // slot set contains the row's barSlot.
 
 import { ABILITIES } from '../sim/data';
+import {
+  ptTierUnlockLevel,
+  type PtSkillInfoView,
+  type PtSkillInvestError,
+} from '../sim/progression/pt_skills';
 import type { ResolvedAbility } from '../sim/sim';
 import type { PlayerClass } from '../sim/types';
 import {
@@ -48,6 +53,19 @@ export interface SpellbookRow {
    *  span (slot 0 / the attack toggle or beyond slot 33). Touch-only
    *  presentation; desktop rendering ignores this field. */
   mobilePage: number | null;
+  /** PT skill-point row state (PT classes only): present when input.ptInfo
+   *  listed this id. The rank badge reads `{rank}/10`, a locked row's subline
+   *  names the gate (`reason`), and `investable` arms the train control. */
+  pt: {
+    rank: number;
+    visible: boolean;
+    investable: boolean;
+    reason: PtSkillInvestError | null;
+    /** Level the NEXT rank unlocks at; 0 when capped. */
+    nextRankLevel: number;
+    /** The level this row's tier unlocks at (for the tier_locked label). */
+    tierUnlockLevel: number;
+  } | null;
 }
 
 /** The full spellbook view-model. */
@@ -63,6 +81,9 @@ export interface SpellbookView {
   rows: SpellbookRow[];
   /** No rows rendered at all (the class kit was empty). */
   empty: boolean;
+  /** PT point pools for the header line (null on non-PT classes). `advanced`
+   *  (the tier-4/5 pool) is only meaningful once earned > 0 (level 60+). */
+  ptPools: { normal: number; advanced: number; showAdvanced: boolean } | null;
 }
 
 /** Inputs the painter feeds the builder each render, all IWorld-mirrored. */
@@ -95,6 +116,9 @@ export interface SpellbookInput {
    *  mobilePage: null, so callers that don't care about mobile paging (or run
    *  before this data is wired) see no behavior change. */
   abilityIdByBarSlot?: readonly (string | null)[];
+  /** The IWorld.ptSkillInfo() view for PT classes (null/absent on WoC classes):
+   *  pools + per-skill invest state, already resolved server-side rules. */
+  ptInfo?: PtSkillInfoView | null;
 }
 
 /**
@@ -126,6 +150,9 @@ function specCanLearn(abilityId: string, spec: string | null | undefined, level?
 export function buildSpellbookView(input: SpellbookInput): SpellbookView {
   const barIds = new Set(input.barAbilityIds);
   const knownIds = new Set(input.known.map((k) => k.def.id));
+  const ptById = input.ptInfo
+    ? new Map(input.ptInfo.skills.map((s) => [s.id, s]))
+    : undefined;
   // An already-learned ability always keeps its row (it exists regardless of the
   // gate); only never-learnable trainable rows are dropped.
   const learnable = input.abilities.filter(
@@ -144,6 +171,18 @@ export function buildSpellbookView(input: SpellbookInput): SpellbookView {
       onBar,
       toggleDisabled: known !== null && !onBar && !input.hasFreeSlot,
       mobilePage: onBar ? mobilePageForAbility(abilityId, input.abilityIdByBarSlot) : null,
+      pt: (() => {
+        const s = ptById?.get(abilityId);
+        if (!s) return null;
+        return {
+          rank: s.rank,
+          visible: s.visible,
+          investable: s.investable,
+          reason: s.reason,
+          nextRankLevel: s.nextRankLevel,
+          tierUnlockLevel: ptTierUnlockLevel(s.tier),
+        };
+      })(),
     };
   });
   return {
@@ -152,6 +191,13 @@ export function buildSpellbookView(input: SpellbookInput): SpellbookView {
     attackOnBar: input.attackOnBar,
     rows,
     empty: rows.length === 0,
+    ptPools: input.ptInfo
+      ? {
+          normal: input.ptInfo.pools.p1.available,
+          advanced: input.ptInfo.pools.p4.available,
+          showAdvanced: input.ptInfo.pools.p4.earned > 0,
+        }
+      : null,
   };
 }
 

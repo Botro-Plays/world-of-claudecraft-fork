@@ -396,7 +396,12 @@ describe('content referential integrity', () => {
       for (const id of def.abilities) {
         const ab = ABILITIES[id];
         expect(ab, `ability ${id} of ${def.id}`).toBeTruthy();
-        expect(ab.learnLevel).toBeLessThanOrEqual(MAX_LEVEL);
+        // PT skills learn on the authentic PT level scale (up to ~108 for
+        // tier-5 rank 10) via point investment, not the WoC MAX_LEVEL=20 grant
+        // schedule; tiers above the current cap invest when the cap rises.
+        if (!id.startsWith('pt_')) {
+          expect(ab.learnLevel).toBeLessThanOrEqual(MAX_LEVEL);
+        }
         let prev = ab.learnLevel;
         for (const r of ab.ranks ?? []) {
           expect(r.level, `${id} rank ${r.rank} level ordering`).toBeGreaterThanOrEqual(prev);

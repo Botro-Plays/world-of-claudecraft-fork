@@ -52,6 +52,10 @@
 
 import { audio } from '../game/audio';
 import { ABILITIES, CLASSES } from '../sim/data';
+import {
+  ptSkillSignature,
+  type PtSkillInvestError,
+} from '../sim/progression/pt_skills';
 import type { ResolvedAbility } from '../sim/sim';
 import type { AbilityDef } from '../sim/types';
 import type { IWorld } from '../world_api';
@@ -175,6 +179,11 @@ export class SpellbookWindow {
   // re-opening re-renders anyway).
   private attackToggle: HTMLButtonElement | null = null;
   private readonly rowToggles: RowToggle[] = [];
+  // The PT investment signature the last render painted (ptSkillSignature is a
+  // packed scalar - no allocation on the per-frame read): -2 is the never-
+  // rendered sentinel, -1 the constant for non-PT classes. A point spend, a
+  // level-up crossing a tier floor, or a skill reset all move it.
+  private lastPtSignature = -2;
   // The action-bar state those toggles were painted from. Everything the refresh
   // writes is a function of exactly these three, so an unchanged frame has nothing
   // to paint; see takeControlChange.
@@ -270,7 +279,20 @@ export class SpellbookWindow {
   // resolve live regardless (see appendRow), so this covers the always-visible row
   // text, not the tooltip.
   tickOpen(): void {
-    if (this.knownChanged(this.deps.world().known)) {
+    const world = this.deps.world();
+    // The PT gate runs first and costs one scalar compare for WoC classes
+    // (ptSkillSignature is -1 without the class's catalog row). For PT classes
+    // it catches what knownChanged cannot: a pool grant at level-up flips rows
+    // investable without touching any resolved ability field.
+    if (
+      ptSkillSignature(
+        world.cfg.playerClass,
+        world.player.level,
+        world.ptSkills,
+        world.questsDone,
+      ) !== this.lastPtSignature ||
+      this.knownChanged(world.known)
+    ) {
       this.rerenderPreservingView();
       return;
     }
@@ -330,6 +352,15 @@ export class SpellbookWindow {
     this.takeControlChange();
     const classId = world.cfg.playerClass;
     const cls = CLASSES[classId];
+    // PT skill investment state (null for WoC classes): the pools line and
+    // each row's train/lock state ride the same pure resolver on both worlds.
+    const ptInfo = world.ptSkillInfo();
+    this.lastPtSignature = ptSkillSignature(
+      classId,
+      world.player.level,
+      world.ptSkills,
+      world.questsDone,
+    );
     // The kit list is the display order, but spec signatures and other talent grants are
     // known WITHOUT being in the base kit (e.g. mortal_strike, chain_heal, stormstrike), so
     // append any known-but-not-in-kit ability so the spellbook shows everything the player has.
@@ -353,6 +384,7 @@ export class SpellbookWindow {
       hasFormBars: this.deps.hasFormBars(),
       spec: world.talentSpec,
       level: world.player.level,
+      ptInfo,
     });
     const className = classDisplayName(view.classId);
     markDialogRoot(el, { label: t('abilityUi.spellbook.title') });
@@ -366,6 +398,20 @@ export class SpellbookWindow {
     list.className = 'spell-list';
     list.setAttribute('role', 'list');
     el.appendChild(list);
+    if (view.ptPools) {
+      // PT pool header: the tier 1-3 pool always, plus the tier 4-5 pool once
+      // it starts earning (level 60).
+      const pools = document.createElement('div');
+      pools.className = 'spell-pt-pools';
+      pools.textContent =
+        t('abilityUi.spellbook.ptPoints', {
+          points: formatNumber(view.ptPools.normal),
+        }) +
+        (view.ptPools.showAdvanced
+          ? ` · ${t('abilityUi.spellbook.ptPointsHigh', { points: formatNumber(view.ptPools.advanced) })}`
+          : '');
+      list.appendChild(pools);
+    }
     this.appendAttackRow(list, view.attackOnBar);
     for (const row of view.rows) this.appendRow(list, row);
     if (view.empty) {
@@ -616,9 +662,14 @@ export class SpellbookWindow {
     // scroll focus to the same row after it rebuilds the list.
     el.dataset.abilityId = row.abilityId;
     const locked = !known;
+    const pt = row.pt;
     const summary = known ? this.deps.abilitySummary(known) : '';
     const name = this.abilityName(def);
     const learnLevel = this.formatAbilityNumber(def.learnLevel);
+    // A locked PT row names its invest gate instead of the generic trainable
+    // line (the reason is the rule the server would reject with).
+    const lockedText =
+      pt && pt.reason ? this.ptReasonText(pt.reason, pt) : t('abilityUi.spellbook.trainableAtLevel', { level: learnLevel });
     el.setAttribute(
       'aria-label',
       known
@@ -627,11 +678,41 @@ export class SpellbookWindow {
             rank: this.formatAbilityNumber(known.rank),
             summary,
           })
-        : t('abilityUi.spellbook.unlearnedAbilityAria', { name, level: learnLevel }),
+        : pt && pt.reason
+          ? t('abilityUi.spellbook.ptLockedAria', { name, reason: lockedText })
+          : t('abilityUi.spellbook.unlearnedAbilityAria', { name, level: learnLevel }),
     );
+    const rankText = pt
+      ? t('abilityUi.spellbook.ptRank', { rank: this.formatAbilityNumber(known?.rank ?? 0) })
+      : t('abilityUi.tooltip.rank', { rank: this.formatAbilityNumber(known?.rank ?? 0) });
     el.innerHTML = `<div class="spell-icon" style="background-image:url(${iconDataUrl('ability', row.abilityId)})"></div>
-        <div class="spell-text"><div class="spell-name">${esc(name)}${known && known.rank > 1 ? ` <span class="spell-rank">${esc(t('abilityUi.tooltip.rank', { rank: this.formatAbilityNumber(known.rank) }))}</span>` : ''}</div>
-        <div class="spell-sub">${locked ? esc(t('abilityUi.spellbook.trainableAtLevel', { level: learnLevel })) : esc(summary)}</div></div>`;
+        <div class="spell-text"><div class="spell-name">${esc(name)}${known && known.rank > 1 ? ` <span class="spell-rank">${esc(rankText)}</span>` : ''}</div>
+        <div class="spell-sub">${locked ? esc(lockedText) : esc(summary)}</div></div>`;
+    // PT train control: a point spend rides the same wire command online and
+    // the same Sim verb offline; the server re-validates, so a stale-enabled
+    // click is a harmless rejected command. Visible once the row can train or
+    // already holds rank (a capped/no-points rank row stays shown, disabled).
+    if (pt && (pt.investable || pt.rank > 0)) {
+      const train = document.createElement('button');
+      train.type = 'button';
+      train.className = 'spell-pt-train';
+      train.dataset.abilityId = row.abilityId;
+      train.textContent = '+';
+      train.disabled = !pt.investable;
+      train.setAttribute(
+        'aria-label',
+        t('abilityUi.spellbook.ptTrainAria', { name }),
+      );
+      train.addEventListener('pointerdown', (ev) => ev.stopPropagation());
+      train.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        this.deps.world().investPtSkill(row.abilityId);
+        audio.click();
+        this.rerenderPreservingView();
+      });
+      el.appendChild(train);
+    }
     if (known && isAbilityActionBarEligible(def)) {
       const toggle = document.createElement('button');
       toggle.type = 'button';
@@ -744,6 +825,31 @@ export class SpellbookWindow {
 
   private abilityName(def: AbilityDef): string {
     return tEntity({ kind: 'ability', id: def.id, field: 'name' });
+  }
+
+  // The locked-row subline for a PT skill names the gate the invest check
+  // returned (same reason strings the sim's rejection maps to).
+  private ptReasonText(reason: PtSkillInvestError, pt: NonNullable<SpellbookRow['pt']>): string {
+    switch (reason) {
+      case 'tier_locked':
+        return t('abilityUi.spellbook.ptTierLocked', {
+          level: this.formatAbilityNumber(pt.tierUnlockLevel),
+        });
+      case 'needs_previous':
+        return t('abilityUi.spellbook.ptNeedsPrevious');
+      case 'level_gate':
+        return t('abilityUi.spellbook.ptLevelGate', {
+          level: this.formatAbilityNumber(pt.nextRankLevel),
+        });
+      case 'max_rank':
+        return t('abilityUi.spellbook.ptMaxRank');
+      case 'no_points':
+        return t('abilityUi.spellbook.ptNoPoints');
+      default:
+        return t('abilityUi.spellbook.trainableAtLevel', {
+          level: this.formatAbilityNumber(pt.nextRankLevel),
+        });
+    }
   }
 
   private formatAbilityNumber(value: number): string {

@@ -1,0 +1,128 @@
+{
+  "license": "Priston Tale client artwork, converted for the Botro fork. The source bitmaps ship in the MagicPT-Chinese client image tree; provenance rows here record the exact source file per icon.",
+  "generatedSource": "MagicPT-Chinese client skill button bitmaps",
+  "iconSize": 128,
+  "converter": "scripts/pt-port/convert_pt_skill_icons.mjs",
+  "abilities": [
+    {
+      "abilityId": "pt_b_krishna",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Priestess/Button/MP90 B_Krishna.bmp",
+      "output": "pt_b_krishna.webp"
+    },
+    {
+      "abilityId": "pt_chain_lightning",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Priestess/Button/MP66 C_Lightning.bmp",
+      "output": "pt_chain_lightning.webp"
+    },
+    {
+      "abilityId": "pt_divine_lightning",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Priestess/Button/MP23 D_Lightning.bmp",
+      "output": "pt_divine_lightning.webp"
+    },
+    {
+      "abilityId": "pt_extinction",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Priestess/Button/MP46 Extinction.bmp",
+      "output": "pt_extinction.webp"
+    },
+    {
+      "abilityId": "pt_glacial_spike",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Priestess/Button/MP60 G_Spike.bmp",
+      "output": "pt_glacial_spike.webp"
+    },
+    {
+      "abilityId": "pt_grand_healing",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Priestess/Button/MP30 G_Healing.bmp",
+      "output": "pt_grand_healing.webp"
+    },
+    {
+      "abilityId": "pt_healing",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Priestess/Button/MP10 Healing.bmp",
+      "output": "pt_healing.webp"
+    },
+    {
+      "abilityId": "pt_holy_bolt",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Priestess/Button/MP12 HolyBolt.bmp",
+      "output": "pt_holy_bolt.webp"
+    },
+    {
+      "abilityId": "pt_holy_mind",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Priestess/Button/MP17 HolyMind.bmp",
+      "output": "pt_holy_mind.webp"
+    },
+    {
+      "abilityId": "pt_holy_reflection",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Priestess/Button/MP26 H_Reflection.bmp",
+      "output": "pt_holy_reflection.webp"
+    },
+    {
+      "abilityId": "pt_meditation",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Priestess/Button/MP20 Meditation.bmp",
+      "output": "pt_meditation.webp"
+    },
+    {
+      "abilityId": "pt_multispark",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Priestess/Button/MP14 M_Spark.bmp",
+      "output": "pt_multispark.webp"
+    },
+    {
+      "abilityId": "pt_p_ice",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Priestess/Button/MP83 P_Ice.bmp",
+      "output": "pt_p_ice.webp"
+    },
+    {
+      "abilityId": "pt_regeneration_field",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Priestess/Button/MP63 R_Field.bmp",
+      "output": "pt_regeneration_field.webp"
+    },
+    {
+      "abilityId": "pt_resurrection",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Priestess/Button/MP43 Resurrection.bmp",
+      "output": "pt_resurrection.webp"
+    },
+    {
+      "abilityId": "pt_s_impact",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Priestess/Button/MP80 S_Impact.bmp",
+      "output": "pt_s_impact.webp"
+    },
+    {
+      "abilityId": "pt_s_prmiel",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Priestess/Button/MP86 S_Meteo.bmp",
+      "output": "pt_s_prmiel.webp"
+    },
+    {
+      "abilityId": "pt_summon_muspell",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Priestess/Button/MP70 S_Muspell.bmp",
+      "output": "pt_summon_muspell.webp"
+    },
+    {
+      "abilityId": "pt_vigor_ball",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Priestess/Button/MP40 V_Ball.bmp",
+      "output": "pt_vigor_ball.webp"
+    },
+    {
+      "abilityId": "pt_virtual_life",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Priestess/Button/MP50 V_Life.bmp",
+      "output": "pt_virtual_life.webp"
+    }
+  ]
+}

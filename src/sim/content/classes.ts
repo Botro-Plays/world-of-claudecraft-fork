@@ -35,6 +35,8 @@ import {
 } from './ignivar_set_bonuses';
 import { PALADIN_CORE_ABILITIES } from './paladin_core_abilities';
 import { PRIEST_ABILITIES } from './priest';
+import { PT_ABILITIES, PT_CLASS_KITS } from './pt_abilities';
+import { PT_SKILL_ORDER } from '../../../generated/pt-maps/pt_skill_catalog.generated';
 import { MENDING_WATERS_MANA_COST, TIDECALL_MANA_COST } from './shaman_tuning';
 import { TALENT_ABILITIES_V2 } from './talent_abilities_v2';
 import type { TalentModifiers } from './talents';
@@ -215,7 +217,7 @@ const MECHANICIAN_DEF: ClassDef = {
   // dedicated Mechanician abilities phase. This is the Phase A foundation:
   // the class identity (stats, resource, growth) is authentic; the ability
   // kit will be replaced in a later phase.
-  abilities: WARRIOR_DEF.abilities,
+  abilities: PT_CLASS_KITS['tempskron_mechanician'] ?? [],
   color: 0xd67a54,
 };
 
@@ -280,7 +282,7 @@ const PIKEMAN_DEF: ClassDef = {
   // dedicated Pikeman abilities phase. This is the Phase A foundation:
   // the class identity (stats, resource, growth) is authentic; the ability
   // kit will be replaced in a later phase.
-  abilities: WARRIOR_DEF.abilities,
+  abilities: PT_CLASS_KITS['tempskron_pikeman'] ?? [],
   color: 0xd67a54,
 };
 
@@ -345,7 +347,7 @@ const ARCHER_DEF: ClassDef = {
   // dedicated Archer abilities phase. This is the Phase A foundation:
   // the class identity (stats, resource, growth) is authentic; the ability
   // kit will be replaced in a later phase.
-  abilities: WARRIOR_DEF.abilities,
+  abilities: PT_CLASS_KITS['tempskron_archer'] ?? [],
   color: 0x4a9c5a,
 };
 
@@ -415,7 +417,7 @@ const KNIGHT_DEF: ClassDef = {
   // dedicated Knight abilities phase. This is the Phase A foundation:
   // the class identity (stats, resource, growth) is authentic; the ability
   // kit will be replaced in a later phase.
-  abilities: WARRIOR_DEF.abilities,
+  abilities: PT_CLASS_KITS['morion_knight'] ?? [],
   color: 0x6b8fb5,
 };
 
@@ -484,7 +486,7 @@ const ATALANTA_DEF: ClassDef = {
   // dedicated Atalanta abilities phase. This is the Phase A foundation:
   // the class identity (stats, resource, growth) is authentic; the ability
   // kit will be replaced in a later phase.
-  abilities: WARRIOR_DEF.abilities,
+  abilities: PT_CLASS_KITS['morion_atalanta'] ?? [],
   color: 0xc4a070,
 };
 
@@ -526,7 +528,7 @@ const PRIESTESS_DEF: ClassDef = {
   startOffhand: 'eastbrook_buckler',
   startChest: 'recruit_tunic',
   startItems: START_RATIONS_MANA,
-  abilities: WARRIOR_DEF.abilities,
+  abilities: PT_CLASS_KITS['morion_priestess'] ?? [],
   color: 0xe8d0ff,
 };
 
@@ -568,7 +570,7 @@ const MAGICIAN_DEF: ClassDef = {
   startOffhand: 'eastbrook_buckler',
   startChest: 'recruit_tunic',
   startItems: START_RATIONS_MANA,
-  abilities: WARRIOR_DEF.abilities,
+  abilities: PT_CLASS_KITS['morion_magician'] ?? [],
   color: 0xff6b3d,
 };
 
@@ -610,7 +612,7 @@ const ASSASSIN_DEF: ClassDef = {
   startOffhand: 'eastbrook_buckler',
   startChest: 'recruit_tunic',
   startItems: START_RATIONS_MANA,
-  abilities: WARRIOR_DEF.abilities,
+  abilities: PT_CLASS_KITS['atlanteon_assassin'] ?? [],
   color: 0x4a4a6b,
 };
 
@@ -652,7 +654,7 @@ const MARTIAL_ARTIST_DEF: ClassDef = {
   startOffhand: 'eastbrook_buckler',
   startChest: 'recruit_tunic',
   startItems: START_RATIONS_MANA,
-  abilities: WARRIOR_DEF.abilities,
+  abilities: PT_CLASS_KITS['atlanteon_martial_artist'] ?? [],
   color: 0xd4a040,
 };
 
@@ -694,7 +696,7 @@ const SHAMAN_DEF: ClassDef = {
   startOffhand: 'eastbrook_buckler',
   startChest: 'recruit_tunic',
   startItems: START_RATIONS_MANA,
-  abilities: WARRIOR_DEF.abilities,
+  abilities: PT_CLASS_KITS['atlanteon_shaman'] ?? [],
   color: 0x3d6b5c,
 };
 
@@ -1205,7 +1207,12 @@ export const CLASSES: Record<PlayerClass, ClassDef> = {
   // PT Tempskron Fighter POC: reuse warrior's data with different id/name.
   // The visual + animation set is the converted MagicPT-Chinese PT Fighter
   // (player_tempskron_fighter VisualDef). See scripts/pt-port/fighter_assembler.ts.
-  tempskron_fighter: { ...WARRIOR_DEF, id: 'tempskron_fighter', name: 'Tempskron Fighter' },
+  tempskron_fighter: {
+    ...WARRIOR_DEF,
+    id: 'tempskron_fighter',
+    name: 'Tempskron Fighter',
+    abilities: PT_CLASS_KITS['tempskron_fighter'] ?? [],
+  },
   // PT Tempskron Mechanician: dedicated class foundation (Phase A).
   // The visual + animation set is the converted MagicPT-Chinese PT Mechanician
   // (player_tempskron_mechanician VisualDef). See
@@ -9192,6 +9199,12 @@ export const ABILITIES: Record<string, AbilityDef> = {
   ...TALENT_ABILITIES_V2,
   ...PRIEST_ABILITIES,
 
+  // The 220 extracted PT skills (content/pt_abilities.ts - the transform of
+  // generated/pt-maps/pt_skill_catalog.generated.ts). Each PT class lists its
+  // kit via PT_CLASS_KITS; investment (PlayerMeta.ptSkills) is what teaches a
+  // rank, never level alone - see abilitiesKnownAt's pt branch below.
+  ...PT_ABILITIES,
+
   // The Vale Cup sport kit (class-agnostic; docs/prd/vale-cup.md). Merged here
   // so every ABILITIES consumer (casting, icons, hotbar validation, tooltips)
   // resolves sport ids; no class lists them, so abilitiesKnownAt never grants
@@ -9688,6 +9701,11 @@ export function abilitiesKnownAt(
   level: number,
   mods?: TalentModifiers,
   questsDone?: ReadonlySet<string>,
+  // PT skill-point investment: pt_* class-kit ids are known ONLY while they
+  // hold >= 1 invested point, resolved at exactly that rank (the rules -
+  // pools, chain, level gates, cap 10 - live in progression/pt_skills.ts).
+  // Undefined / missing ids mean zero investment, never auto-grant-by-level.
+  ptRanks?: Readonly<Record<string, number>>,
 ): KnownAbility[] {
   const out: KnownAbility[] = [];
   const baseIds = CLASSES[cls].abilities;
@@ -9695,6 +9713,11 @@ export function abilitiesKnownAt(
   const grantIds = new Set<string>();
   for (const g of mods?.grants ?? []) grantIds.add(g.ability);
   for (const g of mods?.grants ?? []) if (!ids.includes(g.ability)) ids.push(g.ability);
+  // PT classes list their 20 catalog skills as the class kit; membership in
+  // the class's PT_SKILL_ORDER row is what switches a def onto the
+  // investment-resolution path below.
+  const ptKit = (PT_SKILL_ORDER as Record<string, readonly string[]>)[cls];
+  const ptKitIds = ptKit ? new Set(ptKit) : undefined;
 
   for (const id of ids) {
     const def = ABILITIES[id];
@@ -9704,6 +9727,13 @@ export function abilitiesKnownAt(
     // `known` would let modified clients and RL slots cast abilities the
     // official spellbook deliberately hides.
     if (def.hiddenFromPlayer) continue;
+    // The invested point count IS the learned rank (PT cap is 10). Uninvested
+    // pt skills stay unlearned regardless of level - buying the first point is
+    // what teaches the skill, so `learnLevel` never reveals one early.
+    const ptRank = ptKitIds?.has(id)
+      ? Math.min(10, Math.max(0, Math.floor(ptRanks?.[id] ?? 0)))
+      : undefined;
+    if (ptRank !== undefined && ptRank < 1) continue;
     const granted = grantIds.has(id) || !baseIds.includes(id);
     // Paladin specialization signatures also live in its authored class kit.
     // Keep their requested progression levels authoritative instead of letting
@@ -9743,7 +9773,11 @@ export function abilitiesKnownAt(
     let threatFlat = def.threat?.flat ?? 0;
     const threatMult = def.threat?.mult ?? 1;
     for (const r of def.ranks ?? []) {
-      if (r.level <= level) {
+      // PT skills resolve the rank row by INVESTED rank, not by level: the
+      // row's `level` field is the PT invest gate (requireLevel + (rank-1)*2),
+      // already enforced when the point was spent.
+      const reached = ptRank !== undefined ? r.rank <= ptRank : r.level <= level;
+      if (reached) {
         rank = r.rank;
         cost = r.cost;
         effects = r.effects;
@@ -9751,6 +9785,7 @@ export function abilitiesKnownAt(
         if (r.threatFlat !== undefined) threatFlat = r.threatFlat;
       }
     }
+    if (ptRank !== undefined) rank = ptRank;
     let cooldown = def.cooldown;
     if (id === 'execute' && mods?.spec === 'arms') {
       cost = 10;

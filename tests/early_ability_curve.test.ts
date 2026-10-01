@@ -37,7 +37,13 @@ function coreKitAtLevel(cls: PlayerClass, level: number) {
 }
 
 describe('early ability curve', () => {
-  const classes = Object.keys(CLASSES) as PlayerClass[];
+  // PT classes are exempt: the authentic PT model grants nothing on early dings
+  // - the kit is bought with skill points, the first tier-1 skill unlocking at
+  // level 10 (see src/sim/progression/pt_skills.ts). The fork-added Monk still
+  // follows the WoC curve.
+  const classes = (Object.keys(CLASSES) as PlayerClass[]).filter(
+    (cls) => !CLASSES[cls].abilities.some((id) => id.startsWith('pt_')),
+  );
 
   for (const cls of classes) {
     it(`${cls}: one new core active on every ding from ${CORE_LEVEL_MIN} to ${COVERAGE_LEVEL_MAX}`, () => {

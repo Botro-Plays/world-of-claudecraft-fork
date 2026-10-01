@@ -1,0 +1,128 @@
+{
+  "license": "Priston Tale client artwork, converted for the Botro fork. The source bitmaps ship in the MagicPT-Chinese client image tree; provenance rows here record the exact source file per icon.",
+  "generatedSource": "MagicPT-Chinese client skill button bitmaps",
+  "iconSize": 128,
+  "converter": "scripts/pt-port/convert_pt_skill_icons.mjs",
+  "abilities": [
+    {
+      "abilityId": "pt_agony",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Magician/Button/MM10 Agony.bmp",
+      "output": "pt_agony.webp"
+    },
+    {
+      "abilityId": "pt_dancing_sword",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Magician/Button/MM50 D_Sword.bmp",
+      "output": "pt_dancing_sword.webp"
+    },
+    {
+      "abilityId": "pt_dead_ray",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Magician/Button/MM30 D_Ray.bmp",
+      "output": "pt_dead_ray.webp"
+    },
+    {
+      "abilityId": "pt_diastrophism",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Magician/Button/MM43 Diastrophism.bmp",
+      "output": "pt_diastrophism.webp"
+    },
+    {
+      "abilityId": "pt_distortion",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Magician/Button/MM66 Distortion.bmp",
+      "output": "pt_distortion.webp"
+    },
+    {
+      "abilityId": "pt_enchant_weapon",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Magician/Button/MM26 E_Weapon.bmp",
+      "output": "pt_enchant_weapon.webp"
+    },
+    {
+      "abilityId": "pt_energy_shield",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Magician/Button/MM40 E_Shield.bmp",
+      "output": "pt_energy_shield.webp"
+    },
+    {
+      "abilityId": "pt_fire_ball",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Magician/Button/MM17 FireBall.bmp",
+      "output": "pt_fire_ball.webp"
+    },
+    {
+      "abilityId": "pt_fire_bolt",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Magician/Button/MM12 FireBolt.bmp",
+      "output": "pt_fire_bolt.webp"
+    },
+    {
+      "abilityId": "pt_fire_elemental",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Magician/Button/MM60 F_Elemental.bmp",
+      "output": "pt_fire_elemental.webp"
+    },
+    {
+      "abilityId": "pt_flame_wave",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Magician/Button/MM63 F_Wave.bmp",
+      "output": "pt_flame_wave.webp"
+    },
+    {
+      "abilityId": "pt_m_meteo",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Magician/Button/MM70 Meteo.bmp",
+      "output": "pt_m_meteo.webp"
+    },
+    {
+      "abilityId": "pt_mental_mastery",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Magician/Button/MM20 M_Mastery.bmp",
+      "output": "pt_mental_mastery.webp"
+    },
+    {
+      "abilityId": "pt_p_ignis",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Magician/Button/MM86 P_Ignis.bmp",
+      "output": "pt_p_ignis.webp"
+    },
+    {
+      "abilityId": "pt_silraphim",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Magician/Button/MM80 Silraphim.bmp",
+      "output": "pt_silraphim.webp"
+    },
+    {
+      "abilityId": "pt_spirit_elemental",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Magician/Button/MM46 S_Elemental.bmp",
+      "output": "pt_spirit_elemental.webp"
+    },
+    {
+      "abilityId": "pt_t_anima",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Magician/Button/MM90 T_Anima.bmp",
+      "output": "pt_t_anima.webp"
+    },
+    {
+      "abilityId": "pt_v_tenus",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Magician/Button/MM83 V_Tenus.bmp",
+      "output": "pt_v_tenus.webp"
+    },
+    {
+      "abilityId": "pt_watornado",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Magician/Button/MM23 Watornado.bmp",
+      "output": "pt_watornado.webp"
+    },
+    {
+      "abilityId": "pt_zenith",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Magician/Button/MM14 Zenith.bmp",
+      "output": "pt_zenith.webp"
+    }
+  ]
+}

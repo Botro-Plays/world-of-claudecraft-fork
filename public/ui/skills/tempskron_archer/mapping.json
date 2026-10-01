@@ -1,0 +1,128 @@
+{
+  "license": "Priston Tale client artwork, converted for the Botro fork. The source bitmaps ship in the MagicPT-Chinese client image tree; provenance rows here record the exact source file per icon.",
+  "generatedSource": "MagicPT-Chinese client skill button bitmaps",
+  "iconSize": 128,
+  "converter": "scripts/pt-port/convert_pt_skill_icons.mjs",
+  "abilities": [
+    {
+      "abilityId": "pt_arrow_of_rage",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Archer/Button/TA26 A_Rage.bmp",
+      "output": "pt_arrow_of_rage.webp"
+    },
+    {
+      "abilityId": "pt_avalanche",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Archer/Button/TA30 Avalanchie.bmp",
+      "output": "pt_avalanche.webp"
+    },
+    {
+      "abilityId": "pt_bomb_shot",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Archer/Button/TA46 B_Shot.bmp",
+      "output": "pt_bomb_shot.webp"
+    },
+    {
+      "abilityId": "pt_c_trap",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Archer/Button/TA90 C_Trap.bmp",
+      "output": "pt_c_trap.webp"
+    },
+    {
+      "abilityId": "pt_dions_eye",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Archer/Button/TA20 D_Eye.bmp",
+      "output": "pt_dions_eye.webp"
+    },
+    {
+      "abilityId": "pt_e_shot",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Archer/Button/TA80 E_Shot.bmp",
+      "output": "pt_e_shot.webp"
+    },
+    {
+      "abilityId": "pt_elemental_shot",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Archer/Button/TA40 E_Shot.bmp",
+      "output": "pt_elemental_shot.webp"
+    },
+    {
+      "abilityId": "pt_evasion_mastery",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Archer/Button/TA63 E_Mastery.bmp",
+      "output": "pt_evasion_mastery.webp"
+    },
+    {
+      "abilityId": "pt_falcon",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Archer/Button/TA23 Falcon.bmp",
+      "output": "pt_falcon.webp"
+    },
+    {
+      "abilityId": "pt_force_of_nature",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Archer/Button/TA70 F_O_Nature.bmp",
+      "output": "pt_force_of_nature.webp"
+    },
+    {
+      "abilityId": "pt_golden_falcon",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Archer/Button/TA43 G_Falcon.bmp",
+      "output": "pt_golden_falcon.webp"
+    },
+    {
+      "abilityId": "pt_n_splash",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Archer/Button/TA86 N_Splash.bmp",
+      "output": "pt_n_splash.webp"
+    },
+    {
+      "abilityId": "pt_perfect_aim",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Archer/Button/TA17 P_aim.bmp",
+      "output": "pt_perfect_aim.webp"
+    },
+    {
+      "abilityId": "pt_perforation",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Archer/Button/TA50 Perforation.bmp",
+      "output": "pt_perforation.webp"
+    },
+    {
+      "abilityId": "pt_phoenix_shot",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Archer/Button/TA66 P_Shot.bmp",
+      "output": "pt_phoenix_shot.webp"
+    },
+    {
+      "abilityId": "pt_recall_wolverin",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Archer/Button/TA60 R_Wolverin.bmp",
+      "output": "pt_recall_wolverin.webp"
+    },
+    {
+      "abilityId": "pt_s_rope",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Archer/Button/TA83 S_Rope.bmp",
+      "output": "pt_s_rope.webp"
+    },
+    {
+      "abilityId": "pt_scout_hawk",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Archer/Button/TA10 S_hawk.bmp",
+      "output": "pt_scout_hawk.webp"
+    },
+    {
+      "abilityId": "pt_shooting_mastery",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Archer/Button/TA12 S_mastery.bmp",
+      "output": "pt_shooting_mastery.webp"
+    },
+    {
+      "abilityId": "pt_wind_arrow",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Archer/Button/TA14 W_arrow.bmp",
+      "output": "pt_wind_arrow.webp"
+    }
+  ]
+}

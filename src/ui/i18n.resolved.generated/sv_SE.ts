@@ -6600,7 +6600,40 @@ export const sv_SE: EnTranslations = {
       "moonfire": "Slår omedelbart och lämnar målet brinnande, bra medan du rör dig.",
       "moonseed": "Lägger till ett Månflod-steg och förlänger Månstorm medan du är i Månugglaform.",
       "rejuvenation": "Kastas omedelbart och läker en allierad över tid, så du kan fortsätta agera.",
-      "thorns": "Skyddar en allierad så att närstridsangripare skadar sig själva när de slår."
+      "thorns": "Skyddar en allierad så att närstridsangripare skadar sig själva när de slår.",
+      "pt_raving": "Unleashes a flurry of empowered strikes, at a cost to your own health.",
+      "pt_rage_of_zecram": "Calls on the war god to land a heavy fire-imbued blow on the enemy in front of you.",
+      "pt_berserker": "Enters a fury that sharply raises attack power but weakens your defenses.",
+      "pt_mechanic_bomb": "Lobs a mechanical grenade that detonates on enemies at range.",
+      "pt_maximize": "Tunes up your weapon for a stretch of increased attack power.",
+      "pt_metal_golem": "Summons a mechanical golem that bolsters your offense and defense.",
+      "pt_tornado": "A spinning lance sweep that strikes and staggers everything in reach.",
+      "pt_chain_lance": "A fluid three-hit lance combo that punishes a single enemy.",
+      "pt_charging_strike": "Winds up for a crushing charged blow that grows the longer you hold.",
+      "pt_scout_hawk": "Sends a hawk aloft to widen your view and sharpen your aim.",
+      "pt_falcon": "Calls an aggressive falcon that dives at your enemies for a while.",
+      "pt_phoenix_shot": "Shapes a volley of arrows into a burning phoenix that pierces targets.",
+      "pt_brandish": "A whirling blade that hits every enemy around you.",
+      "pt_grand_cross": "Two sweeping cuts form a cross that wounds enemies, undead most of all.",
+      "pt_sword_of_justice": "Releases a wave of sword energy that strikes enemies in an area.",
+      "pt_vigor_spear": "Channels magic into a spear throw that hits harder than a plain toss.",
+      "pt_lightning_javelin": "Hurls a lightning-charged javelin at an enemy.",
+      "pt_triumph_of_valhalla": "A rallying cry that steels nearby allies and raises their attack power.",
+      "pt_healing": "Mends an ally or yourself with holy power, and sears the undead.",
+      "pt_holy_bolt": "Launches a sphere of holy energy, especially punishing to the undead.",
+      "pt_resurrection": "Brings a fallen party member back to life where they stand.",
+      "pt_fire_bolt": "Sends a scorching bolt of fire at an enemy from range.",
+      "pt_diastrophism": "Shakes the ground to damage every enemy standing in the area.",
+      "pt_m_meteo": "Calls a meteor down on enemies caught in the impact zone.",
+      "pt_wisp": "Marks an enemy weak point so its attacks soften for a while.",
+      "pt_alas": "Grants the party a thief's agility, raising everyone's evasion.",
+      "pt_beat_up": "Leaps in and beats down an enemy with a finishing flurry.",
+      "pt_dbblow": "A cursed strike that slows the victim for a short time.",
+      "pt_war_cry": "A booming shout that rattles enemies, sapping their nerve and strength.",
+      "pt_typhoon": "A relentless chain of kicks that batters a single opponent.",
+      "pt_dark_wave": "Hurls a spread of dark orbs that harries enemies in front of you.",
+      "pt_haunt": "Sends a haunting orb that wounds an enemy and drains its life into you.",
+      "pt_advent_midranda": "Blesses the party with Midranda's swiftness, quickening attacks."
     },
     "petHook": {
       "emberkin": "En demon på avstånd vars kännetecknande Felbolt naggar fienderna på tryggt håll.",
@@ -10585,7 +10618,17 @@ export const sv_SE: EnTranslations = {
       "learnAtLevel": "Du lär dig detta på nivå {level}.",
       "knownAbilityAria": "{name}, rang {rank}. {summary}",
       "unlearnedAbilityAria": "{name}. Lär dig på nivå {level}.",
-      "empty": "Inga förmågor tillgängliga."
+      "empty": "Inga förmågor tillgängliga.",
+      "ptPoints": "Skill points: {points}",
+      "ptPointsHigh": "Advanced skill points: {points}",
+      "ptRank": "Rank {rank} / 10",
+      "ptTrainAria": "Spend a skill point on {name}",
+      "ptLockedAria": "{name}. {reason}",
+      "ptTierLocked": "Unlocks at level {level}",
+      "ptNeedsPrevious": "Learn the previous skill first",
+      "ptLevelGate": "Next rank at level {level}",
+      "ptMaxRank": "Mastered",
+      "ptNoPoints": "No skill points available"
     },
     "tooltip": {
       "rank": "Rang {rank}",
@@ -12718,6 +12761,886 @@ export const sv_SE: EnTranslations = {
       "choir_of_deliverance": {
         "name": "Befrielsens kör",
         "description": "Kanaliserar i 6 sek och läker gruppmedlemmar inom 30 meter för {damage} varannan sekund. Läkningen ökar med besvärjelsekraft."
+      },
+      "pt_advent_midranda": {
+        "name": "Advent Midranda",
+        "description": "Advent Midranda - a rank-scaled Priston Tale technique."
+      },
+      "pt_advent_migal": {
+        "name": "Advent Migal",
+        "description": "Advent Migal - a rank-scaled Priston Tale technique."
+      },
+      "pt_agony": {
+        "name": "Agony",
+        "description": "Agony - a rank-scaled Priston Tale technique."
+      },
+      "pt_alas": {
+        "name": "Alas",
+        "description": "Alas - a rank-scaled Priston Tale technique."
+      },
+      "pt_amplified": {
+        "name": "Amplified Shield",
+        "description": "Amplified Shield - a rank-scaled Priston Tale technique."
+      },
+      "pt_arrow_of_rage": {
+        "name": "Arrow of Rage",
+        "description": "Arrow of Rage - a rank-scaled Priston Tale technique."
+      },
+      "pt_assassin_eye": {
+        "name": "Assassin Eye",
+        "description": "Assassin Eye - a rank-scaled Priston Tale technique."
+      },
+      "pt_attack_mastery": {
+        "name": "Attack Mastery",
+        "description": "Attack Mastery - a rank-scaled Priston Tale technique."
+      },
+      "pt_automation": {
+        "name": "Automation",
+        "description": "Automation - a rank-scaled Priston Tale technique."
+      },
+      "pt_avalanche": {
+        "name": "Avalanche",
+        "description": "Avalanche - a rank-scaled Priston Tale technique."
+      },
+      "pt_avanging_crash": {
+        "name": "Avenging Crash",
+        "description": "Avenging Crash - a rank-scaled Priston Tale technique."
+      },
+      "pt_b_berserker": {
+        "name": "Blood Berserker",
+        "description": "Blood Berserker - a rank-scaled Priston Tale technique."
+      },
+      "pt_b_check": {
+        "name": "B Check",
+        "description": "B Check - a rank-scaled Priston Tale technique."
+      },
+      "pt_b_krishna": {
+        "name": "B Krishna",
+        "description": "B Krishna - a rank-scaled Priston Tale technique."
+      },
+      "pt_beat_up": {
+        "name": "Beat Up",
+        "description": "Beat Up - a rank-scaled Priston Tale technique."
+      },
+      "pt_berserker": {
+        "name": "Berserker",
+        "description": "Berserker - a rank-scaled Priston Tale technique."
+      },
+      "pt_blind": {
+        "name": "Blind",
+        "description": "Blind - a rank-scaled Priston Tale technique."
+      },
+      "pt_bomb_shot": {
+        "name": "Bomb Shot",
+        "description": "Bomb Shot - a rank-scaled Priston Tale technique."
+      },
+      "pt_bone_crash": {
+        "name": "Bone Crash",
+        "description": "Bone Crash - a rank-scaled Priston Tale technique."
+      },
+      "pt_boost_health": {
+        "name": "Boost Health",
+        "description": "Boost Health - a rank-scaled Priston Tale technique."
+      },
+      "pt_brandish": {
+        "name": "Brandish",
+        "description": "Brandish - a rank-scaled Priston Tale technique."
+      },
+      "pt_brutal_swing": {
+        "name": "Brutal Swing",
+        "description": "Brutal Swing - a rank-scaled Priston Tale technique."
+      },
+      "pt_c_moon": {
+        "name": "Crescent Moon",
+        "description": "Crescent Moon - a rank-scaled Priston Tale technique."
+      },
+      "pt_c_trap": {
+        "name": "Claymore Trap",
+        "description": "Claymore Trap - a rank-scaled Priston Tale technique."
+      },
+      "pt_chain_lance": {
+        "name": "Chain Lance",
+        "description": "Chain Lance - a rank-scaled Priston Tale technique."
+      },
+      "pt_chain_lightning": {
+        "name": "Chain Lightning",
+        "description": "Chain Lightning - a rank-scaled Priston Tale technique."
+      },
+      "pt_charging_strike": {
+        "name": "Charging Strike",
+        "description": "Charging Strike - a rank-scaled Priston Tale technique."
+      },
+      "pt_chasing_hunt": {
+        "name": "Chasing Hunt",
+        "description": "Chasing Hunt - a rank-scaled Priston Tale technique."
+      },
+      "pt_chosty_nail": {
+        "name": "Chosty Nail",
+        "description": "Chosty Nail - a rank-scaled Priston Tale technique."
+      },
+      "pt_combination": {
+        "name": "Combination",
+        "description": "Combination - a rank-scaled Priston Tale technique."
+      },
+      "pt_compulsion": {
+        "name": "Compulsion",
+        "description": "Compulsion - a rank-scaled Priston Tale technique."
+      },
+      "pt_concentration": {
+        "name": "Concentration",
+        "description": "Concentration - a rank-scaled Priston Tale technique."
+      },
+      "pt_creed": {
+        "name": "Creed",
+        "description": "Creed - a rank-scaled Priston Tale technique."
+      },
+      "pt_critical_hit": {
+        "name": "Critical Hit",
+        "description": "Critical Hit - a rank-scaled Priston Tale technique."
+      },
+      "pt_critical_mastery": {
+        "name": "Critical Mastery",
+        "description": "Critical Mastery - a rank-scaled Priston Tale technique."
+      },
+      "pt_curse_lazy": {
+        "name": "Curse Lazy",
+        "description": "Curse Lazy - a rank-scaled Priston Tale technique."
+      },
+      "pt_cyclone_strike": {
+        "name": "Cyclone Strike",
+        "description": "Cyclone Strike - a rank-scaled Priston Tale technique."
+      },
+      "pt_d_hit": {
+        "name": "Divine Impact",
+        "description": "Divine Impact - a rank-scaled Priston Tale technique."
+      },
+      "pt_d_mastery": {
+        "name": "D Mastery",
+        "description": "D Mastery - a rank-scaled Priston Tale technique."
+      },
+      "pt_d_reaper": {
+        "name": "Death Reaper",
+        "description": "Death Reaper - a rank-scaled Priston Tale technique."
+      },
+      "pt_dancing_sword": {
+        "name": "Dancing Sword",
+        "description": "Dancing Sword - a rank-scaled Priston Tale technique."
+      },
+      "pt_dark_bolt": {
+        "name": "Dark Bolt",
+        "description": "Dark Bolt - a rank-scaled Priston Tale technique."
+      },
+      "pt_dark_wave": {
+        "name": "Dark Wave",
+        "description": "Dark Wave - a rank-scaled Priston Tale technique."
+      },
+      "pt_dbblow": {
+        "name": "Dbblow",
+        "description": "Dbblow - a rank-scaled Priston Tale technique."
+      },
+      "pt_dead_ray": {
+        "name": "Dead Ray",
+        "description": "Dead Ray - a rank-scaled Priston Tale technique."
+      },
+      "pt_detoryer": {
+        "name": "Destroyer",
+        "description": "Destroyer - a rank-scaled Priston Tale technique."
+      },
+      "pt_diastrophism": {
+        "name": "Diastrophism",
+        "description": "Diastrophism - a rank-scaled Priston Tale technique."
+      },
+      "pt_dions_eye": {
+        "name": "Dion's Eye",
+        "description": "Dion's Eye - a rank-scaled Priston Tale technique."
+      },
+      "pt_distortion": {
+        "name": "Distortion",
+        "description": "Distortion - a rank-scaled Priston Tale technique."
+      },
+      "pt_divine_inhalation": {
+        "name": "Divine Inhalation",
+        "description": "Divine Inhalation - a rank-scaled Priston Tale technique."
+      },
+      "pt_divine_lightning": {
+        "name": "Divine Lightning",
+        "description": "Divine Lightning - a rank-scaled Priston Tale technique."
+      },
+      "pt_divine_piercing": {
+        "name": "Divine Piercing",
+        "description": "Divine Piercing - a rank-scaled Priston Tale technique."
+      },
+      "pt_double_crash": {
+        "name": "Double Crash",
+        "description": "Double Crash - a rank-scaled Priston Tale technique."
+      },
+      "pt_drastic_spirit": {
+        "name": "Drastic Spirit",
+        "description": "Drastic Spirit - a rank-scaled Priston Tale technique."
+      },
+      "pt_e_shot": {
+        "name": "Exploding Shot",
+        "description": "Exploding Shot - a rank-scaled Priston Tale technique."
+      },
+      "pt_elemental_shot": {
+        "name": "Elemental Shot",
+        "description": "Elemental Shot - a rank-scaled Priston Tale technique."
+      },
+      "pt_enchant_weapon": {
+        "name": "Enchant Weapon",
+        "description": "Enchant Weapon - a rank-scaled Priston Tale technique."
+      },
+      "pt_energy_shield": {
+        "name": "Energy Shield",
+        "description": "Energy Shield - a rank-scaled Priston Tale technique."
+      },
+      "pt_evasion_mastery": {
+        "name": "Evasion Mastery",
+        "description": "Evasion Mastery - a rank-scaled Priston Tale technique."
+      },
+      "pt_expansion": {
+        "name": "Expansion",
+        "description": "Expansion - a rank-scaled Priston Tale technique."
+      },
+      "pt_extinction": {
+        "name": "Extinction",
+        "description": "Extinction - a rank-scaled Priston Tale technique."
+      },
+      "pt_extreme_shield": {
+        "name": "Extreme Shield",
+        "description": "Extreme Shield - a rank-scaled Priston Tale technique."
+      },
+      "pt_f_spear": {
+        "name": "Flame Spear",
+        "description": "Flame Spear - a rank-scaled Priston Tale technique."
+      },
+      "pt_falcon": {
+        "name": "Falcon",
+        "description": "Falcon - a rank-scaled Priston Tale technique."
+      },
+      "pt_farina": {
+        "name": "Farina",
+        "description": "Farina - a rank-scaled Priston Tale technique."
+      },
+      "pt_fatal_mastery": {
+        "name": "Fatal Mastery",
+        "description": "Fatal Mastery - a rank-scaled Priston Tale technique."
+      },
+      "pt_fire_attribute": {
+        "name": "Fire Attribute",
+        "description": "Fire Attribute - a rank-scaled Priston Tale technique."
+      },
+      "pt_fire_ball": {
+        "name": "Fire Ball",
+        "description": "Fire Ball - a rank-scaled Priston Tale technique."
+      },
+      "pt_fire_bolt": {
+        "name": "Fire Bolt",
+        "description": "Fire Bolt - a rank-scaled Priston Tale technique."
+      },
+      "pt_fire_elemental": {
+        "name": "Fire Elemental",
+        "description": "Fire Elemental - a rank-scaled Priston Tale technique."
+      },
+      "pt_fire_javelin": {
+        "name": "Fire Javelin",
+        "description": "Fire Javelin - a rank-scaled Priston Tale technique."
+      },
+      "pt_flame_wave": {
+        "name": "Flame Wave",
+        "description": "Flame Wave - a rank-scaled Priston Tale technique."
+      },
+      "pt_force_of_nature": {
+        "name": "Force of Nature",
+        "description": "Force of Nature - a rank-scaled Priston Tale technique."
+      },
+      "pt_frost_javelin": {
+        "name": "Frost Javelin",
+        "description": "Frost Javelin - a rank-scaled Priston Tale technique."
+      },
+      "pt_frost_wind": {
+        "name": "Frost Wind",
+        "description": "Frost Wind - a rank-scaled Priston Tale technique."
+      },
+      "pt_g_coup": {
+        "name": "Grand Coup",
+        "description": "Grand Coup - a rank-scaled Priston Tale technique."
+      },
+      "pt_glacial_spike": {
+        "name": "Glacial Spike",
+        "description": "Glacial Spike - a rank-scaled Priston Tale technique."
+      },
+      "pt_god_bless": {
+        "name": "God Bless",
+        "description": "God Bless - a rank-scaled Priston Tale technique."
+      },
+      "pt_godly_shield": {
+        "name": "Godly Shield",
+        "description": "Godly Shield - a rank-scaled Priston Tale technique."
+      },
+      "pt_golden_falcon": {
+        "name": "Golden Falcon",
+        "description": "Golden Falcon - a rank-scaled Priston Tale technique."
+      },
+      "pt_grand_cross": {
+        "name": "Grand Cross",
+        "description": "Grand Cross - a rank-scaled Priston Tale technique."
+      },
+      "pt_grand_healing": {
+        "name": "Grand Healing",
+        "description": "Grand Healing - a rank-scaled Priston Tale technique."
+      },
+      "pt_grand_smash": {
+        "name": "Grand Smash",
+        "description": "Grand Smash - a rank-scaled Priston Tale technique."
+      },
+      "pt_great_smash": {
+        "name": "Great Smash",
+        "description": "Great Smash - a rank-scaled Priston Tale technique."
+      },
+      "pt_ground_pike": {
+        "name": "Ground Pike",
+        "description": "Ground Pike - a rank-scaled Priston Tale technique."
+      },
+      "pt_h_benedic": {
+        "name": "Holy Benediction",
+        "description": "Holy Benediction - a rank-scaled Priston Tale technique."
+      },
+      "pt_h_hawk": {
+        "name": "H Hawk",
+        "description": "H Hawk - a rank-scaled Priston Tale technique."
+      },
+      "pt_h_sonic": {
+        "name": "Hyper Sonic",
+        "description": "Hyper Sonic - a rank-scaled Priston Tale technique."
+      },
+      "pt_h_straight": {
+        "name": "H Straight",
+        "description": "H Straight - a rank-scaled Priston Tale technique."
+      },
+      "pt_h_traning": {
+        "name": "H Traning",
+        "description": "H Traning - a rank-scaled Priston Tale technique."
+      },
+      "pt_hall_of_valhalla": {
+        "name": "Hall of Valhalla",
+        "description": "Hall of Valhalla - a rank-scaled Priston Tale technique."
+      },
+      "pt_haunt": {
+        "name": "Haunt",
+        "description": "Haunt - a rank-scaled Priston Tale technique."
+      },
+      "pt_healing": {
+        "name": "Healing",
+        "description": "Healing - a rank-scaled Priston Tale technique."
+      },
+      "pt_high_regeneration": {
+        "name": "High Regeneration",
+        "description": "High Regeneration - a rank-scaled Priston Tale technique."
+      },
+      "pt_holy_body": {
+        "name": "Holy Body",
+        "description": "Holy Body - a rank-scaled Priston Tale technique."
+      },
+      "pt_holy_bolt": {
+        "name": "Holy Bolt",
+        "description": "Holy Bolt - a rank-scaled Priston Tale technique."
+      },
+      "pt_holy_incantation": {
+        "name": "Holy Incantation",
+        "description": "Holy Incantation - a rank-scaled Priston Tale technique."
+      },
+      "pt_holy_mind": {
+        "name": "Holy Mind",
+        "description": "Holy Mind - a rank-scaled Priston Tale technique."
+      },
+      "pt_holy_reflection": {
+        "name": "Holy Reflection",
+        "description": "Holy Reflection - a rank-scaled Priston Tale technique."
+      },
+      "pt_holy_valor": {
+        "name": "Holy Valor",
+        "description": "Holy Valor - a rank-scaled Priston Tale technique."
+      },
+      "pt_i_bulkup": {
+        "name": "I Bulkup",
+        "description": "I Bulkup - a rank-scaled Priston Tale technique."
+      },
+      "pt_ice_attribute": {
+        "name": "Ice Attribute",
+        "description": "Ice Attribute - a rank-scaled Priston Tale technique."
+      },
+      "pt_impact": {
+        "name": "Impact",
+        "description": "Impact - a rank-scaled Priston Tale technique."
+      },
+      "pt_impulsion": {
+        "name": "Impulsion",
+        "description": "Impulsion - a rank-scaled Priston Tale technique."
+      },
+      "pt_inner_peace": {
+        "name": "Inner Peace",
+        "description": "Inner Peace - a rank-scaled Priston Tale technique."
+      },
+      "pt_inpes": {
+        "name": "Inpes",
+        "description": "Inpes - a rank-scaled Priston Tale technique."
+      },
+      "pt_j_heelkick": {
+        "name": "J Heelkick",
+        "description": "J Heelkick - a rank-scaled Priston Tale technique."
+      },
+      "pt_judgement": {
+        "name": "Judgement",
+        "description": "Judgement - a rank-scaled Priston Tale technique."
+      },
+      "pt_jumping_crash": {
+        "name": "Jumping Crash",
+        "description": "Jumping Crash - a rank-scaled Priston Tale technique."
+      },
+      "pt_l_breaking": {
+        "name": "L Breaking",
+        "description": "L Breaking - a rank-scaled Priston Tale technique."
+      },
+      "pt_land_of_ghost": {
+        "name": "Land Of Ghost",
+        "description": "Land Of Ghost - a rank-scaled Priston Tale technique."
+      },
+      "pt_landminning": {
+        "name": "Landmine",
+        "description": "Landmine - a rank-scaled Priston Tale technique."
+      },
+      "pt_lightning_javelin": {
+        "name": "Lightning Javelin",
+        "description": "Lightning Javelin - a rank-scaled Priston Tale technique."
+      },
+      "pt_lowkick": {
+        "name": "Lowkick",
+        "description": "Lowkick - a rank-scaled Priston Tale technique."
+      },
+      "pt_m_blow": {
+        "name": "Mortal Blow",
+        "description": "Mortal Blow - a rank-scaled Priston Tale technique."
+      },
+      "pt_m_meteo": {
+        "name": "M Meteo",
+        "description": "M Meteo - a rank-scaled Priston Tale technique."
+      },
+      "pt_magnetic_sphere": {
+        "name": "Magnetic Sphere",
+        "description": "Magnetic Sphere - a rank-scaled Priston Tale technique."
+      },
+      "pt_maximize": {
+        "name": "Maximize",
+        "description": "Maximize - a rank-scaled Priston Tale technique."
+      },
+      "pt_mechanic_bomb": {
+        "name": "Mechanic Bomb",
+        "description": "Mechanic Bomb - a rank-scaled Priston Tale technique."
+      },
+      "pt_mechanic_weapon": {
+        "name": "Mechanic Weapon Mastery",
+        "description": "Mechanic Weapon Mastery - a rank-scaled Priston Tale technique."
+      },
+      "pt_meditation": {
+        "name": "Meditation",
+        "description": "Meditation - a rank-scaled Priston Tale technique."
+      },
+      "pt_melee_mastery": {
+        "name": "Melee Mastery",
+        "description": "Melee Mastery - a rank-scaled Priston Tale technique."
+      },
+      "pt_mental_mastery": {
+        "name": "Mental Mastery",
+        "description": "Mental Mastery - a rank-scaled Priston Tale technique."
+      },
+      "pt_metal_armor": {
+        "name": "Metal Armor",
+        "description": "Metal Armor - a rank-scaled Priston Tale technique."
+      },
+      "pt_metal_golem": {
+        "name": "Metal Golem",
+        "description": "Metal Golem - a rank-scaled Priston Tale technique."
+      },
+      "pt_mourning_of_pray": {
+        "name": "Mourning Of Pray",
+        "description": "Mourning Of Pray - a rank-scaled Priston Tale technique."
+      },
+      "pt_multispark": {
+        "name": "Multi Spark",
+        "description": "Multi Spark - a rank-scaled Priston Tale technique."
+      },
+      "pt_n_splash": {
+        "name": "Nature Splash",
+        "description": "Nature Splash - a rank-scaled Priston Tale technique."
+      },
+      "pt_p_dash": {
+        "name": "Phantom Dash",
+        "description": "Phantom Dash - a rank-scaled Priston Tale technique."
+      },
+      "pt_p_enhence": {
+        "name": "Precision",
+        "description": "Precision - a rank-scaled Priston Tale technique."
+      },
+      "pt_p_ice": {
+        "name": "P Ice",
+        "description": "P Ice - a rank-scaled Priston Tale technique."
+      },
+      "pt_p_ignis": {
+        "name": "P Ignis",
+        "description": "P Ignis - a rank-scaled Priston Tale technique."
+      },
+      "pt_partiot": {
+        "name": "Partiot",
+        "description": "Partiot - a rank-scaled Priston Tale technique."
+      },
+      "pt_pasting_shadow": {
+        "name": "Pasting Shadow",
+        "description": "Pasting Shadow - a rank-scaled Priston Tale technique."
+      },
+      "pt_perfect_aim": {
+        "name": "Perfect Aim",
+        "description": "Perfect Aim - a rank-scaled Priston Tale technique."
+      },
+      "pt_perforation": {
+        "name": "Perforation",
+        "description": "Perforation - a rank-scaled Priston Tale technique."
+      },
+      "pt_phoenix_shot": {
+        "name": "Phoenix Shot",
+        "description": "Phoenix Shot - a rank-scaled Priston Tale technique."
+      },
+      "pt_physical_absorb": {
+        "name": "Physical Absorption",
+        "description": "Physical Absorption - a rank-scaled Priston Tale technique."
+      },
+      "pt_physical_traning": {
+        "name": "Physical Training",
+        "description": "Physical Training - a rank-scaled Priston Tale technique."
+      },
+      "pt_piercing": {
+        "name": "Piercing",
+        "description": "Piercing - a rank-scaled Priston Tale technique."
+      },
+      "pt_pike_wind": {
+        "name": "Pike Wind",
+        "description": "Pike Wind - a rank-scaled Priston Tale technique."
+      },
+      "pt_poison_attribute": {
+        "name": "Poison Attribute",
+        "description": "Poison Attribute - a rank-scaled Priston Tale technique."
+      },
+      "pt_polluted": {
+        "name": "Polluted",
+        "description": "Polluted - a rank-scaled Priston Tale technique."
+      },
+      "pt_press_of_deity": {
+        "name": "Press Of Deity",
+        "description": "Press Of Deity - a rank-scaled Priston Tale technique."
+      },
+      "pt_r_elbow": {
+        "name": "R Elbow",
+        "description": "R Elbow - a rank-scaled Priston Tale technique."
+      },
+      "pt_r_smash": {
+        "name": "Rough Smash",
+        "description": "Rough Smash - a rank-scaled Priston Tale technique."
+      },
+      "pt_rage_of_zecram": {
+        "name": "Rage of Zecram",
+        "description": "Rage of Zecram - a rank-scaled Priston Tale technique."
+      },
+      "pt_rage_up": {
+        "name": "Rage Up",
+        "description": "Rage Up - a rank-scaled Priston Tale technique."
+      },
+      "pt_rain_maker": {
+        "name": "Rain Maker",
+        "description": "Rain Maker - a rank-scaled Priston Tale technique."
+      },
+      "pt_raving": {
+        "name": "Raving",
+        "description": "Raving - a rank-scaled Priston Tale technique."
+      },
+      "pt_recall_bloodyknight": {
+        "name": "Recall Bloodyknight",
+        "description": "Recall Bloodyknight - a rank-scaled Priston Tale technique."
+      },
+      "pt_recall_wolverin": {
+        "name": "Recall Wolverine",
+        "description": "Recall Wolverine - a rank-scaled Priston Tale technique."
+      },
+      "pt_regeneration_field": {
+        "name": "Regeneration Field",
+        "description": "Regeneration Field - a rank-scaled Priston Tale technique."
+      },
+      "pt_resurrection": {
+        "name": "Resurrection",
+        "description": "Resurrection - a rank-scaled Priston Tale technique."
+      },
+      "pt_rising_shash": {
+        "name": "Rising Shash",
+        "description": "Rising Shash - a rank-scaled Priston Tale technique."
+      },
+      "pt_roar": {
+        "name": "Roar",
+        "description": "Roar - a rank-scaled Priston Tale technique."
+      },
+      "pt_running_hit": {
+        "name": "Running Hit",
+        "description": "Running Hit - a rank-scaled Priston Tale technique."
+      },
+      "pt_s_arcuda": {
+        "name": "Storm Arcuda",
+        "description": "Storm Arcuda - a rank-scaled Priston Tale technique."
+      },
+      "pt_s_blade": {
+        "name": "Shadow Blade",
+        "description": "Shadow Blade - a rank-scaled Priston Tale technique."
+      },
+      "pt_s_breaker": {
+        "name": "Soul Breaker",
+        "description": "Soul Breaker - a rank-scaled Priston Tale technique."
+      },
+      "pt_s_fear": {
+        "name": "Shadow Fear",
+        "description": "Shadow Fear - a rank-scaled Priston Tale technique."
+      },
+      "pt_s_impact": {
+        "name": "S Impact",
+        "description": "S Impact - a rank-scaled Priston Tale technique."
+      },
+      "pt_s_prmiel": {
+        "name": "S Prmiel",
+        "description": "S Prmiel - a rank-scaled Priston Tale technique."
+      },
+      "pt_s_rope": {
+        "name": "Spider Rope",
+        "description": "Spider Rope - a rank-scaled Priston Tale technique."
+      },
+      "pt_scout_hawk": {
+        "name": "Scout Hawk",
+        "description": "Scout Hawk - a rank-scaled Priston Tale technique."
+      },
+      "pt_scratch": {
+        "name": "Scratch",
+        "description": "Scratch - a rank-scaled Priston Tale technique."
+      },
+      "pt_shadow_bomb": {
+        "name": "Shadow Bomb",
+        "description": "Shadow Bomb - a rank-scaled Priston Tale technique."
+      },
+      "pt_shadow_master": {
+        "name": "Shadow Master",
+        "description": "Shadow Master - a rank-scaled Priston Tale technique."
+      },
+      "pt_shield_strike": {
+        "name": "Shield Strike",
+        "description": "Shield Strike - a rank-scaled Priston Tale technique."
+      },
+      "pt_shooting_mastery": {
+        "name": "Shooting Mastery",
+        "description": "Shooting Mastery - a rank-scaled Priston Tale technique."
+      },
+      "pt_silraphim": {
+        "name": "Silraphim",
+        "description": "Silraphim - a rank-scaled Priston Tale technique."
+      },
+      "pt_sore_sword": {
+        "name": "Sore Sword",
+        "description": "Sore Sword - a rank-scaled Priston Tale technique."
+      },
+      "pt_soul_shock": {
+        "name": "Soul Shock",
+        "description": "Soul Shock - a rank-scaled Priston Tale technique."
+      },
+      "pt_soul_sucker": {
+        "name": "Soul Sucker",
+        "description": "Soul Sucker - a rank-scaled Priston Tale technique."
+      },
+      "pt_spark": {
+        "name": "Spark",
+        "description": "Spark - a rank-scaled Priston Tale technique."
+      },
+      "pt_spark_shield": {
+        "name": "Spark Shield",
+        "description": "Spark Shield - a rank-scaled Priston Tale technique."
+      },
+      "pt_spirit_elemental": {
+        "name": "Spirit Elemental",
+        "description": "Spirit Elemental - a rank-scaled Priston Tale technique."
+      },
+      "pt_spiritual_flare": {
+        "name": "Spiritual Flare",
+        "description": "Spiritual Flare - a rank-scaled Priston Tale technique."
+      },
+      "pt_spiritual_manacle": {
+        "name": "Spiritual Manacle",
+        "description": "Spiritual Manacle - a rank-scaled Priston Tale technique."
+      },
+      "pt_split_javelin": {
+        "name": "Split Javelin",
+        "description": "Split Javelin - a rank-scaled Priston Tale technique."
+      },
+      "pt_sr_mastery": {
+        "name": "Sr Mastery",
+        "description": "Sr Mastery - a rank-scaled Priston Tale technique."
+      },
+      "pt_ss_attack": {
+        "name": "Shadow Strike",
+        "description": "Shadow Strike - a rank-scaled Priston Tale technique."
+      },
+      "pt_st_mastery": {
+        "name": "St Mastery",
+        "description": "St Mastery - a rank-scaled Priston Tale technique."
+      },
+      "pt_steelers": {
+        "name": "Steelers",
+        "description": "Steelers - a rank-scaled Priston Tale technique."
+      },
+      "pt_storm": {
+        "name": "Storm",
+        "description": "Storm - a rank-scaled Priston Tale technique."
+      },
+      "pt_storm_javelin": {
+        "name": "Storm Javelin",
+        "description": "Storm Javelin - a rank-scaled Priston Tale technique."
+      },
+      "pt_stringer": {
+        "name": "Stringer",
+        "description": "Stringer - a rank-scaled Priston Tale technique."
+      },
+      "pt_summon_muspell": {
+        "name": "Summon Muspell",
+        "description": "Summon Muspell - a rank-scaled Priston Tale technique."
+      },
+      "pt_swift_axe": {
+        "name": "Swift Axe",
+        "description": "Swift Axe - a rank-scaled Priston Tale technique."
+      },
+      "pt_sword_blast": {
+        "name": "Sword Blast",
+        "description": "Sword Blast - a rank-scaled Priston Tale technique."
+      },
+      "pt_sword_mastery": {
+        "name": "Sword Mastery",
+        "description": "Sword Mastery - a rank-scaled Priston Tale technique."
+      },
+      "pt_sword_of_justice": {
+        "name": "Sword of Justice",
+        "description": "Sword of Justice - a rank-scaled Priston Tale technique."
+      },
+      "pt_swordmastery": {
+        "name": "Swordmastery",
+        "description": "Swordmastery - a rank-scaled Priston Tale technique."
+      },
+      "pt_t_anima": {
+        "name": "T Anima",
+        "description": "T Anima - a rank-scaled Priston Tale technique."
+      },
+      "pt_t_cannon": {
+        "name": "T Cannon",
+        "description": "T Cannon - a rank-scaled Priston Tale technique."
+      },
+      "pt_talaria": {
+        "name": "Talaria",
+        "description": "Talaria - a rank-scaled Priston Tale technique."
+      },
+      "pt_throwing_mastery": {
+        "name": "Throwing Mastery",
+        "description": "Throwing Mastery - a rank-scaled Priston Tale technique."
+      },
+      "pt_tornado": {
+        "name": "Tornado",
+        "description": "Tornado - a rank-scaled Priston Tale technique."
+      },
+      "pt_triple_impact": {
+        "name": "Triple Impact",
+        "description": "Triple Impact - a rank-scaled Priston Tale technique."
+      },
+      "pt_triumph_of_valhalla": {
+        "name": "Triumph of Valhalla",
+        "description": "Triumph of Valhalla - a rank-scaled Priston Tale technique."
+      },
+      "pt_twist_javelin": {
+        "name": "Twist Javelin",
+        "description": "Twist Javelin - a rank-scaled Priston Tale technique."
+      },
+      "pt_typhoon": {
+        "name": "Typhoon",
+        "description": "Typhoon - a rank-scaled Priston Tale technique."
+      },
+      "pt_v_tenus": {
+        "name": "V Tenus",
+        "description": "V Tenus - a rank-scaled Priston Tale technique."
+      },
+      "pt_vague": {
+        "name": "Vague",
+        "description": "Vague - a rank-scaled Priston Tale technique."
+      },
+      "pt_vanish": {
+        "name": "Vanish",
+        "description": "Vanish - a rank-scaled Priston Tale technique."
+      },
+      "pt_vengeance": {
+        "name": "Vengeance",
+        "description": "Vengeance - a rank-scaled Priston Tale technique."
+      },
+      "pt_venom_spear": {
+        "name": "Venom Spear",
+        "description": "Venom Spear - a rank-scaled Priston Tale technique."
+      },
+      "pt_venom_thorn": {
+        "name": "Venom Thorn",
+        "description": "Venom Thorn - a rank-scaled Priston Tale technique."
+      },
+      "pt_vigor_ball": {
+        "name": "Vigor Ball",
+        "description": "Vigor Ball - a rank-scaled Priston Tale technique."
+      },
+      "pt_vigor_spear": {
+        "name": "Vigor Spear",
+        "description": "Vigor Spear - a rank-scaled Priston Tale technique."
+      },
+      "pt_violence_stab": {
+        "name": "Violence Stab",
+        "description": "Violence Stab - a rank-scaled Priston Tale technique."
+      },
+      "pt_virtual_life": {
+        "name": "Virtual Life",
+        "description": "Virtual Life - a rank-scaled Priston Tale technique."
+      },
+      "pt_war_cry": {
+        "name": "War Cry",
+        "description": "War Cry - a rank-scaled Priston Tale technique."
+      },
+      "pt_watornado": {
+        "name": "Watornado",
+        "description": "Watornado - a rank-scaled Priston Tale technique."
+      },
+      "pt_weapone_defence_mastery": {
+        "name": "Weapon Defence Mastery",
+        "description": "Weapon Defence Mastery - a rank-scaled Priston Tale technique."
+      },
+      "pt_wind_arrow": {
+        "name": "Wind Arrow",
+        "description": "Wind Arrow - a rank-scaled Priston Tale technique."
+      },
+      "pt_windy": {
+        "name": "Windy",
+        "description": "Windy - a rank-scaled Priston Tale technique."
+      },
+      "pt_wisp": {
+        "name": "Wisp",
+        "description": "Wisp - a rank-scaled Priston Tale technique."
+      },
+      "pt_x_rage": {
+        "name": "X-Rage",
+        "description": "X-Rage - a rank-scaled Priston Tale technique."
+      },
+      "pt_zenith": {
+        "name": "Zenith",
+        "description": "Zenith - a rank-scaled Priston Tale technique."
       },
       "bear_charge": {
         "name": "Bruinrusning",

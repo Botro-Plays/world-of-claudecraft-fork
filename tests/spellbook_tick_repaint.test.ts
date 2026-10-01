@@ -119,6 +119,11 @@ function harness(): Harness {
         known: state.known,
         player: { level: 60 },
         talentSpec: null,
+        // The warrior fixture is not a PT class; ptSkillInfo/signature short-
+        // circuit on the class id, so an empty view + map is the honest stub.
+        ptSkills: {},
+        questsDone: new Set<string>(),
+        ptSkillInfo: () => null,
       } as never),
     closeOthers: noop,
     captureFocus: () => null,

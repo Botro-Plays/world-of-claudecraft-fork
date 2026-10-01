@@ -60,6 +60,15 @@ const EXPECTED: readonly {
     resolved: 'arcane_surge',
   },
   { kind: 'ability', name: 'Patch Up', ids: ['mend_pet', 'revive_pet'], resolved: 'revive_pet' },
+  // PT skill port: the Martial Artist's pt_typhoon shares English "Typhoon"
+  // with the druid talent-granted typhoon, which is not reachable through a
+  // class kit, so the PT id wins the reverse map.
+  {
+    kind: 'ability',
+    name: 'Typhoon',
+    ids: ['pt_typhoon', 'typhoon'],
+    resolved: 'pt_typhoon',
+  },
 ];
 
 // The residue: a collision no rule at this seam can resolve, because BOTH records

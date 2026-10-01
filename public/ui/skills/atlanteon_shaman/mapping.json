@@ -1,0 +1,128 @@
+{
+  "license": "Priston Tale client artwork, converted for the Botro fork. The source bitmaps ship in the MagicPT-Chinese client image tree; provenance rows here record the exact source file per icon.",
+  "generatedSource": "MagicPT-Chinese client skill button bitmaps",
+  "iconSize": 128,
+  "converter": "scripts/pt-port/convert_pt_skill_icons.mjs",
+  "abilities": [
+    {
+      "abilityId": "pt_advent_midranda",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Shaman/Button/MS66 A_Midranda.bmp",
+      "output": "pt_advent_midranda.webp"
+    },
+    {
+      "abilityId": "pt_advent_migal",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Shaman/Button/MS30 A_Migal.bmp",
+      "output": "pt_advent_migal.webp"
+    },
+    {
+      "abilityId": "pt_chasing_hunt",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Shaman/Button/MS26 C_Hunt.bmp",
+      "output": "pt_chasing_hunt.webp"
+    },
+    {
+      "abilityId": "pt_chosty_nail",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Shaman/Button/MS86 G_Nail.bmp",
+      "output": "pt_chosty_nail.webp"
+    },
+    {
+      "abilityId": "pt_creed",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Shaman/Button/MS80 Creed.bmp",
+      "output": "pt_creed.webp"
+    },
+    {
+      "abilityId": "pt_curse_lazy",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Shaman/Button/MS14 Curselazy.bmp",
+      "output": "pt_curse_lazy.webp"
+    },
+    {
+      "abilityId": "pt_dark_bolt",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Shaman/Button/MS10 Darkbolt.bmp",
+      "output": "pt_dark_bolt.webp"
+    },
+    {
+      "abilityId": "pt_dark_wave",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Shaman/Button/MS12 Darkwave.bmp",
+      "output": "pt_dark_wave.webp"
+    },
+    {
+      "abilityId": "pt_haunt",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Shaman/Button/MS46 Haunt.bmp",
+      "output": "pt_haunt.webp"
+    },
+    {
+      "abilityId": "pt_high_regeneration",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Shaman/Button/MS90 H_Regene.bmp",
+      "output": "pt_high_regeneration.webp"
+    },
+    {
+      "abilityId": "pt_inner_peace",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Shaman/Button/MS17 I_peace.bmp",
+      "output": "pt_inner_peace.webp"
+    },
+    {
+      "abilityId": "pt_judgement",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Shaman/Button/MS63 Judge.bmp",
+      "output": "pt_judgement.webp"
+    },
+    {
+      "abilityId": "pt_land_of_ghost",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Shaman/Button/MS43 L_Ghost.bmp",
+      "output": "pt_land_of_ghost.webp"
+    },
+    {
+      "abilityId": "pt_mourning_of_pray",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Shaman/Button/MS70 M_pray.bmp",
+      "output": "pt_mourning_of_pray.webp"
+    },
+    {
+      "abilityId": "pt_press_of_deity",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Shaman/Button/MS83 P_Deity.bmp",
+      "output": "pt_press_of_deity.webp"
+    },
+    {
+      "abilityId": "pt_rain_maker",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Shaman/Button/MS40 R_Maker.bmp",
+      "output": "pt_rain_maker.webp"
+    },
+    {
+      "abilityId": "pt_recall_bloodyknight",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Shaman/Button/MS60 R_Knight.bmp",
+      "output": "pt_recall_bloodyknight.webp"
+    },
+    {
+      "abilityId": "pt_scratch",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Shaman/Button/MS50 Scratch.bmp",
+      "output": "pt_scratch.webp"
+    },
+    {
+      "abilityId": "pt_spiritual_flare",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Shaman/Button/MS20 S_Flare.bmp",
+      "output": "pt_spiritual_flare.webp"
+    },
+    {
+      "abilityId": "pt_spiritual_manacle",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Shaman/Button/MS23 S_Manacle.bmp",
+      "output": "pt_spiritual_manacle.webp"
+    }
+  ]
+}

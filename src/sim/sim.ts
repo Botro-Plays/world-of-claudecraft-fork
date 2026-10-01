@@ -626,6 +626,13 @@ import {
   switchTalentLoadout,
   talentPointBudget,
 } from './progression/talents';
+import {
+  investPtSkill,
+  ptSkillInfo,
+  resetPtSkills,
+  sanitizePtSkillMastery,
+  sanitizePtSkillRanks,
+} from './progression/pt_skills';
 import { prestige as prestigeImpl, updateRested } from './progression/xp';
 import { advancePendingProjectiles, type PendingProjectile } from './projectile_travel';
 import { isPtPos } from './pt_band';
@@ -1619,6 +1626,13 @@ export interface PlayerMeta {
   // change (recomputeTalents), never walked on the combat or stat hot path.
   talents: TalentAllocation;
   talentMods: TalentModifiers;
+  // PT skill-point investment (progression/pt_skills.ts; only populated for the
+  // 11 PT classes). ptSkills maps skill id -> invested rank (1..10); the known
+  // abilities resolver treats an invested rank as the learned rank. Persisted
+  // in CharacterState; empty map = nothing invested. ptSkillMastery is the
+  // PT use-count per skill (feeds the PT recast-delay model).
+  ptSkills: Record<string, number>;
+  ptSkillMastery: Record<string, number>;
   // Battle Rhythm's every-third-ability counter. Session-only: a new login
   // starts a fresh rhythm and persistence never needs to migrate it.
   abilityRhythm: number;
@@ -3028,6 +3042,8 @@ export class Sim {
       vcupBetNet: savedState?.vcupBetNet ?? 0,
       talents: emptyAllocation(),
       talentMods: emptyModifiers(),
+      ptSkills: {},
+      ptSkillMastery: {},
       abilityRhythm: 0,
       fiestaAugments: [],
       fiestaMods: null,
@@ -3373,6 +3389,12 @@ export class Sim {
         // build (stale tuning, a level-down, or a tampered save) would still grant
         // its stats/abilities. An honest in-budget build is returned unchanged.
         meta.talents = repairAllocation(cls, s.talents, player.level);
+      // PT skill-point investment: same clamp the source applies on load -
+      // foreign ids drop, ranks cap at 10, and a pool overspent past its level
+      // budget wipes only that pool's skills (record.cpp RestoreSkill /
+      // CheckSkillPoint). An absent field loads as no investment.
+      meta.ptSkills = sanitizePtSkillRanks(cls, player.level, s.ptSkills, meta.questsDone);
+      meta.ptSkillMastery = sanitizePtSkillMastery(cls, s.ptSkillMastery);
       const repairedLoadouts = repairTalentLoadouts(cls, player.level, s.loadouts, s.activeLoadout);
       meta.loadouts = repairedLoadouts.loadouts;
       meta.activeLoadout = repairedLoadouts.activeLoadout;
@@ -4265,6 +4287,14 @@ export class Sim {
           }
         : {}),
       talents: cloneAllocation(restore ? restore.talents : meta.talents),
+      // PT skill investment: absent-when-empty like the other sparse maps, so
+      // WoC-class and untouched PT saves stay byte-equal.
+      ...(Object.keys(meta.ptSkills).length > 0
+        ? { ptSkills: { ...meta.ptSkills } }
+        : {}),
+      ...(Object.keys(meta.ptSkillMastery).length > 0
+        ? { ptSkillMastery: { ...meta.ptSkillMastery } }
+        : {}),
       loadouts: meta.loadouts.map((l) => ({
         name: l.name,
         alloc: cloneAllocation(l.alloc),
@@ -5026,6 +5056,12 @@ export class Sim {
   }
   get activeLoadout(): number {
     return this.primary.activeLoadout;
+  }
+
+  // IWorldTalents PT investment read: the primary player's skill id -> rank
+  // map ({} on WoC classes and fresh characters).
+  get ptSkills(): Record<string, number> {
+    return this.primary.ptSkills;
   }
 
   meta(pid: number): PlayerMeta | null {
@@ -5913,7 +5949,16 @@ export class Sim {
     // shared known-list builder, so ClientWorld's recomputed list matches.)
     // questsDone gates quest-earned abilities (paladin recall_the_fallen); it is
     // restored before this runs at load, so a returning character keeps them.
-    meta.known = abilitiesKnownAt(meta.cls, e.level, meta.talentMods, meta.questsDone);
+    // meta.ptSkills feeds the PT investment branch: a pt_* skill enters the
+    // known list only when it holds >= 1 invested point, at exactly that rank
+    // (level alone never grants one - progression/pt_skills.ts owns the gates).
+    meta.known = abilitiesKnownAt(
+      meta.cls,
+      e.level,
+      meta.talentMods,
+      meta.questsDone,
+      meta.ptSkills,
+    );
     if (announce) {
       for (const k of meta.known) {
         const prev = before.get(k.def.id);
@@ -6088,6 +6133,25 @@ export class Sim {
   // Free respec (out of combat): wipe all talent points. Spec is retained.
   respec(pid?: number): boolean {
     return this.markTalentDeeds(respecTalents(this.ctx, pid), pid);
+  }
+
+  // PT skill-point investment (progression/pt_skills.ts): spend one point into
+  // a catalog skill. Server-authoritative - the full gate (pool, tier extent,
+  // previous-skill chain, level gate, rank cap) re-runs in the verb, so a
+  // forged wire command is rejected with a player-facing reason.
+  investPtSkill(skillId: string, pid?: number): boolean {
+    return investPtSkill(this.ctx, skillId, pid);
+  }
+
+  // Refund every invested PT point (skill-reset analogue). Server-side only
+  // path today; ClientWorld sends the matching wire token for the UI.
+  resetPtSkills(pid?: number): boolean {
+    return resetPtSkills(this.ctx, pid);
+  }
+
+  // Pool + per-skill view for the PT skill window (null for non-PT classes).
+  ptSkillInfo(pid?: number): ReturnType<typeof ptSkillInfo> {
+    return ptSkillInfo(this.ctx, pid);
   }
 
   // Save the current build (talents + spec + the given action-bar slot map) as a

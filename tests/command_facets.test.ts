@@ -81,6 +81,8 @@ const W7_TAGS: Readonly<Record<string, string>> = {
   saveLoadout: 'IWorldTalents',
   switchLoadout: 'IWorldTalents',
   deleteLoadout: 'IWorldTalents',
+  invest_pt_skill: 'IWorldTalents',
+  reset_pt_skills: 'IWorldTalents',
   change_skin: 'IWorldCosmetics',
   claim_event_skin: 'IWorldCosmetics',
   unequip_mech_chroma: 'IWorldCosmetics',

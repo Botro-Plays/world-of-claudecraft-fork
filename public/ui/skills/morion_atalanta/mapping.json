@@ -1,0 +1,128 @@
+{
+  "license": "Priston Tale client artwork, converted for the Botro fork. The source bitmaps ship in the MagicPT-Chinese client image tree; provenance rows here record the exact source file per icon.",
+  "generatedSource": "MagicPT-Chinese client skill button bitmaps",
+  "iconSize": 128,
+  "converter": "scripts/pt-port/convert_pt_skill_icons.mjs",
+  "abilities": [
+    {
+      "abilityId": "pt_farina",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Atalanta/Button/MA12 Farina.bmp",
+      "output": "pt_farina.webp"
+    },
+    {
+      "abilityId": "pt_fire_javelin",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Atalanta/Button/MA30 F_Javelin.bmp",
+      "output": "pt_fire_javelin.webp"
+    },
+    {
+      "abilityId": "pt_frost_javelin",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Atalanta/Button/MA66 F_Javelin.bmp",
+      "output": "pt_frost_javelin.webp"
+    },
+    {
+      "abilityId": "pt_g_coup",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Atalanta/Button/MA83 G_Coup.bmp",
+      "output": "pt_g_coup.webp"
+    },
+    {
+      "abilityId": "pt_hall_of_valhalla",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Atalanta/Button/MA60 H_O_Valhalla.bmp",
+      "output": "pt_hall_of_valhalla.webp"
+    },
+    {
+      "abilityId": "pt_lightning_javelin",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Atalanta/Button/MA46 L_Javelin.bmp",
+      "output": "pt_lightning_javelin.webp"
+    },
+    {
+      "abilityId": "pt_s_arcuda",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Atalanta/Button/MA86 S_Arcuda.bmp",
+      "output": "pt_s_arcuda.webp"
+    },
+    {
+      "abilityId": "pt_s_fear",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Atalanta/Button/MA90 S_Fear.bmp",
+      "output": "pt_s_fear.webp"
+    },
+    {
+      "abilityId": "pt_shield_strike",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Atalanta/Button/MA10 S_Strike.bmp",
+      "output": "pt_shield_strike.webp"
+    },
+    {
+      "abilityId": "pt_soul_sucker",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Atalanta/Button/MA26 S_Sucker.bmp",
+      "output": "pt_soul_sucker.webp"
+    },
+    {
+      "abilityId": "pt_split_javelin",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Atalanta/Button/MA40 Split_Javelin.bmp",
+      "output": "pt_split_javelin.webp"
+    },
+    {
+      "abilityId": "pt_storm_javelin",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Atalanta/Button/MA50 Storm_Javelin.bmp",
+      "output": "pt_storm_javelin.webp"
+    },
+    {
+      "abilityId": "pt_talaria",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Atalanta/Button/MA80 Talaria.bmp",
+      "output": "pt_talaria.webp"
+    },
+    {
+      "abilityId": "pt_throwing_mastery",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Atalanta/Button/MA14 T_Mastery.bmp",
+      "output": "pt_throwing_mastery.webp"
+    },
+    {
+      "abilityId": "pt_triumph_of_valhalla",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Atalanta/Button/MA43 T_Of_Valhalla.bmp",
+      "output": "pt_triumph_of_valhalla.webp"
+    },
+    {
+      "abilityId": "pt_twist_javelin",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Atalanta/Button/MA23 T_Javelin.bmp",
+      "output": "pt_twist_javelin.webp"
+    },
+    {
+      "abilityId": "pt_vengeance",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Atalanta/Button/MA70 Vengeance.bmp",
+      "output": "pt_vengeance.webp"
+    },
+    {
+      "abilityId": "pt_vigor_spear",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Atalanta/Button/MA17 V_Spear.bmp",
+      "output": "pt_vigor_spear.webp"
+    },
+    {
+      "abilityId": "pt_windy",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Atalanta/Button/MA20 Windy.bmp",
+      "output": "pt_windy.webp"
+    },
+    {
+      "abilityId": "pt_x_rage",
+      "sourcePack": "magicpt_chinese_client_skill_buttons",
+      "sourceFile": "Atalanta/Button/MA63 X_Rage.bmp",
+      "output": "pt_x_rage.webp"
+    }
+  ]
+}
